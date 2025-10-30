@@ -1,0 +1,30 @@
+drone_tracker_node:
+  ros__parameters:
+    video_save: true
+    video_save_path: "/home/dg/Videos/"
+    visualized: true
+    tracker:
+      yolo_engine: "drone_int8.engine"
+      nano_backbone: "nanotrackv3_backbone_int8.engine"
+      nano_head: "nanotrack_head_int8.engine"
+      yolo_target_class_id: 0
+      yolo_conf_threshold: 0.3
+      yolo_nms_threshold: 0.45
+      yolo_interval: 3
+      iou_reset_threshold: 0.3
+      iou_calibrate_threshold: 0.6
+      tracking_conf_threshold: 0.8
+    mv_camera:
+      width_px: 1920
+      height_px: 1920
+      pixel_size_um: 3.45
+      fps: 30
+      output_width_px: 640
+      output_height_px: 640
+      focal_length_mm: 12.0
+    video_fov_deg_w: 90.0
+    ekf:
+      estimated_imu_freq: 100
+      estimated_latency: 0.08
+      process_noise_std: [0.5, 0.5, 1.0, 1.0]
+      measurement_noise_std: [5.0, 5.0]
