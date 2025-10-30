@@ -242,14 +242,17 @@ void DroneTrackerNode::worker()
 
         // --- 获取结果并绘制 ---
         auto bbox = tracker_->getCurrentBox();
-        if (bbox.is_valid)
         {
             std::lock_guard<std::mutex> lock(ekf_mtx_);
-            drone_ekf_->update(
-                rclcpp::Clock().now(), 
-                frame_ts,
-                Eigen::Vector4d(bbox.cx, bbox.cy, bbox.width, bbox.height)
-            );
+            detect_valid_ = bbox.is_valid;
+            if (detect_valid_)
+            {
+                drone_ekf_->update(
+                    rclcpp::Clock().now(),
+                    frame_ts,
+                    Eigen::Vector4d(bbox.cx, bbox.cy, bbox.width, bbox.height)
+                );
+            }
         }
         
         auto end_time = rclcpp::Clock().now();
@@ -328,11 +331,14 @@ void DroneTrackerNode::worker()
 
 void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
 {
+    if (!drone_ekf_->isInitialized())
+        return;
+
     Eigen::Vector4d current_state;
+    bool valid = false;
     {
         std::lock_guard<std::mutex> lock(ekf_mtx_);
-        if (!drone_ekf_->isInitialized())
-            return;
+        valid = detect_valid_;
         // IMU coordinates are in the FLU frame
         // EFK coordinates are in the RDF frame
         drone_ekf_->predict(rclcpp::Time(msg->header.stamp), 
@@ -346,7 +352,7 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
 
     auto detection_msg = std::make_unique<vision_msgs::msg::Detection2D>();
     detection_msg->header.stamp = builtin_interfaces::msg::Time(rclcpp::Clock().now());
-    detection_msg->header.frame_id = "camera_frame";
+    detection_msg->header.frame_id = valid ? "camera_frame" : ""; // Empty frame_id indicates invalid detection
     detection_msg->bbox.center.position.x = current_state[0];
     detection_msg->bbox.center.position.y = current_state[1];
     detection_msg->bbox.size_x = current_state[2];

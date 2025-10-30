@@ -43,6 +43,7 @@ private:
 
     std::mutex ekf_mtx_;
     std::unique_ptr<DroneEKF> drone_ekf_;
+    bool detect_valid_ = false;
 
     std::thread worker_thread_;
     bool running = false;
