@@ -6,8 +6,6 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <vision_msgs/msg/detection2_d.hpp>
 
-
-
 #include "hybrid_tracker.h"
 #include "mv_camera.h"
 #include "drone_ekf.h"

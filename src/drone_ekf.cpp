@@ -194,40 +194,7 @@ Eigen::Vector4d DroneEKF::getState() const {
     return x_.head<4>();
 }
 
-Eigen::Vector4d DroneEKF::stateToLosAngles(bool compensate_rotation) const {
-    // 获取EKF估计的目标自身速度
-    double cx = x_(0);
-    double cy = x_(1);
-    double vx_target = x_(4);
-    double vy_target = x_(5);
-
-    // 叠加得到总的视在像素速度
-    if (!compensate_rotation) {
-        vx_target += v_imu_cache(0);
-        vy_target += v_imu_cache(1);
-    }
-
-    // 将总像素速度转换为视线角和角速度
-    double norm_x = (cx - intrinsics_.px) / intrinsics_.fx;
-    double norm_y = (cy - intrinsics_.py) / intrinsics_.fy;
-
-    double azimuth = std::atan(norm_x);
-    double elevation = std::atan(norm_y);
-
-    // 计算视线角速度
-    // d(atan(u))/dt = u' / (1 + u^2)
-    // u_az = (cx - px) / fx  => u'_az = vx / fx
-    // u_el = (cy - py) / fy  => u'_el = vy / fy
-    double azimuth_rate   = (vx_target / intrinsics_.fx) / (1 + norm_x * norm_x);
-    double elevation_rate = (vy_target / intrinsics_.fy) / (1 + norm_y * norm_y);
-
-    Eigen::Vector4d result;
-    result << azimuth, elevation, azimuth_rate, elevation_rate;
-    return result;
-}
-
-
 bool DroneEKF::isInitialized() const {
-    return is_initialized_; 
+    return is_initialized_;
 }
 

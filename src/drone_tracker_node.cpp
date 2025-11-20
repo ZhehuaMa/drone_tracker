@@ -144,7 +144,7 @@ void DroneTrackerNode::setup()
         estimated_imu_freq, estimated_latency);
 
     imu_callback_handle_ = this->create_subscription<sensor_msgs::msg::Imu>(
-        "/drone/imu", 10,
+        "/fpv/gimbal", rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
         std::bind(&DroneTrackerNode::imu_callback, this, std::placeholders::_1)
     );
 
@@ -317,7 +317,7 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
             Eigen::Vector3d(
                 -msg->angular_velocity.y,
                 -msg->angular_velocity.z,
-                msg->angular_velocity.x));
+                 msg->angular_velocity.x));
         
         current_state = drone_ekf_->getState();
     }

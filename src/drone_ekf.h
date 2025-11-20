@@ -59,11 +59,6 @@ public:
     /** @brief 获取当前[cx, cy, w, h]部分的状态 */
     Eigen::Vector4d getState() const;
 
-    /** @brief 将状态转换为目标自身的视线角和角速度 [azimuth, elevation, azimuth_rate, elevation_rate] (弧度, 弧度/秒)
-     * @param compensate_rotation 是否补偿无人机自转引起的视线角速度影响，默认为false，即包含自转影响
-     */
-    Eigen::Vector4d stateToLosAngles(bool compensate_rotation = false) const;
-
     /** @brief 检查滤波器是否已初始化 */
     bool isInitialized() const;
 
