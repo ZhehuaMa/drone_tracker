@@ -23,7 +23,8 @@ public:
 
     MVCamera(const std::string &device, int width, int height,
                 int fps, bool triggerMode,
-                int displayWidth, int displayHeight);
+                int displayWidth, int displayHeight, 
+                bool flip, bool mirror);
 
     ~MVCamera();
 

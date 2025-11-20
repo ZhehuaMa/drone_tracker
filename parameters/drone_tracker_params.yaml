@@ -17,6 +17,8 @@ drone_tracker_node:
     mv_camera:
       width_px: 1920
       height_px: 1920
+      flip: true
+      mirror: true
       pixel_size_um: 3.45
       fps: 30
       output_width_px: 640

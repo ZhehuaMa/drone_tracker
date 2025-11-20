@@ -8,6 +8,7 @@ using namespace std::chrono_literals;
 DroneTrackerNode::DroneTrackerNode()
 : Node("drone_tracker_node")
 {
+    declare_parameters();
     setup();
 }
 
@@ -30,44 +31,15 @@ void DroneTrackerNode::run()
 void DroneTrackerNode::setup()
 {
     // Initialize publishers, subscribers, and services here
-    this->declare_parameter<std::string>("video_source", "0");
-    this->declare_parameter<bool>("video_save", false);
-    this->declare_parameter<std::string>("video_save_path", ".");
-    this->declare_parameter<bool>("visualized", false);
-    
-    this->declare_parameter<std::string>("tracker.yolo_engine", "drone_int8.engine");
-    this->declare_parameter<std::string>("tracker.nano_backbone", "nanotrackv3_backbone_int8.engine");
-    this->declare_parameter<std::string>("tracker.nano_head", "nanotrack_head_int8.engine");
-
-    this->declare_parameter<int>("tracker.yolo_target_class_id", 0);
-    this->declare_parameter<float>("tracker.yolo_conf_threshold", 0.3f);
-    this->declare_parameter<float>("tracker.yolo_nms_threshold", 0.45f);
-    this->declare_parameter<int>("tracker.yolo_interval", 3);
-    this->declare_parameter<float>("tracker.iou_reset_threshold", 0.3f);
-    this->declare_parameter<float>("tracker.iou_calibrate_threshold", 0.6f);
-    this->declare_parameter<float>("tracker.tracking_conf_threshold", 0.8f);
-
-    this->declare_parameter<int>("mv_camera.width_px", 1920);
-    this->declare_parameter<int>("mv_camera.height_px", 1920);
-    this->declare_parameter<float>("mv_camera.pixel_size_um", 3.45f);
-    this->declare_parameter<int>("mv_camera.fps", 30);
-    this->declare_parameter<int>("mv_camera.output_width_px", 640);
-    this->declare_parameter<int>("mv_camera.output_height_px", 640);
-    this->declare_parameter<float>("mv_camera.focal_length_mm", 12.0f);
-    this->declare_parameter<float>("video_fov_deg_w", 90.0f);
-
-    this->declare_parameter<int>("ekf.estimated_imu_freq", 100);
-    this->declare_parameter<double>("ekf.estimated_latency", 0.08);
-    this->declare_parameter<std::vector<double>>("ekf.process_noise_std", {0.5, 0.5, 1.0, 1.0});
-    this->declare_parameter<std::vector<double>>("ekf.measurement_noise_std", {5.0, 5.0});
-
-
     this->get_parameter("visualized", enable_image_output_);
 
     int width_px, height_px, output_width_px, output_height_px, fps;
     float pixel_size_um, focal_length_mm, fov_deg_w, fov_deg_h;
+    bool flip, mirror;
     this->get_parameter("mv_camera.width_px", width_px);
     this->get_parameter("mv_camera.height_px", height_px);
+    this->get_parameter("mv_camera.flip", flip);
+    this->get_parameter("mv_camera.mirror", mirror);
     this->get_parameter("mv_camera.focal_length_mm", focal_length_mm);
     this->get_parameter("mv_camera.pixel_size_um", pixel_size_um);
     this->get_parameter("mv_camera.fps", fps);
@@ -87,13 +59,13 @@ void DroneTrackerNode::setup()
 
     std::string video_source;
     this->get_parameter("video_source", video_source);
-    is_camera_ = (video_source.length() == 1 && std::isdigit(video_source[0]));
+    is_camera_ = (video_source.substr(0, 5) == "video" && video_source.length() == 6);
 
     if (is_camera_)
     {
-        std::string device = "/dev/video";
+        std::string device = "/dev/";
         mv_camera_ = std::make_unique<MVCamera>(device.append(video_source), 
-            width_px, height_px, fps, true, output_width_px, output_height_px);
+            width_px, height_px, fps, true, output_width_px, output_height_px, flip, mirror);
     }
     else
     {

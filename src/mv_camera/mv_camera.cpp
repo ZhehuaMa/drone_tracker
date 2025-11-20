@@ -87,6 +87,28 @@ static int i2c_rd(int fd, uint8_t i2c_addr, uint16_t reg, std::vector<uint8_t> &
     return 0;
 }
 
+static void set_image_flip_mirror(bool flip, bool mirror) {
+    int i2c_fd = open(I2C_DEV, O_RDWR);
+    if (i2c_fd < 0) {
+        perror("Failed to open I2C device");
+        return;
+    }
+    if (ioctl(i2c_fd, I2C_SLAVE_FORCE, I2C_ADDR) < 0) {
+        perror("Failed to set I2C slave address");
+        close(i2c_fd);
+        return;
+    }
+    // #define IMAGE_DIR_REG   0x828
+    uint8_t val = 0;
+    if (flip) val |= 0x02;
+    if (mirror) val |= 0x01;
+    uint8_t dir_msg[] = {0x08, 0x28, 0, 0, 0, val};
+    if (write(i2c_fd, dir_msg, sizeof(dir_msg)) != (ssize_t)sizeof(dir_msg)) {
+        perror("Failed to write to I2C device for image dir");
+    }
+    close(i2c_fd);
+}
+
 static std::shared_ptr<NvBuffer> create_nv_buffer(uint8_t *y_ptr, uint8_t *uv_ptr, uint32_t w, uint32_t h, uint32_t stride)
 {
     NvBuffer::NvBufferPlaneFormat plane_fmts[MAX_PLANES];
@@ -136,13 +158,14 @@ static std::shared_ptr<NvBuffer> create_nv_buffer(uint8_t *y_ptr, uint8_t *uv_pt
 MVCamera::MVCamera(
         const std::string &device, int width, int height,
         int fps, bool triggerMode,
-        int displayWidth, int displayHeight)
+        int displayWidth, int displayHeight, bool flip, bool mirror)
     : devicePath_(device), width_(width), height_(height), fps_(fps),
       triggerMode_(triggerMode), displayWidth_(displayWidth), displayHeight_(displayHeight) {
     pitch_ = int(ceil(double(width_) / MEMORY_ALIGNMENT) * MEMORY_ALIGNMENT);
     std::cout << "Using pitch: " << pitch_ << std::endl;
     is_running_.store(true);
     init();
+    set_image_flip_mirror(flip, mirror);
 }
 
 MVCamera::~MVCamera() {
