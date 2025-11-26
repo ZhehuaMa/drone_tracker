@@ -159,7 +159,7 @@ MVCamera::MVCamera(
         const std::string &device, int width, int height,
         int fps, bool triggerMode,
         int displayWidth, int displayHeight, bool flip, bool mirror)
-    : devicePath_(device), width_(width), height_(height), fps_(fps),
+    : MVCameraBase(10), devicePath_(device), width_(width), height_(height), fps_(fps),
       triggerMode_(triggerMode), displayWidth_(displayWidth), displayHeight_(displayHeight) {
     pitch_ = int(ceil(double(width_) / MEMORY_ALIGNMENT) * MEMORY_ALIGNMENT);
     std::cout << "Using pitch: " << pitch_ << std::endl;
@@ -173,25 +173,30 @@ MVCamera::~MVCamera() {
     cleanup();
 }
 
-void MVCamera::run(bool need_save, const std::string &save_path, CallbackFn &&callback) {
-    if (!initialized_) {
-        std::cerr << "Camera not initialized." << std::endl;
-        return;
-    }
-    v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (ioctl(fd_, VIDIOC_STREAMON, &type) < 0) {
-        perror("VIDIOC_STREAMON");
-        return;
-    }
-    is_running_.store(true);
-    streaming_ = true;
-    if (triggerMode_) {
-        triggerThread_ = std::thread(&MVCamera::triggerLoop, this, 1.0 / fps_);
-    }
-    captureLoop(need_save, save_path, std::move(callback));
+void MVCamera::setup(bool need_save, const std::string &save_path) {
+    need_save_ = need_save;
+    save_path_ = save_path;
 }
 
-bool MVCamera::run_async(bool need_save, const std::string &save_path, CallbackFn &&callback) {
+void MVCamera::run(CallbackFn &&callback) {
+    if (!initialized_) {
+        std::cerr << "Camera not initialized." << std::endl;
+        return;
+    }
+    v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (ioctl(fd_, VIDIOC_STREAMON, &type) < 0) {
+        perror("VIDIOC_STREAMON");
+        return;
+    }
+    is_running_.store(true);
+    streaming_ = true;
+    if (triggerMode_) {
+        triggerThread_ = std::thread(&MVCamera::triggerLoop, this, 1.0 / fps_);
+    }
+    captureLoop(std::move(callback));
+}
+
+bool MVCamera::run_async(CallbackFn &&callback) {
     if (!initialized_) {
         std::cerr << "Camera not initialized." << std::endl;
         return false;
@@ -206,7 +211,7 @@ bool MVCamera::run_async(bool need_save, const std::string &save_path, CallbackF
     if (triggerMode_) {
         triggerThread_ = std::thread(&MVCamera::triggerLoop, this, 1.0 / fps_);
     }
-    captureThread_ = std::thread(&MVCamera::captureLoop, this, need_save, save_path, std::move(callback));
+    captureThread_ = std::thread(&MVCamera::captureLoop, this, std::move(callback));
     return true;
 }
 
@@ -365,10 +370,10 @@ void MVCamera::init()
     initialized_ = true;
 }
 
-void MVCamera::captureLoop(bool need_save, const std::string &save_path, CallbackFn &&callback) {
+void MVCamera::captureLoop(CallbackFn &&callback) {
     std::unique_ptr<ThreadPool> thread_pool;
     std::unique_ptr<MJPEGWriter> mjpeg_writer;
-    if (need_save) {
+    if (need_save_) {
         thread_pool = std::make_unique<ThreadPool>(1);
         mjpeg_writer = std::make_unique<MJPEGWriter>();
     }
@@ -386,7 +391,7 @@ void MVCamera::captureLoop(bool need_save, const std::string &save_path, Callbac
     
     if (mjpeg_writer) {
         auto start_us = t0.time_since_epoch().count()/1000;
-        mjpeg_writer->setup(save_path + "/ts_" + std::to_string(start_us) + ".mjpeg", 
+        mjpeg_writer->setup(save_path_ + "/ts_" + std::to_string(start_us) + ".mjpeg", 
             displayWidth_, displayHeight_, fps_);
     }
 
@@ -453,7 +458,7 @@ void MVCamera::captureLoop(bool need_save, const std::string &save_path, Callbac
         VPIImage vpiSave = nullptr;
         VPIStatus status = vpiImageCreate(displayWidth_, displayHeight_, VPI_IMAGE_FORMAT_U8, 0, &vpiOut);
         status = vpiSubmitRescale(vpiStream_, VPI_BACKEND_CUDA, vpiIn, vpiOut, VPI_INTERP_LINEAR, VPI_BORDER_CLAMP, 0);
-        if (need_save) {
+        if (need_save_) {
             status = vpiImageCreate(displayWidth_, displayHeight_, VPI_IMAGE_FORMAT_U8, 0, &vpiSave);
             status = vpiSubmitConvertImageFormat(vpiStream_, VPI_BACKEND_CUDA, vpiOut, vpiSave, 0);
         }
@@ -463,7 +468,7 @@ void MVCamera::captureLoop(bool need_save, const std::string &save_path, Callbac
             while (!image_queue_.try_enqueue(std::move(image_buffer))) {
                 image_queue_.pop(); 
             }
-            if (need_save) {
+            if (need_save_) {
                 thread_pool->enqueue([image=vpiSave, ts=request_us, video_writer=mjpeg_writer.get(), cb=callback, this]() {
                     VPIImageData outData;
                     if (vpiImageLockData(image, VPI_LOCK_READ, VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &outData) != VPI_SUCCESS) {
