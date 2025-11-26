@@ -1,7 +1,6 @@
 #ifndef DRONE_EKF_H
 #define DRONE_EKF_H
 
-#include <rclcpp/rclcpp.hpp>
 #include <Eigen/Dense>
 #include <deque>
 
@@ -12,7 +11,7 @@ struct CameraIntrinsics {
 
 // 用于存储历史状态的结构体
 struct StateHistory {
-    rclcpp::Time timestamp;
+    int64_t timestamp;
     Eigen::Vector<double, 8> state;
     Eigen::Matrix<double, 8, 8> covariance;
     Eigen::Vector3d imu_input;
@@ -46,7 +45,7 @@ public:
      * @param current_time 当前时间戳 (秒)
      * @param imu_omega 相机角速度 [omega_x, omega_y, omega_z]
      */
-    void predict(rclcpp::Time current_time, const Eigen::Vector3d& imu_omega);
+    void predict(int64_t current_time_us, const Eigen::Vector3d& imu_omega);
 
     /**
      * @brief EKF的更新步骤
@@ -54,7 +53,7 @@ public:
      * @param ts 测量值对应的时间戳 (秒)
      * @param z 测量值 [cx, cy, w, h]
      */
-    void update(rclcpp::Time current_time, rclcpp::Time ts, const Eigen::Vector4d& z);
+    void update(int64_t ts_us, const Eigen::Vector4d& z);
 
     /** @brief 获取当前[cx, cy, w, h]部分的状态 */
     Eigen::Vector4d getState() const;
@@ -82,10 +81,10 @@ private:
     
     // 初始化标志
     bool is_initialized_ = false;
-    rclcpp::Time last_timestamp_;
+    int64_t last_timestamp_;
     double dt_;
 
-    Eigen::Vector2d v_imu_cache;
+    // Eigen::Vector2d v_imu_cache;
     void update_internal(const Eigen::Vector4d& z);
 };
 

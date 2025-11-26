@@ -66,6 +66,11 @@ void DroneTrackerNode::setup()
         std::string device = "/dev/";
         mv_camera_ = std::make_unique<MVCamera>(device.append(video_source), 
             width_px, height_px, fps, true, output_width_px, output_height_px, flip, mirror);
+        bool need_save = false;
+        this->get_parameter("video_save", need_save);
+        std::string video_save_path;
+        this->get_parameter("video_save_path", video_save_path);
+        mv_camera_->setup(need_save, video_save_path);
     }
     else
     {
@@ -159,11 +164,7 @@ void DroneTrackerNode::worker()
 {
     if (is_camera_)
     { 
-        bool need_save = false;
-        this->get_parameter("video_save", need_save);
-        std::string video_save_path;
-        this->get_parameter("video_save_path", video_save_path);
-        bool success = mv_camera_->run_async(need_save, video_save_path);
+        bool success = mv_camera_->run_async();
         if (!success)
         {
             RCLCPP_ERROR(this->get_logger(), "Failed to open MV Camera ");
@@ -181,14 +182,14 @@ void DroneTrackerNode::worker()
     while (rclcpp::ok() && running)
     {
         // Process the frame with tracker_ and drone_ekf_
-        rclcpp::Time start_time = rclcpp::Clock().now();
+        rclcpp::Time start_time = this->now();
         std::shared_ptr<VPIImageWrapper> vpi_buffer;
-        rclcpp::Time frame_ts;
+        int64_t frame_ts;
         if (is_camera_)
         {
             if (mv_camera_->getImageQueue().wait_dequeue_timed(vpi_buffer, 1s)) {
-                start_time = rclcpp::Clock().now();
-                frame_ts = rclcpp::Time(vpi_buffer->get_timestamps() * 1000UL); // us to ns
+                start_time = this->now();
+                frame_ts = vpi_buffer->get_timestamps();
                 tracker_->update(vpi_buffer);
             }
             else {
@@ -198,7 +199,7 @@ void DroneTrackerNode::worker()
         }
         else
         {
-            frame_ts = start_time;
+            frame_ts = start_time.nanoseconds() / 1000;
             if (!cap_.read(frame))
             {
                 std::cout << "Video ended." << std::endl;
@@ -220,15 +221,13 @@ void DroneTrackerNode::worker()
             if (detect_valid_)
             {
                 drone_ekf_->update(
-                    rclcpp::Clock().now(),
                     frame_ts,
                     Eigen::Vector4d(bbox.cx, bbox.cy, bbox.width, bbox.height)
                 );
             }
         }
         
-        auto end_time = rclcpp::Clock().now();
-        auto elapsed = end_time - start_time;
+        auto elapsed = this->now() - start_time;
         double cost_ms = elapsed.seconds() * 1000;
         
         if (enable_image_output_) 
@@ -261,31 +260,23 @@ void DroneTrackerNode::worker()
             cv::putText(frame, status, cv::Point(20, 80), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
 
             cv_bridge::CvImage cv_img;
-            cv_img.header.stamp = builtin_interfaces::msg::Time(frame_ts);
+            cv_img.header.stamp = builtin_interfaces::msg::Time(rclcpp::Time(frame_ts*1000));
             cv_img.header.frame_id = "camera_frame";
             cv_img.encoding = "bgr8";
             cv_img.image = frame;
             image_pub_->publish(*cv_img.toImageMsg());
 
-            end_time = rclcpp::Clock().now();
-            elapsed = end_time - start_time;
+            elapsed = this->now() - start_time;
             cost_ms = elapsed.seconds() * 1000;
         }
 
-
         avg_time_ms = (avg_time_ms * count + cost_ms) / (count + 1);
         ++count;
-
-        // cv::imshow("Hybrid Tracker C++", frame);
 
         // 计算剩余时间以保持帧率
         int remaining_time_us = static_cast<int>((interval_ms_ - cost_ms) * 1000);
         if (remaining_time_us <= 0) remaining_time_us = 1000; // 至少等待1ms
 
-        // if (cv::waitKey(remaining_time) == 27) // ESC
-        // {
-        //     break;
-        // }
         rclcpp::sleep_for(std::chrono::microseconds(remaining_time_us));
     }
 
@@ -312,8 +303,8 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
         std::lock_guard<std::mutex> lock(ekf_mtx_);
         valid = detect_valid_;
         // IMU coordinates are in the FLU frame
-        // EFK coordinates are in the RDF frame
-        drone_ekf_->predict(rclcpp::Time(msg->header.stamp), 
+         // EFK coordinates are in the RDF frame
+        drone_ekf_->predict(rclcpp::Time(msg->header.stamp).nanoseconds() / 1000, 
             Eigen::Vector3d(
                 -msg->angular_velocity.y,
                 -msg->angular_velocity.z,
@@ -323,7 +314,7 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     }
 
     auto detection_msg = std::make_unique<vision_msgs::msg::Detection2D>();
-    detection_msg->header.stamp = builtin_interfaces::msg::Time(rclcpp::Clock().now());
+    detection_msg->header.stamp = this->now();
     detection_msg->header.frame_id = valid ? "camera_frame" : ""; // Empty frame_id indicates invalid detection
     detection_msg->bbox.center.position.x = current_state[0];
     detection_msg->bbox.center.position.y = current_state[1];

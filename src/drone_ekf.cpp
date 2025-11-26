@@ -12,7 +12,7 @@ DroneEKF::DroneEKF(const CameraIntrinsics& intrinsics,
       dt_(1.0 / imu_freq)
 {
     x_.setZero();
-    v_imu_cache.setZero();
+    // v_imu_cache.setZero();
 
     double std_pos = process_noise_std(0);
     double std_vel = process_noise_std(1);
@@ -47,19 +47,19 @@ void DroneEKF::initialize(const Eigen::Vector4d& initial_measurement) {
     x_.head<4>() = initial_measurement;
     x_.tail<4>().setZero();
     is_initialized_ = true;
-    last_timestamp_ = rclcpp::Time(0, 0);
+    last_timestamp_ = 0;
     history_buffer_.clear();
     // std::cout << "EKF initialized" << std::endl;
 }
 
-void DroneEKF::predict(rclcpp::Time current_time, const Eigen::Vector3d& imu_omega) {
+void DroneEKF::predict(int64_t current_time_us, const Eigen::Vector3d& imu_omega) {
     if (!is_initialized_) return;
 
-    if (current_time.nanoseconds() > 0) {     // current_time < 0 means replaying from history
-        if (last_timestamp_.nanoseconds() > 0) {
-            dt_ = (current_time - last_timestamp_).seconds();
+    if (current_time_us > 0) { 
+        if (last_timestamp_ > 0) {
+            dt_ = double(current_time_us - last_timestamp_) / 1e6;
         }
-        last_timestamp_ = current_time;
+        last_timestamp_ = current_time_us;
     }
 
     // --- 1. State Prediction (Non-linear function f(x,u)) ---
@@ -87,7 +87,7 @@ void DroneEKF::predict(rclcpp::Time current_time, const Eigen::Vector3d& imu_ome
     double v_imu_cx = (1/fy)*(cx-px)*(cy-py)*omega_x - (fx + (1/fx)*(cx-px)*(cx-px))*omega_y + (fx/fy)*(cy-py)*omega_z;
     double v_imu_cy = (fy + (1/fy)*(cy-py)*(cy-py))*omega_x - (1/fx)*(cx-px)*(cy-py)*omega_y - (fy/fx)*(cx-px)*omega_z;
 
-    v_imu_cache << v_imu_cx, v_imu_cy;
+    // v_imu_cache << v_imu_cx, v_imu_cy;
     
     // Compensate predicted position. The state `x` represents the target's motion,
     // so we add the apparent motion from the camera to get the final predicted measurement.
@@ -127,9 +127,9 @@ void DroneEKF::predict(rclcpp::Time current_time, const Eigen::Vector3d& imu_ome
     // Enforce symmetry to improve numerical stability
     P_ = 0.5 * (P_ + P_.transpose());
 
-    if (current_time.nanoseconds() > 0) {
+    if (current_time_us > 0) {
         history_buffer_.push_back({
-            current_time,
+            current_time_us,
             x_,
             P_,
             imu_omega
@@ -164,15 +164,14 @@ void DroneEKF::update_internal(const Eigen::Vector4d& z)
     P_ = 0.5 * (P_ + P_.transpose());
 }
 
-void DroneEKF::update(rclcpp::Time current_time, rclcpp::Time ts, const Eigen::Vector4d& z) {
+void DroneEKF::update(int64_t ts_us, const Eigen::Vector4d& z) {
     if (!is_initialized_) {
         initialize(z);
         return;
     }
-
     auto it = std::min_element(history_buffer_.begin(), history_buffer_.end(), 
         [&](const StateHistory& a, const StateHistory& b) {
-            return std::abs((a.timestamp - ts).seconds()) < std::abs((b.timestamp - ts).seconds());
+            return std::abs(a.timestamp - ts_us) < std::abs(b.timestamp - ts_us);
         });
 
     if (it != history_buffer_.end()) {
@@ -184,8 +183,8 @@ void DroneEKF::update(rclcpp::Time current_time, rclcpp::Time ts, const Eigen::V
         // Replay subsequent IMU inputs
         // From the corrected historical point, reapply subsequent IMU inputs
         for (auto replay_it = std::next(it); replay_it != history_buffer_.end(); ++replay_it) {
-            dt_ = (replay_it->timestamp - std::prev(replay_it)->timestamp).seconds();
-            predict(replay_it->timestamp, replay_it->imu_input);
+            dt_ = double(replay_it->timestamp - std::prev(replay_it)->timestamp) / 1e6;
+            predict(-1, replay_it->imu_input); // -1 indicates no timestamp update
         }
     }
 }
