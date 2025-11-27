@@ -5,10 +5,31 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <vision_msgs/msg/detection2_d.hpp>
+#include <mavros_msgs/msg/status_text.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <tuple>
 
 #include "hybrid_tracker.h"
 #include "mv_camera.h"
 #include "drone_ekf.h"
+
+class StatusPublisher
+{
+public:
+    StatusPublisher(rclcpp::Node &node, int hz=1);
+    ~StatusPublisher();
+    bool publish(uint8_t severity, int count,const std::string& text, bool force=false);
+private:
+    rclcpp::Publisher<mavros_msgs::msg::StatusText>::SharedPtr status_pub_;
+    rclcpp::TimerBase::SharedPtr status_timer_;
+    std::mutex status_mtx_;
+    std::queue<std::tuple<uint8_t, int, std::string>> status_queue_;
+    int status_counter_ = -1;
+};
+
 
 class DroneTrackerNode : public rclcpp::Node
 {
@@ -17,6 +38,7 @@ public:
     ~DroneTrackerNode();
 
     void run();
+    void stop();
 
 private:
     void declare_parameters() {
@@ -60,8 +82,11 @@ private:
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
 
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_callback_handle_;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr trigger_callback_handle_;
     rclcpp::Publisher<vision_msgs::msg::Detection2D>::SharedPtr detection_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
+
+    std::unique_ptr<StatusPublisher> status_publisher_;
 
     std::shared_ptr<HybridTracker> tracker_;
     std::unique_ptr<MVCamera> mv_camera_;

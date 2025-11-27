@@ -14,9 +14,9 @@ public:
 
     virtual ~MVCameraBase() = default;
 
-    virtual void run(CallbackFn &&callback=nullptr) = 0;
+    virtual bool run(CallbackFn &&callback=nullptr) = 0;
     virtual bool run_async(CallbackFn &&callback=nullptr) = 0;
-    virtual void stop() = 0;
+    virtual bool stop() = 0;
     virtual bool is_running() const = 0;
 
     ImageQueue& getImageQueue() { return image_queue_; }

@@ -44,6 +44,8 @@ public:
     /** @brief 初始化检测器线程和跟踪器 */
     virtual bool init() = 0;
 
+    virtual void reset() = 0;
+
     /** @brief 处理单个视频帧 */
     virtual bool update(const std::shared_ptr<VPIImageWrapper>& frame) = 0;
 

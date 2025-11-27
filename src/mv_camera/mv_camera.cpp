@@ -162,15 +162,29 @@ MVCamera::MVCamera(
     : MVCameraBase(10), devicePath_(device), width_(width), height_(height), fps_(fps),
       triggerMode_(triggerMode), displayWidth_(displayWidth), displayHeight_(displayHeight) {
     pitch_ = int(ceil(double(width_) / MEMORY_ALIGNMENT) * MEMORY_ALIGNMENT);
-    std::cout << "Using pitch: " << pitch_ << std::endl;
-    is_running_.store(true);
+    // std::cout << "Using pitch: " << pitch_ << std::endl;
+
+    jpegenc_ = NvJPEGEncoder::createJPEGEncoder("jpenenc");
+    if (vpiStreamCreate(0, &vpiStream_) != VPI_SUCCESS) {
+        std::cerr << "Failed to create VPI stream" << std::endl;
+        return;
+    }
+
     init();
     set_image_flip_mirror(flip, mirror);
 }
 
 MVCamera::~MVCamera() {
     stop();
-    cleanup();
+
+    if (vpiStream_) { 
+        vpiStreamDestroy(vpiStream_); 
+        vpiStream_ = nullptr; 
+    }
+    if (jpegenc_) {
+        delete reinterpret_cast<NvJPEGEncoder*>(jpegenc_);
+        jpegenc_ = nullptr;
+    }
 }
 
 void MVCamera::setup(bool need_save, const std::string &save_path) {
@@ -178,15 +192,18 @@ void MVCamera::setup(bool need_save, const std::string &save_path) {
     save_path_ = save_path;
 }
 
-void MVCamera::run(CallbackFn &&callback) {
+bool MVCamera::run(CallbackFn &&callback) {
+    if (is_running_ || streaming_) {
+        // std::cerr << "Camera is already running." << std::endl;
+        return false;
+    }
     if (!initialized_) {
-        std::cerr << "Camera not initialized." << std::endl;
-        return;
+        init();
     }
     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (ioctl(fd_, VIDIOC_STREAMON, &type) < 0) {
         perror("VIDIOC_STREAMON");
-        return;
+        return false;
     }
     is_running_.store(true);
     streaming_ = true;
@@ -194,12 +211,16 @@ void MVCamera::run(CallbackFn &&callback) {
         triggerThread_ = std::thread(&MVCamera::triggerLoop, this, 1.0 / fps_);
     }
     captureLoop(std::move(callback));
+    return true;
 }
 
 bool MVCamera::run_async(CallbackFn &&callback) {
-    if (!initialized_) {
-        std::cerr << "Camera not initialized." << std::endl;
+    if (is_running_ || streaming_) {
+        // std::cerr << "Camera is already running." << std::endl;
         return false;
+    }
+    if (!initialized_) {
+        init();
     }
     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (ioctl(fd_, VIDIOC_STREAMON, &type) < 0) {
@@ -215,10 +236,14 @@ bool MVCamera::run_async(CallbackFn &&callback) {
     return true;
 }
 
-void MVCamera::stop() {
+bool MVCamera::stop() {
     if (!initialized_) {
         std::cerr << "Camera not initialized." << std::endl;
-        return;
+        return false;
+    }
+    if (!is_running_ && !streaming_) {
+        // std::cerr << "Camera is not running." << std::endl;
+        return false;
     }
     is_running_.store(false);
     if (triggerMode_ && triggerThread_.joinable()) {
@@ -228,6 +253,7 @@ void MVCamera::stop() {
     if (captureThread_.joinable()) {
         captureThread_.join();
     }
+    requestQueue_.clear(); 
     if (streaming_) {
         std::cout << "Stopping stream..." << std::endl;
         set_ctrl(fd_, TEGRA_CAMERA_CID_VI_TIME_OUT_DISABLE, 0);
@@ -235,6 +261,8 @@ void MVCamera::stop() {
         ioctl(fd_, VIDIOC_STREAMOFF, &type);
         streaming_ = false;
     }
+    cleanup();
+    return true;
 }
 
 void MVCamera::triggerLoop(double interval_seconds) {
@@ -288,9 +316,9 @@ void MVCamera::triggerLoop(double interval_seconds) {
 }
 
 void MVCamera::init() 
-{    
-    jpegenc_ = NvJPEGEncoder::createJPEGEncoder("jpenenc");
-
+{
+    if (initialized_) 
+        return;
     fd_ = open(devicePath_.c_str(), O_RDWR);
     if (fd_ < 0) {
         perror("Error opening device");
@@ -363,10 +391,7 @@ void MVCamera::init()
             return;
         }
     }
-    if (vpiStreamCreate(0, &vpiStream_) != VPI_SUCCESS) {
-        std::cerr << "Failed to create VPI stream" << std::endl;
-        return;
-    }
+    
     initialized_ = true;
 }
 
@@ -540,10 +565,7 @@ void MVCamera::cleanup() {
         }
     }
     buffers_.clear();
-    if (vpiStream_) { 
-        vpiStreamDestroy(vpiStream_); 
-        vpiStream_ = nullptr; 
-    }
+
     if (fd_ >= 0) { 
         close(fd_); 
         fd_ = -1; 
@@ -554,10 +576,7 @@ void MVCamera::cleanup() {
         free(uv_ptr_);
         uv_ptr_ = nullptr;
     }
-    if (jpegenc_) {
-        delete reinterpret_cast<NvJPEGEncoder*>(jpegenc_);
-        jpegenc_ = nullptr;
-    }
+
     initialized_ = false;
     std::cout << "Cleanup complete." << std::endl;
 }

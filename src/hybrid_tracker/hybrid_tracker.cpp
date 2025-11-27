@@ -14,6 +14,8 @@ public:
     /** @brief 初始化检测器线程和跟踪器 */
     virtual bool init() override;
 
+    virtual void reset() override;
+
     /** @brief 处理单个视频帧 */
     virtual bool update(const std::shared_ptr<VPIImageWrapper>& frame) override;
 
@@ -76,7 +78,7 @@ HybridTrackerImp::~HybridTrackerImp()
 
 bool HybridTrackerImp::init()
 {
-    // 1. 初始化 YOLOv8 检测器
+    // 初始化 YOLOv8 检测器
     m_detector = std::make_unique<YoloV8Detector>(
         m_settings.yolo_engine_path,
         m_settings.yolo_conf_threshold,
@@ -90,29 +92,34 @@ bool HybridTrackerImp::init()
         return false;
     }
 
-    // 2. 初始化卡尔曼滤波器
-    m_kalman_filter = std::make_unique<SimpleKalmanFilter>();
-
-    // 3. 准备跟踪器实例
+    // 准备跟踪器实例
     // if (m_settings.enable_nanotrack)
-    {
+    // {
         m_nanotracker = std::make_unique<NanoTracker>(
             m_settings.nanotrack_backbone_path,
             m_settings.nanotrack_head_path
         );
         // NanoTracker 的实际TRT初始化推迟到
         // 第一次调用 initialize() 时
-    }
+    // }
     // else
     // {
     //     // CSRT 将在 initialize() 中创建
     //     m_csrt_tracker = nullptr; 
     // }
-    
-    m_tracker_initialized = false;
-    m_frame_count = 0;
+
+    reset();
     
     return true;
+}
+
+void HybridTrackerImp::reset()
+{
+    if (!m_detector || !m_nanotracker)
+        return;
+    m_kalman_filter = std::make_unique<SimpleKalmanFilter>();
+    m_tracker_initialized = false;
+    m_frame_count = 0;
 }
 
 void HybridTrackerImp::initialize(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& box)

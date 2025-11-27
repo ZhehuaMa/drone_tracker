@@ -40,6 +40,8 @@ public:
      */
     void initialize(const Eigen::Vector4d& initial_measurement);
 
+    void reset();
+
     /**
      * @brief EKF的预测步骤
      * @param current_time 当前时间戳 (秒)

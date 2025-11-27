@@ -8,7 +8,7 @@ drone_tracker_node:
       nano_backbone: "nanotrackv3_backbone_int8.engine"
       nano_head: "nanotrack_head_int8.engine"
       yolo_target_class_id: 0
-      yolo_conf_threshold: 0.3
+      yolo_conf_threshold: 0.35
       yolo_nms_threshold: 0.45
       yolo_interval: 3
       iou_reset_threshold: 0.3

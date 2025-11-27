@@ -43,6 +43,14 @@ DroneEKF::DroneEKF(const CameraIntrinsics& intrinsics,
     H_(3, 3) = 1;
 }
 
+void DroneEKF::reset() {
+    x_.setZero();
+    P_ = Q_ * 10; // Reset covariance
+    is_initialized_ = false;
+    last_timestamp_ = 0;
+    history_buffer_.clear();
+}
+
 void DroneEKF::initialize(const Eigen::Vector4d& initial_measurement) {
     x_.head<4>() = initial_measurement;
     x_.tail<4>().setZero();

@@ -21,6 +21,8 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(mavros_msgs REQUIRED)
 
 find_package(CUDAToolkit REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -50,6 +52,8 @@ ament_target_dependencies(drone_tracker_node
     sensor_msgs
     vision_msgs
     cv_bridge
+    std_msgs
+    mavros_msgs
 )
 
 target_link_libraries(drone_tracker_node

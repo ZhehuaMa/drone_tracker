@@ -25,20 +25,21 @@ public:
 
     void setup(bool need_save, const std::string &save_path=".");
 
-    virtual void run(CallbackFn &&callback=nullptr) override;
+    virtual bool run(CallbackFn &&callback=nullptr) override;
     virtual bool run_async(CallbackFn &&callback=nullptr) override;
-    virtual void stop() override;
+    virtual bool stop() override;
     virtual bool is_running() const override { return initialized_ && is_running_.load(); }
 private:
-    std::string devicePath_;
+    const std::string devicePath_;
+    const int width_ = 0;
+    const int height_ = 0;
+    const int fps_ = 0;
+    const bool triggerMode_ = false;
+    const int displayWidth_ = 0;
+    const int displayHeight_ = 0;
+
     int fd_ = -1;
-    int width_ = 0;
-    int height_ = 0;
     int pitch_ = 0;
-    int fps_ = 0;
-    bool triggerMode_ = false;
-    int displayWidth_ = 0;
-    int displayHeight_ = 0;
 
     bool need_save_ = false;
     std::string save_path_ = ".";

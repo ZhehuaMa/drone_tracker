@@ -14,18 +14,26 @@ DroneTrackerNode::DroneTrackerNode()
 
 DroneTrackerNode::~DroneTrackerNode()
 {
-    running = false;
-    if (worker_thread_.joinable())
-    {
-        worker_thread_.join();
-    }
+    stop();
 }
 
 void DroneTrackerNode::run()
 {
     if (running) return;
     running = true;
+    tracker_->reset();
+    drone_ekf_->reset();
+    detect_valid_ = false;
     worker_thread_ = std::thread(&DroneTrackerNode::worker, this);
+}
+
+void DroneTrackerNode::stop()
+{
+    running = false;
+    if (worker_thread_.joinable())
+    {
+        worker_thread_.join();
+    }
 }
 
 void DroneTrackerNode::setup()
@@ -157,8 +165,28 @@ void DroneTrackerNode::setup()
         "/fpv/target_bbox", 10);
     image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(
         "/fpv/tracker_image", 10);
+
+    status_publisher_ = std::make_unique<StatusPublisher>(*this, 1);
     
+    trigger_callback_handle_ = this->create_subscription<std_msgs::msg::Bool>(
+        "/fpv/tracker_trigger", rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
+        [this](const std_msgs::msg::Bool::SharedPtr msg)
+        {
+            if (msg->data)
+            {
+                this->run();
+                status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 3, "Drone Tracker Started", true);
+            }
+            else
+            {
+                this->stop();
+                status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 3, "Drone Tracker Stopped", true);
+            }
+        }
+    );
 }
+
+
 
 void DroneTrackerNode::worker()
 {
@@ -177,6 +205,7 @@ void DroneTrackerNode::worker()
 
     int count = 0;
     double avg_time_ms = 0.0;
+    std::string last_status;
 
     // Main processing loop
     while (rclcpp::ok() && running)
@@ -187,7 +216,7 @@ void DroneTrackerNode::worker()
         int64_t frame_ts;
         if (is_camera_)
         {
-            if (mv_camera_->getImageQueue().wait_dequeue_timed(vpi_buffer, 1s)) {
+            if (mv_camera_->getImageQueue().wait_dequeue_timed(vpi_buffer, 5s)) {
                 start_time = this->now();
                 frame_ts = vpi_buffer->get_timestamps();
                 tracker_->update(vpi_buffer);
@@ -238,6 +267,7 @@ void DroneTrackerNode::worker()
                 static_cast<int>(bbox.width), 
                 static_cast<int>(bbox.height) };
             std::string status = tracker_->getStatus();
+            status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1, status);
             auto color_val = tracker_->getColor();
             cv::Scalar color = cv::Scalar((color_val & 0xFF), ((color_val >> 8) & 0xFF), ((color_val >> 16) & 0xFF));
 
@@ -323,11 +353,58 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     detection_pub_->publish(std::move(detection_msg));
 }
 
+StatusPublisher::StatusPublisher(rclcpp::Node &node, int hz)
+{
+    status_pub_ = node.create_publisher<mavros_msgs::msg::StatusText>(
+        "/mavros/statustext/send", 10);
+    status_timer_ = node.create_wall_timer(std::chrono::milliseconds(1000 / hz), [this](){
+        static uint8_t severity;
+        static std::string status;
+
+        std::lock_guard<std::mutex> lock(status_mtx_);
+        if (status_counter_<0)
+        {
+            if (status_queue_.empty()) return;
+            auto [level, counter, text] = status_queue_.front();
+            severity = level;
+            status = text;
+            status_counter_ = counter;
+            // printf("Publishing status: severity=%d, count=%d, text=%s\n", severity, status_counter_, status.c_str());
+            status_queue_.pop();
+        }
+        if (status_counter_-- > 0)
+        {
+            // Publish status
+            auto msg = std::make_unique<mavros_msgs::msg::StatusText>();
+            msg->header.stamp = rclcpp::Clock().now();
+            msg->severity = severity; // mavros_msgs::msg::StatusText::WARNING;
+            msg->text= status;
+            status_pub_->publish(std::move(msg));
+        }
+    });
+}
+
+StatusPublisher::~StatusPublisher()
+{
+    if (status_timer_)
+        status_timer_->cancel();
+}
+
+bool StatusPublisher::publish(uint8_t severity, int count,const std::string& text, bool force)
+{
+    std::lock_guard<std::mutex> lock(status_mtx_);
+    if (!force && (status_counter_ > 0 || !status_queue_.empty()))
+        return false;
+    status_queue_.emplace(severity, count, text);
+    return true;
+}
+
 int main(int argc, char * argv[]) {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<DroneTrackerNode>();
-    node->run();
+    // node->run();
     rclcpp::spin(node);
+    node.reset();
     rclcpp::shutdown();
     return 0;
 }
