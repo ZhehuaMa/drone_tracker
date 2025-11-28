@@ -15,6 +15,8 @@ DroneTrackerNode::DroneTrackerNode()
 DroneTrackerNode::~DroneTrackerNode()
 {
     stop();
+    if (rosbag_writer_)
+        rosbag_writer_->close();
 }
 
 void DroneTrackerNode::run()
@@ -39,7 +41,7 @@ void DroneTrackerNode::stop()
 void DroneTrackerNode::setup()
 {
     // Initialize publishers, subscribers, and services here
-    this->get_parameter("visualized", enable_image_output_);
+    this->get_parameter("visualized_result", enable_image_output_);
 
     int width_px, height_px, output_width_px, output_height_px, fps;
     float pixel_size_um, focal_length_mm, fov_deg_w, fov_deg_h;
@@ -74,11 +76,6 @@ void DroneTrackerNode::setup()
         std::string device = "/dev/";
         mv_camera_ = std::make_unique<MVCamera>(device.append(video_source), 
             width_px, height_px, fps, true, output_width_px, output_height_px, flip, mirror);
-        bool need_save = false;
-        this->get_parameter("video_save", need_save);
-        std::string video_save_path;
-        this->get_parameter("video_save_path", video_save_path);
-        mv_camera_->setup(need_save, video_save_path);
     }
     else
     {
@@ -156,10 +153,15 @@ void DroneTrackerNode::setup()
         process_noise_std_vec, measurement_noise_std_vec,
         estimated_imu_freq, estimated_latency);
 
-    imu_callback_handle_ = this->create_subscription<sensor_msgs::msg::Imu>(
+    gimbal_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
         "/fpv/gimbal", rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
         std::bind(&DroneTrackerNode::imu_callback, this, std::placeholders::_1)
     );
+
+    odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+        "/fpv/odom", 
+        rclcpp::QoS(rclcpp::KeepLast(10)).best_effort(), 
+        std::bind(&DroneTrackerNode::odom_callback, this, std::placeholders::_1));
 
     detection_pub_ = this->create_publisher<vision_msgs::msg::Detection2D>(
         "/fpv/target_bbox", 10);
@@ -168,25 +170,56 @@ void DroneTrackerNode::setup()
 
     status_publisher_ = std::make_unique<StatusPublisher>(*this, 1);
     
-    trigger_callback_handle_ = this->create_subscription<std_msgs::msg::Bool>(
+    trigger_sub_ = this->create_subscription<std_msgs::msg::Header>(
         "/fpv/tracker_trigger", rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
-        [this](const std_msgs::msg::Bool::SharedPtr msg)
+        [this](const std_msgs::msg::Header::SharedPtr msg)
         {
-            if (msg->data)
+            if (msg->frame_id == "ON")
             {
+                // Generate a timestamped filename prefix
+                std::time_t t = msg->stamp.sec;
+                std::tm* tm_ptr = std::localtime(&t);
+                char time_buffer[32];
+                std::strftime(time_buffer, sizeof(time_buffer), "%Y%m%d_%H%M%S", tm_ptr);
+                long microseconds = msg->stamp.nanosec / 1000;
+                std::string filename_ts = std::string(time_buffer) + "_" + std::to_string(microseconds);
+                
+                bool need_save = false;
+                this->get_parameter("need_save", need_save);
+                std::string save_path;
+                this->get_parameter("save_path", save_path);
+                
+                if (is_camera_ && mv_camera_)
+                {
+                    mv_camera_->setup(need_save, save_path, filename_ts);
+                }
+                if (need_save)
+                {
+                    rosbag_writer_ = std::make_unique<rosbag2_cpp::Writer>();
+                    rosbag_writer_->open(save_path + "/drone_rosbag_" + filename_ts);
+                    rosbag_writer_->create_topic({"/fpv/odom",
+                        "nav_msgs/msg/Odometry",
+                        rmw_get_serialization_format(),
+                        ""
+                    });
+                }
+
                 this->run();
                 status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 3, "Drone Tracker Started", true);
             }
             else
             {
                 this->stop();
+                if (rosbag_writer_)
+                {
+                    rosbag_writer_->close();
+                    rosbag_writer_.reset();
+                }
                 status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 3, "Drone Tracker Stopped", true);
             }
         }
     );
 }
-
-
 
 void DroneTrackerNode::worker()
 {
@@ -216,7 +249,7 @@ void DroneTrackerNode::worker()
         int64_t frame_ts;
         if (is_camera_)
         {
-            if (mv_camera_->getImageQueue().wait_dequeue_timed(vpi_buffer, 5s)) {
+            if (mv_camera_->getImageQueue().wait_dequeue_timed(vpi_buffer, 1s)) {
                 start_time = this->now();
                 frame_ts = vpi_buffer->get_timestamps();
                 tracker_->update(vpi_buffer);
@@ -290,11 +323,17 @@ void DroneTrackerNode::worker()
             cv::putText(frame, status, cv::Point(20, 80), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
 
             cv_bridge::CvImage cv_img;
-            cv_img.header.stamp = builtin_interfaces::msg::Time(rclcpp::Time(frame_ts*1000));
+            cv_img.header.stamp = rclcpp::Time(frame_ts*1000);
             cv_img.header.frame_id = "camera_frame";
             cv_img.encoding = "bgr8";
             cv_img.image = frame;
-            image_pub_->publish(*cv_img.toImageMsg());
+            auto img_msg = std::make_unique<sensor_msgs::msg::Image>();
+            cv_img.toImageMsg(*img_msg);
+            if (rosbag_writer_)
+            {
+                rosbag_writer_->write(*img_msg, "/fpv/tracker_image", rclcpp::Time(frame_ts*1000));
+            }
+            image_pub_->publish(std::move(img_msg));
 
             elapsed = this->now() - start_time;
             cost_ms = elapsed.seconds() * 1000;
@@ -319,6 +358,14 @@ void DroneTrackerNode::worker()
     else
     {
         cap_.release();
+    }
+}
+
+void DroneTrackerNode::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
+{
+    if (rosbag_writer_)
+    {
+        rosbag_writer_->write(*msg, "/fpv/odom", rclcpp::Time(msg->header.stamp));
     }
 }
 
@@ -350,6 +397,13 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     detection_msg->bbox.center.position.y = current_state[1];
     detection_msg->bbox.size_x = current_state[2];
     detection_msg->bbox.size_y = current_state[3];
+
+    if (rosbag_writer_)
+    {
+        rosbag_writer_->write(*msg, "/fpv/gimbal", rclcpp::Time(msg->header.stamp));
+        rosbag_writer_->write(*detection_msg, "/fpv/target_bbox", rclcpp::Time(detection_msg->header.stamp));
+    }
+
     detection_pub_->publish(std::move(detection_msg));
 }
 
@@ -362,7 +416,7 @@ StatusPublisher::StatusPublisher(rclcpp::Node &node, int hz)
         static std::string status;
 
         std::lock_guard<std::mutex> lock(status_mtx_);
-        if (status_counter_<0)
+        if (status_counter_<=0)
         {
             if (status_queue_.empty()) return;
             auto [level, counter, text] = status_queue_.front();

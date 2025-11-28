@@ -4,13 +4,16 @@
 
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <vision_msgs/msg/detection2_d.hpp>
 #include <mavros_msgs/msg/status_text.hpp>
-#include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/header.hpp>
+
 #include <queue>
 #include <thread>
 #include <mutex>
 #include <tuple>
+#include <rosbag2_cpp/writer.hpp>
 
 #include "hybrid_tracker.h"
 #include "mv_camera.h"
@@ -29,8 +32,6 @@ private:
     std::queue<std::tuple<uint8_t, int, std::string>> status_queue_;
     int status_counter_ = -1;
 };
-
-
 class DroneTrackerNode : public rclcpp::Node
 {
 public:
@@ -43,9 +44,9 @@ public:
 private:
     void declare_parameters() {
         this->declare_parameter<std::string>("video_source", "0");
-        this->declare_parameter<bool>("video_save", false);
-        this->declare_parameter<std::string>("video_save_path", ".");
-        this->declare_parameter<bool>("visualized", false);
+        this->declare_parameter<bool>("need_save", false);
+        this->declare_parameter<std::string>("save_path", ".");
+        this->declare_parameter<bool>("visualized_result", false);
         
         this->declare_parameter<std::string>("tracker.yolo_engine", "drone_int8.engine");
         this->declare_parameter<std::string>("tracker.nano_backbone", "nanotrackv3_backbone_int8.engine");
@@ -80,12 +81,16 @@ private:
     void worker();
 
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
+    void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
 
-    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_callback_handle_;
-    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr trigger_callback_handle_;
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr gimbal_sub_;
+    rclcpp::Subscription<std_msgs::msg::Header>::SharedPtr trigger_sub_;
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+
     rclcpp::Publisher<vision_msgs::msg::Detection2D>::SharedPtr detection_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
 
+    std::unique_ptr<rosbag2_cpp::Writer> rosbag_writer_;
     std::unique_ptr<StatusPublisher> status_publisher_;
 
     std::shared_ptr<HybridTracker> tracker_;

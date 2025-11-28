@@ -1,8 +1,8 @@
 drone_tracker_node:
   ros__parameters:
-    video_save: true
-    video_save_path: "/home/dg/Videos/"
-    visualized: true
+    need_save: true
+    save_path: "/home/dg/Videos/"
+    visualized_result: true
     tracker:
       yolo_engine: "drone_int8.engine"
       nano_backbone: "nanotrackv3_backbone_int8.engine"

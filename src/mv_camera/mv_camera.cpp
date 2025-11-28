@@ -187,9 +187,10 @@ MVCamera::~MVCamera() {
     }
 }
 
-void MVCamera::setup(bool need_save, const std::string &save_path) {
+void MVCamera::setup(bool need_save, const std::string &save_path, const std::string &filename_ts) {
     need_save_ = need_save;
     save_path_ = save_path;
+    filename_ts_ = filename_ts;
 }
 
 bool MVCamera::run(CallbackFn &&callback) {
@@ -415,8 +416,11 @@ void MVCamera::captureLoop(CallbackFn &&callback) {
     auto t0 = std::chrono::high_resolution_clock::now();
     
     if (mjpeg_writer) {
-        auto start_us = t0.time_since_epoch().count()/1000;
-        mjpeg_writer->setup(save_path_ + "/ts_" + std::to_string(start_us) + ".mjpeg", 
+        std::string filename_ts = filename_ts_;
+        if (filename_ts.empty()) {
+            filename_ts = std::to_string(t0.time_since_epoch().count()/1000);
+        }
+        mjpeg_writer->setup(save_path_ + "/ts_" + filename_ts + ".mjpeg", 
             displayWidth_, displayHeight_, fps_);
     }
 

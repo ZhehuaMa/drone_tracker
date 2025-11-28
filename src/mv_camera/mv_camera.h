@@ -23,7 +23,7 @@ public:
 
     virtual ~MVCamera();
 
-    void setup(bool need_save, const std::string &save_path=".");
+    void setup(bool need_save, const std::string &save_path = ".", const std::string &filename_ts = "");
 
     virtual bool run(CallbackFn &&callback=nullptr) override;
     virtual bool run_async(CallbackFn &&callback=nullptr) override;
@@ -43,6 +43,7 @@ private:
 
     bool need_save_ = false;
     std::string save_path_ = ".";
+    std::string filename_ts_;
 
     std::vector<std::pair<void*, size_t>> buffers_;
     std::deque<time_point> requestQueue_;
