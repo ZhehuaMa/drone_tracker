@@ -7,6 +7,7 @@ find_package(CUDAToolkit QUIET)
 set(JETSON_MULTIMEDIA_API_PATH /usr/src/jetson_multimedia_api)
 set(JETSON_COMMON_PATH ${JETSON_MULTIMEDIA_API_PATH}/samples/common/classes)
 set(COMPONENT_FILES
+    ${JETSON_COMMON_PATH}/NvJpegDecoder.cpp
     ${JETSON_COMMON_PATH}/NvJpegEncoder.cpp
     ${JETSON_COMMON_PATH}/NvBuffer.cpp
     ${JETSON_COMMON_PATH}/NvLogging.cpp
@@ -20,6 +21,8 @@ set(COMPONENT_FILES
 add_library(${PROJECT_NAME} STATIC
     mjpeg_writer.cpp
     mv_camera.cpp
+    mv_video.cpp
+    mv_helper.cpp
     ${COMPONENT_FILES}
 )
 
