@@ -13,9 +13,13 @@
 //     return std::accumulate(d.d, d.d + d.nbDims, 1LL, std::multiplies<int64_t>());
 // }
 
-YoloV8Detector::YoloV8Detector(const std::string& engine_path, float conf_thresh, float nms_thresh, int target_class_id)
+#define TILE_OVERLAP_RATIO  0.2f  // 切片重叠比例
+
+YoloV8Detector::YoloV8Detector(const std::string& engine_path, float conf_thresh, float nms_thresh, int target_class_id, float recall_relax_ratio)
     : m_engine_path(engine_path),
       m_conf_thresh(conf_thresh),
+      m_conf_thresh_current(conf_thresh),
+      m_relax_ratio(recall_relax_ratio),
       m_nms_thresh(nms_thresh),
       m_target_class_id(target_class_id),
       m_result_ready(false),
@@ -50,6 +54,8 @@ bool YoloV8Detector::init()
         return false;
     }
 
+    const int flags = VPI_BACKEND_CUDA | VPI_BACKEND_CPU;
+
     // 2. 从 TrtEngine 获取维度信息
     try {
         std::string input_name = m_trt_engine->getPrimaryInputName();
@@ -57,9 +63,9 @@ bool YoloV8Detector::init()
         m_input_dims = m_trt_engine->getTensorDims(input_name);
         m_output_dims = m_trt_engine->getTensorDims(output_name);
         input_buffer = TensorBuffer(m_input_dims, sizeof(float));
-        const int input_h = m_input_dims.d[2];
-        const int input_w = m_input_dims.d[3];
-        vpiImageCreate(input_w, input_h, VPI_IMAGE_FORMAT_F32, 0, &vpi_padded_image);
+        input_h = m_input_dims.d[2];
+        input_w = m_input_dims.d[3];
+        vpiImageCreate(input_w, input_h, VPI_IMAGE_FORMAT_F32, flags, &vpi_padded_image);
     } catch (const std::exception& e) {
         std::cerr << "Error getting tensor info from TrtEngine: " << e.what() << std::endl;
         return false;
@@ -93,14 +99,17 @@ void YoloV8Detector::stop()
     }
 }
 
-bool YoloV8Detector::request(const std::shared_ptr<VPIImageWrapper>& frame)
+bool YoloV8Detector::request(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect& roi, bool use_tiling)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_new_request || m_result_ready)
     {
         return false; // 上一个请求还未处理，忽略此请求（与Python逻辑一致）
     }
-    vpi_frame_to_process = frame;
+    m_next_request.frame = frame;
+    m_next_request.roi = roi;
+    m_next_request.use_tiling = use_tiling;
+    
     m_new_request = true;
     m_result_ready = false;
     m_cv_request.notify_one(); // 唤醒工作线程
@@ -122,6 +131,23 @@ bool YoloV8Detector::get_result(std::vector<Detection>& detections)
     return true;
 }
 
+bool YoloV8Detector::get_result(std::priority_queue<Detection>& detections)
+{
+    if (!m_result_ready)
+        return false;
+    std::lock_guard<std::mutex> lock(m_mutex);
+    for (const auto& det : m_last_detections) {
+        detections.push(det);
+    }
+    m_result_ready = false; // 标记结果已被取走
+    return true;
+}
+
+std::pair<int, int> YoloV8Detector::getInputSize() const
+{
+    return {input_w, input_h};
+}
+
 
 void YoloV8Detector::workerThreadLoop()
 {
@@ -129,64 +155,152 @@ void YoloV8Detector::workerThreadLoop()
     
     while (true)
     {
-       std::shared_ptr<VPIImageWrapper> vpi_input;
+        Request req;
         {
-            // 等待新请求
             std::unique_lock<std::mutex> lock(m_mutex);
             m_cv_request.wait(lock, [this] { return m_new_request || m_stop_requested; });
 
-            if (m_stop_requested)
-            {
-                break; // 收到停止信号，退出
-            }
+            if (m_stop_requested) break;
 
-            vpi_input.swap(vpi_frame_to_process);
+            req = m_next_request;
             m_new_request = false;
         } 
         
-        // 预处理
-        float scale = 1.0f;
-        cv::Point2f offset(0, 0);
-        if (!vpi_input || !preprocess(vpi_input->get(), scale, offset, input_buffer))
+        if (!req.frame) continue;
+
+        std::vector<Detection> all_detections;
+        VPIImage vpi_input = req.frame->get();
+        
+        cv::Point2f global_offset(0, 0);
+
+        const int flags = VPI_BACKEND_CUDA | VPI_BACKEND_CPU;
+
+        // 1. Detect on full or ROI image 
+        // Handle ROI
+        if (req.roi.width > 0 && req.roi.height > 0)
         {
-            std::cerr << "Error during preprocessing." << std::endl;
-            continue;
+            m_conf_thresh_current = m_conf_thresh * m_relax_ratio; // 降低置信度阈值以提高召回率
+            VPIImage vpi_roi_view = nullptr;
+            VPIRectangleI roi_rect = {req.roi.x, req.roi.y, req.roi.width-1, req.roi.height-1};
+            auto status = vpiImageCreateView(vpi_input, &roi_rect, flags, &vpi_roi_view);            
+            if (status == VPI_SUCCESS)
+            {
+                global_offset = cv::Point2f(req.roi.x, req.roi.y);
+                detectOnImage(vpi_roi_view, global_offset, all_detections);
+                vpiImageDestroy(vpi_roi_view);
+            }
+            else
+            {
+                std::cerr << "Failed to create ROI view, using full image. error code: " << status << std::endl;
+            }
+        }
+        else
+        {
+            m_conf_thresh_current = m_conf_thresh;
+            detectOnImage(vpi_input, global_offset, all_detections);
         }
 
-        vpi_input.reset(); // 释放引用
+        // 2. Tiling strategy (only if no detections and tiling enabled)
+        if (all_detections.empty() && req.use_tiling)
+        {
+            int w, h;
+            vpiImageGetSize(vpi_input, &w, &h);
+            int overlap_w = static_cast<int>(w * (1 + TILE_OVERLAP_RATIO) * 0.5);
+            int overlap_h = static_cast<int>(h * (1 + TILE_OVERLAP_RATIO) * 0.5);
 
-        // 调用 TrtEngine 进行同步推理
-        std::vector<TensorBuffer> results;
-        try {
-            results = m_trt_engine->infer({&input_buffer});
-        } catch (const std::exception& e) {
-            std::cerr << "Error during TrtEngine inference: " << e.what() << std::endl;
-            continue;
+            std::vector<VPIRectangleI> tiles = {
+                {0, 0, overlap_w, overlap_h},
+                {w - overlap_w, 0, overlap_w, overlap_h},
+                {0, h - overlap_h, overlap_w, overlap_h},
+                {w - overlap_w, h - overlap_h, overlap_w, overlap_h}
+            };
+            
+            m_conf_thresh_current = m_conf_thresh;
+            for (const auto& t : tiles)
+            {
+                // Clamp to image boundaries
+                int x = std::max(0, t.x);
+                int y = std::max(0, t.y);
+                int tw = std::min(w - x, t.width);
+                int th = std::min(h - y, t.height);
+
+                VPIRectangleI tile_rect {x, y, tw, th};
+                VPIImage tile_view;
+                if (vpiImageCreateView(vpi_input, &tile_rect, flags, &tile_view) == VPI_SUCCESS)
+                {
+                    detectOnImage(tile_view, global_offset + cv::Point2f(x, y), all_detections);
+                    vpiImageDestroy(tile_view);
+                    if (!all_detections.empty())
+                        break; // 找到目标后跳出
+                }
+                else
+                {
+                    std::cerr << "Failed to create tile view at (" << x << ", " << y << ", " << tw << ", " << th << ")" << std::endl;
+                }
+            }
+        }
+        
+        // Final NMS on merged results
+        if (all_detections.size() > 1)
+        {
+            std::vector<cv::Rect2d> boxes;
+            std::vector<float> scores;
+            for (const auto& det : all_detections) {
+                boxes.push_back(det.box);
+                scores.push_back(det.score);
+            }
+            std::vector<int> indices;
+            cv::dnn::NMSBoxes(boxes, scores, m_conf_thresh, m_nms_thresh, indices);
+            
+            std::vector<Detection> filtered_detections;
+            for(int idx : indices) filtered_detections.push_back(all_detections[idx]);
+            all_detections = filtered_detections;
         }
 
-        // 检查输出
-        if (results.empty()) {
-            std::cerr << "Error: TrtEngine returned no results." << std::endl;
-            continue;
+        // Store results
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_last_detections = std::move(all_detections);
+            m_result_ready = true;
         }
-
-        // 假设第一个输出是我们要的
-        if (results.empty() || results[0].host_ptr == nullptr) {
-             std::cerr << "Error: TrtEngine output is invalid." << std::endl;
-             continue;
-        }
-
-        // 后处理
-        postprocess(reinterpret_cast<float*>(results[0].host_ptr), scale, offset);
-
-        // 报告结果
-        m_result_ready = true;
+        
+        // Release frame reference
+        req.frame.reset();
     }
     
     // std::cout << "TensorRT worker thread finished." << std::endl;
 }
 
-void YoloV8Detector::update_resized_image(int new_width, int new_height, VPIImageFormat new_format,int flags)
+void YoloV8Detector::detectOnImage(VPIImage image, const cv::Point2f& global_offset, std::vector<Detection>& results)
+{
+    float scale = 1.0f;
+    cv::Point2f offset(0, 0);
+    cv::Size image_size;
+    vpiImageGetSize(image, &image_size.width, &image_size.height);
+    if (!preprocess(image, scale, image_size, offset, input_buffer))
+    {
+        std::cerr << "Error during preprocessing." << std::endl;
+        return;
+    }
+
+    // 调用 TrtEngine 进行同步推理
+    std::vector<TensorBuffer> trt_results;
+    try {
+        trt_results = m_trt_engine->infer({&input_buffer});
+    } catch (const std::exception& e) {
+        std::cerr << "Error during TrtEngine inference: " << e.what() << std::endl;
+        return;
+    }
+
+    if (trt_results.empty() || trt_results[0].host_ptr == nullptr) {
+         std::cerr << "Error: TrtEngine output is invalid." << std::endl;
+         return;
+    }
+    
+    postprocess(reinterpret_cast<float*>(trt_results[0].host_ptr), scale, image_size, offset, global_offset, results);
+}
+
+void YoloV8Detector::update_resized_image(int new_width, int new_height, VPIImageFormat new_format, int flags)
 {
     int img_w = 0;
     int img_h = 0;
@@ -207,28 +321,25 @@ void YoloV8Detector::update_resized_image(int new_width, int new_height, VPIImag
     }
 }
 
-bool YoloV8Detector::preprocess(VPIImage vpiIm, float &scale, cv::Point2f& offset, TensorBuffer& buffer)
+bool YoloV8Detector::preprocess(VPIImage vpiIm, float &scale, const cv::Size& image_size, cv::Point2f& offset, TensorBuffer& buffer)
 {
     if (vpiIm == nullptr) {
         std::cerr << "Input VPIImage is null" << std::endl;
         return false;
     }
     // 输入维度 (batch, C, H, W)
-    const int input_h = m_input_dims.d[2];
-    const int input_w = m_input_dims.d[3];
+    // const int input_h = m_input_dims.d[2];
+    // const int input_w = m_input_dims.d[3];
 
-    const int flags = 0;
+    const int flags = VPI_BACKEND_CUDA | VPI_BACKEND_CPU;
 
-    int img_w = 0;
-    int img_h = 0;
-    vpiImageGetSize(vpiIm, &img_w, &img_h);
     VPIImageFormat img_format;
     vpiImageGetFormat(vpiIm, &img_format);
 
      // 计算缩放比例和letterbox
-    scale = std::min(static_cast<float>(input_h) / img_h, static_cast<float>(input_w) / img_w);
-    int new_h = static_cast<int>(img_h * scale);
-    int new_w = static_cast<int>(img_w * scale);
+    scale = std::min(static_cast<float>(input_h) / image_size.height, static_cast<float>(input_w) / image_size.width);
+    int new_h = static_cast<int>(image_size.height * scale);
+    int new_w = static_cast<int>(image_size.width * scale);
 
     offset.x = (input_w - new_w) / 2.0f; // dw
     offset.y = (input_h - new_h) / 2.0f; // dh
@@ -290,7 +401,8 @@ bool YoloV8Detector::preprocess(VPIImage vpiIm, float &scale, cv::Point2f& offse
     return true;
 }
 
-void YoloV8Detector::postprocess(float* output, float scale, cv::Point2f offset)
+void YoloV8Detector::postprocess(float* output, float scale, const cv::Size& image_size, 
+    const cv::Point2f& offset, const cv::Point2f& global_offset, std::vector<Detection>& results)
 {
     // Python 版本中的输出形状是 [batch, 84, 8400] 或 [batch, num_classes+4, num_detections]
     // 假设 m_output_dims 是 [1, 84, 8400] (对于COCO)
@@ -349,7 +461,7 @@ void YoloV8Detector::postprocess(float* output, float scale, cv::Point2f offset)
             }
 
             // 检查是否满足置信度阈值
-            if (max_score >= m_conf_thresh)
+            if (max_score >= m_conf_thresh_current)
             {
                 // 检查是否是我们想要的目标类别
                 if (m_target_class_id == -1 || max_class_id == m_target_class_id)
@@ -360,14 +472,17 @@ void YoloV8Detector::postprocess(float* output, float scale, cv::Point2f offset)
                     float h = output[3 * num_proposals + i];
 
                     // 将坐标转换回原始图像空间
-                    float x1 = (cx - offset.x - w / 2.0f) / scale;
-                    float y1 = (cy - offset.y - h / 2.0f) / scale;
-                    float x2 = (cx - offset.x + w / 2.0f) / scale;
-                    float y2 = (cy - offset.y + h / 2.0f) / scale;
+                    float x1 = (cx - offset.x - w / 2.0f) / scale + global_offset.x;
+                    float y1 = (cy - offset.y - h / 2.0f) / scale + global_offset.y;
+                    float x2 = (cx - offset.x + w / 2.0f) / scale + global_offset.x;
+                    float y2 = (cy - offset.y + h / 2.0f) / scale + global_offset.y;
 
-                    boxes.emplace_back(x1, y1, x2 - x1, y2 - y1);
-                    scores.push_back(max_score);
-                    class_ids.push_back(max_class_id);
+                    if (x2-x1 < image_size.width*0.8 && y2-y1 < image_size.height*0.8)  // 过滤掉过大的框
+                    {
+                        boxes.emplace_back(x1, y1, x2 - x1, y2 - y1);
+                        scores.push_back(max_score);
+                        class_ids.push_back(max_class_id);
+                    }
                 }
             }
         }
@@ -394,7 +509,7 @@ void YoloV8Detector::postprocess(float* output, float scale, cv::Point2f offset)
                 }
             }
             
-            if (max_score >= m_conf_thresh)
+            if (max_score >= m_conf_thresh_current)
             {
                  if (m_target_class_id == -1 || max_class_id == m_target_class_id)
                  {
@@ -403,14 +518,17 @@ void YoloV8Detector::postprocess(float* output, float scale, cv::Point2f offset)
                     float w = proposal_data[2];
                     float h = proposal_data[3];
 
-                    float x1 = (cx - offset.x - w / 2.0f) / scale;
-                    float y1 = (cy - offset.y - h / 2.0f) / scale;
-                    float x2 = (cx - offset.x + w / 2.0f) / scale;
-                    float y2 = (cy - offset.y + h / 2.0f) / scale;
-
-                    boxes.emplace_back(x1, y1, x2 - x1, y2 - y1);
-                    scores.push_back(max_score);
-                    class_ids.push_back(max_class_id);
+                    float x1 = (cx - offset.x - w / 2.0f) / scale + global_offset.x;
+                    float y1 = (cy - offset.y - h / 2.0f) / scale + global_offset.y;
+                    float x2 = (cx - offset.x + w / 2.0f) / scale + global_offset.x;
+                    float y2 = (cy - offset.y + h / 2.0f) / scale + global_offset.y;
+                    
+                    if (x2-x1 < image_size.width*0.8 && y2-y1 < image_size.height*0.8)  // 过滤掉过大的框
+                    {
+                        boxes.emplace_back(x1, y1, x2 - x1, y2 - y1);
+                        scores.push_back(max_score);
+                        class_ids.push_back(max_class_id);
+                    }
                  }
             }
         }
@@ -422,18 +540,11 @@ void YoloV8Detector::postprocess(float* output, float scale, cv::Point2f offset)
     
     // 执行 NMS
     std::vector<int> indices;
-    cv::dnn::NMSBoxes(boxes, scores, m_conf_thresh, m_nms_thresh, indices);
+    cv::dnn::NMSBoxes(boxes, scores, m_conf_thresh_current, m_nms_thresh, indices);
 
-    std::vector<Detection> final_detections;
     for (int idx : indices)
     {
-        final_detections.push_back({cv::Rect2f(boxes[idx]), scores[idx], class_ids[idx]});
-    }
-
-    // 存储结果
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_last_detections = std::move(final_detections);
+        results.push_back({cv::Rect2f(boxes[idx]), scores[idx], class_ids[idx]});
     }
 }
 

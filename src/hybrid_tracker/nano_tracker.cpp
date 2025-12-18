@@ -229,8 +229,7 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
 
     // auto start = std::chrono::high_resolution_clock::now();
 
-    int flags = VPI_BACKEND_CUDA;
-
+    const int flags = VPI_BACKEND_CUDA | VPI_BACKEND_CPU;
     update_padded_image(im_width + left_pad + right_pad, im_height + top_pad + bottom_pad, flags);
 
     VPIImage vpiView;

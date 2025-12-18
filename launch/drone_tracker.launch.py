@@ -10,6 +10,7 @@ def generate_launch_description():
     video_source_arg = DeclareLaunchArgument(
             'video_source',
             default_value=TextSubstitution(text='video0'),
+            # default_value=TextSubstitution(text='/home/dg/Videos/ts_20251201_155214_34690.mjpeg'),
             description='Video source file or device index for the drone tracker node.'
         )
     

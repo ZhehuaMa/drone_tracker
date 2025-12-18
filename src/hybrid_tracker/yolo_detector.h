@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include <atomic>
 #include <memory>
+#include <queue>
 #include <opencv2/opencv.hpp>
 #include <vpi/VPI.h>
 
@@ -20,12 +21,17 @@ struct Detection
     cv::Rect2f box;
     float score;
     int classId;
+
+    bool operator<(const Detection& other) const
+    {
+        return score < other.score; // 用于优先队列，分数较高的优先
+    }
 };
 
 class YoloV8Detector
 {
 public:
-    YoloV8Detector(const std::string& engine_path, float conf_thresh, float nms_thresh, int target_class_id);
+    YoloV8Detector(const std::string& engine_path, float conf_thresh, float nms_thresh, int target_class_id, float recall_relax_ratio);
     ~YoloV8Detector();
 
     /** @brief 初始化TRT引擎、分配缓冲区并启动工作线程 */
@@ -33,9 +39,11 @@ public:
 
     /** @brief 请求对新帧进行检测
      * @param frame 要处理的图像
+     * @param roi 感兴趣区域 (如果为空则使用全图)
+     * @param use_tiling 是否在未检测到目标时尝试切片检测
      * @return 如果成功提交检测，则为 true
      */
-    bool request(const std::shared_ptr<VPIImageWrapper>& frame);
+    bool request(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect& roi = cv::Rect(), bool use_tiling = false);
 
     /** @brief 检查是否有新的检测结果准备就绪
      * @return 如果结果准备就绪，则为 true
@@ -47,6 +55,11 @@ public:
      * @return 如果成功获取了新结果，则为 true
      */
     bool get_result(std::vector<Detection>& detections);
+
+    bool get_result(std::priority_queue<Detection>& detections);
+
+    /** @brief 获取模型输入尺寸 */
+    std::pair<int, int> getInputSize() const;
 
     /** @brief 停止工作线程 */
     void stop();
@@ -62,7 +75,10 @@ private:
      * @param buffer [out] 用于存储预处理后数据的 TensorBuffer
      * @return 成功则为 true
      */
-    bool preprocess(VPIImage vpiIm, float &scale, cv::Point2f& offset, TensorBuffer& buffer);
+    bool preprocess(VPIImage vpiIm, float &scale, const cv::Size& image_size, cv::Point2f& offset, TensorBuffer& buffer);
+
+    /** @brief 在单个图像(或视图)上运行检测 */
+    void detectOnImage(VPIImage image, const cv::Point2f& global_offset, std::vector<Detection>& results);
 
     void update_resized_image(int new_width, int new_height, VPIImageFormat img_format, int flags);
 
@@ -70,8 +86,11 @@ private:
      * @param output 模型的原始输出
      * @param scale 预处理中的缩放比例
      * @param offset 预处理中的偏移量
+     * @param global_offset 全局坐标偏移量 (用于切片或ROI)
+     * @param results [out] 检测结果列表
      */
-    void postprocess(float* output, float scale, cv::Point2f offset);
+    void postprocess(float* output, float scale, const cv::Size& image_size, 
+        const cv::Point2f& offset, const cv::Point2f& global_offset, std::vector<Detection>& results);
 
     // --- TrtEngine 实例 ---
     std::string m_engine_path;
@@ -86,9 +105,14 @@ private:
     VPIStream vpi_stream = nullptr;
     VPIImage vpi_padded_image = nullptr;
     VPIImage vpi_resized_image = nullptr;
+
+    int input_w = 0;
+    int input_h = 0;
     
     // --- 阈值 ---
     float m_conf_thresh;
+    float m_conf_thresh_current;
+    float m_relax_ratio;
     float m_nms_thresh;
     int m_target_class_id;
 
@@ -97,12 +121,16 @@ private:
     std::mutex m_mutex;
     std::condition_variable m_cv_request;
     
-    std::shared_ptr<VPIImageWrapper> vpi_frame_to_process;
+    struct Request {
+        std::shared_ptr<VPIImageWrapper> frame;
+        cv::Rect roi;
+        bool use_tiling;
+    } m_next_request;
+
     bool m_new_request = false;
-    
-    std::vector<Detection> m_last_detections;
     std::atomic<bool> m_result_ready;
     std::atomic<bool> m_stop_requested;
+    std::vector<Detection> m_last_detections;
 };
 
 #endif // YOLOV8DETECTOR_H

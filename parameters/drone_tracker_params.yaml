@@ -8,12 +8,16 @@ drone_tracker_node:
       nano_backbone: "nanotrackv3_backbone_int8.engine"
       nano_head: "nanotrack_head_int8.engine"
       yolo_target_class_id: 0
-      yolo_conf_threshold: 0.35
+      yolo_conf_threshold: 0.45
       yolo_nms_threshold: 0.45
       yolo_interval: 3
+      yolo_recall_relax_ratio: 0.75
       iou_reset_threshold: 0.3
       iou_calibrate_threshold: 0.6
       tracking_conf_threshold: 0.8
+      tracking_roi_scale_factor: 2.0
+      lost_max_count: 50
+
     mv_camera:
       width_px: 1920
       height_px: 1920
@@ -29,4 +33,4 @@ drone_tracker_node:
       estimated_imu_freq: 100
       estimated_latency: 0.08
       process_noise_std: [0.5, 0.5, 1.0, 1.0]
-      measurement_noise_std: [5.0, 5.0]
+      measurement_noise_std: [3.0, 3.0]

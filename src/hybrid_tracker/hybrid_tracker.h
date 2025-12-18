@@ -15,8 +15,13 @@ struct TrackerSettings
     float yolo_conf_threshold = 0.3f;
     float yolo_nms_threshold = 0.45f;
     int yolo_interval = 3;         // 每N帧运行一次检测
+    float yolo_recall_relax_ratio = 0.75f; // 置信度阈值放宽比例
     float iou_reset_threshold = 0.3f;   // IoU低于此值时重置
     float iou_calibrate_threshold = 0.6f; // IoU高于此值时校准
+    float max_position_jump_ratio = 0.25f; // 最大位置跳变比例 (相对于图像尺寸)
+    float max_size_jump_ratio = 2.0f;
+    int lost_max_count = 50;
+    float roi_scale_factor = 2.0f;
 };
 
 
@@ -24,8 +29,8 @@ class VPIImageWrapper;
 
 struct BBoxRect
 {
-    int cx; //!< x coordinate of the top-left corner
-    int cy; //!< y coordinate of the top-left corner
+    int cx; //!< x coordinate of the center
+    int cy; //!< y coordinate of the center
     int width; //!< width of the rectangle
     int height; //!< height of the rectangle
     bool is_valid;

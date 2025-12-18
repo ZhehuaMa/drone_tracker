@@ -38,6 +38,12 @@ private:
     /** @brief 计算两个矩形的 IoU */
     float calculateIOU(const cv::Rect2f& boxA, const cv::Rect2f& boxB);
 
+    /** @brief 检测边界框是否发生跳变 */
+    bool isBoxJump(const cv::Rect2f& prev_box, const cv::Rect2f& curr_box, float max_pos_jump, float max_size_ratio);
+
+    /** @brief 计算ROI区域 */
+    cv::Rect calculateROI(const cv::Rect2f& box, int img_w, int img_h, float scale_factor);
+
     // --- 状态 ---
     TrackerSettings m_settings;
     bool m_tracker_initialized;
@@ -45,7 +51,7 @@ private:
     std::string m_display_info;
     cv::Scalar m_display_color;
     int m_frame_count;
-    int m_yolo_error_count; // 跟踪器丢失且YOLO也未命中的次数
+    int m_yolo_lost_count; // YOLO连续未检测到目标的次数
 
     // --- 组件 ---
     std::unique_ptr<YoloV8Detector> m_detector;
@@ -67,7 +73,7 @@ HybridTrackerImp::HybridTrackerImp(const TrackerSettings& settings)
       m_display_info("Detecting..."),
       m_display_color(255, 255, 0), // 黄色
       m_frame_count(0),
-      m_yolo_error_count(0)
+      m_yolo_lost_count(0)
 {
 }
 
@@ -83,7 +89,8 @@ bool HybridTrackerImp::init()
         m_settings.yolo_engine_path,
         m_settings.yolo_conf_threshold,
         m_settings.yolo_nms_threshold,
-        m_settings.target_class_id
+        m_settings.target_class_id,
+        m_settings.yolo_recall_relax_ratio
     );
     
     if (!m_detector || !m_detector->init())
@@ -92,21 +99,10 @@ bool HybridTrackerImp::init()
         return false;
     }
 
-    // 准备跟踪器实例
-    // if (m_settings.enable_nanotrack)
-    // {
-        m_nanotracker = std::make_unique<NanoTracker>(
-            m_settings.nanotrack_backbone_path,
-            m_settings.nanotrack_head_path
-        );
-        // NanoTracker 的实际TRT初始化推迟到
-        // 第一次调用 initialize() 时
-    // }
-    // else
-    // {
-    //     // CSRT 将在 initialize() 中创建
-    //     m_csrt_tracker = nullptr; 
-    // }
+    m_nanotracker = std::make_unique<NanoTracker>(
+        m_settings.nanotrack_backbone_path,
+        m_settings.nanotrack_head_path
+    );
 
     reset();
     
@@ -128,7 +124,7 @@ void HybridTrackerImp::initialize(const std::shared_ptr<VPIImageWrapper>& frame,
     m_kalman_filter->initialize(box);
     m_display_box = box;
     m_tracker_initialized = true;
-    m_yolo_error_count = 0;
+    m_yolo_lost_count = 0;
     std::cout << "Tracker initialized with box: [" 
                 << box.x << ", " << box.y << ", " 
                 << box.width << ", " << box.height << "]" << std::endl;
@@ -151,15 +147,15 @@ bool HybridTrackerImp::update(const std::shared_ptr<VPIImageWrapper>& frame)
         m_display_info = "Detecting target...";
         m_display_color = cv::Scalar(255, 255, 0); // 黄色
 
-        // 1. 请求检测
-        m_detector->request(processed_frame);
+        // 1. 请求检测 (启用切片检测)
+        m_detector->request(processed_frame, cv::Rect(), true);
 
         // 2. 检查结果
-        std::vector<Detection> detections;
+        std::priority_queue<Detection> detections;
         if (m_detector->get_result(detections) && !detections.empty())
         {
             // 找到第一个检测框并初始化
-            initialize(processed_frame, detections[0].box);
+            initialize(processed_frame, detections.top().box);
         }
         else
         {
@@ -184,61 +180,65 @@ bool HybridTrackerImp::update(const std::shared_ptr<VPIImageWrapper>& frame)
         if (tracker_ok)
         {
             m_kalman_filter->correct(tracker_box);
-            // m_display_box = tracker_box; // 使用跟踪器的结果
             m_display_info = "Tracking (Kalman <- Tracker)";
             m_display_color = cv::Scalar(0, 255, 0); // 绿色
         }
 
-        // 4. 定期请求YOLO检测
+        // 4. 定期请求YOLO检测 (使用ROI)
+        int frame_w, frame_h;
+        vpiImageGetSize(processed_frame->get(), &frame_w, &frame_h);
         if (m_frame_count % m_settings.yolo_interval == 0)
         {
-            m_detector->request(processed_frame);
+            cv::Rect roi = calculateROI(m_display_box, frame_w, frame_h, m_settings.roi_scale_factor);
+            m_detector->request(processed_frame, roi, false);
         }
 
         // 5. 检查YOLO检测结果以进行校准或重置
         std::vector<Detection> detections;
-        if (m_detector->get_result(detections) && !detections.empty())
+        bool has_detections = m_detector->get_result(detections) && !detections.empty();
+        
+        if (has_detections)
         {
             cv::Rect2f best_match_box = findBestMatch(detections);
             
             if (best_match_box.width > 0 && best_match_box.height > 0)
             {
-                float iou = calculateIOU(m_display_box, best_match_box);
+                // 检测跳变
+                bool jump = isBoxJump(m_display_box, best_match_box, 
+                    (frame_w + frame_h) * 0.5f * m_settings.max_position_jump_ratio, 
+                    m_settings.max_size_jump_ratio);
                 
-                if (tracker_ok)
-                {
-                    if (iou < m_settings.iou_reset_threshold)
-                    {
-                        m_yolo_error_count++;
-                    }
-                    else
-                    {
-                        m_yolo_error_count = 0; // 重置错误计数
-                    }
-                }
-
-                // 条件：
-                // 1. 跟踪器丢失 (e.g. CSRT返回false)
-                // 2. 跟踪器连续3次与YOLO不匹配 (m_yolo_error_count >= 3)
-                if (!tracker_ok || m_yolo_error_count >= 3)
+                if (jump)
                 {
                     // 使用YOLO结果重置跟踪器
                     initialize(processed_frame, best_match_box);
                     m_display_box = best_match_box;
-                    m_display_info = "Re-initialized (Detector)";
+                    m_display_info = "Re-initialized (Jump Detected)";
                     m_display_color = cv::Scalar(0, 255, 255); // 青色
                 }
-                // 条件：跟踪器OK，且YOLO结果与当前框匹配度高
-                else if (iou > m_settings.iou_calibrate_threshold)
+                else
                 {
-                    // 使用YOLO结果校准卡尔曼滤波器
-                    m_kalman_filter->correct(best_match_box);
-                    // m_display_box = best_match_box; // 更新为更准的YOLO框
-                    m_display_info = "Calibrated (Kalman <- Detector)";
-                    m_display_color = cv::Scalar(255, 0, 255); // 品红
+                    float iou = calculateIOU(m_display_box, best_match_box);
+                    // 条件：跟踪器OK，且YOLO结果与当前框匹配度高
+                    if (iou > m_settings.iou_calibrate_threshold)
+                    {
+                        // 使用YOLO结果校准卡尔曼滤波器
+                        m_kalman_filter->correct(best_match_box);
+                        m_display_info = "Calibrated (Kalman <- Detector)";
+                        m_display_color = cv::Scalar(255, 0, 255); // 品红
+                    }
                 }
-
-                m_display_box = m_kalman_filter->predict();
+            }
+            m_yolo_lost_count = 0;
+        }
+        else
+        {
+            m_yolo_lost_count++;
+            if (m_yolo_lost_count > m_settings.lost_max_count)
+            {
+                m_tracker_initialized = false;
+                m_display_info = "Lost (Timeout)";
+                m_display_color = cv::Scalar(255, 0, 0); // 红色
             }
         }
     }
@@ -277,6 +277,62 @@ float HybridTrackerImp::calculateIOU(const cv::Rect2f& boxA, const cv::Rect2f& b
     float denominator = boxAArea + boxBArea - interArea;
     
     return (denominator == 0) ? 0.0f : (interArea / denominator);
+}
+
+cv::Rect HybridTrackerImp::calculateROI(const cv::Rect2f& box, int img_w, int img_h, float scale_factor)
+{
+    float cx = box.x + box.width * 0.5f;
+    float cy = box.y + box.height * 0.5f;
+    
+    float roi_w = box.width * scale_factor;
+    float roi_h = box.height * scale_factor;
+
+    // Ensure ROI is at least the size of the model input
+    if (m_detector) {
+        auto [input_w, input_h] = m_detector->getInputSize();
+        if (input_w > 0 && input_h > 0) {
+            roi_w = std::max(roi_w, input_w * 0.5f);
+            roi_h = std::max(roi_h, input_h * 0.5f);
+        }
+    }
+    
+    int roi_x = static_cast<int>(cx - roi_w * 0.5f);
+    int roi_y = static_cast<int>(cy - roi_h * 0.5f);
+    int roi_w_i = static_cast<int>(roi_w);
+    int roi_h_i = static_cast<int>(roi_h);
+    
+    // Clamp to image
+    roi_x = std::max(0, std::min(roi_x, img_w - roi_w_i));
+    roi_y = std::max(0, std::min(roi_y, img_h - roi_h_i));
+    roi_w_i = std::min(roi_w_i, img_w - roi_x);
+    roi_h_i = std::min(roi_h_i, img_h - roi_y);
+    
+    return cv::Rect(roi_x, roi_y, roi_w_i, roi_h_i);
+}
+
+bool HybridTrackerImp::isBoxJump(const cv::Rect2f& prev_box, const cv::Rect2f& curr_box, float max_pos_jump, float max_size_ratio)
+{
+    if (prev_box.width <= 0 || prev_box.height <= 0 || curr_box.width <= 0 || curr_box.height <= 0)
+        return false;
+
+    // 计算中心点距离
+    float prev_cx = prev_box.x + prev_box.width / 2.0f;
+    float prev_cy = prev_box.y + prev_box.height / 2.0f;
+    float curr_cx = curr_box.x + curr_box.width / 2.0f;
+    float curr_cy = curr_box.y + curr_box.height / 2.0f;
+    
+    float distance = std::sqrt(std::pow(curr_cx - prev_cx, 2) + std::pow(curr_cy - prev_cy, 2));
+    
+    // 计算尺寸变化比例
+    float size_ratio_w = curr_box.width / prev_box.width;
+    float size_ratio_h = curr_box.height / prev_box.height;
+    
+    // 检测跳变
+    bool pos_jump = distance > max_pos_jump;
+    bool size_jump = (size_ratio_w > max_size_ratio || size_ratio_w < 1.0f/max_size_ratio ||
+                      size_ratio_h > max_size_ratio || size_ratio_h < 1.0f/max_size_ratio);
+    
+    return pos_jump || size_jump;
 }
 
 BBoxRect HybridTrackerImp::getCurrentBox() const

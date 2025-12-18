@@ -17,6 +17,7 @@
 
 #include "hybrid_tracker.h"
 #include "mv_camera.h"
+#include "mv_video.h"
 #include "drone_ekf.h"
 
 class StatusPublisher
@@ -56,9 +57,12 @@ private:
         this->declare_parameter<float>("tracker.yolo_conf_threshold", 0.3f);
         this->declare_parameter<float>("tracker.yolo_nms_threshold", 0.45f);
         this->declare_parameter<int>("tracker.yolo_interval", 3);
+        this->declare_parameter<float>("tracker.yolo_recall_relax_ratio", 0.75f);
         this->declare_parameter<float>("tracker.iou_reset_threshold", 0.3f);
         this->declare_parameter<float>("tracker.iou_calibrate_threshold", 0.6f);
         this->declare_parameter<float>("tracker.tracking_conf_threshold", 0.8f);
+        this->declare_parameter<float>("tracker.tracking_roi_scale_factor", 2.0f);
+        this->declare_parameter<int>("tracker.lost_max_count", 50);
 
         this->declare_parameter<int>("mv_camera.width_px", 1920);
         this->declare_parameter<int>("mv_camera.height_px", 1920);
@@ -94,7 +98,7 @@ private:
     std::unique_ptr<StatusPublisher> status_publisher_;
 
     std::shared_ptr<HybridTracker> tracker_;
-    std::unique_ptr<MVCamera> mv_camera_;
+    std::shared_ptr<MVCameraBase> mv_camera_;
     bool is_camera_ = false;
     cv::VideoCapture cap_;
 

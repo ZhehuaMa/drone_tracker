@@ -69,13 +69,23 @@ void DroneTrackerNode::setup()
 
     std::string video_source;
     this->get_parameter("video_source", video_source);
-    is_camera_ = (video_source.substr(0, 5) == "video" && video_source.length() == 6);
+    is_camera_ = true;
+    // is_camera_ = (video_source.substr(0, 5) == "video" && video_source.length() == 6);
+
 
     if (is_camera_)
     {
-        std::string device = "/dev/";
-        mv_camera_ = std::make_unique<MVCamera>(device.append(video_source), 
-            width_px, height_px, fps, true, output_width_px, output_height_px, flip, mirror);
+        if (video_source.substr(0, 5) == "video" && video_source.length() == 6)
+        {
+            std::string device = "/dev/";
+            mv_camera_ = std::make_shared<MVCamera>(device.append(video_source), 
+                width_px, height_px, fps, true, output_width_px, output_height_px, flip, mirror);
+        }
+        else
+        {
+            RCLCPP_INFO(this->get_logger(), "Opening camera device: %s", video_source.c_str());
+            mv_camera_ = std::make_shared<MVVideo>(video_source);
+        }
     }
     else
     {
@@ -124,6 +134,9 @@ void DroneTrackerNode::setup()
     this->get_parameter("tracker.yolo_interval", tracker_settings.yolo_interval);
     this->get_parameter("tracker.iou_reset_threshold", tracker_settings.iou_reset_threshold);
     this->get_parameter("tracker.iou_calibrate_threshold", tracker_settings.iou_calibrate_threshold);
+    this->get_parameter("tracker.yolo_recall_relax_ratio", tracker_settings.yolo_recall_relax_ratio);
+    this->get_parameter("tracker.lost_max_count", tracker_settings.lost_max_count);
+    this->get_parameter("tracker.tracking_roi_scale_factor", tracker_settings.roi_scale_factor);
 
     tracker_settings.yolo_engine_path = share_dir + "/models/" + tracker_settings.yolo_engine_path;
     tracker_settings.nanotrack_backbone_path = share_dir + "/models/" + tracker_settings.nanotrack_backbone_path;
@@ -191,7 +204,9 @@ void DroneTrackerNode::setup()
                 
                 if (is_camera_ && mv_camera_)
                 {
-                    mv_camera_->setup(need_save, save_path, filename_ts);
+                    auto camera = std::dynamic_pointer_cast<MVCamera>(mv_camera_);
+                    if (camera)
+                        camera->setup(need_save, save_path, filename_ts);
                 }
                 if (need_save)
                 {
