@@ -20,8 +20,10 @@ public:
     virtual bool run_async(CallbackFn &&callback=nullptr) = 0;
     virtual bool stop() = 0;
     virtual bool is_running() const = 0;
+    virtual bool get_image_size(int &width, int &height) const = 0;
 
     ImageQueue& getImageQueue() { return image_queue_; }
+
     
 protected:
     static std::shared_ptr<NvBuffer> create_nv_buffer(uint8_t *y_ptr, uint8_t *uv_ptr, uint32_t w, uint32_t h, uint32_t stride);

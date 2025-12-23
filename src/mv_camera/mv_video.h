@@ -20,6 +20,7 @@ public:
     virtual bool run_async(CallbackFn &&callback=nullptr) override;
     virtual bool stop() override;
     virtual bool is_running() const override { return is_running_.load(); }
+    virtual bool get_image_size(int &width, int &height) const override;
 private:
     VPIImage decode(const char* data, size_t size);
     void decode_worker();

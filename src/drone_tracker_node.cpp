@@ -26,6 +26,7 @@ void DroneTrackerNode::run()
     tracker_->reset();
     drone_ekf_->reset();
     detect_valid_ = false;
+    last_tracker_state = -1;
     worker_thread_ = std::thread(&DroneTrackerNode::worker, this);
 }
 
@@ -42,9 +43,10 @@ void DroneTrackerNode::setup()
 {
     // Initialize publishers, subscribers, and services here
     this->get_parameter("visualized_result", enable_image_output_);
+    this->get_parameter("use_history_timestamp", use_history_timestamp_);
 
     int width_px, height_px, output_width_px, output_height_px, fps;
-    float pixel_size_um, focal_length_mm, fov_deg_w, fov_deg_h;
+    float pixel_size_um, focal_length_mm;
     bool flip, mirror;
     this->get_parameter("mv_camera.width_px", width_px);
     this->get_parameter("mv_camera.height_px", height_px);
@@ -55,6 +57,26 @@ void DroneTrackerNode::setup()
     this->get_parameter("mv_camera.fps", fps);
     this->get_parameter("mv_camera.output_width_px", output_width_px);
     this->get_parameter("mv_camera.output_height_px", output_height_px);
+
+    std::string video_source;
+    this->get_parameter("video_source", video_source);
+    is_camera_ = (video_source.substr(0, 5) == "video" && video_source.length() == 6);
+
+    if (is_camera_)
+    {
+        RCLCPP_INFO(this->get_logger(), "Opening camera device: %s", video_source.c_str());
+        std::string device = "/dev/";
+        mv_camera_ = std::make_shared<MVCamera>(device.append(video_source), 
+            width_px, height_px, fps, true, output_width_px, output_height_px, flip, mirror);
+    }
+    else
+    {
+        RCLCPP_INFO(this->get_logger(), "Opening video file: %s", video_source.c_str());
+        mv_camera_ = std::make_shared<MVVideo>(video_source, use_history_timestamp_);
+    }
+
+    mv_camera_->get_image_size(output_width_px, output_height_px);
+
     // Assuming square pixels for simplicity
     float scale_ratio_w = static_cast<float>(output_width_px) / static_cast<float>(width_px);
     float scale_ratio_h = static_cast<float>(output_height_px) / static_cast<float>(height_px);
@@ -64,56 +86,8 @@ void DroneTrackerNode::setup()
     cam_intrinsics_.px = output_width_px / 2.0;
     cam_intrinsics_.py = output_height_px / 2.0;
 
-    fov_deg_w = std::atan2(output_width_px * 0.5, cam_intrinsics_.fx) * 180.0 / M_PI * 2.0;
-    fov_deg_h = std::atan2(output_height_px * 0.5, cam_intrinsics_.fy) * 180.0 / M_PI * 2.0;
-
-    std::string video_source;
-    this->get_parameter("video_source", video_source);
-    is_camera_ = true;
-    // is_camera_ = (video_source.substr(0, 5) == "video" && video_source.length() == 6);
-
-
-    if (is_camera_)
-    {
-        if (video_source.substr(0, 5) == "video" && video_source.length() == 6)
-        {
-            std::string device = "/dev/";
-            mv_camera_ = std::make_shared<MVCamera>(device.append(video_source), 
-                width_px, height_px, fps, true, output_width_px, output_height_px, flip, mirror);
-        }
-        else
-        {
-            RCLCPP_INFO(this->get_logger(), "Opening camera device: %s", video_source.c_str());
-            mv_camera_ = std::make_shared<MVVideo>(video_source);
-        }
-    }
-    else
-    {
-        cap_.open(video_source);
-        if (!cap_.isOpened())
-        {
-            RCLCPP_ERROR(this->get_logger(), "Failed to open video file: %s", video_source.c_str());
-            return;
-        }
-        RCLCPP_INFO(this->get_logger(), "Video file %s opened successfully", video_source.c_str());
-        width_px = static_cast<int>(cap_.get(cv::CAP_PROP_FRAME_WIDTH));
-        height_px = static_cast<int>(cap_.get(cv::CAP_PROP_FRAME_HEIGHT));
-        
-        fps = cap_.get(cv::CAP_PROP_FPS);
-        interval_ms_ = (fps > 0) ? static_cast<int>(1000 / fps) : 1;
-        float param_fov_deg_w;
-        this->get_parameter<float>("video_fov_deg_w", param_fov_deg_w);
-        if (param_fov_deg_w > 0.0f)
-        {
-            fov_deg_w = param_fov_deg_w;
-            // Recalculate focal length based on provided FOV
-            cam_intrinsics_.fx = width_px * 0.5 / tan(fov_deg_w * M_PI / 180.0 / 2.0);
-            cam_intrinsics_.fy = cam_intrinsics_.fx;  // Assuming square pixels
-            fov_deg_h = std::atan2(height_px * 0.5 ,cam_intrinsics_.fy) * 180.0 / M_PI * 2.0;
-        }
-        cam_intrinsics_.px = width_px * 0.5;
-        cam_intrinsics_.py = height_px * 0.5;
-    }
+    double fov_deg_w = std::atan2(output_width_px * 0.5, cam_intrinsics_.fx) * 180.0 / M_PI * 2.0;
+    double fov_deg_h = std::atan2(output_height_px * 0.5, cam_intrinsics_.fy) * 180.0 / M_PI * 2.0;
 
     RCLCPP_INFO(this->get_logger(), "Camera Intrinsics: fx=%.2f, fy=%.2f, px=%.2f, py=%.2f", 
         cam_intrinsics_.fx, cam_intrinsics_.fy, cam_intrinsics_.px, cam_intrinsics_.py);
@@ -180,14 +154,16 @@ void DroneTrackerNode::setup()
         "/fpv/target_bbox", 10);
     image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(
         "/fpv/tracker_image", 10);
+    tracker_state_pub_ = this->create_publisher<std_msgs::msg::Int8>(
+        "/fpv/tracker_state", 10);
 
-    status_publisher_ = std::make_unique<StatusPublisher>(*this, 1);
+    status_publisher_ = std::make_unique<StatusPublisher>(*this, 2);
     
     trigger_sub_ = this->create_subscription<std_msgs::msg::Header>(
         "/fpv/tracker_trigger", rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
         [this](const std_msgs::msg::Header::SharedPtr msg)
         {
-            if (msg->frame_id == "ON")
+            if (msg->frame_id == "ON" && !running)
             {
                 // Generate a timestamped filename prefix
                 std::time_t t = msg->stamp.sec;
@@ -202,7 +178,7 @@ void DroneTrackerNode::setup()
                 std::string save_path;
                 this->get_parameter("save_path", save_path);
                 
-                if (is_camera_ && mv_camera_)
+                if (mv_camera_)
                 {
                     auto camera = std::dynamic_pointer_cast<MVCamera>(mv_camera_);
                     if (camera)
@@ -220,9 +196,9 @@ void DroneTrackerNode::setup()
                 }
 
                 this->run();
-                status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 3, "Drone Tracker Started", true);
+                status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1, "Drone Tracker Started", true);
             }
-            else
+            else if (msg->frame_id == "OFF" && running)
             {
                 this->stop();
                 if (rosbag_writer_)
@@ -230,7 +206,7 @@ void DroneTrackerNode::setup()
                     rosbag_writer_->close();
                     rosbag_writer_.reset();
                 }
-                status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 3, "Drone Tracker Stopped", true);
+                status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1, "Drone Tracker Stopped", true);
             }
         }
     );
@@ -238,22 +214,18 @@ void DroneTrackerNode::setup()
 
 void DroneTrackerNode::worker()
 {
-    if (is_camera_)
-    { 
-        bool success = mv_camera_->run_async();
-        if (!success)
-        {
-            RCLCPP_ERROR(this->get_logger(), "Failed to open MV Camera ");
-            return;
-        }
-        RCLCPP_INFO(this->get_logger(), "MV Camera opened successfully");
+    bool success = mv_camera_->run_async();
+    if (!success)
+    {
+        RCLCPP_ERROR(this->get_logger(), "Failed to open MV Camera ");
+        return;
     }
+    RCLCPP_INFO(this->get_logger(), "MV Camera opened successfully");
 
     cv::Mat frame;
 
     int count = 0;
     double avg_time_ms = 0.0;
-    std::string last_status;
 
     // Main processing loop
     while (rclcpp::ok() && running)
@@ -261,33 +233,16 @@ void DroneTrackerNode::worker()
         // Process the frame with tracker_ and drone_ekf_
         rclcpp::Time start_time = this->now();
         std::shared_ptr<VPIImageWrapper> vpi_buffer;
-        int64_t frame_ts;
-        if (is_camera_)
-        {
-            if (mv_camera_->getImageQueue().wait_dequeue_timed(vpi_buffer, 1s)) {
-                start_time = this->now();
-                frame_ts = vpi_buffer->get_timestamps();
-                tracker_->update(vpi_buffer);
-            }
-            else {
-                std::cout << "No frame received from camera." << std::endl;
-                break;
-            }
-        }
-        else
-        {
-            frame_ts = start_time.nanoseconds() / 1000;
-            if (!cap_.read(frame))
-            {
-                std::cout << "Video ended." << std::endl;
-                break;
-            }
+        int64_t frame_ts = 0;
 
-            cv::Mat mono;
-            cv::cvtColor(frame, mono, cv::COLOR_BGR2GRAY);
-            cv::merge(std::vector<cv::Mat>{mono, mono, mono}, frame);
-            auto frame_wrapper = std::make_shared<VPIImageWrapper>(mono);
-            tracker_->update(frame_wrapper);
+        if (mv_camera_->getImageQueue().wait_dequeue_timed(vpi_buffer, 1s)) {
+            start_time = this->now();
+            frame_ts = vpi_buffer->get_timestamps();
+            tracker_->update(vpi_buffer);
+        }
+        else {
+            std::cout << "No frame received from camera." << std::endl;
+            break;
         }
 
         // --- 获取结果并绘制 ---
@@ -306,6 +261,18 @@ void DroneTrackerNode::worker()
         
         auto elapsed = this->now() - start_time;
         double cost_ms = elapsed.seconds() * 1000;
+
+        // Update tracker state and publish if changed
+        auto [tracker_state, state_text] = tracker_->getStateText();
+        int8_t tracker_state_int = static_cast<int8_t>(tracker_state);
+        if (tracker_state_int != last_tracker_state)
+        {
+            status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1, state_text, true);
+            auto msg = std::make_unique<std_msgs::msg::Int8>();
+            msg->data = tracker_state_int;
+            tracker_state_pub_->publish(std::move(msg));
+            last_tracker_state = tracker_state_int;
+        }
         
         if (enable_image_output_) 
         {
@@ -314,28 +281,25 @@ void DroneTrackerNode::worker()
                 static_cast<int>(bbox.cy - bbox.height / 2),
                 static_cast<int>(bbox.width), 
                 static_cast<int>(bbox.height) };
-            std::string status = tracker_->getStatus();
-            status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1, status);
+            std::string info = tracker_->getStatus();
             auto color_val = tracker_->getColor();
             cv::Scalar color = cv::Scalar((color_val & 0xFF), ((color_val >> 8) & 0xFF), ((color_val >> 16) & 0xFF));
-
-            if (is_camera_)
-            {
-                cv::Mat mono;
-                VPIImageData image_data;
-                vpiImageLockData(vpi_buffer->get(), VPI_LOCK_READ, VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &image_data);
-                vpiImageDataExportOpenCVMat(image_data, &mono);
-                vpiImageUnlock(vpi_buffer->get());
-                cv::merge(std::vector<cv::Mat>{mono, mono, mono}, frame);
-            }
+            
+            // Convert VPI image to OpenCV Mat
+            cv::Mat mono;
+            VPIImageData image_data;
+            vpiImageLockData(vpi_buffer->get(), VPI_LOCK_READ, VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &image_data);
+            vpiImageDataExportOpenCVMat(image_data, &mono);
+            vpiImageUnlock(vpi_buffer->get());
+            cv::merge(std::vector<cv::Mat>{mono, mono, mono}, frame);
 
             if (bbox.is_valid)
             {
                 cv::rectangle(frame, display_box, color, 2, 1);
             }
 
-            cv::putText(frame, "Cost: " + std::to_string(int(cost_ms)) + " ms", cv::Point(20, 40), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
-            cv::putText(frame, status, cv::Point(20, 80), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
+            cv::putText(frame, "Cost: " + std::to_string(int(cost_ms)) + " ms", cv::Point(20, 40), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
+            cv::putText(frame, info, cv::Point(20, 80), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
 
             cv_bridge::CvImage cv_img;
             cv_img.header.stamp = rclcpp::Time(frame_ts*1000);
@@ -366,14 +330,7 @@ void DroneTrackerNode::worker()
 
     std::cout << "Average tracking time per frame: " << std::fixed << std::setprecision(2) << avg_time_ms << " ms" << std::endl;
 
-    if (is_camera_)
-    {
-        mv_camera_->stop();
-    }
-    else
-    {
-        cap_.release();
-    }
+    mv_camera_->stop();
 }
 
 void DroneTrackerNode::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
@@ -395,7 +352,7 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
         std::lock_guard<std::mutex> lock(ekf_mtx_);
         valid = detect_valid_;
         // IMU coordinates are in the FLU frame
-         // EFK coordinates are in the RDF frame
+        // EFK coordinates are in the RDF frame
         drone_ekf_->predict(rclcpp::Time(msg->header.stamp).nanoseconds() / 1000, 
             Eigen::Vector3d(
                 -msg->angular_velocity.y,

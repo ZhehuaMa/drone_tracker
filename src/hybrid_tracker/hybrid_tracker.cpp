@@ -1,5 +1,6 @@
 #include "hybrid_tracker.h"
 #include <iostream>
+#include <unordered_map>
 #include <opencv2/opencv.hpp>
 
 #include "yolo_detector.h"
@@ -24,6 +25,7 @@ public:
 
     /** @brief 获取当前跟踪状态信息 */
     virtual std::string getStatus() const override;
+    virtual std::pair<TrackerState, std::string> getStateText() const override;
 
     /** @brief 获取用于绘制的颜色 */
     virtual uint32_t getColor() const override;
@@ -52,6 +54,14 @@ private:
     cv::Scalar m_display_color;
     int m_frame_count;
     int m_yolo_lost_count; // YOLO连续未检测到目标的次数
+    TrackerState m_state = TrackerState::Detecting;
+
+    const std::unordered_map<TrackerState, std::string> state_text_map = {
+        {TrackerState::Detecting, "Detecting..."},
+        {TrackerState::TargetFound, "Target Found"},
+        {TrackerState::Tracking, "Tracking..."},
+        {TrackerState::TargetLost, "Target Lost"}
+    };
 
     // --- 组件 ---
     std::unique_ptr<YoloV8Detector> m_detector;
@@ -145,6 +155,7 @@ bool HybridTrackerImp::update(const std::shared_ptr<VPIImageWrapper>& frame)
     {
         // --- 状态：正在检测 (未初始化) ---
         m_display_info = "Detecting target...";
+        m_state = TrackerState::Detecting;
         m_display_color = cv::Scalar(255, 255, 0); // 黄色
 
         // 1. 请求检测 (启用切片检测)
@@ -156,6 +167,7 @@ bool HybridTrackerImp::update(const std::shared_ptr<VPIImageWrapper>& frame)
         {
             // 找到第一个检测框并初始化
             initialize(processed_frame, detections.top().box);
+            m_state = TrackerState::TargetFound;
         }
         else
         {
@@ -166,7 +178,7 @@ bool HybridTrackerImp::update(const std::shared_ptr<VPIImageWrapper>& frame)
     else
     {
         // --- 状态：正在跟踪 (已初始化) ---
-
+        m_state = TrackerState::Tracking;
         // 1. 卡尔曼预测
         m_display_box = m_kalman_filter->predict();
         m_display_info = "Predicting (Tracker Lost)";
@@ -238,6 +250,7 @@ bool HybridTrackerImp::update(const std::shared_ptr<VPIImageWrapper>& frame)
             {
                 m_tracker_initialized = false;
                 m_display_info = "Lost (Timeout)";
+                m_state = TrackerState::TargetLost;
                 m_display_color = cv::Scalar(255, 0, 0); // 红色
             }
         }
@@ -349,6 +362,11 @@ BBoxRect HybridTrackerImp::getCurrentBox() const
 std::string HybridTrackerImp::getStatus() const
 {
     return m_display_info;
+}
+
+std::pair<TrackerState, std::string> HybridTrackerImp::getStateText() const
+{
+    return {m_state, state_text_map.at(m_state)};
 }
 
 uint32_t HybridTrackerImp::getColor() const

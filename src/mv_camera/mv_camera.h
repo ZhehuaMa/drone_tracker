@@ -29,6 +29,11 @@ public:
     virtual bool run_async(CallbackFn &&callback=nullptr) override;
     virtual bool stop() override;
     virtual bool is_running() const override { return initialized_ && is_running_.load(); }
+    virtual bool get_image_size(int &width, int &height) const override {
+        width = width_;
+        height = height_;
+        return true;
+    }
 private:
     const std::string devicePath_;
     const int width_ = 0;

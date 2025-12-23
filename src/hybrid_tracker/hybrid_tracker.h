@@ -36,6 +36,14 @@ struct BBoxRect
     bool is_valid;
 };
 
+enum class TrackerState : int8_t
+{
+    Detecting = 0,
+    TargetFound,
+    Tracking,
+    TargetLost
+};
+
 /**
  * @class HybridTracker
  * @brief 结合了YOLOv8检测、跟踪器（NanoTrack）和卡尔曼滤波的主跟踪类。
@@ -59,6 +67,8 @@ public:
 
     /** @brief 获取当前跟踪状态信息 */
     virtual std::string getStatus() const = 0;
+    virtual std::pair<TrackerState, std::string> getStateText() const = 0;
+
     /** @brief 获取用于绘制的颜色 */
     virtual uint32_t getColor() const = 0;
 };

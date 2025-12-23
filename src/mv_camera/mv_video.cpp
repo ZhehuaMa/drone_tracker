@@ -56,7 +56,7 @@ MVVideo::MVVideo(const std::string &video_path, bool use_video_timestamp)
         avformat_close_input(&format_ctx);
         return;
     }
-    
+
     time_base = video_stream->time_base;
     packet = av_packet_alloc();
     valid = true;
@@ -114,6 +114,16 @@ bool MVVideo::run_async(CallbackFn &&callback) {
     
     decode_thread = std::thread(&MVVideo::decode_worker, this);
     return true;
+}
+
+bool MVVideo::get_image_size(int &width, int &height) const {
+    if (valid && format_ctx) {
+        AVStream *video_stream = format_ctx->streams[video_stream_index];
+        width = video_stream->codecpar->width;
+        height = video_stream->codecpar->height;
+        return true;
+    }
+    return false;
 }
 
 VPIImage MVVideo::decode(const char* data, size_t size) {

@@ -8,6 +8,7 @@
 #include <vision_msgs/msg/detection2_d.hpp>
 #include <mavros_msgs/msg/status_text.hpp>
 #include <std_msgs/msg/header.hpp>
+#include <std_msgs/msg/int8.hpp>
 
 #include <queue>
 #include <thread>
@@ -48,6 +49,7 @@ private:
         this->declare_parameter<bool>("need_save", false);
         this->declare_parameter<std::string>("save_path", ".");
         this->declare_parameter<bool>("visualized_result", false);
+        this->declare_parameter<bool>("use_history_timestamp", false);
         
         this->declare_parameter<std::string>("tracker.yolo_engine", "drone_int8.engine");
         this->declare_parameter<std::string>("tracker.nano_backbone", "nanotrackv3_backbone_int8.engine");
@@ -73,7 +75,6 @@ private:
         this->declare_parameter<int>("mv_camera.output_width_px", 640);
         this->declare_parameter<int>("mv_camera.output_height_px", 640);
         this->declare_parameter<float>("mv_camera.focal_length_mm", 12.0f);
-        this->declare_parameter<float>("video_fov_deg_w", 90.0f);
 
         this->declare_parameter<int>("ekf.estimated_imu_freq", 100);
         this->declare_parameter<double>("ekf.estimated_latency", 0.08);
@@ -93,6 +94,7 @@ private:
 
     rclcpp::Publisher<vision_msgs::msg::Detection2D>::SharedPtr detection_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
+    rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr tracker_state_pub_;
 
     std::unique_ptr<rosbag2_cpp::Writer> rosbag_writer_;
     std::unique_ptr<StatusPublisher> status_publisher_;
@@ -100,17 +102,18 @@ private:
     std::shared_ptr<HybridTracker> tracker_;
     std::shared_ptr<MVCameraBase> mv_camera_;
     bool is_camera_ = false;
-    cv::VideoCapture cap_;
 
     int interval_ms_ = 1;
     bool enable_image_output_ = false;
+    bool use_history_timestamp_ = false;
     
     CameraIntrinsics cam_intrinsics_;
 
     std::mutex ekf_mtx_;
     std::unique_ptr<DroneEKF> drone_ekf_;
     bool detect_valid_ = false;
-
+    
     std::thread worker_thread_;
-    bool running = false;
+    std::atomic_bool running = false;
+    int8_t last_tracker_state = -1;
 };
