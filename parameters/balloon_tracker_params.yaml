@@ -19,15 +19,27 @@ drone_tracker_node:
       tracking_roi_scale_factor: 2.0
       lost_max_count: 30
     mv_camera:
-      flip: true
-      mirror: true
-      fps: 30
-      output_width_px: 640
-      output_height_px: 640
+      # settings for MV-IMX264M
+    #   flip: true
+    #   mirror: true
+    #   fps: 30
+    #   output_width_px: 640
+    #   output_height_px: 640
+    #   # native parameters for camera
+    #   width_px: 1920
+    #   height_px: 1920
+    #   focal_length_mm: 12.0
+    #   pixel_size_um: 3.45
+      # settings for MV-IMX265M
+      flip: false
+      mirror: false
+      fps: 50
+      output_width_px: 960
+      output_height_px: 960
       # native parameters for camera
-      width_px: 1920
-      height_px: 1920
-      focal_length_mm: 12.0
+      width_px: 1520
+      height_px: 1520
+      focal_length_mm: 10.0
       pixel_size_um: 3.45
     ekf:
       estimated_imu_freq: 100
