@@ -29,9 +29,11 @@
 using namespace kestrel;
 
 // I2C definitions
-#define I2C_DEV "/dev/i2c-10"
+#define I2C_DEV0 "/dev/i2c-10"
+#define I2C_DEV1 "/dev/i2c-9"
 #define I2C_ADDR 0x3b
 #define TRIGGER_COUNT   0x0418
+#define MODEL_NAME   0x0004
 
 // V4L2 Control IDs from Python script
 #define TEGRA_CAMERA_CID_BASE (V4L2_CTRL_CLASS_CAMERA | 0x2000)
@@ -52,6 +54,11 @@ using namespace kestrel;
 #define MEMORY_ALIGNMENT 256
 
 using namespace std::chrono_literals;
+
+static const std::unordered_map<uint16_t, std::pair<int, int>> ModelResolutionMap = {
+    { 0x264, {2464, 2056} },  // MV-IMX264M
+    { 0x265, {2064, 1544} },  // MV-IMX265M
+};
 
 static void fourcc_to_str(int fourcc, char *str) {
     str[0] = fourcc & 0xFF;
@@ -87,8 +94,8 @@ static int i2c_rd(int fd, uint8_t i2c_addr, uint16_t reg, std::vector<uint8_t> &
     return 0;
 }
 
-static void set_image_flip_mirror(bool flip, bool mirror) {
-    int i2c_fd = open(I2C_DEV, O_RDWR);
+void MVCamera::set_image_flip_mirror(bool flip, bool mirror) {
+    int i2c_fd = open(i2c_dev, O_RDWR);
     if (i2c_fd < 0) {
         perror("Failed to open I2C device");
         return;
@@ -221,7 +228,7 @@ bool MVCamera::stop() {
 }
 
 void MVCamera::triggerLoop(double interval_seconds) {
-    int i2c_fd = open(I2C_DEV, O_RDWR);
+    int i2c_fd = open(i2c_dev, O_RDWR);
     if (i2c_fd < 0) {
         perror("Failed to open I2C device");
         return;
@@ -270,6 +277,26 @@ void MVCamera::triggerLoop(double interval_seconds) {
     close(i2c_fd);
 }
 
+uint16_t MVCamera::get_model() {
+    int i2c_fd = open(i2c_dev, O_RDWR);
+    if (i2c_fd < 0) {
+        perror("Failed to open I2C device");
+        return 0;
+    }
+    if (ioctl(i2c_fd, I2C_SLAVE_FORCE, I2C_ADDR) < 0) {
+        perror("Failed to set I2C slave address");
+        close(i2c_fd);
+        return 0;
+    }
+    std::vector<uint8_t> response(4);
+    uint16_t model = 0;
+    if (i2c_rd(i2c_fd, I2C_ADDR, MODEL_NAME, response) == 0) {
+        model = response[3] | (response[2] << 8);
+    }
+    close(i2c_fd);
+    return model;
+}
+
 void MVCamera::init() 
 {
     if (initialized_) 
@@ -284,9 +311,38 @@ void MVCamera::init()
         perror("Error querying capabilities");
         return;
     }
+
+    // try i2c channel
+    i2c_dev = I2C_DEV0;
+    auto model_id = get_model();
+    if (model_id == 0)
+    {
+        i2c_dev = I2C_DEV1;
+        model_id = get_model();
+        if (model_id == 0)
+            return;
+    }
+    
     std::cout << "Device: " << caps.driver << "\nCard: " << caps.card << "\nBus Info: " << caps.bus_info << std::endl;
-    int offset_x = (2432 - width_) / 2;
-    int offset_y = (2056 - height_) / 2;
+    std::cout << "Model ID: " << std::hex << model_id << std::dec << std::endl;
+    int max_width = 1920;
+    int max_height = 1080;
+    auto it = ModelResolutionMap.find(model_id);
+    if (it != ModelResolutionMap.end()) {
+        max_width = it->second.first;
+        max_height = it->second.second;
+        if (width_ > max_width || height_ > max_height) {
+            std::cerr << "Requested resolution " << width_ << "x" << height_ 
+                      << " exceeds maximum for model " << std::hex << model_id << std::dec
+                      << ": " << max_width << "x" << max_height << std::endl;
+            return;
+        }
+    } else {
+        std::cerr << "Unknown model ID: " << std::hex << model_id << std::dec << std::endl;
+        return;
+    }
+    int offset_x = (max_width - width_) / 2;
+    int offset_y = (max_height - height_) / 2;
     int timeout_ms = (1000 / fps_) / 2 - 3;
 
     set_ctrl(fd_, V4L2_CID_VEYE_MV_ROI_X, offset_x);

@@ -46,6 +46,8 @@ private:
     int fd_ = -1;
     int pitch_ = 0;
 
+    const char *i2c_dev;
+
     bool need_save_ = false;
     std::string save_path_ = ".";
     std::string filename_ts_;
@@ -69,4 +71,6 @@ private:
     void init();
     void captureLoop(CallbackFn &&callback);
     void cleanup();
+    uint16_t get_model();
+    void set_image_flip_mirror(bool flip, bool mirror);
 };
