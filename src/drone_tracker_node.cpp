@@ -5,6 +5,13 @@
 
 using namespace std::chrono_literals;
 
+static const std::string TOPIC_GIMBAL = "/fpv/gimbal";
+static const std::string TOPIC_ODOM = "/fpv/odom";
+static const std::string TOPIC_TARGET_BBOX = "/fpv/target_bbox";
+static const std::string TOPIC_TRACKER_IMAGE = "/fpv/tracker_image";
+static const std::string TOPIC_TRACKER_STATE =  "/fpv/tracker_state";
+static const std::string TOPIC_TRACKER_TRIGGER = "/fpv/tracker_trigger";
+
 DroneTrackerNode::DroneTrackerNode()
 : Node("drone_tracker_node")
 {
@@ -141,26 +148,26 @@ void DroneTrackerNode::setup()
         estimated_imu_freq, estimated_latency);
 
     gimbal_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-        "/fpv/gimbal", rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
+        TOPIC_GIMBAL, rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
         std::bind(&DroneTrackerNode::imu_callback, this, std::placeholders::_1)
     );
 
     odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "/fpv/odom", 
+        TOPIC_ODOM, 
         rclcpp::QoS(rclcpp::KeepLast(10)).best_effort(), 
         std::bind(&DroneTrackerNode::odom_callback, this, std::placeholders::_1));
 
     detection_pub_ = this->create_publisher<vision_msgs::msg::Detection2D>(
-        "/fpv/target_bbox", 10);
+        TOPIC_TARGET_BBOX, 10);
     image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(
-        "/fpv/tracker_image", 10);
+        TOPIC_TRACKER_IMAGE, 10);
     tracker_state_pub_ = this->create_publisher<std_msgs::msg::Int8>(
-        "/fpv/tracker_state", 10);
+        TOPIC_TRACKER_STATE, 10);
 
     status_publisher_ = std::make_unique<StatusPublisher>(*this, 2);
     
     trigger_sub_ = this->create_subscription<std_msgs::msg::Header>(
-        "/fpv/tracker_trigger", rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
+        TOPIC_TRACKER_TRIGGER, rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
         [this](const std_msgs::msg::Header::SharedPtr msg)
         {
             if (msg->frame_id == "ON" && !running)
@@ -188,7 +195,7 @@ void DroneTrackerNode::setup()
                 {
                     rosbag_writer_ = std::make_unique<rosbag2_cpp::Writer>();
                     rosbag_writer_->open(save_path + "/drone_rosbag_" + filename_ts);
-                    rosbag_writer_->create_topic({"/fpv/odom",
+                    rosbag_writer_->create_topic({TOPIC_ODOM,
                         "nav_msgs/msg/Odometry",
                         rmw_get_serialization_format(),
                         ""
@@ -310,7 +317,7 @@ void DroneTrackerNode::worker()
             cv_img.toImageMsg(*img_msg);
             if (rosbag_writer_)
             {
-                rosbag_writer_->write(*img_msg, "/fpv/tracker_image", rclcpp::Time(frame_ts*1000));
+                rosbag_writer_->write(*img_msg, TOPIC_TRACKER_IMAGE, rclcpp::Time(frame_ts*1000));
             }
             image_pub_->publish(std::move(img_msg));
 
@@ -337,7 +344,7 @@ void DroneTrackerNode::odom_callback(const nav_msgs::msg::Odometry::SharedPtr ms
 {
     if (rosbag_writer_)
     {
-        rosbag_writer_->write(*msg, "/fpv/odom", rclcpp::Time(msg->header.stamp));
+        rosbag_writer_->write(*msg, TOPIC_ODOM, rclcpp::Time(msg->header.stamp));
     }
 }
 
@@ -372,8 +379,8 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
 
     if (rosbag_writer_)
     {
-        rosbag_writer_->write(*msg, "/fpv/gimbal", rclcpp::Time(msg->header.stamp));
-        rosbag_writer_->write(*detection_msg, "/fpv/target_bbox", rclcpp::Time(detection_msg->header.stamp));
+        rosbag_writer_->write(*msg, TOPIC_GIMBAL, rclcpp::Time(msg->header.stamp));
+        rosbag_writer_->write(*detection_msg, TOPIC_TARGET_BBOX, rclcpp::Time(detection_msg->header.stamp));
     }
 
     detection_pub_->publish(std::move(detection_msg));
