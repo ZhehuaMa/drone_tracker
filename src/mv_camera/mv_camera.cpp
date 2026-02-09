@@ -483,7 +483,7 @@ void MVCamera::captureLoop(CallbackFn &&callback) {
                     request_us -=  (1000.0/fps_) * (times-1);
             }
             latency_ms = std::chrono::duration<double, std::milli>(now - request_ts).count();
-            std::cout << "Latency: " << std::fixed << std::setprecision(2) << latency_ms << " ms" << std::endl;
+            // std::cout << "Latency: " << std::fixed << std::setprecision(2) << latency_ms << " ms" << std::endl;
         }
         else
         {
