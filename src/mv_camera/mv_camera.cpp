@@ -51,7 +51,7 @@ using namespace kestrel;
 #define V4L2_CID_VEYE_MV_ROI_X (V4L2_CID_VEYE_MV_BASE + 5)
 #define V4L2_CID_VEYE_MV_ROI_Y (V4L2_CID_VEYE_MV_BASE + 6)
 
-#define MEMORY_ALIGNMENT 256
+#define MEMORY_ALIGNMENT 64
 
 using namespace std::chrono_literals;
 
@@ -472,12 +472,22 @@ void MVCamera::captureLoop(CallbackFn &&callback) {
                 continue;
             }
             request_us = request_ts.time_since_epoch().count()/1000;
-            // double latency_ms = std::chrono::duration<double, std::milli>(now - request_ts).count();
-            // std::cout << "Latency: " << std::fixed << std::setprecision(2) << latency_ms << " ms" << std::endl;
+            double latency_ms = std::chrono::duration<double, std::milli>(now - request_ts).count();
+            // Adjust timestamp based on latency to better reflect actual capture time
+            if (latency_ms < 1000.0/fps_) {
+                request_us -=  1000000l/fps_;
+            }
+            else {
+                int times = static_cast<int>(latency_ms / (1000.0/fps_));
+                if (times > 2)
+                    request_us -=  (1000.0/fps_) * (times-1);
+            }
+            latency_ms = std::chrono::duration<double, std::milli>(now - request_ts).count();
+            std::cout << "Latency: " << std::fixed << std::setprecision(2) << latency_ms << " ms" << std::endl;
         }
         else
         {
-            request_us = now.time_since_epoch().count()/1000 - 1500000lu/fps_; // estimate timestamp
+            request_us = now.time_since_epoch().count()/1000 - 1500000l/fps_; // estimate timestamp
         }
         v4l2_buffer buf{};
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
