@@ -10,7 +10,26 @@ def generate_launch_description():
     video_source_arg = DeclareLaunchArgument(
             'video_source',
             default_value=TextSubstitution(text='video0'),
+            # default_value=TextSubstitution(text='/home/dg/Videos/ts_20260108_143035_966288_fixed.mjpeg'),
             description='Video source file or device index for the drone tracker node.'
+        )
+    
+    save_path_arg = DeclareLaunchArgument(
+            'save_path',
+            default_value='/home/dg/Videos/',
+            description='Path to save videos.'
+        )
+    
+    enable_save_arg = DeclareLaunchArgument(
+            'enable_save',
+            default_value='false',
+            description='Whether to save videos.'
+        )
+    
+    enable_visualize_arg = DeclareLaunchArgument(
+            'enable_visualize',
+            default_value='true',
+            description='Whether to visualize results.'
         )
     
     config = os.path.join(
@@ -21,13 +40,19 @@ def generate_launch_description():
 
     return LaunchDescription([
         video_source_arg,
+        save_path_arg,
+        enable_save_arg,
+        enable_visualize_arg,
         Node(
             package='drone_tracker',
             executable='drone_tracker_node',
             name='drone_tracker_node',
             parameters=[
                 config,
-                {'video_source': LaunchConfiguration('video_source')}],
+                {'video_source': LaunchConfiguration('video_source')},
+                {'save_path': LaunchConfiguration('save_path')},
+                {'need_save': LaunchConfiguration('enable_save')},
+                {'visualized_result': LaunchConfiguration('enable_visualize')}],
             output='screen',
             emulate_tty=True,
         )
