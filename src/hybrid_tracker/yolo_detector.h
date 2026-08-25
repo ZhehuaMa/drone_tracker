@@ -28,6 +28,16 @@ struct Detection
     }
 };
 
+// letterbox 变换参数：内容实际写入的整数偏移与每轴缩放
+// （与 Python 端一致：用真实整数 padding 反算，而不是浮点半边距）
+struct LetterboxInfo
+{
+    float scale_x = 1.0f;
+    float scale_y = 1.0f;
+    int left = 0;
+    int top = 0;
+};
+
 class YoloV8Detector
 {
 public:
@@ -70,12 +80,11 @@ private:
 
     /** @brief 对图像进行预处理（letterbox, HWC->CHW, normalize）
      * @param img 输入图像
-     * @param scale [out] 图像缩放比例
-     * @param offset [out] letterbox的偏移量 (dw, dh)
+     * @param lb [out] letterbox 变换参数（每轴缩放 + 整数偏移）
      * @param buffer [out] 用于存储预处理后数据的 TensorBuffer
      * @return 成功则为 true
      */
-    bool preprocess(VPIImage vpiIm, float &scale, const cv::Size& image_size, cv::Point2f& offset, TensorBuffer& buffer);
+    bool preprocess(VPIImage vpiIm, LetterboxInfo& lb, const cv::Size& image_size, TensorBuffer& buffer);
 
     /** @brief 在单个图像(或视图)上运行检测 */
     void detectOnImage(VPIImage image, const cv::Point2f& global_offset, std::vector<Detection>& results);
@@ -84,13 +93,12 @@ private:
 
     /** @brief 对模型输出进行后处理（解码, NMS）
      * @param output 模型的原始输出
-     * @param scale 预处理中的缩放比例
-     * @param offset 预处理中的偏移量
+     * @param lb 预处理中的 letterbox 变换参数
      * @param global_offset 全局坐标偏移量 (用于切片或ROI)
      * @param results [out] 检测结果列表
      */
-    void postprocess(float* output, float scale, const cv::Size& image_size, 
-        const cv::Point2f& offset, const cv::Point2f& global_offset, std::vector<Detection>& results);
+    void postprocess(float* output, const LetterboxInfo& lb, const cv::Size& image_size,
+        const cv::Point2f& global_offset, std::vector<Detection>& results);
 
     // --- TrtEngine 实例 ---
     std::string m_engine_path;
@@ -105,6 +113,7 @@ private:
     VPIStream vpi_stream = nullptr;
     VPIImage vpi_padded_image = nullptr;
     VPIImage vpi_resized_image = nullptr;
+    VPIImage vpi_fill_image = nullptr;   // 恒为 114 的 U8 图，用于填充 letterbox 边距
 
     int input_w = 0;
     int input_h = 0;

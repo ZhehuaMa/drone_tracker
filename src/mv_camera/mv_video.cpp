@@ -230,7 +230,9 @@ void MVVideo::decode_worker() {
             printf("Decoding frame %d , diff %lu us\n", frame_count, ts_diff);
             VPIImage vpiOut = decode(reinterpret_cast<const char*>(packet->data), packet->size);
 
-            auto image_buffer = std::make_shared<VPIImageWrapper>(vpiOut, base_ts + ts_diff);
+            // 帧时间戳必须是 PTS 的累计值；用 base_ts + ts_diff（帧间增量）会让
+            // 第一帧之后的所有帧都拿到几乎相同的时钟，破坏单调性。
+            auto image_buffer = std::make_shared<VPIImageWrapper>(vpiOut, base_ts + timestamp_us);
 
             now += std::chrono::microseconds(ts_diff);
             std::this_thread::sleep_until(now);

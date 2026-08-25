@@ -1,6 +1,7 @@
 #include "nano_tracker.h"
 #include <numeric>
 #include <algorithm>
+#include <cstring>
 #include <vpi/OpenCVInterop.hpp>
 #include <vpi/algo/Rescale.h>
 #include <vpi/algo/ConvertImageFormat.h>
@@ -42,6 +43,10 @@ NanoTracker::~NanoTracker() {
         vpiImageDestroy(vpi_padded_image);
         vpi_padded_image = nullptr;
     }
+    if (vpi_mean_image) {
+        vpiImageDestroy(vpi_mean_image);
+        vpi_mean_image = nullptr;
+    }
     for (auto& pair : vpi_model_images) {
         vpiImageDestroy(pair.second);
     }
@@ -49,6 +54,12 @@ NanoTracker::~NanoTracker() {
         vpiStreamDestroy(vpi_stream);
         vpi_stream = nullptr;
     }
+}
+
+void NanoTracker::reset() {
+    m_initialized = false;
+    center_pos = cv::Point2f(0, 0);
+    size = cv::Point2f(0, 0);
 }
 
 void NanoTracker::generate_points() {
@@ -78,24 +89,38 @@ static cv::Mat change(const cv::Mat& r) {
 void NanoTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& bbox) {
     center_pos = cv::Point2f(bbox.x + (bbox.width - 1) / 2.0f, bbox.y + (bbox.height - 1) / 2.0f);
     size = cv::Point2f(bbox.width, bbox.height);
-    
+
     float s_z = sz(size.x, size.y);
-    channel_average = 0; // cv::mean(img);
-    
-    // Use new buffer function to prepare input
-    // VPIImage vpiIm;
-    // vpiImageCreateWrapperOpenCVMat(img, VPI_IMAGE_FORMAT_BGR8, 0, &vpiIm);
+
+    // 计算通道均值（Python: channel_average = np.mean(img, axis=(0,1))），
+    // 仅用于搜索窗越界时的均值填充
+    channel_average = 114;
+    if (frame && frame->get()) {
+        VPIImageData host_data;
+        if (vpiImageLockData(frame->get(), VPI_LOCK_READ,
+                VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &host_data) == VPI_SUCCESS) {
+            cv::Mat host_mat;
+            vpiImageDataExportOpenCVMat(host_data, &host_mat);
+            channel_average = cv::mean(host_mat);
+            vpiImageUnlock(frame->get());
+        }
+    }
+    mean_image_dirty = true;
+
     get_subwindow_buffer(frame->get(), center_pos, template_size, static_cast<int>(round(s_z)), z_crop_buffer);
-    // vpiImageDestroy(vpiIm);
 
     // Use new infer function
     auto backbone_out_vec = session_backbone->infer({&z_crop_buffer});
-    
+
     // Move the output buffer into our persistent z_f state
     z_f = std::move(backbone_out_vec[0]);
+    m_initialized = true;
 }
 
 float NanoTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::Rect2f& output_bbox) {
+    if (!m_initialized) {
+        return 0.0f; // 未初始化：与 Python 端 (False, None) 对齐
+    }
     float s_z = sz(size.x, size.y);
     float scale_z = static_cast<float>(template_size) / s_z;
     float s_x = s_z * (static_cast<float>(instance_size) / template_size);
@@ -209,6 +234,36 @@ void NanoTracker::update_padded_image(int new_width, int new_height, int flags)
     }
 }
 
+void NanoTracker::update_mean_image(int new_width, int new_height, int flags)
+{
+    // 尺寸变化或均值变化时重建/重填，避免每帧重复写整图
+    if (vpi_mean_image && mean_image_w == new_width && mean_image_h == new_height && !mean_image_dirty) {
+        return;
+    }
+    if (vpi_mean_image && (mean_image_w != new_width || mean_image_h != new_height)) {
+        vpiImageDestroy(vpi_mean_image);
+        vpi_mean_image = nullptr;
+    }
+    if (!vpi_mean_image) {
+        if (vpiImageCreate(new_width, new_height, VPI_IMAGE_FORMAT_U8, flags, &vpi_mean_image) != VPI_SUCCESS) {
+            std::cerr << "Failed to create VPI mean image" << std::endl;
+            return;
+        }
+        mean_image_w = new_width;
+        mean_image_h = new_height;
+    }
+    VPIImageData data;
+    if (vpiImageLockData(vpi_mean_image, VPI_LOCK_WRITE,
+            VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &data) == VPI_SUCCESS) {
+        uint8_t value = static_cast<uint8_t>(cv::saturate_cast<uchar>(channel_average[0]));
+        uint8_t* row = static_cast<uint8_t*>(data.buffer.pitch.planes[0].data);
+        for (int y = 0; y < new_height; ++y)
+            memset(row + y * data.buffer.pitch.planes[0].pitchBytes, value, new_width);
+        vpiImageUnlock(vpi_mean_image);
+        mean_image_dirty = false;
+    }
+}
+
 /**
  * @brief Prepares a subwindow from the image and loads it into a TensorBuffer.
  */
@@ -231,6 +286,27 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
 
     const int flags = VPI_BACKEND_CUDA | VPI_BACKEND_CPU;
     update_padded_image(im_width + left_pad + right_pad, im_height + top_pad + bottom_pad, flags);
+
+    // 搜索窗越界时，先用通道均值填满整张 padded 图，再写入图像内容——
+    // 否则边界区域是未初始化显存（Python 端为 copyMakeBorder 均值填充）
+    static const VPIConvertImageFormatParams meanFmtParams {
+        .policy = VPI_CONVERSION_CLAMP,
+        .scale = 1.0f,   // 与下方图像内容转换一致（NanoTrack 输入为 0-255 浮点）
+        .offset = 0.0f,
+        .flags = 0,
+        .chromaUpFilter = VPI_INTERP_NEAREST,
+        .chromaDownFilter = VPI_INTERP_NEAREST,
+    };
+    if (left_pad > 0 || top_pad > 0 || right_pad > 0 || bottom_pad > 0) {
+        update_mean_image(im_width + left_pad + right_pad, im_height + top_pad + bottom_pad, flags);
+        if (vpi_mean_image) {
+            auto fill_status = vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA,
+                vpi_mean_image, vpi_padded_image, &meanFmtParams);
+            if (fill_status != VPI_SUCCESS) {
+                std::cerr << "Failed to fill padded image with channel mean: " << fill_status << std::endl;
+            }
+        }
+    }
 
     VPIImage vpiView;
     VPIRectangleI roi_view {

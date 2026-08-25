@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <numeric>
+#include <cstring>
 #include <vpi/OpenCVInterop.hpp>
 #include <vpi/algo/Rescale.h>
 #include <vpi/algo/ConvertImageFormat.h>
@@ -38,6 +39,8 @@ YoloV8Detector::~YoloV8Detector()
         vpiImageDestroy(vpi_padded_image);
     if (vpi_resized_image)
         vpiImageDestroy(vpi_resized_image);
+    if (vpi_fill_image)
+        vpiImageDestroy(vpi_fill_image);
     if (vpi_stream) {
         vpiStreamDestroy(vpi_stream);
         vpi_stream = nullptr;
@@ -66,6 +69,18 @@ bool YoloV8Detector::init()
         input_h = m_input_dims.d[2];
         input_w = m_input_dims.d[3];
         vpiImageCreate(input_w, input_h, VPI_IMAGE_FORMAT_F32, flags, &vpi_padded_image);
+        // 创建恒为 114 的 U8 填充图，用于 letterbox 边距填充（与 Python 的
+        // copyMakeBorder(value=(114,114,114)) 对齐；转换时 scale=1/255）
+        if (vpiImageCreate(input_w, input_h, VPI_IMAGE_FORMAT_U8, flags, &vpi_fill_image) == VPI_SUCCESS) {
+            VPIImageData fill_data;
+            if (vpiImageLockData(vpi_fill_image, VPI_LOCK_WRITE,
+                    VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &fill_data) == VPI_SUCCESS) {
+                uint8_t* row = static_cast<uint8_t*>(fill_data.buffer.pitch.planes[0].data);
+                for (int y = 0; y < input_h; ++y)
+                    memset(row + y * fill_data.buffer.pitch.planes[0].pitchBytes, 114, input_w);
+                vpiImageUnlock(vpi_fill_image);
+            }
+        }
     } catch (const std::exception& e) {
         std::cerr << "Error getting tensor info from TrtEngine: " << e.what() << std::endl;
         return false;
@@ -181,7 +196,7 @@ void YoloV8Detector::workerThreadLoop()
         {
             m_conf_thresh_current = m_conf_thresh * m_relax_ratio; // 降低置信度阈值以提高召回率
             VPIImage vpi_roi_view = nullptr;
-            VPIRectangleI roi_rect = {req.roi.x, req.roi.y, req.roi.width-1, req.roi.height-1};
+            VPIRectangleI roi_rect = {req.roi.x, req.roi.y, req.roi.width, req.roi.height};
             auto status = vpiImageCreateView(vpi_input, &roi_rect, flags, &vpi_roi_view);            
             if (status == VPI_SUCCESS)
             {
@@ -273,11 +288,10 @@ void YoloV8Detector::workerThreadLoop()
 
 void YoloV8Detector::detectOnImage(VPIImage image, const cv::Point2f& global_offset, std::vector<Detection>& results)
 {
-    float scale = 1.0f;
-    cv::Point2f offset(0, 0);
+    LetterboxInfo lb;
     cv::Size image_size;
     vpiImageGetSize(image, &image_size.width, &image_size.height);
-    if (!preprocess(image, scale, image_size, offset, input_buffer))
+    if (!preprocess(image, lb, image_size, input_buffer))
     {
         std::cerr << "Error during preprocessing." << std::endl;
         return;
@@ -296,8 +310,8 @@ void YoloV8Detector::detectOnImage(VPIImage image, const cv::Point2f& global_off
          std::cerr << "Error: TrtEngine output is invalid." << std::endl;
          return;
     }
-    
-    postprocess(reinterpret_cast<float*>(trt_results[0].host_ptr), scale, image_size, offset, global_offset, results);
+
+    postprocess(reinterpret_cast<float*>(trt_results[0].host_ptr), lb, image_size, global_offset, results);
 }
 
 void YoloV8Detector::update_resized_image(int new_width, int new_height, VPIImageFormat new_format, int flags)
@@ -321,32 +335,38 @@ void YoloV8Detector::update_resized_image(int new_width, int new_height, VPIImag
     }
 }
 
-bool YoloV8Detector::preprocess(VPIImage vpiIm, float &scale, const cv::Size& image_size, cv::Point2f& offset, TensorBuffer& buffer)
+bool YoloV8Detector::preprocess(VPIImage vpiIm, LetterboxInfo& lb, const cv::Size& image_size, TensorBuffer& buffer)
 {
     if (vpiIm == nullptr) {
         std::cerr << "Input VPIImage is null" << std::endl;
         return false;
     }
-    // 输入维度 (batch, C, H, W)
-    // const int input_h = m_input_dims.d[2];
-    // const int input_w = m_input_dims.d[3];
 
     const int flags = VPI_BACKEND_CUDA | VPI_BACKEND_CPU;
 
     VPIImageFormat img_format;
     vpiImageGetFormat(vpiIm, &img_format);
 
-     // 计算缩放比例和letterbox
-    scale = std::min(static_cast<float>(input_h) / image_size.height, static_cast<float>(input_w) / image_size.width);
-    int new_h = static_cast<int>(image_size.height * scale);
-    int new_w = static_cast<int>(image_size.width * scale);
+    // letterbox：scale 取 min，内容尺寸用 round（float 截断会让 1536*0.33333 -> 639，
+    // 内容比浮点 dw/dh 反算小 ~1px，导致非方输入的框整体偏移几个像素）
+    float scale = std::min(static_cast<float>(input_h) / image_size.height,
+                           static_cast<float>(input_w) / image_size.width);
+    int new_h = static_cast<int>(std::lround(image_size.height * scale));
+    int new_w = static_cast<int>(std::lround(image_size.width * scale));
+    new_w = std::min(new_w, input_w);
+    new_h = std::min(new_h, input_h);
 
-    offset.x = (input_w - new_w) / 2.0f; // dw
-    offset.y = (input_h - new_h) / 2.0f; // dh
+    // 返回真实整数 padding（对称：left = pad/2），反算用每轴比例
+    int pad_w = input_w - new_w;
+    int pad_h = input_h - new_h;
+    lb.scale_x = new_w / static_cast<float>(image_size.width);
+    lb.scale_y = new_h / static_cast<float>(image_size.height);
+    lb.left = pad_w / 2;
+    lb.top = pad_h / 2;
 
     VPIStatus status;
     bool resized = false;
-    if (std::fabs(scale - 1.0f) > 1e-6) {
+    if (new_w != image_size.width || new_h != image_size.height) {
         update_resized_image(new_w, new_h, img_format, flags);
         status = vpiSubmitRescale(vpi_stream, VPI_BACKEND_CUDA, vpiIm, vpi_resized_image, VPI_INTERP_LINEAR, VPI_BORDER_CLAMP, 0);
         if (status != VPI_SUCCESS) {
@@ -357,12 +377,11 @@ bool YoloV8Detector::preprocess(VPIImage vpiIm, float &scale, const cv::Size& im
     }
     VPIImage vpi_view = nullptr;
     VPIRectangleI roi_patch {
-        .x = static_cast<int>(offset.x), 
-        .y = static_cast<int>(offset.y),
+        .x = lb.left,
+        .y = lb.top,
         .width = new_w,
         .height = new_h
     };
-    status = vpiImageCreateView(vpi_padded_image, &roi_patch, flags, &vpi_view);
     static const VPIConvertImageFormatParams fmtParams {
         .policy = VPI_CONVERSION_CLAMP,
         .scale = 1.0f / 255.0f,
@@ -371,7 +390,22 @@ bool YoloV8Detector::preprocess(VPIImage vpiIm, float &scale, const cv::Size& im
         .chromaUpFilter = VPI_INTERP_NEAREST,
         .chromaDownFilter = VPI_INTERP_NEAREST,
     };
-    status = vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA, 
+    // 先用 114 填满整个输入图（有边距时），再写入内容子矩形，
+    // 否则边距是未初始化的显存内容
+    if ((pad_w > 0 || pad_h > 0) && vpi_fill_image) {
+        status = vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA,
+            vpi_fill_image, vpi_padded_image, &fmtParams);
+        if (status != VPI_SUCCESS) {
+            std::cerr << "Failed to fill letterbox margins" << std::endl;
+            return false;
+        }
+    }
+    status = vpiImageCreateView(vpi_padded_image, &roi_patch, flags, &vpi_view);
+    if (status != VPI_SUCCESS) {
+        std::cerr << "Failed to create letterbox content view" << std::endl;
+        return false;
+    }
+    status = vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA,
         resized ? vpi_resized_image : vpiIm, vpi_view, &fmtParams);
     if (status != VPI_SUCCESS) {
         std::cerr << "Failed to submit VPI format conversion" << std::endl;
@@ -401,8 +435,8 @@ bool YoloV8Detector::preprocess(VPIImage vpiIm, float &scale, const cv::Size& im
     return true;
 }
 
-void YoloV8Detector::postprocess(float* output, float scale, const cv::Size& image_size, 
-    const cv::Point2f& offset, const cv::Point2f& global_offset, std::vector<Detection>& results)
+void YoloV8Detector::postprocess(float* output, const LetterboxInfo& lb, const cv::Size& image_size,
+    const cv::Point2f& global_offset, std::vector<Detection>& results)
 {
     // Python 版本中的输出形状是 [batch, 84, 8400] 或 [batch, num_classes+4, num_detections]
     // 假设 m_output_dims 是 [1, 84, 8400] (对于COCO)
@@ -472,10 +506,10 @@ void YoloV8Detector::postprocess(float* output, float scale, const cv::Size& ima
                     float h = output[3 * num_proposals + i];
 
                     // 将坐标转换回原始图像空间
-                    float x1 = (cx - offset.x - w / 2.0f) / scale + global_offset.x;
-                    float y1 = (cy - offset.y - h / 2.0f) / scale + global_offset.y;
-                    float x2 = (cx - offset.x + w / 2.0f) / scale + global_offset.x;
-                    float y2 = (cy - offset.y + h / 2.0f) / scale + global_offset.y;
+                    float x1 = (cx - lb.left - w / 2.0f) / lb.scale_x + global_offset.x;
+                    float y1 = (cy - lb.top - h / 2.0f) / lb.scale_y + global_offset.y;
+                    float x2 = (cx - lb.left + w / 2.0f) / lb.scale_x + global_offset.x;
+                    float y2 = (cy - lb.top + h / 2.0f) / lb.scale_y + global_offset.y;
 
                     if (x2-x1 < image_size.width*0.8 && y2-y1 < image_size.height*0.8)  // 过滤掉过大的框
                     {
@@ -518,10 +552,10 @@ void YoloV8Detector::postprocess(float* output, float scale, const cv::Size& ima
                     float w = proposal_data[2];
                     float h = proposal_data[3];
 
-                    float x1 = (cx - offset.x - w / 2.0f) / scale + global_offset.x;
-                    float y1 = (cy - offset.y - h / 2.0f) / scale + global_offset.y;
-                    float x2 = (cx - offset.x + w / 2.0f) / scale + global_offset.x;
-                    float y2 = (cy - offset.y + h / 2.0f) / scale + global_offset.y;
+                    float x1 = (cx - lb.left - w / 2.0f) / lb.scale_x + global_offset.x;
+                    float y1 = (cy - lb.top - h / 2.0f) / lb.scale_y + global_offset.y;
+                    float x2 = (cx - lb.left + w / 2.0f) / lb.scale_x + global_offset.x;
+                    float y2 = (cy - lb.top + h / 2.0f) / lb.scale_y + global_offset.y;
                     
                     if (x2-x1 < image_size.width*0.8 && y2-y1 < image_size.height*0.8)  // 过滤掉过大的框
                     {

@@ -14,6 +14,7 @@ public:
     ~NanoTracker();
     void init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& bbox);
     float update(const std::shared_ptr<VPIImageWrapper>& frame, cv::Rect2f& output_bbox);
+    void reset();
 
 private:
     // Parameters
@@ -37,6 +38,10 @@ private:
 
     VPIStream vpi_stream = nullptr;
     VPIImage vpi_padded_image = nullptr;
+    VPIImage vpi_mean_image = nullptr;
+    int mean_image_w = 0;
+    int mean_image_h = 0;
+    bool mean_image_dirty = true;
     std::unordered_map<int, VPIImage> vpi_model_images;
 
     // Input buffers for inference
@@ -51,8 +56,13 @@ private:
     void generate_points();
     cv::Size get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& pos, int model_sz, int original_sz, TensorBuffer& buffer);
     void update_padded_image(int new_width, int new_height, int flags);
+    // 维护一张与 padded 图同尺寸、填充 channel_average 的 U8 图（Python 端
+    // copyMakeBorder 的均值填充），供搜索窗越界时填充边界
+    void update_mean_image(int new_width, int new_height, int flags);
     cv::Mat convert_bbox(const cv::Mat& delta, const cv::Mat& points);
     cv::Rect2f bbox_clip(const cv::Point2f& center, const cv::Point2f& size, const cv::Size& boundary);
+
+    bool m_initialized = false;
 };
 
 #endif // NANOTRACKER_H
