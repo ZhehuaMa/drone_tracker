@@ -17,9 +17,10 @@
 #include <rosbag2_cpp/writer.hpp>
 
 #include "hybrid_tracker.h"
+#include "rotation_history.h"
 #include "mv_camera.h"
 #include "mv_video.h"
-#include "drone_ekf.h"
+#include "drone_ekf.h" // 仅用 CameraIntrinsics（DroneEKF 已由跟踪器内置 KF 取代）
 
 class StatusPublisher
 {
@@ -50,21 +51,35 @@ private:
         this->declare_parameter<std::string>("save_path", ".");
         this->declare_parameter<bool>("visualized_result", false);
         this->declare_parameter<bool>("use_history_timestamp", false);
-        
+
         this->declare_parameter<std::string>("tracker.yolo_engine", "drone_int8.engine");
         this->declare_parameter<std::string>("tracker.nano_backbone", "nanotrackv3_backbone_int8.engine");
         this->declare_parameter<std::string>("tracker.nano_head", "nanotrack_head_int8.engine");
 
         this->declare_parameter<int>("tracker.yolo_target_class_id", 0);
-        this->declare_parameter<float>("tracker.yolo_conf_threshold", 0.3f);
-        this->declare_parameter<float>("tracker.yolo_nms_threshold", 0.45f);
-        this->declare_parameter<int>("tracker.yolo_interval", 3);
-        this->declare_parameter<float>("tracker.yolo_recall_relax_ratio", 0.75f);
-        this->declare_parameter<float>("tracker.iou_reset_threshold", 0.3f);
-        this->declare_parameter<float>("tracker.iou_calibrate_threshold", 0.6f);
-        this->declare_parameter<float>("tracker.tracking_conf_threshold", 0.8f);
+        this->declare_parameter<float>("tracker.yolo_conf_threshold", 0.4f);
+        this->declare_parameter<float>("tracker.yolo_nms_threshold", 0.4f);
+        this->declare_parameter<int>("tracker.yolo_interval", 4);
+        this->declare_parameter<float>("tracker.yolo_recall_relax_ratio", 1.0f);
+        this->declare_parameter<float>("tracker.iou_reset_threshold", 0.4f);
+        this->declare_parameter<float>("tracker.iou_calibrate_threshold", 0.8f);
+        this->declare_parameter<float>("tracker.max_position_jump", 150.0f);
+        this->declare_parameter<float>("tracker.max_size_jump_ratio", 2.0f);
+        this->declare_parameter<float>("tracker.max_box_area_ratio", 0.8f);
         this->declare_parameter<float>("tracker.tracking_roi_scale_factor", 2.0f);
-        this->declare_parameter<int>("tracker.lost_max_count", 50);
+        this->declare_parameter<int>("tracker.lost_max_count", 5);
+        this->declare_parameter<int>("tracker.frame_buffer_size", 30);
+        this->declare_parameter<int>("tracker.jump_tolerance", 3);
+        this->declare_parameter<bool>("tracker.enable_dcf", true);
+        this->declare_parameter<bool>("tracker.dcf_fixed_template", true);
+        this->declare_parameter<double>("tracker.dcf_learning_rate", 0.01);
+        this->declare_parameter<double>("tracker.dcf_lambda", 0.0001);
+        this->declare_parameter<double>("tracker.dcf_psr_thresh", 5.0);
+        this->declare_parameter<double>("tracker.dcf_max_div_factor", 0.5);
+        this->declare_parameter<double>("tracker.kf_r_pos", 4.0);
+        this->declare_parameter<double>("tracker.kf_r_size", 4.0);
+        this->declare_parameter<double>("tracker.kf_q_a", 5e4);
+        this->declare_parameter<double>("tracker.kf_q_size", 1e3);
 
         this->declare_parameter<int>("mv_camera.width_px", 1920);
         this->declare_parameter<int>("mv_camera.height_px", 1920);
@@ -75,11 +90,6 @@ private:
         this->declare_parameter<int>("mv_camera.output_width_px", 640);
         this->declare_parameter<int>("mv_camera.output_height_px", 640);
         this->declare_parameter<float>("mv_camera.focal_length_mm", 12.0f);
-
-        this->declare_parameter<int>("ekf.estimated_imu_freq", 100);
-        this->declare_parameter<double>("ekf.estimated_latency", 0.08);
-        this->declare_parameter<std::vector<double>>("ekf.process_noise_std", {0.5, 0.5, 1.0, 1.0});
-        this->declare_parameter<std::vector<double>>("ekf.measurement_noise_std", {5.0, 5.0});
     }
 
     void setup();
@@ -106,13 +116,14 @@ private:
     int interval_ms_ = 1;
     bool enable_image_output_ = false;
     bool use_history_timestamp_ = false;
-    
+
     CameraIntrinsics cam_intrinsics_;
 
-    std::mutex ekf_mtx_;
-    std::unique_ptr<DroneEKF> drone_ekf_;
-    bool detect_valid_ = false;
-    
+    // 云台旋转历史：(ts, R_cam)，为跟踪器 KF 提供帧时刻/当前时刻的相机旋转。
+    // 订阅回调在触发 ON 之前就持续积累，保证启动时历史已就绪。
+    RotationHistory gimbal_history_;
+    mutable std::mutex gimbal_mtx_;
+
     std::thread worker_thread_;
     std::atomic_bool running = false;
     int8_t last_tracker_state = -1;

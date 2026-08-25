@@ -31,7 +31,13 @@ def generate_launch_description():
             default_value='true',
             description='Whether to visualize results.'
         )
-    
+
+    enable_dcf_arg = DeclareLaunchArgument(
+            'enable_dcf',
+            default_value='true',
+            description='Enable grayscale DCF fusion with NanoTrack (A/B testing).'
+        )
+
     config = os.path.join(
         get_package_share_directory('drone_tracker'),
         'parameters',
@@ -43,6 +49,7 @@ def generate_launch_description():
         save_path_arg,
         enable_save_arg,
         enable_visualize_arg,
+        enable_dcf_arg,
         Node(
             package='drone_tracker',
             executable='drone_tracker_node',
@@ -52,7 +59,8 @@ def generate_launch_description():
                 {'video_source': LaunchConfiguration('video_source')},
                 {'save_path': LaunchConfiguration('save_path')},
                 {'need_save': LaunchConfiguration('enable_save')},
-                {'visualized_result': LaunchConfiguration('enable_visualize')}],
+                {'visualized_result': LaunchConfiguration('enable_visualize')},
+                {'tracker.enable_dcf': LaunchConfiguration('enable_dcf')}],
             output='screen',
             emulate_tty=True,
         )

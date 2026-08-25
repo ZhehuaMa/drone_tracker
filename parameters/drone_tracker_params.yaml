@@ -8,16 +8,34 @@ drone_tracker_node:
       yolo_engine: "drone_int8.engine"
       nano_backbone: "nanotrackv3_backbone_int8.engine"
       nano_head: "nanotrack_head_int8.engine"
+      # 目标类别：接受 cid >= yolo_target_class_id
       yolo_target_class_id: 0
+      # 检测器阈值保持实机调参值；其余为 hybrid tracker 算法行为参数，
+      # 与 airsim_tracker launch.py 对齐（语义已随移植改变）
       yolo_conf_threshold: 0.5
       yolo_nms_threshold: 0.45
-      yolo_interval: 2
-      yolo_recall_relax_ratio: 0.75
-      iou_reset_threshold: 0.3
-      iou_calibrate_threshold: 0.6
-      tracking_conf_threshold: 0.8
+      yolo_interval: 4
+      yolo_recall_relax_ratio: 1.0   # 1.0 = 关闭（Python 端无此放宽机制）
+      iou_reset_threshold: 0.4       # IoU 低于此值时重置跟踪器
+      iou_calibrate_threshold: 0.8   # IoU 高于此值时视为 YOLO 确认，不干预
+      max_position_jump: 150.0       # 像素（绝对值；原 1536x960 调参，960x960 下可适当调小）
+      max_size_jump_ratio: 2.0
+      max_box_area_ratio: 0.8
       tracking_roi_scale_factor: 2.0
-      lost_max_count: 30
+      lost_max_count: 5              # x yolo_interval(4) ≈ 20 帧 (~0.67s) 判定丢失，需现场验证
+      frame_buffer_size: 30
+      jump_tolerance: 3
+      enable_dcf: true               # DCF 融合开关（A/B 对比用）
+      dcf_fixed_template: true
+      dcf_learning_rate: 0.01
+      dcf_lambda: 0.0001
+      dcf_psr_thresh: 5.0
+      dcf_max_div_factor: 0.5
+      # KF 噪声（旋转补偿回溯卡尔曼滤波）
+      kf_r_pos: 4.0
+      kf_r_size: 4.0
+      kf_q_a: 50000.0
+      kf_q_size: 1000.0
     mv_camera:
       flip: true
       mirror: true
@@ -29,8 +47,3 @@ drone_tracker_node:
       height_px: 1920
       focal_length_mm: 12.0
       pixel_size_um: 3.45
-    ekf:
-      estimated_imu_freq: 100
-      estimated_latency: 0.08
-      process_noise_std: [0.5, 0.5, 1.0, 1.0]
-      measurement_noise_std: [3.0, 3.0]

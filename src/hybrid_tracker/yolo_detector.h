@@ -9,6 +9,7 @@
 #include <atomic>
 #include <memory>
 #include <queue>
+#include <cstdint>
 #include <opencv2/opencv.hpp>
 #include <vpi/VPI.h>
 
@@ -38,41 +39,51 @@ struct LetterboxInfo
     int top = 0;
 };
 
+// 检测结果：单框 + 它所对应的帧号（异步检测延迟的关键——主循环据此找到
+// 历史帧做补帧初始化）
+struct YoloResult
+{
+    uint64_t frame_id = 0;
+    bool has_target = false;
+    Detection best{};
+};
+
 class YoloV8Detector
 {
 public:
-    YoloV8Detector(const std::string& engine_path, float conf_thresh, float nms_thresh, int target_class_id, float recall_relax_ratio);
+    YoloV8Detector(const std::string& engine_path, float conf_thresh, float nms_thresh,
+                   int target_class_id, float recall_relax_ratio, float max_box_area_ratio = 0.8f);
     ~YoloV8Detector();
 
     /** @brief 初始化TRT引擎、分配缓冲区并启动工作线程 */
     bool init();
 
-    /** @brief 请求对新帧进行检测
+    /** @brief 请求对新帧进行检测（ROI -> 全图 -> 自适应切片级联）
      * @param frame 要处理的图像
-     * @param roi 感兴趣区域 (如果为空则使用全图)
-     * @param use_tiling 是否在未检测到目标时尝试切片检测
+     * @param frame_id 帧号，随结果一并返回
+     * @param roi 感兴趣区域 (如果为空则直接全图+切片)
      * @return 如果成功提交检测，则为 true
      */
-    bool request(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect& roi = cv::Rect(), bool use_tiling = false);
+    bool request(const std::shared_ptr<VPIImageWrapper>& frame, uint64_t frame_id,
+                 const cv::Rect& roi = cv::Rect());
 
-    /** @brief 检查是否有新的检测结果准备就绪
-     * @return 如果结果准备就绪，则为 true
-     */
-    bool is_result_ready() const;
+    /** @brief 工作线程是否还有未领取的请求（忙则跳过本帧的检测请求） */
+    bool isBusy() const;
 
-    /** @brief 获取最新的检测结果
-     * @param detections [out] 用于存储检测结果的向量
+    /** @brief 获取最新的检测结果（可能为空目标，信号本身表示检测已完成）
      * @return 如果成功获取了新结果，则为 true
      */
-    bool get_result(std::vector<Detection>& detections);
-
-    bool get_result(std::priority_queue<Detection>& detections);
+    bool get_result(YoloResult& result);
 
     /** @brief 获取模型输入尺寸 */
     std::pair<int, int> getInputSize() const;
 
     /** @brief 停止工作线程 */
     void stop();
+
+    /** @brief 自适应重叠切片（Python create_overlapping_tiles 移植）：
+     * 短边固定 2 份，长边自适应最少份数(>=2)使每块尽量正方形 */
+    static std::vector<cv::Rect> createOverlappingTiles(int width, int height, float overlap_ratio);
 
 private:
     /** @brief 工作线程的主循环 */
@@ -123,23 +134,24 @@ private:
     float m_conf_thresh_current;
     float m_relax_ratio;
     float m_nms_thresh;
+    float m_max_box_area_ratio;
     int m_target_class_id;
 
     // --- 线程通信 ---
     std::thread m_worker_thread;
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::condition_variable m_cv_request;
-    
+
     struct Request {
         std::shared_ptr<VPIImageWrapper> frame;
+        uint64_t frame_id = 0;
         cv::Rect roi;
-        bool use_tiling;
     } m_next_request;
 
     bool m_new_request = false;
     std::atomic<bool> m_result_ready;
     std::atomic<bool> m_stop_requested;
-    std::vector<Detection> m_last_detections;
+    YoloResult m_last_result;
 };
 
 #endif // YOLOV8DETECTOR_H

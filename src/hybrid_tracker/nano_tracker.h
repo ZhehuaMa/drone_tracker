@@ -15,6 +15,7 @@ public:
     void init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& bbox);
     float update(const std::shared_ptr<VPIImageWrapper>& frame, cv::Rect2f& output_bbox);
     void reset();
+    bool isInitialized() const { return m_initialized; }
 
 private:
     // Parameters

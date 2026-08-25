@@ -39,13 +39,17 @@ link_directories(
 set(LIB_SOURCES
     hybrid_tracker.cpp
     yolo_detector.cpp
-    simple_kf.cpp
+    dcf_tracker.cpp
+    rotation_kf.cpp
     nano_tracker.cpp
     trt_engine.cpp
 )
 
 set(LIB_HEADERS
     hybrid_tracker.h
+    dcf_tracker.h
+    rotation_kf.h
+    rotation_history.h
 )
 
 # Create shared library
@@ -58,4 +62,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     vpi
     pthread
 )
+
+# 单元测试（DCF/KF/切片，纯主机端，不需要 GPU 与 TRT 引擎）
+option(DRONE_TRACKER_BUILD_TESTS "Build hybrid tracker unit tests" OFF)
+if(DRONE_TRACKER_BUILD_TESTS)
+    add_executable(hybrid_tracker_tests tests/test_main.cpp)
+    target_link_libraries(hybrid_tracker_tests PRIVATE ${PROJECT_NAME})
+endif()
 

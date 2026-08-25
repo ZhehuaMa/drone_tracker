@@ -13,7 +13,13 @@ def generate_launch_description():
             # default_value=TextSubstitution(text='/home/dg/Videos/ts_20251201_155214_34690.mjpeg'),
             description='Video source file or device index for the drone tracker node.'
         )
-    
+
+    enable_dcf_arg = DeclareLaunchArgument(
+            'enable_dcf',
+            default_value='true',
+            description='Enable grayscale DCF fusion with NanoTrack (A/B testing).'
+        )
+
     config = os.path.join(
         get_package_share_directory('drone_tracker'),
         'parameters',
@@ -22,13 +28,15 @@ def generate_launch_description():
 
     return LaunchDescription([
         video_source_arg,
+        enable_dcf_arg,
         Node(
             package='drone_tracker',
             executable='drone_tracker_node',
             name='drone_tracker_node',
             parameters=[
                 config,
-                {'video_source': LaunchConfiguration('video_source')}],
+                {'video_source': LaunchConfiguration('video_source')},
+                {'tracker.enable_dcf': LaunchConfiguration('enable_dcf')}],
             output='screen',
             emulate_tty=True,
         )
