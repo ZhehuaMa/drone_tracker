@@ -11,7 +11,7 @@ drone_tracker_node:
       # 与 airsim_tracker launch.py 对齐（语义已随移植改变）
       yolo_conf_threshold: 0.4
       yolo_nms_threshold: 0.45
-      yolo_interval: 4
+      yolo_interval: 3
       yolo_recall_relax_ratio: 1.0   # 1.0 = 关闭（Python 端无此放宽机制）
       iou_reset_threshold: 0.4       # IoU 低于此值时重置跟踪器
       iou_calibrate_threshold: 0.8   # IoU 高于此值时视为 YOLO 确认，不干预

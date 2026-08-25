@@ -34,7 +34,7 @@ def generate_launch_description():
 
     enable_dcf_arg = DeclareLaunchArgument(
             'enable_dcf',
-            default_value='true',
+            default_value='false',
             description='Enable grayscale DCF fusion with NanoTrack (A/B testing).'
         )
 
