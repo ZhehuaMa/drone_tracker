@@ -56,7 +56,7 @@ private:
     // Helper functions
     void generate_points();
     cv::Size get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& pos, int model_sz, int original_sz, TensorBuffer& buffer);
-    void update_padded_image(int new_width, int new_height, int flags);
+    bool update_padded_image(int new_width, int new_height, int flags);
     // 维护一张与 padded 图同尺寸、填充 channel_average 的 U8 图（Python 端
     // copyMakeBorder 的均值填充），供搜索窗越界时填充边界
     void update_mean_image(int new_width, int new_height, int flags);

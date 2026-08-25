@@ -43,6 +43,8 @@ YoloV8Detector::~YoloV8Detector()
         vpiImageDestroy(vpi_resized_image);
     if (vpi_fill_image)
         vpiImageDestroy(vpi_fill_image);
+    if (vpi_frame_copy)
+        vpiImageDestroy(vpi_frame_copy);
     if (vpi_stream) {
         vpiStreamDestroy(vpi_stream);
         vpi_stream = nullptr;
@@ -215,8 +217,51 @@ void YoloV8Detector::workerThreadLoop()
         
         if (!req.frame) continue;
 
-        VPIImage vpi_input = req.frame->get();
         const int flags = VPI_BACKEND_CUDA | VPI_BACKEND_CPU;
+
+        // 立即把帧复制到工作线程私有的 VPI 图并释放原帧引用。
+        // Python 端在 trt 交接前显式 copy（"trt 交接独立 copy"）；主线程的
+        // DCF/补帧会对缓存帧做主机端 vpiImageLockData，若工作线程仍在同一
+        // VPIImage 上提交流操作，会破坏 VPI 的锁协议并导致内部状态损坏。
+        // 复制后工作线程只触碰私有副本，与主线程彻底隔离。
+        VPIImage vpi_input = nullptr;
+        {
+            VPIImage src = req.frame->get();
+            int w = 0, h = 0;
+            vpiImageGetSize(src, &w, &h);
+            if (vpi_frame_copy && (copy_w != w || copy_h != h)) {
+                vpiImageDestroy(vpi_frame_copy);
+                vpi_frame_copy = nullptr;
+            }
+            if (!vpi_frame_copy) {
+                if (vpiImageCreate(w, h, VPI_IMAGE_FORMAT_U8, flags, &vpi_frame_copy) != VPI_SUCCESS) {
+                    std::cerr << "Failed to create worker frame copy" << std::endl;
+                    req.frame.reset();
+                    {
+                        std::lock_guard<std::mutex> lock(m_mutex);
+                        m_last_result = YoloResult{req.frame_id, false, Detection{}};
+                        m_result_ready = true;
+                    }
+                    continue;
+                }
+                copy_w = w;
+                copy_h = h;
+            }
+            if (vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA, src, vpi_frame_copy, nullptr) != VPI_SUCCESS) {
+                std::cerr << "Failed to copy frame for worker" << std::endl;
+                req.frame.reset();
+                {
+                    std::lock_guard<std::mutex> lock(m_mutex);
+                    m_last_result = YoloResult{req.frame_id, false, Detection{}};
+                    m_result_ready = true;
+                }
+                continue;
+            }
+            vpiStreamSync(vpi_stream);
+            vpi_input = vpi_frame_copy;
+            req.frame.reset();
+        }
+
 
         // 检测级联（与 Python 端 trt_worker 一致）：ROI -> 全图 -> 自适应切片，
         // 第一个产出目标类别检测的阶段胜出，最终取置信度最高的单框

@@ -329,6 +329,11 @@ NanoDcfTracker::NanoDcfTracker(const Params& params)
 bool NanoDcfTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& bbox)
 {
     nano_->init(frame, bbox);
+    if (!nano_->isInitialized())
+    {
+        std::cerr << "NanoDcfTracker: nano init failed (crop error?)" << std::endl;
+        return false;
+    }
 
     const cv::Point2f center(bbox.x + bbox.width / 2.0f, bbox.y + bbox.height / 2.0f);
     const cv::Size2f size(bbox.width, bbox.height);
@@ -354,6 +359,11 @@ bool NanoDcfTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::R
 {
     cv::Rect2f nano_box;
     last_score_ = nano_->update(frame, nano_box);
+    if (last_score_ < 0.0f)
+    {
+        // 搜索窗裁剪失败：本帧按跟踪失败处理，保持 DCF/中心 KF 状态不变
+        return false;
+    }
     if (!nano_->isInitialized())
         return false;
 

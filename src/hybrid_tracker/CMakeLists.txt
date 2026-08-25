@@ -68,5 +68,8 @@ option(DRONE_TRACKER_BUILD_TESTS "Build hybrid tracker unit tests" OFF)
 if(DRONE_TRACKER_BUILD_TESTS)
     add_executable(hybrid_tracker_tests tests/test_main.cpp)
     target_link_libraries(hybrid_tracker_tests PRIVATE ${PROJECT_NAME})
+    # 压力测试：需要真实 TRT 引擎（<pkg>/models），验证 VPI/内存稳定性
+    add_executable(hybrid_tracker_stress tests/stress_main.cpp)
+    target_link_libraries(hybrid_tracker_stress PRIVATE ${PROJECT_NAME})
 endif()
 

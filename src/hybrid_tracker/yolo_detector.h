@@ -125,6 +125,9 @@ private:
     VPIImage vpi_padded_image = nullptr;
     VPIImage vpi_resized_image = nullptr;
     VPIImage vpi_fill_image = nullptr;   // 恒为 114 的 U8 图，用于填充 letterbox 边距
+    VPIImage vpi_frame_copy = nullptr;   // 工作线程私有的帧副本（与主线程的 VpiGrayLock 隔离）
+    int copy_w = 0;
+    int copy_h = 0;
 
     int input_w = 0;
     int input_h = 0;

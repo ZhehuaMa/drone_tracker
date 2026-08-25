@@ -87,8 +87,20 @@ static cv::Mat change(const cv::Mat& r) {
 };
 
 void NanoTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& bbox) {
-    center_pos = cv::Point2f(bbox.x + (bbox.width - 1) / 2.0f, bbox.y + (bbox.height - 1) / 2.0f);
-    size = cv::Point2f(bbox.width, bbox.height);
+    m_initialized = false;
+
+    // 输入框裁剪到图像范围内，避免异常大的框产生巨大的 padded 图
+    cv::Rect2f box = bbox;
+    if (frame && frame->get()) {
+        int w = 0, h = 0;
+        vpiImageGetSize(frame->get(), &w, &h);
+        box &= cv::Rect2f(0, 0, static_cast<float>(w), static_cast<float>(h));
+    }
+    if (box.width <= 0 || box.height <= 0)
+        return;
+
+    center_pos = cv::Point2f(box.x + (box.width - 1) / 2.0f, box.y + (box.height - 1) / 2.0f);
+    size = cv::Point2f(box.width, box.height);
 
     float s_z = sz(size.x, size.y);
 
@@ -107,7 +119,10 @@ void NanoTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::
     }
     mean_image_dirty = true;
 
-    get_subwindow_buffer(frame->get(), center_pos, template_size, static_cast<int>(round(s_z)), z_crop_buffer);
+    cv::Size crop_size = get_subwindow_buffer(frame->get(), center_pos, template_size,
+                                              static_cast<int>(round(s_z)), z_crop_buffer);
+    if (crop_size.width <= 0 || crop_size.height <= 0)
+        return; // 模板裁剪失败：保持未初始化，由上层回退
 
     // Use new infer function
     auto backbone_out_vec = session_backbone->infer({&z_crop_buffer});
@@ -125,11 +140,13 @@ float NanoTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::Rec
     float scale_z = static_cast<float>(template_size) / s_z;
     float s_x = s_z * (static_cast<float>(instance_size) / template_size);
     
-    // Use new buffer function to prepare input
-    // VPIImage vpiIm;
-    // vpiImageCreateWrapperOpenCVMat(img, VPI_IMAGE_FORMAT_BGR8, 0, &vpiIm);
     auto img_size = get_subwindow_buffer(frame->get(), center_pos, instance_size, static_cast<int>(round(s_x)), x_crop_buffer);
-    // vpiImageDestroy(vpiIm);
+    if (img_size.width <= 0 || img_size.height <= 0)
+    {
+        // 搜索窗裁剪失败：保持内部状态不变（不写入退化的 0x0 边界框），
+        // 返回 -1 让上层按"本帧跟踪失败"处理
+        return -1.0f;
+    }
 
     // Run backbone inference
     auto x_f_results_vec = session_backbone->infer({&x_crop_buffer});
@@ -213,7 +230,7 @@ float NanoTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::Rec
 }
 
 
-void NanoTracker::update_padded_image(int new_width, int new_height, int flags)
+bool NanoTracker::update_padded_image(int new_width, int new_height, int flags)
 {
     int padded_width = 0;
     int padded_height = 0;
@@ -223,15 +240,21 @@ void NanoTracker::update_padded_image(int new_width, int new_height, int flags)
     if (padded_width != new_width || padded_height != new_height) {
         if (vpi_padded_image) {
             vpiImageDestroy(vpi_padded_image);
+            vpi_padded_image = nullptr;
         }
         padded_width = new_width;
         padded_height = new_height;
         auto status = vpiImageCreate(padded_width, padded_height, VPI_IMAGE_FORMAT_F32, flags, &vpi_padded_image);
         if (status != VPI_SUCCESS) {
-            std::cerr << "Failed to create VPI padded image" << std::endl;
-            return;
+            // 显式置空句柄，避免后续在悬空句柄上创建视图（会以
+            // VPI_ERROR_INVALID_ARGUMENT 失败并可能破坏 VPI 内部状态）
+            vpi_padded_image = nullptr;
+            std::cerr << "Failed to create VPI padded image (" << new_width << "x" << new_height
+                      << "): " << vpiStatusGetName(status) << std::endl;
+            return false;
         }
     }
+    return true;
 }
 
 void NanoTracker::update_mean_image(int new_width, int new_height, int flags)
@@ -285,7 +308,8 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
     // auto start = std::chrono::high_resolution_clock::now();
 
     const int flags = VPI_BACKEND_CUDA | VPI_BACKEND_CPU;
-    update_padded_image(im_width + left_pad + right_pad, im_height + top_pad + bottom_pad, flags);
+    if (!update_padded_image(im_width + left_pad + right_pad, im_height + top_pad + bottom_pad, flags))
+        return {};
 
     // 搜索窗越界时，先用通道均值填满整张 padded 图，再写入图像内容——
     // 否则边界区域是未初始化显存（Python 端为 copyMakeBorder 均值填充）
@@ -317,7 +341,7 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
     };
     auto status = vpiImageCreateView(vpi_padded_image, &roi_view, flags, &vpiView);
     if (status != VPI_SUCCESS) {
-        std::cerr << "Failed to create VPI image view " << status << std::endl;
+        std::cerr << "Failed to create VPI image view: " << vpiStatusGetName(status) << std::endl;
         return {};
     }
     static const VPIConvertImageFormatParams fmtParams {
@@ -331,6 +355,7 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
     status = vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA, vpiIm, vpiView, &fmtParams);
     if (status != VPI_SUCCESS) {
         std::cerr << "Failed to submit VPI format conversion" << std::endl;
+        vpiImageDestroy(vpiView);
         return {};
     }
 
@@ -346,10 +371,10 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
     };
     status = vpiImageCreateView(vpi_padded_image, &roi_patch, flags, &vpiImPatch);
     if (status != VPI_SUCCESS) {
-        std::cerr << "Failed to create VPI image patch" << std::endl;
+        std::cerr << "Failed to create VPI image patch: " << vpiStatusGetName(status) << std::endl;
         return {};
     }
-    
+
     VPIImage vpiOut = vpiImPatch;
     if (model_sz != original_sz) {
         auto it = vpi_model_images.find(model_sz);
@@ -359,6 +384,7 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
             status = vpiImageCreate(model_sz, model_sz, VPI_IMAGE_FORMAT_F32, flags, &vpiOut);
             if (status != VPI_SUCCESS) {
                 std::cerr << "Failed to create VPI resized image" << std::endl;
+                vpiImageDestroy(vpiImPatch);
                 return {};
             }
             vpi_model_images[model_sz] = vpiOut;
@@ -366,6 +392,7 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
         status = vpiSubmitRescale(vpi_stream, VPI_BACKEND_CUDA, vpiImPatch, vpiOut, VPI_INTERP_LINEAR, VPI_BORDER_CLAMP, 0);
         if (status != VPI_SUCCESS) {
             std::cerr << "Failed to submit VPI rescale" << std::endl;
+            vpiImageDestroy(vpiImPatch);
             return {};
         }
     }
@@ -374,7 +401,12 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
     vpiStreamSync(vpi_stream);
     
     VPIImageData f32Data;
-    vpiImageLockData(vpiOut, VPI_LOCK_READ, VPI_IMAGE_BUFFER_CUDA_PITCH_LINEAR, &f32Data);
+    if (vpiImageLockData(vpiOut, VPI_LOCK_READ, VPI_IMAGE_BUFFER_CUDA_PITCH_LINEAR, &f32Data) != VPI_SUCCESS)
+    {
+        std::cerr << "Failed to lock model image for memcpy" << std::endl;
+        vpiImageDestroy(vpiImPatch);
+        return {};
+    }
     size_t width_bytes = model_sz * sizeof(float);
     cudaMemcpy2DAsync(
         static_cast<float*>(buffer.device_ptr), width_bytes,
