@@ -193,6 +193,85 @@ static void testRotationKF()
 }
 
 // ---------------------------------------------------------------------------
+// CenterKalmanFilter：enable_dcf=false 时的稳心滤波器
+// ---------------------------------------------------------------------------
+static void testCenterKF()
+{
+    CenterKalmanFilter::Params p;
+    const int64_t dt_us = 33333; // ~30fps
+
+    // (a) 静止目标 + 抖动测量：滤波输出的抖动显著小于测量抖动
+    {
+        CenterKalmanFilter kf(p);
+        double m_var = 0, o_var = 0, m_sum = 0, o_sum = 0;
+        int n = 0;
+        for (int i = 0; i <= 400; ++i)
+        {
+            // 黄金角相位抖动（确定性伪随机，幅度 ~±1.5px）
+            const double jx = 1.5 * std::sin(i * 2.399963);
+            const double jy = 1.5 * std::cos(i * 1.855587);
+            const cv::Point2f meas(100.0 + jx, 100.0 + jy);
+            cv::Point2f out;
+            if (i == 0)
+            {
+                kf.initialize(meas, 0);
+                out = meas;
+            }
+            else
+            {
+                out = kf.update(meas, i * dt_us);
+                if (i > 100) // 跳过收敛段
+                {
+                    m_sum += jx * jx + jy * jy;
+                    const double ex = out.x - 100.0, ey = out.y - 100.0;
+                    o_sum += ex * ex + ey * ey;
+                    ++n;
+                }
+            }
+        }
+        m_var = m_sum / n;
+        o_var = o_sum / n;
+        std::printf("      jitter: meas_rms=%.3fpx filtered_rms=%.3fpx\n",
+            std::sqrt(m_var), std::sqrt(o_var));
+        CHECK(n == 300 && o_var < m_var * 0.8, "center KF reduces measurement jitter (>20%)");
+    }
+
+    // (b) 匀速目标：滤波输出紧跟真实位置（无明显滞后）
+    {
+        CenterKalmanFilter kf(p);
+        const double v = 40.0; // px/s
+        double max_err = 0;
+        for (int i = 0; i <= 200; ++i)
+        {
+            const double t = i * dt_us * 1e-6;
+            const cv::Point2f truth(100.0 + v * t, 100.0 + 0.5 * v * t);
+            const cv::Point2f meas = truth; // 无噪声，检验模型跟踪
+            if (i == 0)
+                kf.initialize(meas, 0);
+            else
+            {
+                const cv::Point2f out = kf.update(meas, i * dt_us);
+                if (i > 50)
+                    max_err = std::max(max_err, static_cast<double>(
+                        std::max(std::fabs(out.x - truth.x), std::fabs(out.y - truth.y))));
+            }
+        }
+        CHECK(max_err < 1.0, "center KF tracks constant velocity < 1px lag");
+    }
+
+    // (c) predictOnly 只读：不改变滤波状态
+    {
+        CenterKalmanFilter kf(p);
+        kf.initialize(cv::Point2f(50, 60), 0);
+        kf.update(cv::Point2f(52, 61), dt_us);
+        const cv::Point2f a = kf.predictOnly(2 * dt_us);
+        const cv::Point2f b = kf.predictOnly(2 * dt_us);
+        const double drift = std::fabs(a.x - b.x) + std::fabs(a.y - b.y);
+        CHECK(drift == 0.0, "predictOnly is read-only");
+    }
+}
+
+// ---------------------------------------------------------------------------
 // 自适应重叠切片
 // ---------------------------------------------------------------------------
 static void testTiles()
@@ -227,6 +306,8 @@ int main()
     testDCF();
     std::printf("== RotationKalmanFilter ==\n");
     testRotationKF();
+    std::printf("== CenterKalmanFilter ==\n");
+    testCenterKF();
     std::printf("== createOverlappingTiles ==\n");
     testTiles();
 

@@ -25,13 +25,15 @@ drone_tracker_node:
       lost_max_count: 5              # x yolo_interval(4) ≈ 20 帧 (~0.67s) 判定丢失，需现场验证
       frame_buffer_size: 30
       jump_tolerance: 3
-      enable_dcf: true               # DCF 融合开关（A/B 对比用）
+      enable_dcf: true               # DCF 融合开关（A/B 对比用）；false 时由 kf_r_pos/kf_q_a
+                                     # 驱动的中心平滑 KF 承担稳心角色
       dcf_fixed_template: true
       dcf_learning_rate: 0.01
       dcf_lambda: 0.0001
       dcf_psr_thresh: 5.0
-      dcf_max_div_factor: 0.5
-      # KF 噪声（旋转补偿回溯卡尔曼滤波）
+      dcf_max_div_factor: 0.5        # 中心发散重锚定门限（DCF 与 KF 路径共用）
+      # KF 噪声（旋转补偿回溯卡尔曼滤波；r_pos/q_a 同时用于 enable_dcf=false 时的
+      # 跟踪器内中心平滑 KF）
       kf_r_pos: 4.0
       kf_r_size: 4.0
       kf_q_a: 50000.0

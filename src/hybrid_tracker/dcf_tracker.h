@@ -2,6 +2,7 @@
 #define DCF_TRACKER_H
 
 #include <memory>
+#include <cstdint>
 #include <opencv2/opencv.hpp>
 #include <vpi/VPI.h>
 
@@ -87,12 +88,55 @@ private:
 };
 
 /**
+ * @brief 轻量中心平滑卡尔曼滤波器（状态 [cx, cy, vx, vy]，匀速模型）。
+ *
+ * enable_dcf=false 时承担 DCF 的"稳心"角色：抑制 NanoTrack 中心的逐帧抖动。
+ * 与主管线的旋转补偿回溯 KF 相互独立——本滤波器只做局部抖动抑制（帧时间戳
+ * 驱动），不感知相机旋转；发散重锚定由 NanoDcfTracker 的门限负责。
+ */
+class CenterKalmanFilter
+{
+public:
+    struct Params
+    {
+        double r_pos = 4.0;   // 中心测量噪声方差 (px^2)
+        double q_a = 5e4;     // CWNA 加速度过程噪声谱密度
+    };
+
+    explicit CenterKalmanFilter(const Params& params);
+
+    /** @brief 用首个中心测量初始化（速度置零，速度方差放大） */
+    void initialize(const cv::Point2f& center, int64_t ts_us);
+
+    /** @brief 只读预测到指定时刻（用于发散门限判断），未初始化返回 (0,0) */
+    cv::Point2f predictOnly(int64_t ts_us) const;
+
+    /** @brief 预测 + 用测量中心做约瑟夫形式校正，返回滤波后的中心 */
+    cv::Point2f update(const cv::Point2f& meas_center, int64_t ts_us);
+
+    bool initialized() const { return initialized_; }
+    void reset();
+
+private:
+    cv::Matx44d transition(double dt) const;
+    cv::Matx44d processNoise(double dt) const;
+
+    Params params_;
+    cv::Vec4d x_{};
+    cv::Matx44d P_ = cv::Matx44d::eye() * 1000.0;
+    int64_t last_ts_us_ = 0;
+    bool initialized_ = false;
+};
+
+/**
  * @brief NanoTrack + 灰度 DCF 融合跟踪器（dcf_tracker.py NanoDcfTracker 移植）。
  *
  * - NanoTrack：每帧给出鲁棒的框与尺度（经由节点侧 YOLO 触发重初始化完成恢复）。
  * - DCF：在局部搜索窗内锁定低抖动的中心。
  * - 输出框 = (DCF 中心, NanoTrack 尺寸)；DCF 与 NanoTrack 中心偏离过大或峰值
  *   置信度不足时，信任 NanoTrack 并以其中心重新锚定 DCF。
+ * - enable_dcf=false 时，由 CenterKalmanFilter 承担稳心角色（KF 平滑中心 +
+ *   同样的发散重锚定门限），而不是直接输出原始 NanoTrack 框。
  * 对外暴露与 NanoTracker 相同的 init/update 协议，因此 catch-up / 跳变抑制 /
  * 卡尔曼滤波管线无需感知融合细节。
  */
@@ -105,7 +149,8 @@ public:
         std::string head_path;
         bool enable_dcf = true;
         GrayscaleDCF::Params dcf;
-        float max_div_factor = 0.5f; // DCF/Nano 中心发散门限（× 平均边长）
+        CenterKalmanFilter::Params center_kf;  // enable_dcf=false 时的中心平滑 KF
+        float max_div_factor = 0.5f;           // 中心发散门限（× 平均边长），DCF 与 KF 路径共用
     };
 
     explicit NanoDcfTracker(const Params& params);
@@ -126,6 +171,7 @@ private:
     Params params_;
     std::unique_ptr<NanoTracker> nano_;
     std::unique_ptr<GrayscaleDCF> dcf_;
+    CenterKalmanFilter center_kf_;
     bool has_prev_center_ = false;
     cv::Point2f prev_center_;
     float last_score_ = 0.0f;

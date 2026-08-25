@@ -225,13 +225,104 @@ void GrayscaleDCF::peak(const cv::Mat& R, int& ri, int& ci, double& rmax, double
 }
 
 // ---------------------------------------------------------------------------
+// CenterKalmanFilter
+// ---------------------------------------------------------------------------
+
+CenterKalmanFilter::CenterKalmanFilter(const Params& params)
+    : params_(params)
+{
+    reset();
+}
+
+void CenterKalmanFilter::reset()
+{
+    initialized_ = false;
+    last_ts_us_ = 0;
+    x_ = cv::Vec4d::zeros();
+    P_ = cv::Matx44d::eye() * 1000.0;
+}
+
+void CenterKalmanFilter::initialize(const cv::Point2f& center, int64_t ts_us)
+{
+    x_ = cv::Vec4d(center.x, center.y, 0.0, 0.0);
+    P_ = cv::Matx44d::eye();
+    P_(2, 2) *= 1000.0;   // 对速度不确定
+    P_(3, 3) *= 1000.0;
+    last_ts_us_ = ts_us;
+    initialized_ = true;
+}
+
+cv::Matx44d CenterKalmanFilter::transition(double dt) const
+{
+    cv::Matx44d F = cv::Matx44d::eye();
+    F(0, 2) = dt;
+    F(1, 3) = dt;
+    return F;
+}
+
+cv::Matx44d CenterKalmanFilter::processNoise(double dt) const
+{
+    // 连续白噪声加速度模型（cx-vx / cy-vy 耦合子块，与主管线 KF 同族）
+    dt = std::max(1e-6, dt);
+    const double dt2 = dt * dt;
+    const double dt3 = dt2 * dt;
+
+    cv::Matx44d Q = cv::Matx44d::zeros();
+    Q(0, 0) = params_.q_a * dt3 / 3.0;
+    Q(0, 2) = Q(2, 0) = params_.q_a * dt2 / 2.0;
+    Q(2, 2) = params_.q_a * dt;
+    Q(1, 1) = params_.q_a * dt3 / 3.0;
+    Q(1, 3) = Q(3, 1) = params_.q_a * dt2 / 2.0;
+    Q(3, 3) = params_.q_a * dt;
+    return Q;
+}
+
+cv::Point2f CenterKalmanFilter::predictOnly(int64_t ts_us) const
+{
+    if (!initialized_)
+        return cv::Point2f();
+    double dt = (ts_us - last_ts_us_) * 1e-6;
+    if (dt < 0.0)
+        dt = 0.0;
+    return cv::Point2f(x_[0] + x_[2] * dt, x_[1] + x_[3] * dt);
+}
+
+cv::Point2f CenterKalmanFilter::update(const cv::Point2f& meas_center, int64_t ts_us)
+{
+    double dt = (ts_us - last_ts_us_) * 1e-6;
+    if (dt < 0.0)
+        dt = 0.0;
+    const cv::Matx44d F = transition(dt);
+    const cv::Vec4d x_pred = F * x_;
+    const cv::Matx44d P_pred = F * P_ * F.t() + processNoise(dt);
+
+    // H 选取 [cx, cy]；约瑟夫形式校正
+    const double h_vals[8] = {1., 0., 0., 0.,
+                              0., 1., 0., 0.};
+    const cv::Matx<double, 2, 4> H(h_vals);
+    cv::Matx22d R = cv::Matx22d::zeros();
+    R(0, 0) = R(1, 1) = params_.r_pos;
+
+    const cv::Vec2d y(meas_center.x - x_pred[0], meas_center.y - x_pred[1]);
+    const cv::Matx22d S = H * P_pred * H.t() + R;
+    const cv::Matx<double, 4, 2> K = P_pred * H.t() * S.inv();
+    x_ = x_pred + K * y;
+    const cv::Matx44d KH = K * H;
+    const cv::Matx44d I_KH = cv::Matx44d::eye() - KH;
+    P_ = I_KH * P_pred * I_KH.t() + K * R * K.t();
+    last_ts_us_ = ts_us;
+    return cv::Point2f(x_[0], x_[1]);
+}
+
+// ---------------------------------------------------------------------------
 // NanoDcfTracker
 // ---------------------------------------------------------------------------
 
 NanoDcfTracker::NanoDcfTracker(const Params& params)
     : params_(params),
       nano_(std::make_unique<NanoTracker>(params.backbone_path, params.head_path)),
-      dcf_(std::make_unique<GrayscaleDCF>(params.dcf))
+      dcf_(std::make_unique<GrayscaleDCF>(params.dcf)),
+      center_kf_(params.center_kf)
 {
 }
 
@@ -239,15 +330,21 @@ bool NanoDcfTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const c
 {
     nano_->init(frame, bbox);
 
-    VpiGrayLock lock(frame);
-    if (!lock.valid())
-    {
-        std::cerr << "NanoDcfTracker: failed to lock frame for DCF init" << std::endl;
-        return false;
-    }
     const cv::Point2f center(bbox.x + bbox.width / 2.0f, bbox.y + bbox.height / 2.0f);
     const cv::Size2f size(bbox.width, bbox.height);
-    dcf_->init(lock.gray(), center, size);
+    const int64_t ts_us = static_cast<int64_t>(frame->get_timestamps());
+
+    if (params_.enable_dcf)
+    {
+        VpiGrayLock lock(frame);
+        if (!lock.valid())
+        {
+            std::cerr << "NanoDcfTracker: failed to lock frame for DCF init" << std::endl;
+            return false;
+        }
+        dcf_->init(lock.gray(), center, size);
+    }
+    center_kf_.initialize(center, ts_us);
     prev_center_ = center;
     has_prev_center_ = true;
     return true;
@@ -268,7 +365,25 @@ bool NanoDcfTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::R
     cv::Point2f chosen;
     if (!params_.enable_dcf)
     {
-        chosen = nano_center;
+        // DCF 关闭：由轻量 CV 卡尔曼滤波承担"稳心"角色，抑制 NanoTrack 中心的
+        // 逐帧抖动；测量远离滤波器预测（目标真实大幅移动）时信任 NanoTrack
+        // 并重锚定——与 DCF 路径共用同一发散门限
+        const int64_t ts_us = static_cast<int64_t>(frame->get_timestamps());
+        if (!center_kf_.initialized())
+            center_kf_.initialize(nano_center, ts_us);
+
+        const cv::Point2f pred = center_kf_.predictOnly(ts_us);
+        const double div = std::hypot(pred.x - nano_center.x, pred.y - nano_center.y);
+        const double max_div = params_.max_div_factor * ((w + h) / 2.0);
+        if (div > max_div)
+        {
+            chosen = nano_center;
+            center_kf_.initialize(nano_center, ts_us);
+        }
+        else
+        {
+            chosen = center_kf_.update(nano_center, ts_us);
+        }
     }
     else
     {
@@ -316,6 +431,7 @@ void NanoDcfTracker::reset()
 {
     nano_->reset();
     dcf_->reset();
+    center_kf_.reset();
     has_prev_center_ = false;
     prev_center_ = cv::Point2f();
     last_score_ = 0.0f;

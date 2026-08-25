@@ -147,6 +147,9 @@ bool HybridTrackerImp::init()
     tracker_params.enable_dcf = m_settings.enable_dcf;
     tracker_params.dcf = m_settings.dcf;
     tracker_params.max_div_factor = m_settings.dcf_max_div_factor;
+    // enable_dcf=false 时的中心平滑 KF 噪声（与主管线 KF 共用调参入口）
+    tracker_params.center_kf.r_pos = m_settings.kf_r_pos;
+    tracker_params.center_kf.q_a = m_settings.kf_q_a;
     m_tracker = std::make_unique<NanoDcfTracker>(tracker_params);
 
     reset();
