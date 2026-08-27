@@ -515,8 +515,12 @@ void MVCamera::captureLoop(CallbackFn &&callback) {
         if (status == VPI_SUCCESS) {
             vpiStreamSync(vpiStream_);
             auto image_buffer = std::make_shared<VPIImageWrapper>(vpiOut, request_us);
-            while (!image_queue_.try_enqueue(std::move(image_buffer))) {
-                image_queue_.pop(); 
+            // 队列满时丢弃【最新】帧（理由同 MVVideo：生产者线程不能调用
+            // 消费端 pop()，否则与消费者竞争同一槽位造成 shared_ptr 双重释放）
+            if (!image_queue_.try_enqueue(std::move(image_buffer))) {
+                static int drop_count = 0;
+                if (++drop_count % 100 == 1)
+                    std::cout << "Frame queue full, dropped newest frame (" << drop_count << ")" << std::endl;
             }
             if (need_save_) {
                 thread_pool->enqueue([image=vpiSave, ts=request_us, video_writer=mjpeg_writer.get(), cb=callback, this]() {

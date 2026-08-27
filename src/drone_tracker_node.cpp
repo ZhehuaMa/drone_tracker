@@ -252,6 +252,11 @@ void DroneTrackerNode::worker()
 
         if (mv_camera_->getImageQueue().wait_dequeue_timed(vpi_buffer, 1s)) {
             start_time = this->now();
+            // 排空积压只保留最新帧（消费端操作，SPSC 安全）：跟踪器只需要最新
+            // 状态，过载时直接跳过中间帧，避免队列长期满导致生产端丢帧
+            std::shared_ptr<VPIImageWrapper> newer;
+            while (mv_camera_->getImageQueue().try_dequeue(newer))
+                vpi_buffer = std::move(newer);
         }
         else {
             std::cout << "No frame received from camera." << std::endl;

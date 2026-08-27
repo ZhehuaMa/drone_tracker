@@ -236,8 +236,13 @@ void MVVideo::decode_worker() {
 
             now += std::chrono::microseconds(ts_diff);
             std::this_thread::sleep_until(now);
-            while (!image_queue_.try_enqueue(std::move(image_buffer))) {
-                image_queue_.pop();
+            // 队列满时丢弃【最新】帧。绝不能在这里 pop() 腾位：pop 是 SPSC 队列的
+            // 消费端操作，与消费者线程并发取同一槽位会导致 shared_ptr 双重释放
+            // （释放后使用 -> 堆损坏）。消费端会排空到最新帧，队列不会长期满。
+            if (!image_queue_.try_enqueue(std::move(image_buffer))) {
+                static int drop_count = 0;
+                if (++drop_count % 100 == 1)
+                    printf("Frame queue full, dropped newest frame (%d)\n", drop_count);
             }
         }
     }
