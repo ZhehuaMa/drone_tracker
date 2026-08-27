@@ -98,6 +98,7 @@ private:
     int m_jump_counter = 0;            // 跟踪框连续跳变计数
     int m_yolo_jump_count = 0;         // YOLO 检测连续跳变计数
     int m_yolo_lost = 0;               // YOLO 连续未确认次数（无目标/低IoU重初始化/未确认跳变）
+    int m_init_fail_streak = 0;         // 检测初始化连续失败次数（防死循环保护）
     int m_no_detection_frames = 0;     // 未收到任何检测信号的帧数（TRT 卡死保护）
     TrackerState m_state = TrackerState::Detecting;
 
@@ -185,6 +186,7 @@ void HybridTrackerImp::reset()
     m_jump_counter = 0;
     m_yolo_jump_count = 0;
     m_yolo_lost = 0;
+    m_init_fail_streak = 0;
     m_no_detection_frames = 0;
     m_state = TrackerState::Detecting;
     m_display_info = "Detecting...";
@@ -311,6 +313,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                 if (catchupTracker(m_frame_buffer[idx], catchup_frames, res.best.box))
                 {
                     m_yolo_lost = 0;
+                    m_init_fail_streak = 0;
                     m_tracker_initialized = true;
                     kf_needs_reset = true;
                     m_state = TrackerState::TargetFound;
@@ -319,6 +322,18 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                     std::cout << "Tracker initialized at [" << res.best.box.x << ", " << res.best.box.y
                               << ", " << res.best.box.width << ", " << res.best.box.height
                               << "] and caught up " << catchup_frames.size() << " frames" << std::endl;
+                }
+                else
+                {
+                    // 初始化失败保护：连续失败多半因为 KF 预测漂移导致 ROI
+                    // 停在错误区域——重置 KF，让检测回到全图/切片级联
+                    if (++m_init_fail_streak >= 10)
+                    {
+                        std::cout << "Tracker init failed " << m_init_fail_streak
+                                  << " times in a row, resetting KF and detection ROI" << std::endl;
+                        m_kf->reset();
+                        m_init_fail_streak = 0;
+                    }
                 }
             }
         }

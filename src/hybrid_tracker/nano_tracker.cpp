@@ -89,18 +89,26 @@ static cv::Mat change(const cv::Mat& r) {
 void NanoTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& bbox) {
     m_initialized = false;
 
-    // 输入框裁剪到图像范围内，避免异常大的框产生巨大的 padded 图
-    cv::Rect2f box = bbox;
-    if (frame && frame->get()) {
-        int w = 0, h = 0;
-        vpiImageGetSize(frame->get(), &w, &h);
-        box &= cv::Rect2f(0, 0, static_cast<float>(w), static_cast<float>(h));
-    }
-    if (box.width <= 0 || box.height <= 0)
+    if (!frame || !frame->get())
+        return;
+    int w = 0, h = 0;
+    vpiImageGetSize(frame->get(), &w, &h);
+    if (w <= 0 || h <= 0)
         return;
 
-    center_pos = cv::Point2f(box.x + (box.width - 1) / 2.0f, box.y + (box.height - 1) / 2.0f);
-    size = cv::Point2f(box.width, box.height);
+    // 与 Python 端一致：不裁剪输入框本身。目标处于 FOV 边缘时检测框会部分
+    // 越界——按图像裁剪会产生狭长的退化模板（边缘跟踪抖动），完全越界时甚至
+    // 得到空框（初始化死循环）。搜索窗越界由 get_subwindow_buffer 的均值填充
+    // 处理；这里只把中心约束到图像内、尺寸约束到图像量级（下限 min_wh），
+    // 保证裁剪窗与图像有重叠且不会产生异常巨大的 padded 图。
+    const float cx = bbox.x + (bbox.width - 1) / 2.0f;
+    const float cy = bbox.y + (bbox.height - 1) / 2.0f;
+    center_pos = cv::Point2f(
+        std::max(0.0f, std::min(cx, static_cast<float>(w))),
+        std::max(0.0f, std::min(cy, static_cast<float>(h))));
+    size = cv::Point2f(
+        std::max(static_cast<float>(min_wh), std::min(bbox.width, static_cast<float>(w))),
+        std::max(static_cast<float>(min_wh), std::min(bbox.height, static_cast<float>(h))));
 
     float s_z = sz(size.x, size.y);
 

@@ -32,10 +32,12 @@ int main(int argc, char** argv)
     cv::RNG rng(12345);
     for (int i = 0; i < N; ++i)
     {
-        // 目标位置：Lissajous 扫全图（含四角），尺寸 20~700px 三角波往复
+        // 目标位置：Lissajous 扫全图（含四角），幅度周期性超过图像边界
+        // （cx/cy 达 ±620 -> 框可完全越界），尺寸 20~700px 三角波往复
         const double t = i * 0.02;
-        const float cx = 480 + 430 * std::sin(t * 1.3);
-        const float cy = 480 + 430 * std::sin(t * 2.1 + 1.0);
+        const float sweep = 480 + 140 * std::sin(t * 0.11);
+        const float cx = sweep + 480 * std::sin(t * 1.3);
+        const float cy = sweep + 480 * std::sin(t * 2.1 + 1.0);
         const float sz = 360 + 340 * std::sin(t * 0.4);
 
         cv::Mat mat(H, W, CV_8UC1, cv::Scalar(60));
