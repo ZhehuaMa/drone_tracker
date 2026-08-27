@@ -12,7 +12,7 @@ drone_tracker_node:
       yolo_conf_threshold: 0.4
       yolo_nms_threshold: 0.45
       yolo_interval: 3
-      yolo_recall_relax_ratio: 1.0   # 1.0 = 关闭（Python 端无此放宽机制）
+      yolo_recall_relax_ratio: 0.6   # 1.0 = 关闭（Python 端无此放宽机制）
       iou_reset_threshold: 0.4       # IoU 低于此值时重置跟踪器
       iou_calibrate_threshold: 0.8   # IoU 高于此值时视为 YOLO 确认，不干预
       max_position_jump: 150.0       # 像素（绝对值；原 1536x960 调参，960x960 下可适当调小）
@@ -22,7 +22,7 @@ drone_tracker_node:
       lost_max_count: 5              # x yolo_interval(4) ≈ 20 帧 (~0.4s@50fps) 判定丢失，需现场验证
       frame_buffer_size: 30
       jump_tolerance: 3
-      enable_dcf: true               # DCF 融合开关（A/B 对比用）；false 时由 kf_r_pos/kf_q_a
+      enable_dcf: false               # DCF 融合开关（A/B 对比用）；false 时由 kf_r_pos/kf_q_a
                                      # 驱动的中心平滑 KF 承担稳心角色
       dcf_fixed_template: true
       dcf_learning_rate: 0.01
