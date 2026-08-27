@@ -97,7 +97,7 @@ private:
     int64_t m_last_frame_ts_us = 0;
     int m_jump_counter = 0;            // 跟踪框连续跳变计数
     int m_yolo_jump_count = 0;         // YOLO 检测连续跳变计数
-    int m_yolo_lost = 0;               // YOLO 连续未检测到目标的次数
+    int m_yolo_lost = 0;               // YOLO 连续未确认次数（无目标/低IoU重初始化/未确认跳变）
     int m_no_detection_frames = 0;     // 未收到任何检测信号的帧数（TRT 卡死保护）
     TrackerState m_state = TrackerState::Detecting;
 
@@ -417,7 +417,6 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
             m_no_detection_frames = 0; // 收到检测信号，重置无信号计数
             if (res.has_target)
             {
-                m_yolo_lost = 0;
                 const cv::Rect2f& best_match_box = res.best.box;
 
                 // 获取历史帧对应的 tracker_box / kf_pred_box
@@ -478,6 +477,11 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                             kf_needs_reset = true;
                         }
                         m_yolo_jump_count = 0;
+                        m_yolo_lost = 0;   // 接受跳变 = 主动跟随移动目标，重置未确认计数
+                    }
+                    else
+                    {
+                        m_yolo_lost++;     // 未获确认的跳变检测
                     }
                 }
                 else if (!ok || current_iou < m_settings.iou_reset_threshold)
@@ -497,17 +501,20 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                             std::cerr << "Failed to re-initialize tracker" << std::endl;
                         }
                     }
+                    m_yolo_lost++;         // 低 IoU 重初始化：本帧未获确认
                 }
                 // IOU 足够高时不覆盖当前追踪框，避免引入滞后
                 else if (current_iou > m_settings.iou_calibrate_threshold)
                 {
                     m_yolo_jump_count = 0;
+                    m_yolo_lost = 0;       // YOLO 确认
                     m_display_info = "YOLO Confirmed";
                     m_display_color = cv::Scalar(0, 0, 255); // 红色
                 }
                 else
                 {
                     m_yolo_jump_count = 0;
+                    m_yolo_lost = 0;       // 中间带：跟踪器与检测保持合理重叠
                 }
             }
             else
@@ -515,14 +522,18 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                 // YOLO 没有检测到目标
                 m_yolo_jump_count = 0;
                 m_yolo_lost++;
-                if (m_yolo_lost >= m_settings.lost_max_count)
-                {
-                    m_tracker_initialized = false;
-                    clearBoxes();
-                    std::cout << "Target lost. Re-initializing detection. (" << m_yolo_lost << ")"
-                              << std::endl;
-                    m_state = TrackerState::TargetLost;
-                }
+            }
+
+            // 连续未确认（无目标 / 低 IoU 重初始化 / 未确认跳变）达到上限 ->
+            // 判定丢失。仅有"无目标"判据不足以覆盖 YOLO 持续误检的场景：
+            // 目标实际丢失后，误检会让跟踪器在垃圾框上无限重初始化而永不报丢。
+            if (m_tracker_initialized && m_yolo_lost >= m_settings.lost_max_count)
+            {
+                m_tracker_initialized = false;
+                clearBoxes();
+                std::cout << "Target lost (unconfirmed streak " << m_yolo_lost << ")."
+                          << " Re-initializing detection." << std::endl;
+                m_state = TrackerState::TargetLost;
             }
         }
         else

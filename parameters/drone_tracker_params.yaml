@@ -22,7 +22,8 @@ drone_tracker_node:
       max_size_jump_ratio: 2.0
       max_box_area_ratio: 0.8
       tracking_roi_scale_factor: 2.0
-      lost_max_count: 5              # x yolo_interval(4) ≈ 20 帧 (~0.67s) 判定丢失，需现场验证
+      lost_max_count: 5              # 连续未确认判定上限：无检测 / 低IoU重初始化 / 未确认跳变均计数，
+                                     # x yolo_interval(4) ≈ 20 帧 (~0.67s)；持续误检不会再无限重初始化
       frame_buffer_size: 30
       jump_tolerance: 3
       enable_dcf: true               # DCF 融合开关（A/B 对比用）；false 时由 kf_r_pos/kf_q_a
