@@ -21,7 +21,6 @@ private:
     // Parameters
     const int score_size = 15;
     const int min_wh = 5;
-    const float context_ratio = 0.5f;
     const int template_size = 127;
     const int instance_size = 255;
     const float window_influence = 0.455f;

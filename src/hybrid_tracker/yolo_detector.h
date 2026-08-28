@@ -8,7 +8,6 @@
 #include <condition_variable>
 #include <atomic>
 #include <memory>
-#include <queue>
 #include <cstdint>
 #include <opencv2/opencv.hpp>
 #include <vpi/VPI.h>

@@ -29,13 +29,11 @@ find_package(rosbag2_cpp REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(VPI REQUIRED)
-find_package(Eigen3 REQUIRED)
 
 # Include directories
 include_directories(
     src/mv_camera
     src/hybrid_tracker
-    ${EIGEN3_INCLUDE_DIR}
     src
 )
 
@@ -45,7 +43,6 @@ add_subdirectory(src/hybrid_tracker)
 # Executable
 add_executable(drone_tracker_node
     src/drone_tracker_node.cpp
-    src/drone_ekf.cpp
 )
 
 ament_target_dependencies(drone_tracker_node

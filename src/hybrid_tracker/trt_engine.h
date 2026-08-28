@@ -5,7 +5,6 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include <opencv2/opencv.hpp>
 #include "NvInfer.h"
 #include <cuda_runtime_api.h>
 
@@ -37,7 +36,7 @@ public:
     TrtEngine(const std::string& engine_path);
     ~TrtEngine();
 
-    // Run inference on a vector of cv::Mat inputs
+    // Run inference on a list of device TensorBuffer inputs
     std::vector<TensorBuffer> infer(const std::vector<TensorBuffer*>& inputs);
 
     /** @brief 获取指定名称张量的（静态或配置文件）维度 */

@@ -1,7 +1,6 @@
 #include "dcf_tracker.h"
 
 #include <cmath>
-#include <cstring>
 #include <iostream>
 
 #include <vpi/OpenCVInterop.hpp>

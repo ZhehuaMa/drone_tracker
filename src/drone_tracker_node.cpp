@@ -67,9 +67,9 @@ void DroneTrackerNode::setup()
 
     std::string video_source;
     this->get_parameter("video_source", video_source);
-    is_camera_ = (video_source.substr(0, 5) == "video" && video_source.length() == 6);
+    const bool is_camera = (video_source.substr(0, 5) == "video" && video_source.length() == 6);
 
-    if (is_camera_)
+    if (is_camera)
     {
         RCLCPP_INFO(this->get_logger(), "Opening camera device: %s", video_source.c_str());
         std::string device = "/dev/";
@@ -401,13 +401,14 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
         return; // 无姿态数据
 
     const int64_t ts_us = rclcpp::Time(msg->header.stamp).nanoseconds() / 1000;
-    Eigen::Quaterniond quat(q.w, q.x, q.y, q.z);
-    quat.normalize();
-    const Eigen::Matrix3d R_eigen = quat.toRotationMatrix();
-    cv::Matx33d R;
-    for (int i = 0; i < 3; ++i)
-        for (int j = 0; j < 3; ++j)
-            R(i, j) = R_eigen(i, j);
+
+    // 四元数 -> 旋转矩阵（与 Eigen toRotationMatrix 同式），归一化后按行列展开
+    const double norm = std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+    const double w = q.w / norm, x = q.x / norm, y = q.y / norm, z = q.z / norm;
+    const cv::Matx33d R(
+        1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y - w * z), 2.0 * (x * z + w * y),
+        2.0 * (x * y + w * z), 1.0 - 2.0 * (x * x + z * z), 2.0 * (y * z - w * x),
+        2.0 * (x * z - w * y), 2.0 * (y * z + w * x), 1.0 - 2.0 * (x * x + y * y));
 
     {
         std::lock_guard<std::mutex> lock(gimbal_mtx_);
