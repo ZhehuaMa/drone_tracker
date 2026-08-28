@@ -329,13 +329,42 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
         .chromaUpFilter = VPI_INTERP_NEAREST,
         .chromaDownFilter = VPI_INTERP_NEAREST,
     };
+    // 搜索窗越界时用通道均值填充边缘带。绝不能"整图均值填充后再用视图覆写
+    // 内容区"——两次提交重叠写同一张 VPI 图且中间无同步时，VPI 3.2 上两次
+    // 写入会全部丢失（实测得到全零画布）：NanoTrack 完全致盲，网络输出恒定
+    // 位移，边缘目标 bbox 以 ~2px/帧线性漂移、被 YOLO 周期性拉回（锯齿）。
+    // 这里只写与内容区不相交的四条边缘带，所有写入互不相交，单次同步提交。
+    VPIImage pad_views[8] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    int pad_view_count = 0;
+    const int canvas_w = im_width + left_pad + right_pad;
+    const int canvas_h = im_height + top_pad + bottom_pad;
     if (left_pad > 0 || top_pad > 0 || right_pad > 0 || bottom_pad > 0) {
-        update_mean_image(im_width + left_pad + right_pad, im_height + top_pad + bottom_pad, flags);
+        update_mean_image(canvas_w, canvas_h, flags);
         if (vpi_mean_image) {
-            auto fill_status = vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA,
-                vpi_mean_image, vpi_padded_image, &meanFmtParams);
-            if (fill_status != VPI_SUCCESS) {
-                std::cerr << "Failed to fill padded image with channel mean: " << fill_status << std::endl;
+            const struct { int x, y, w, h; } bands[4] = {
+                {0, 0, canvas_w, top_pad},
+                {0, top_pad + im_height, canvas_w, bottom_pad},
+                {0, top_pad, left_pad, im_height},
+                {left_pad + im_width, top_pad, right_pad, im_height},
+            };
+            for (const auto& band : bands) {
+                if (band.w <= 0 || band.h <= 0)
+                    continue;
+                VPIImage mean_view = nullptr, canvas_view = nullptr;
+                const VPIRectangleI band_rect {band.x, band.y, band.w, band.h};
+                const bool ok_view =
+                    vpiImageCreateView(vpi_mean_image, &band_rect, flags, &mean_view) == VPI_SUCCESS &&
+                    vpiImageCreateView(vpi_padded_image, &band_rect, flags, &canvas_view) == VPI_SUCCESS;
+                if (ok_view &&
+                    vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA, mean_view, canvas_view,
+                                                &meanFmtParams) == VPI_SUCCESS) {
+                    pad_views[pad_view_count++] = mean_view;
+                    pad_views[pad_view_count++] = canvas_view;
+                    continue;
+                }
+                std::cerr << "Failed to fill padded border with channel mean" << std::endl;
+                if (mean_view) vpiImageDestroy(mean_view);
+                if (canvas_view) vpiImageDestroy(canvas_view);
             }
         }
     }
@@ -350,6 +379,7 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
     auto status = vpiImageCreateView(vpi_padded_image, &roi_view, flags, &vpiView);
     if (status != VPI_SUCCESS) {
         std::cerr << "Failed to create VPI image view: " << vpiStatusGetName(status) << std::endl;
+        for (int k = 0; k < pad_view_count; ++k) vpiImageDestroy(pad_views[k]);
         return {};
     }
     static const VPIConvertImageFormatParams fmtParams {
@@ -364,11 +394,14 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
     if (status != VPI_SUCCESS) {
         std::cerr << "Failed to submit VPI format conversion" << std::endl;
         vpiImageDestroy(vpiView);
+        for (int k = 0; k < pad_view_count; ++k) vpiImageDestroy(pad_views[k]);
         return {};
     }
 
     vpiStreamSync(vpi_stream);
     vpiImageDestroy(vpiView);
+    for (int k = 0; k < pad_view_count; ++k)
+        vpiImageDestroy(pad_views[k]);
 
     VPIImage vpiImPatch;
     VPIRectangleI roi_patch {
@@ -407,7 +440,7 @@ cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& po
 
     // printf("Synchronizing VPI stream...\n");
     vpiStreamSync(vpi_stream);
-    
+
     VPIImageData f32Data;
     if (vpiImageLockData(vpiOut, VPI_LOCK_READ, VPI_IMAGE_BUFFER_CUDA_PITCH_LINEAR, &f32Data) != VPI_SUCCESS)
     {

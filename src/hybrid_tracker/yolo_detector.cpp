@@ -450,29 +450,57 @@ bool YoloV8Detector::preprocess(VPIImage vpiIm, LetterboxInfo& lb, const cv::Siz
         .chromaUpFilter = VPI_INTERP_NEAREST,
         .chromaDownFilter = VPI_INTERP_NEAREST,
     };
-    // 先用 114 填满整个输入图（有边距时），再写入内容子矩形，
-    // 否则边距是未初始化的显存内容
+    // 用 114 填充 letterbox 边距。与 nano_tracker 的搜索窗填充同理：不能
+    // "整图填充后再用视图覆写内容区"——无中间同步的两次重叠写同一张 VPI 图
+    // 在 VPI 3.2 上可能全部丢失（实测全零）。这里只写与内容不相交的四条
+    // 边距带，所有写入互不相交。
+    VPIImage margin_views[8] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    int margin_view_count = 0;
     if ((pad_w > 0 || pad_h > 0) && vpi_fill_image) {
-        status = vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA,
-            vpi_fill_image, vpi_padded_image, &fmtParams);
-        if (status != VPI_SUCCESS) {
+        const struct { int x, y, w, h; } bands[4] = {
+            {0, 0, input_w, lb.top},
+            {0, lb.top + new_h, input_w, input_h - lb.top - new_h},
+            {0, lb.top, lb.left, new_h},
+            {lb.left + new_w, lb.top, input_w - lb.left - new_w, new_h},
+        };
+        for (const auto& band : bands) {
+            if (band.w <= 0 || band.h <= 0)
+                continue;
+            VPIImage fill_view = nullptr, canvas_view = nullptr;
+            const VPIRectangleI band_rect {band.x, band.y, band.w, band.h};
+            const bool ok_view =
+                vpiImageCreateView(vpi_fill_image, &band_rect, flags, &fill_view) == VPI_SUCCESS &&
+                vpiImageCreateView(vpi_padded_image, &band_rect, flags, &canvas_view) == VPI_SUCCESS;
+            if (ok_view &&
+                vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA, fill_view, canvas_view,
+                                            &fmtParams) == VPI_SUCCESS) {
+                margin_views[margin_view_count++] = fill_view;
+                margin_views[margin_view_count++] = canvas_view;
+                continue;
+            }
             std::cerr << "Failed to fill letterbox margins" << std::endl;
-            return false;
+            if (fill_view) vpiImageDestroy(fill_view);
+            if (canvas_view) vpiImageDestroy(canvas_view);
         }
     }
     status = vpiImageCreateView(vpi_padded_image, &roi_patch, flags, &vpi_view);
     if (status != VPI_SUCCESS) {
         std::cerr << "Failed to create letterbox content view" << std::endl;
+        for (int k = 0; k < margin_view_count; ++k) vpiImageDestroy(margin_views[k]);
         return false;
     }
     status = vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA,
         resized ? vpi_resized_image : vpiIm, vpi_view, &fmtParams);
     if (status != VPI_SUCCESS) {
         std::cerr << "Failed to submit VPI format conversion" << std::endl;
+        vpiImageDestroy(vpi_view);
+        for (int k = 0; k < margin_view_count; ++k) vpiImageDestroy(margin_views[k]);
         return false;
     }
     vpiStreamSync(vpi_stream);
     vpiImageDestroy(vpi_view);
+    for (int k = 0; k < margin_view_count; ++k)
+        vpiImageDestroy(margin_views[k]);
 
 
     VPIImageData f32Data;
