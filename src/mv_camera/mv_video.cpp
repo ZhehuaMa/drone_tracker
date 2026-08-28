@@ -10,7 +10,7 @@
 #define MEMORY_ALIGNMENT 256
 
 MVVideo::MVVideo(const std::string &video_path, bool use_video_timestamp)
-    : MVCameraBase(10), use_video_ts(use_video_timestamp)
+    : MVCameraBase(30), use_video_ts(use_video_timestamp)
 {
     printf("Opening video file: %s\n", video_path.c_str());
     // --- Open the input file ---
