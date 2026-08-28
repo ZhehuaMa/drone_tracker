@@ -366,6 +366,7 @@ bool NanoDcfTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::R
     }
     if (!nano_->isInitialized())
         return false;
+    last_nano_box_ = nano_box;
 
     const float w = nano_box.width;
     const float h = nano_box.height;

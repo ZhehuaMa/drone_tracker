@@ -104,6 +104,12 @@ public:
 
     /** @brief 处理单个视频帧 */
     virtual TrackerOutput update(const FrameContext& ctx) = 0;
+
+    // --- 诊断接口（离线回放/调参用，正常管线不依赖） ---
+    /** @brief 本帧 NanoTrack 原始输出框（融合/平滑前）；无有效结果时 width<=0 */
+    virtual cv::Rect2f lastNanoBox() const { return {}; }
+    /** @brief 本帧 NanoTrack 最优锚点置信度；<=0 表示本帧无推断 */
+    virtual float lastNanoScore() const { return -1.0f; }
 };
 
 

@@ -74,5 +74,8 @@ if(DRONE_TRACKER_BUILD_TESTS)
     # 竞态复现：并发流提交 vs 主机锁（纯 VPI，无引擎）
     add_executable(vpi_race_repro tests/race_repro.cpp)
     target_link_libraries(vpi_race_repro PRIVATE ${OpenCV_LIBS} vpi CUDA::cudart pthread)
+    # 离线回放：用录制视频直接驱动完整 HybridTracker，输出 bbox CSV 与稳定性统计
+    add_executable(replay_harness tests/replay_harness.cpp)
+    target_link_libraries(replay_harness PRIVATE ${PROJECT_NAME})
 endif()
 

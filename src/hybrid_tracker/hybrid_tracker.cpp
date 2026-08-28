@@ -26,6 +26,8 @@ public:
     virtual bool init() override;
     virtual void reset() override;
     virtual TrackerOutput update(const FrameContext& ctx) override;
+    virtual cv::Rect2f lastNanoBox() const override { return m_tracker ? m_tracker->lastNanoBox() : cv::Rect2f(); }
+    virtual float lastNanoScore() const override { return m_tracker ? m_tracker->lastScore() : -1.0f; }
 
 private:
     /** @brief 补帧缓存条目：帧号 + 帧 + 当时的跟踪框/KF 预测框 */
@@ -454,25 +456,36 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                         catchup_frames.push_back(m_frame_buffer[i].frame);
                 }
 
-                // 用历史框计算 IOU，没找到历史帧则回退用当前框
+                // 边缘目标仲裁：目标贴边/半出画时，YOLO 只能看到可见部分而
+                // 跟踪器估计完整外接框，两者对"不可见部分"的估计天然不同——
+                // 直接比较会导致 IoU 偏低、跳变误判，进而反复重初始化/判丢，
+                // 表现为边缘 bbox 抖动。这里把参与比较的框统一裁剪到图像范围，
+                // 只比较可见部分。
+                const cv::Rect2f image_rect(0.0f, 0.0f,
+                                            static_cast<float>(frame_w), static_cast<float>(frame_h));
+                auto clipped = [&image_rect](cv::Rect2f r) { r &= image_rect; return r; };
+                const cv::Rect2f yolo_box_vis = clipped(best_match_box);
+                const cv::Rect2f hist_tracker_vis =
+                    clipped(hist && hist->has_tracker_box ? hist->tracker_box
+                               : (m_has_display_box ? m_display_box : cv::Rect2f()));
+
+                // 用历史框计算 IOU（可见部分），没找到历史帧则回退用当前框
                 float current_iou = 0.0f;
-                if (hist && hist->has_tracker_box)
-                    current_iou = calculateIOU(hist->tracker_box, best_match_box);
-                else if (m_has_display_box)
-                    current_iou = calculateIOU(m_display_box, best_match_box);
+                if ((hist && hist->has_tracker_box) || m_has_display_box)
+                    current_iou = calculateIOU(hist_tracker_vis, yolo_box_vis);
 
                 // YOLO 检测结果跳变检测（可能检测到了其他物体）：
-                // 同时偏离历史 KF 预测与历史跟踪框才算跳变
+                // 同时偏离历史 KF 预测与历史跟踪框才算跳变（均按可见部分比较）
                 bool yolo_jump_kf = true;
                 if (hist && hist->has_kf_pred)
-                    yolo_jump_kf = isBoxJump(hist->kf_pred_box, best_match_box,
+                    yolo_jump_kf = isBoxJump(clipped(hist->kf_pred_box), yolo_box_vis,
                                              m_settings.max_position_jump, m_settings.max_size_jump_ratio);
                 bool yolo_jump_prev = true;
                 if (hist && hist->has_tracker_box)
-                    yolo_jump_prev = isBoxJump(hist->tracker_box, best_match_box,
+                    yolo_jump_prev = isBoxJump(hist_tracker_vis, yolo_box_vis,
                                                m_settings.max_position_jump, m_settings.max_size_jump_ratio);
                 else if (m_has_previous_box)
-                    yolo_jump_prev = isBoxJump(m_previous_box, best_match_box,
+                    yolo_jump_prev = isBoxJump(clipped(m_previous_box), yolo_box_vis,
                                                m_settings.max_position_jump, m_settings.max_size_jump_ratio);
                 const bool yolo_jump = yolo_jump_kf && yolo_jump_prev;
 
@@ -597,20 +610,29 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                          ctx.frame_ts_us, ctx.R_cam_at_frame);
         }
 
-        // predict_only 查询实时位置（不修改滤波器状态和历史）
+        // predict_only 查询实时位置（不修改滤波器状态和历史）。
+        // 发布框裁剪到图像范围：贴边目标的外推可能越界，下游不应收到
+        // 图像外的测量（内部 KF 状态保持不裁剪，目标回到画内可自然恢复）
         cv::Vec4d realtime;
         if (m_kf->predictOnly(ctx.now_us, ctx.R_cam_now, realtime))
         {
-            const cv::Rect2f rt_box(realtime[0] - realtime[2] / 2.0,
-                                    realtime[1] - realtime[3] / 2.0,
-                                    realtime[2], realtime[3]);
+            cv::Rect2f rt_box(realtime[0] - realtime[2] / 2.0,
+                              realtime[1] - realtime[3] / 2.0,
+                              realtime[2], realtime[3]);
+            rt_box &= cv::Rect2f(0.0f, 0.0f,
+                                 static_cast<float>(frame_w), static_cast<float>(frame_h));
             out.realtime_box = toBBoxRect(rt_box, true);
         }
     }
 
     out.consumed = true;
     out.tracking = m_tracker_initialized && m_has_display_box;
-    out.display_box = toBBoxRect(m_display_box, m_has_display_box);
+    {
+        cv::Rect2f display = m_display_box;
+        display &= cv::Rect2f(0.0f, 0.0f,
+                              static_cast<float>(frame_w), static_cast<float>(frame_h));
+        out.display_box = toBBoxRect(display, m_has_display_box);
+    }
     out.state = m_state;
     out.info = m_display_info;
     out.color = (uint32_t(m_display_color[2]) << 16) | (uint32_t(m_display_color[1]) << 8) | uint32_t(m_display_color[0]);

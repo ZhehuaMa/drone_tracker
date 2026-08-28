@@ -166,6 +166,8 @@ public:
 
     bool isInitialized() const;
     float lastScore() const { return last_score_; }
+    /** @brief 诊断：本帧 NanoTrack 的原始输出框（融合/KF 平滑之前） */
+    const cv::Rect2f& lastNanoBox() const { return last_nano_box_; }
 
 private:
     Params params_;
@@ -175,6 +177,7 @@ private:
     bool has_prev_center_ = false;
     cv::Point2f prev_center_;
     float last_score_ = 0.0f;
+    cv::Rect2f last_nano_box_;
 };
 
 #endif // DCF_TRACKER_H
