@@ -1,3 +1,6 @@
+.agents/
+.docker-artifacts/
 .vscode/
 build/
 *.engine
+AGENTS.local.md

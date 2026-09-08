@@ -1,0 +1,37 @@
+context: |
+  Write all artifacts in Simplified Chinese.
+
+  Treat every artifact as a standalone document. Do not assume that the reader
+  has read the conversation or understands the implementation.
+
+  Preserve exact identifiers and normative terms when required, but explain
+  their role in plain language at their first meaningful use.
+
+rules:
+  proposal:
+    - Write for a maintainer who understands the project goal but not this implementation.
+    - In Why, state the user-visible problem and impact before explaining the technical cause.
+    - The first paragraph must be understandable without knowing internal class names or algorithms.
+    - If a sentence introduces more than two unfamiliar domain terms, split it or add a plain-language explanation.
+    - Include one concrete before/after example when the change involves a multi-stage process.
+
+  design:
+    - Begin Context with a plain-language summary of the current failure and the intended outcome.
+    - "For each decision, state: the choice, why it was chosen, the rejected alternative, and the practical consequence."
+    - Define a technical term when first used in this document, even if it was explained in proposal.md.
+    - Use a numbered sequence or input-process-output example for flows containing three or more stages.
+    - Do not use an internal identifier as a substitute for explaining its responsibility.
+
+  specs:
+    - Describe observable behavior before internal technical details.
+    - Keep each normative sentence focused on one behavior or constraint.
+    - Split a requirement when it combines multiple independently testable behaviors.
+    - Define unavoidable technical terms in the requirement description before using them in scenarios.
+    - Preserve SHALL, MUST, WHEN, THEN, identifiers, shapes, and exact values required by OpenSpec.
+    - Scenarios must describe a concrete input, event, and observable result.
+
+  tasks:
+    - Start each task with the outcome to achieve, then name the files or components to change.
+    - Do not combine implementation, testing, documentation, and deployment into one checkbox.
+    - State an observable completion condition when the task is not self-evident.
+    - Preserve exact file names, commands, identifiers, and checkbox format.
