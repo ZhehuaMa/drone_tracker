@@ -22,6 +22,7 @@
 
 #include "threadpool.h"
 #include "mjpeg_writer.h"
+#include "frame/vpi_frame.h"
 
 // #include <opencv2/opencv.hpp>
 // #include <vpi/OpenCVInterop.hpp>
@@ -514,7 +515,13 @@ void MVCamera::captureLoop(CallbackFn &&callback) {
         }
         if (status == VPI_SUCCESS) {
             vpiStreamSync(vpiStream_);
-            auto image_buffer = std::make_shared<VPIImageWrapper>(vpiOut, request_us);
+            FrameRef image_buffer = VpiFrame::takeOwnership(vpiOut, request_us);
+            if (!image_buffer) {
+                std::cerr << "Failed to create frame from captured VPI image" << std::endl;
+                if (vpiSave) vpiImageDestroy(vpiSave);
+                if (vpiIn) vpiImageDestroy(vpiIn);
+                break;
+            }
             // 队列满时丢弃【最新】帧（理由同 MVVideo：生产者线程不能调用
             // 消费端 pop()，否则与消费者竞争同一槽位造成 shared_ptr 双重释放）
             if (!image_queue_.try_enqueue(std::move(image_buffer))) {

@@ -6,6 +6,8 @@
 #include <vpi/algo/Rescale.h>
 #include <vpi/algo/ConvertImageFormat.h>
 
+#include "frame/vpi_frame.h"
+
 // Helper to create Dims for TensorBuffer initialization
 static nvinfer1::Dims create_dims(int b, int c, int h, int w) {
     nvinfer1::Dims dims;
@@ -86,13 +88,23 @@ static cv::Mat change(const cv::Mat& r) {
     return max_val;
 };
 
-void NanoTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& bbox) {
+void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
     m_initialized = false;
 
-    if (!frame || !frame->get())
+    const VpiFrameRef vpi_frame = std::dynamic_pointer_cast<const VpiFrame>(frame);
+    if (!vpi_frame)
+    {
+        std::cerr << "NanoTracker requires a VpiFrame on the current Jetson backend" << std::endl;
         return;
-    int w = 0, h = 0;
-    vpiImageGetSize(frame->get(), &w, &h);
+    }
+    if (vpi_frame->pixelFormat() != FramePixelFormat::Gray8)
+    {
+        std::cerr << "NanoTracker currently supports only Gray8 VpiFrame input" << std::endl;
+        return;
+    }
+
+    const int w = frame->width();
+    const int h = frame->height();
     if (w <= 0 || h <= 0)
         return;
 
@@ -115,20 +127,28 @@ void NanoTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::
     // 计算通道均值（Python: channel_average = np.mean(img, axis=(0,1))），
     // 仅用于搜索窗越界时的均值填充
     channel_average = 114;
-    if (frame && frame->get()) {
-        VPIImageData host_data;
-        if (vpiImageLockData(frame->get(), VPI_LOCK_READ,
-                VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &host_data) == VPI_SUCCESS) {
-            cv::Mat host_mat;
-            vpiImageDataExportOpenCVMat(host_data, &host_mat);
-            channel_average = cv::mean(host_mat);
-            vpiImageUnlock(frame->get());
+    {
+        std::unique_ptr<FrameReadView> host_view = frame->mapRead();
+        if (host_view)
+        {
+            channel_average = cv::mean(host_view->mat());
         }
     }
     mean_image_dirty = true;
 
-    cv::Size crop_size = get_subwindow_buffer(frame->get(), center_pos, template_size,
-                                              static_cast<int>(round(s_z)), z_crop_buffer);
+    cv::Size crop_size;
+    {
+        // get_subwindow_buffer 在返回前同步 vpi_stream，因此读取租约覆盖源帧参与的
+        // 全部原生 VPI 预处理操作。
+        VpiFrameReadAccess source_access = vpi_frame->acquireVpiRead();
+        crop_size = get_subwindow_buffer(source_access.image(), center_pos, template_size,
+                                         static_cast<int>(round(s_z)), z_crop_buffer);
+        if (vpiStreamSync(vpi_stream) != VPI_SUCCESS)
+        {
+            std::cerr << "Failed to synchronize NanoTracker template preprocessing" << std::endl;
+            crop_size = {};
+        }
+    }
     if (crop_size.width <= 0 || crop_size.height <= 0)
         return; // 模板裁剪失败：保持未初始化，由上层回退
 
@@ -140,15 +160,37 @@ void NanoTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::
     m_initialized = true;
 }
 
-float NanoTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::Rect2f& output_bbox) {
+float NanoTracker::update(const FrameRef& frame, cv::Rect2f& output_bbox) {
     if (!m_initialized) {
         return 0.0f; // 未初始化：与 Python 端 (False, None) 对齐
+    }
+    const VpiFrameRef vpi_frame = std::dynamic_pointer_cast<const VpiFrame>(frame);
+    if (!vpi_frame)
+    {
+        std::cerr << "NanoTracker requires a VpiFrame on the current Jetson backend" << std::endl;
+        return -1.0f;
+    }
+    if (vpi_frame->pixelFormat() != FramePixelFormat::Gray8)
+    {
+        std::cerr << "NanoTracker currently supports only Gray8 VpiFrame input" << std::endl;
+        return -1.0f;
     }
     float s_z = sz(size.x, size.y);
     float scale_z = static_cast<float>(template_size) / s_z;
     float s_x = s_z * (static_cast<float>(instance_size) / template_size);
     
-    auto img_size = get_subwindow_buffer(frame->get(), center_pos, instance_size, static_cast<int>(round(s_x)), x_crop_buffer);
+    cv::Size img_size;
+    {
+        // get_subwindow_buffer 在返回前同步 VPI 与 CUDA 操作，满足读取租约契约。
+        VpiFrameReadAccess source_access = vpi_frame->acquireVpiRead();
+        img_size = get_subwindow_buffer(source_access.image(), center_pos, instance_size,
+                                        static_cast<int>(round(s_x)), x_crop_buffer);
+        if (vpiStreamSync(vpi_stream) != VPI_SUCCESS)
+        {
+            std::cerr << "Failed to synchronize NanoTracker search preprocessing" << std::endl;
+            img_size = {};
+        }
+    }
     if (img_size.width <= 0 || img_size.height <= 0)
     {
         // 搜索窗裁剪失败：保持内部状态不变（不写入退化的 0x0 边界框），

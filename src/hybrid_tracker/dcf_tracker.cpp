@@ -3,35 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-#include <vpi/OpenCVInterop.hpp>
-
-// ---------------------------------------------------------------------------
-// VpiGrayLock
-// ---------------------------------------------------------------------------
-
-VpiGrayLock::VpiGrayLock(const std::shared_ptr<VPIImageWrapper>& frame)
-{
-    if (!frame || frame->get() == nullptr)
-        return;
-    img_ = frame->get();
-    if (vpiImageLockData(img_, VPI_LOCK_READ, VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &data_) != VPI_SUCCESS)
-    {
-        img_ = nullptr;
-        return;
-    }
-    locked_ = true;
-    vpiImageDataExportOpenCVMat(data_, &mat_);
-    if (mat_.channels() == 3)
-        cv::cvtColor(mat_, gray_, cv::COLOR_BGR2GRAY);
-    else
-        gray_ = mat_;   // 相机输出即单通道灰度，零拷贝
-}
-
-VpiGrayLock::~VpiGrayLock()
-{
-    if (locked_)
-        vpiImageUnlock(img_);
-}
+#include "nano_tracker.h"
 
 // ---------------------------------------------------------------------------
 // GrayscaleDCF
@@ -325,7 +297,9 @@ NanoDcfTracker::NanoDcfTracker(const Params& params)
 {
 }
 
-bool NanoDcfTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& bbox)
+NanoDcfTracker::~NanoDcfTracker() = default;
+
+bool NanoDcfTracker::init(const FrameRef& frame, const cv::Rect2f& bbox)
 {
     nano_->init(frame, bbox);
     if (!nano_->isInitialized())
@@ -336,17 +310,31 @@ bool NanoDcfTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const c
 
     const cv::Point2f center(bbox.x + bbox.width / 2.0f, bbox.y + bbox.height / 2.0f);
     const cv::Size2f size(bbox.width, bbox.height);
-    const int64_t ts_us = static_cast<int64_t>(frame->get_timestamps());
+    const int64_t ts_us = static_cast<int64_t>(frame->timestampUs());
 
     if (params_.enable_dcf)
     {
-        VpiGrayLock lock(frame);
-        if (!lock.valid())
+        std::unique_ptr<FrameReadView> view = frame->mapRead();
+        if (!view)
         {
-            std::cerr << "NanoDcfTracker: failed to lock frame for DCF init" << std::endl;
+            std::cerr << "NanoDcfTracker: failed to map frame for DCF init" << std::endl;
             return false;
         }
-        dcf_->init(lock.gray(), center, size);
+        cv::Mat gray;
+        if (view->pixelFormat() == FramePixelFormat::Gray8)
+        {
+            gray = view->mat();
+        }
+        else if (view->pixelFormat() == FramePixelFormat::Bgr8)
+        {
+            cv::cvtColor(view->mat(), gray, cv::COLOR_BGR2GRAY);
+        }
+        else
+        {
+            std::cerr << "NanoDcfTracker: unsupported frame format for DCF init" << std::endl;
+            return false;
+        }
+        dcf_->init(gray, center, size);
     }
     center_kf_.initialize(center, ts_us);
     prev_center_ = center;
@@ -354,7 +342,7 @@ bool NanoDcfTracker::init(const std::shared_ptr<VPIImageWrapper>& frame, const c
     return true;
 }
 
-bool NanoDcfTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::Rect2f& bbox)
+bool NanoDcfTracker::update(const FrameRef& frame, cv::Rect2f& bbox)
 {
     cv::Rect2f nano_box;
     last_score_ = nano_->update(frame, nano_box);
@@ -378,7 +366,7 @@ bool NanoDcfTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::R
         // DCF 关闭：由轻量 CV 卡尔曼滤波承担"稳心"角色，抑制 NanoTrack 中心的
         // 逐帧抖动；测量远离滤波器预测（目标真实大幅移动）时信任 NanoTrack
         // 并重锚定——与 DCF 路径共用同一发散门限
-        const int64_t ts_us = static_cast<int64_t>(frame->get_timestamps());
+        const int64_t ts_us = static_cast<int64_t>(frame->timestampUs());
         if (!center_kf_.initialized())
             center_kf_.initialize(nano_center, ts_us);
 
@@ -397,23 +385,37 @@ bool NanoDcfTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::R
     }
     else
     {
-        VpiGrayLock lock(frame);
-        if (!lock.valid())
+        std::unique_ptr<FrameReadView> view = frame->mapRead();
+        if (!view)
         {
             // 拿不到灰度图时退化为 NanoTrack 结果
             chosen = nano_center;
         }
         else
         {
+            cv::Mat gray;
+            if (view->pixelFormat() == FramePixelFormat::Gray8)
+            {
+                gray = view->mat();
+            }
+            else if (view->pixelFormat() == FramePixelFormat::Bgr8)
+            {
+                cv::cvtColor(view->mat(), gray, cv::COLOR_BGR2GRAY);
+            }
+            else
+            {
+                std::cerr << "NanoDcfTracker: unsupported frame format for DCF update" << std::endl;
+                chosen = nano_center;
+            }
             const cv::Point2f search_center = has_prev_center_ ? prev_center_ : nano_center;
             cv::Point2f dcf_center;
             float psr = 0.0f;
-            if (!dcf_->update(lock.gray(), search_center, size, dcf_center, psr))
+            if (!gray.empty() && !dcf_->update(gray, search_center, size, dcf_center, psr))
             {
                 chosen = nano_center;
-                dcf_->init(lock.gray(), nano_center, size);
+                dcf_->init(gray, nano_center, size);
             }
-            else
+            else if (!gray.empty())
             {
                 const double div = std::hypot(dcf_center.x - nano_center.x, dcf_center.y - nano_center.y);
                 const double max_div = params_.max_div_factor * ((w + h) / 2.0);
@@ -421,7 +423,7 @@ bool NanoDcfTracker::update(const std::shared_ptr<VPIImageWrapper>& frame, cv::R
                 {
                     // DCF 失锁：信任 NanoTrack，并以其中心重新锚定滤波器
                     chosen = nano_center;
-                    dcf_->init(lock.gray(), nano_center, size);
+                    dcf_->init(gray, nano_center, size);
                 }
                 else
                 {

@@ -3,11 +3,11 @@
 #include <deque>
 #include <vector>
 #include <opencv2/opencv.hpp>
-#include <vpi/VPI.h>
 
 #include "yolo_detector.h"
 #include "nano_tracker.h"
 #include "dcf_tracker.h"
+#include "frame/vpi_frame.h"
 #include "rotation_kf.h"
 
 /**
@@ -34,17 +34,16 @@ private:
     struct BufferedFrame
     {
         uint64_t frame_id = 0;
-        std::shared_ptr<VPIImageWrapper> frame;
+        FrameRef frame;
         cv::Rect2f tracker_box;
         bool has_tracker_box = false;
         cv::Rect2f kf_pred_box;
         bool has_kf_pred = false;
-        int64_t ts_us = 0;
     };
 
     /** @brief 用历史帧初始化跟踪器并对后续帧前向追踪以追平进度 */
     bool catchupTracker(const BufferedFrame& hist,
-                        const std::vector<std::shared_ptr<VPIImageWrapper>>& catchup_frames,
+                        const std::vector<FrameRef>& catchup_frames,
                         const cv::Rect2f& yolo_box);
 
     /** @brief 计算两个矩形的 IoU */
@@ -96,7 +95,7 @@ private:
     cv::Scalar m_display_color = cv::Scalar(0, 255, 255); // 黄色 (BGR)
     int m_frame_count = 0;
     uint64_t m_frame_id_counter = 0;
-    int64_t m_last_frame_ts_us = 0;
+    int64_t m_last_timestamp_us = 0;
     int m_jump_counter = 0;            // 跟踪框连续跳变计数
     int m_yolo_jump_count = 0;         // YOLO 检测连续跳变计数
     int m_yolo_lost = 0;               // YOLO 连续未确认次数（无目标/低IoU重初始化/未确认跳变）
@@ -183,7 +182,7 @@ void HybridTrackerImp::reset()
     clearBoxes();
     m_frame_count = 0;
     m_frame_id_counter = 0;
-    m_last_frame_ts_us = 0;
+    m_last_timestamp_us = 0;
     m_frame_buffer.clear();
     m_jump_counter = 0;
     m_yolo_jump_count = 0;
@@ -196,7 +195,7 @@ void HybridTrackerImp::reset()
 }
 
 bool HybridTrackerImp::catchupTracker(const BufferedFrame& hist,
-                                       const std::vector<std::shared_ptr<VPIImageWrapper>>& catchup_frames,
+                                       const std::vector<FrameRef>& catchup_frames,
                                        const cv::Rect2f& yolo_box)
 {
     if (!m_tracker->init(hist.frame, yolo_box))
@@ -231,23 +230,32 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
     if (!m_detector || !m_tracker || !m_kf || !ctx.frame)
         return out;
 
+    const VpiFrameRef vpi_frame = std::dynamic_pointer_cast<const VpiFrame>(ctx.frame);
+    if (!vpi_frame)
+    {
+        std::cerr << "HybridTracker requires a VpiFrame on the current Jetson backend" << std::endl;
+        return out;
+    }
+
+    const int64_t frame_timestamp_us = static_cast<int64_t>(ctx.frame->timestampUs());
+
     // 防止重复帧或时间倒退导致卡尔曼滤波协方差坍缩
-    if (ctx.frame_ts_us <= m_last_frame_ts_us)
+    if (frame_timestamp_us <= m_last_timestamp_us)
         return out; // consumed = false，静默丢弃
-    m_last_frame_ts_us = ctx.frame_ts_us;
+    m_last_timestamp_us = frame_timestamp_us;
 
     m_frame_count++;
     m_frame_id_counter++;
     const uint64_t current_frame_id = m_frame_id_counter;
 
-    int frame_w = 0, frame_h = 0;
-    vpiImageGetSize(ctx.frame->get(), &frame_w, &frame_h);
+    const int frame_w = ctx.frame->width();
+    const int frame_h = ctx.frame->height();
 
     // 提前获取卡尔曼滤波的预测框，用于本帧的跳变检测和 ROI 生成。
     // 注意：KF 预测是 (cx, cy, w, h) 中心格式，而下游 calculateROI/isBoxJump
     // 按左上角格式解析——与 Python 参考实现保持逐行为一致（其语义如此）。
     cv::Vec4d kf_pred;
-    const bool has_kf_pred = m_kf->predictOnly(ctx.frame_ts_us, ctx.R_cam_at_frame, kf_pred);
+    const bool has_kf_pred = m_kf->predictOnly(frame_timestamp_us, ctx.R_cam_at_frame, kf_pred);
     cv::Rect2f kf_pred_box;
     if (has_kf_pred)
         kf_pred_box = cv::Rect2f(kf_pred[0], kf_pred[1], kf_pred[2], kf_pred[3]);
@@ -260,7 +268,6 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
     buffered.has_tracker_box = m_has_display_box;
     buffered.kf_pred_box = kf_pred_box;
     buffered.has_kf_pred = has_kf_pred;
-    buffered.ts_us = ctx.frame_ts_us;
     m_frame_buffer.push_back(buffered);
     if (static_cast<int>(m_frame_buffer.size()) > m_settings.frame_buffer_size)
         m_frame_buffer.pop_front();
@@ -308,7 +315,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
 
             if (found)
             {
-                std::vector<std::shared_ptr<VPIImageWrapper>> catchup_frames;
+                std::vector<FrameRef> catchup_frames;
                 for (size_t i = idx + 1; i < m_frame_buffer.size(); ++i)
                     catchup_frames.push_back(m_frame_buffer[i].frame);
 
@@ -449,7 +456,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                     }
                 }
                 const BufferedFrame* hist = found ? &m_frame_buffer[idx] : nullptr;
-                std::vector<std::shared_ptr<VPIImageWrapper>> catchup_frames;
+                std::vector<FrameRef> catchup_frames;
                 if (found)
                 {
                     for (size_t i = idx + 1; i < m_frame_buffer.size(); ++i)
@@ -599,7 +606,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
             const float rx = m_display_box.x, ry = m_display_box.y;
             const float rw = m_display_box.width, rh = m_display_box.height;
             m_kf->initialize(cv::Vec4d(rx + rw / 2.0, ry + rh / 2.0, rw, rh),
-                             ctx.frame_ts_us, ctx.R_cam_at_frame);
+                             frame_timestamp_us, ctx.R_cam_at_frame);
         }
         else if (measurement_updated && m_has_raw_tracker_box)
         {
@@ -607,7 +614,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
             const float rx = m_raw_tracker_box.x, ry = m_raw_tracker_box.y;
             const float rw = m_raw_tracker_box.width, rh = m_raw_tracker_box.height;
             m_kf->update(cv::Vec4d(rx + rw / 2.0, ry + rh / 2.0, rw, rh),
-                         ctx.frame_ts_us, ctx.R_cam_at_frame);
+                         frame_timestamp_us, ctx.R_cam_at_frame);
         }
 
         // predict_only 查询实时位置（不修改滤波器状态和历史）。

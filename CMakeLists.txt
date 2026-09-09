@@ -37,6 +37,18 @@ include_directories(
     src
 )
 
+add_library(drone_frame STATIC
+    src/frame/vpi_frame.cpp
+)
+target_include_directories(drone_frame PUBLIC
+    src
+    ${OpenCV_INCLUDE_DIRS}
+)
+target_link_libraries(drone_frame PUBLIC
+    ${OpenCV_LIBS}
+    vpi
+)
+
 add_subdirectory(src/mv_camera)
 add_subdirectory(src/hybrid_tracker)
 

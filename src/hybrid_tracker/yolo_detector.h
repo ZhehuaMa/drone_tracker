@@ -13,7 +13,9 @@
 #include <vpi/VPI.h>
 
 #include "trt_engine.h"
-#include "image_wrapper.h"
+#include "frame/frame.h"
+
+class VpiFrame;
 
 // 用于保存检测结果的结构体
 struct Detection
@@ -63,7 +65,7 @@ public:
      * @param roi 感兴趣区域 (如果为空则直接全图+切片)
      * @return 如果成功提交检测，则为 true
      */
-    bool request(const std::shared_ptr<VPIImageWrapper>& frame, uint64_t frame_id,
+    bool request(const FrameRef& frame, uint64_t frame_id,
                  const cv::Rect& roi = cv::Rect());
 
     /** @brief 工作线程是否还有未领取的请求（忙则跳过本帧的检测请求） */
@@ -124,7 +126,7 @@ private:
     VPIImage vpi_padded_image = nullptr;
     VPIImage vpi_resized_image = nullptr;
     VPIImage vpi_fill_image = nullptr;   // 恒为 114 的 U8 图，用于填充 letterbox 边距
-    VPIImage vpi_frame_copy = nullptr;   // 工作线程私有的帧副本（与主线程的 VpiGrayLock 隔离）
+    VPIImage vpi_frame_copy = nullptr;   // 工作线程私有的帧副本（与主线程的主机读取隔离）
     int copy_w = 0;
     int copy_h = 0;
 
@@ -145,7 +147,7 @@ private:
     std::condition_variable m_cv_request;
 
     struct Request {
-        std::shared_ptr<VPIImageWrapper> frame;
+        std::shared_ptr<const VpiFrame> frame;
         uint64_t frame_id = 0;
         cv::Rect roi;
     } m_next_request;

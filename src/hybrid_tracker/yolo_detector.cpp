@@ -4,9 +4,12 @@
 #include <vector>
 #include <numeric>
 #include <cstring>
+#include <utility>
 #include <vpi/OpenCVInterop.hpp>
 #include <vpi/algo/Rescale.h>
 #include <vpi/algo/ConvertImageFormat.h>
+
+#include "frame/vpi_frame.h"
 
 // 辅助函数：计算TRT维度的体积
 // static int64_t volume(const nvinfer1::Dims& d)
@@ -118,14 +121,26 @@ void YoloV8Detector::stop()
     }
 }
 
-bool YoloV8Detector::request(const std::shared_ptr<VPIImageWrapper>& frame, uint64_t frame_id, const cv::Rect& roi)
+bool YoloV8Detector::request(const FrameRef& frame, uint64_t frame_id, const cv::Rect& roi)
 {
+    const VpiFrameRef vpi_frame = std::dynamic_pointer_cast<const VpiFrame>(frame);
+    if (!vpi_frame)
+    {
+        std::cerr << "YoloV8Detector requires a VpiFrame on the current Jetson backend" << std::endl;
+        return false;
+    }
+    if (vpi_frame->pixelFormat() != FramePixelFormat::Gray8)
+    {
+        std::cerr << "YoloV8Detector currently supports only Gray8 VpiFrame input" << std::endl;
+        return false;
+    }
+
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_new_request || m_result_ready)
     {
         return false; // 上一个请求还未处理，忽略此请求（与Python逻辑一致）
     }
-    m_next_request.frame = frame;
+    m_next_request.frame = vpi_frame;
     m_next_request.frame_id = frame_id;
     m_next_request.roi = roi;
 
@@ -211,7 +226,8 @@ void YoloV8Detector::workerThreadLoop()
 
             if (m_stop_requested) break;
 
-            req = m_next_request;
+            req = std::move(m_next_request);
+            m_next_request = Request{};
             m_new_request = false;
         } 
         
@@ -221,14 +237,17 @@ void YoloV8Detector::workerThreadLoop()
 
         // 立即把帧复制到工作线程私有的 VPI 图并释放原帧引用。
         // Python 端在 trt 交接前显式 copy（"trt 交接独立 copy"）；主线程的
-        // DCF/补帧会对缓存帧做主机端 vpiImageLockData，若工作线程仍在同一
+        // DCF/补帧会映射缓存帧到主机，若工作线程仍在同一
         // VPIImage 上提交流操作，会破坏 VPI 的锁协议并导致内部状态损坏。
         // 复制后工作线程只触碰私有副本，与主线程彻底隔离。
         VPIImage vpi_input = nullptr;
         {
-            VPIImage src = req.frame->get();
-            int w = 0, h = 0;
-            vpiImageGetSize(src, &w, &h);
+            // 读取租约与主机映射共享逐帧互斥量。源帧参与的复制提交必须在
+            // 租约释放前同步完成。
+            VpiFrameReadAccess source_access = req.frame->acquireVpiRead();
+            VPIImage src = source_access.image();
+            const int w = req.frame->width();
+            const int h = req.frame->height();
             if (vpi_frame_copy && (copy_w != w || copy_h != h)) {
                 vpiImageDestroy(vpi_frame_copy);
                 vpi_frame_copy = nullptr;
@@ -247,7 +266,8 @@ void YoloV8Detector::workerThreadLoop()
                 copy_w = w;
                 copy_h = h;
             }
-            if (vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA, src, vpi_frame_copy, nullptr) != VPI_SUCCESS) {
+            if (vpiSubmitConvertImageFormat(
+                    vpi_stream, VPI_BACKEND_CUDA, src, vpi_frame_copy, nullptr) != VPI_SUCCESS) {
                 std::cerr << "Failed to copy frame for worker" << std::endl;
                 req.frame.reset();
                 {
@@ -257,10 +277,20 @@ void YoloV8Detector::workerThreadLoop()
                 }
                 continue;
             }
-            vpiStreamSync(vpi_stream);
+            if (vpiStreamSync(vpi_stream) != VPI_SUCCESS) {
+                std::cerr << "Failed to synchronize worker frame copy" << std::endl;
+                req.frame.reset();
+                {
+                    std::lock_guard<std::mutex> lock(m_mutex);
+                    m_last_result = YoloResult{req.frame_id, false, Detection{}};
+                    m_result_ready = true;
+                }
+                continue;
+            }
             vpi_input = vpi_frame_copy;
-            req.frame.reset();
         }
+        // 私有副本已同步完成，立即释放源帧共享引用。
+        req.frame.reset();
 
 
         // 检测级联（与 Python 端 trt_worker 一致）：ROI -> 全图 -> 自适应切片，
@@ -663,4 +693,3 @@ void YoloV8Detector::postprocess(float* output, const LetterboxInfo& lb, const c
         results.push_back({cv::Rect2f(boxes[idx]), scores[idx], class_ids[idx]});
     }
 }
-

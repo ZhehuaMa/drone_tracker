@@ -37,11 +37,11 @@ target_link_directories(${PROJECT_NAME} PUBLIC
 )
 
 target_link_libraries(${PROJECT_NAME} 
+    drone_frame
     ${OpenCV_LIBS} 
     vpi
     CUDA::cudart
     nvv4l2 nvbufsurface nvbufsurftransform nvjpeg
     avformat avcodec avutil)
-
 
 

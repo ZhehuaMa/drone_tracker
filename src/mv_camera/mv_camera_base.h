@@ -1,17 +1,20 @@
-#pragma once 
+#pragma once
 
 #include "readerwriterqueue.h"
-#include "image_wrapper.h"
+#include "frame/frame.h"
 
-#include <functional>
 #include <chrono>
+#include <functional>
+#include <memory>
+
+#include <vpi/VPI.h>
 
 class NvBuffer;
 
 class MVCameraBase {
 public:
     using time_point = std::chrono::time_point<std::chrono::high_resolution_clock>;
-    using ImageQueue = moodycamel::BlockingReaderWriterQueue<std::shared_ptr<VPIImageWrapper>>;
+    using ImageQueue = moodycamel::BlockingReaderWriterQueue<FrameRef>;
     using CallbackFn = std::function<void(const VPIImagePlanePitchLinear &)>;
 
     virtual ~MVCameraBase() = default;

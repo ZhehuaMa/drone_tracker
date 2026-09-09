@@ -248,15 +248,15 @@ void DroneTrackerNode::worker()
     while (rclcpp::ok() && running)
     {
         rclcpp::Time start_time = this->now();
-        std::shared_ptr<VPIImageWrapper> vpi_buffer;
+        FrameRef frame_buffer;
 
-        if (mv_camera_->getImageQueue().wait_dequeue_timed(vpi_buffer, 1s)) {
+        if (mv_camera_->getImageQueue().wait_dequeue_timed(frame_buffer, 1s)) {
             start_time = this->now();
             // 排空积压只保留最新帧（消费端操作，SPSC 安全）：跟踪器只需要最新
             // 状态，过载时直接跳过中间帧，避免队列长期满导致生产端丢帧
-            std::shared_ptr<VPIImageWrapper> newer;
+            FrameRef newer;
             while (mv_camera_->getImageQueue().try_dequeue(newer))
-                vpi_buffer = std::move(newer);
+                frame_buffer = std::move(newer);
         }
         else {
             std::cout << "No frame received from camera." << std::endl;
@@ -265,13 +265,13 @@ void DroneTrackerNode::worker()
 
         // 构造帧上下文：帧时刻与当前时刻的相机旋转（无云台数据时保持单位阵）
         FrameContext ctx;
-        ctx.frame = vpi_buffer;
-        ctx.frame_ts_us = vpi_buffer->get_timestamps();
+        ctx.frame = frame_buffer;
+        const int64_t frame_timestamp_us = static_cast<int64_t>(frame_buffer->timestampUs());
         ctx.now_us = this->now().nanoseconds() / 1000;
         {
             std::lock_guard<std::mutex> lock(gimbal_mtx_);
             cv::Matx33d R;
-            if (gimbal_history_.nearest(ctx.frame_ts_us, R))
+            if (gimbal_history_.nearest(frame_timestamp_us, R))
                 ctx.R_cam_at_frame = R;
             if (gimbal_history_.latest(R))
                 ctx.R_cam_now = R;
@@ -315,54 +315,74 @@ void DroneTrackerNode::worker()
 
         if (enable_image_output_ && out.consumed)
         {
-            const cv::Scalar color = cv::Scalar((out.color & 0xFF), ((out.color >> 8) & 0xFF), ((out.color >> 16) & 0xFF));
-            const int64_t frame_ts = ctx.frame_ts_us;
+            const cv::Scalar color = cv::Scalar(
+                (out.color & 0xFF), ((out.color >> 8) & 0xFF), ((out.color >> 16) & 0xFF));
+            const int64_t frame_ts = static_cast<int64_t>(frame_buffer->timestampUs());
 
-            // Convert VPI image to OpenCV Mat
-            cv::Mat mono;
-            VPIImageData image_data;
-            vpiImageLockData(vpi_buffer->get(), VPI_LOCK_READ, VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &image_data);
-            vpiImageDataExportOpenCVMat(image_data, &mono);
-            vpiImageUnlock(vpi_buffer->get());
-            cv::merge(std::vector<cv::Mat>{mono, mono, mono}, frame);
-
-            if (out.display_box.is_valid)
+            bool frame_ready = false;
             {
-                cv::Rect display_box = {
-                    out.display_box.cx - out.display_box.width / 2,
-                    out.display_box.cy - out.display_box.height / 2,
-                    out.display_box.width,
-                    out.display_box.height };
-                cv::rectangle(frame, display_box, color, 2, 1);
+                std::unique_ptr<FrameReadView> view = frame_buffer->mapRead();
+                if (view)
+                {
+                    // 发布图像需要绘制检测框，因此无论原生格式如何都生成独立 BGR 副本。
+                    // OpenCV 会按视图中的实际行跨度读取带填充的输入行。
+                    if (view->pixelFormat() == FramePixelFormat::Gray8)
+                    {
+                        cv::cvtColor(view->mat(), frame, cv::COLOR_GRAY2BGR);
+                        frame_ready = true;
+                    }
+                    else if (view->pixelFormat() == FramePixelFormat::Bgr8)
+                    {
+                        view->mat().copyTo(frame);
+                        frame_ready = true;
+                    }
+                }
             }
-
-            if (out.realtime_box.is_valid)
+            if (!frame_ready)
             {
-                // 红色实时预测框
-                cv::Point p1(out.realtime_box.cx - out.realtime_box.width / 2,
-                             out.realtime_box.cy - out.realtime_box.height / 2);
-                cv::Point p2(out.realtime_box.cx + out.realtime_box.width / 2,
-                             out.realtime_box.cy + out.realtime_box.height / 2);
-                cv::rectangle(frame, p1, p2, cv::Scalar(0, 0, 255), 2, 1);
-                cv::putText(frame, "Real-Time Pred", cv::Point(p1.x, std::max(20, p1.y - 10)),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255), 2);
+                RCLCPP_ERROR(this->get_logger(), "Failed to map a supported frame for image publication");
             }
-
-            cv::putText(frame, "Cost: " + std::to_string(int(cost_ms)) + " ms", cv::Point(20, 40), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
-            cv::putText(frame, out.info, cv::Point(20, 80), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
-
-            cv_bridge::CvImage cv_img;
-            cv_img.header.stamp = rclcpp::Time(frame_ts*1000);
-            cv_img.header.frame_id = "camera_frame";
-            cv_img.encoding = "bgr8";
-            cv_img.image = frame;
-            auto img_msg = std::make_unique<sensor_msgs::msg::Image>();
-            cv_img.toImageMsg(*img_msg);
-            if (rosbag_writer_)
+            else
             {
-                rosbag_writer_->write(*img_msg, TOPIC_TRACKER_IMAGE, rclcpp::Time(frame_ts*1000));
+                if (out.display_box.is_valid)
+                {
+                    cv::Rect display_box = {
+                        out.display_box.cx - out.display_box.width / 2,
+                        out.display_box.cy - out.display_box.height / 2,
+                        out.display_box.width,
+                        out.display_box.height };
+                    cv::rectangle(frame, display_box, color, 2, 1);
+                }
+
+                if (out.realtime_box.is_valid)
+                {
+                    // 红色实时预测框
+                    cv::Point p1(out.realtime_box.cx - out.realtime_box.width / 2,
+                                 out.realtime_box.cy - out.realtime_box.height / 2);
+                    cv::Point p2(out.realtime_box.cx + out.realtime_box.width / 2,
+                                 out.realtime_box.cy + out.realtime_box.height / 2);
+                    cv::rectangle(frame, p1, p2, cv::Scalar(0, 0, 255), 2, 1);
+                    cv::putText(frame, "Real-Time Pred", cv::Point(p1.x, std::max(20, p1.y - 10)),
+                        cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 255), 2);
+                }
+
+                cv::putText(frame, "Cost: " + std::to_string(int(cost_ms)) + " ms",
+                            cv::Point(20, 40), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
+                cv::putText(frame, out.info, cv::Point(20, 80), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
+
+                cv_bridge::CvImage cv_img;
+                cv_img.header.stamp = rclcpp::Time(frame_ts*1000);
+                cv_img.header.frame_id = "camera_frame";
+                cv_img.encoding = "bgr8";
+                cv_img.image = frame;
+                auto img_msg = std::make_unique<sensor_msgs::msg::Image>();
+                cv_img.toImageMsg(*img_msg);
+                if (rosbag_writer_)
+                {
+                    rosbag_writer_->write(*img_msg, TOPIC_TRACKER_IMAGE, rclcpp::Time(frame_ts*1000));
+                }
+                image_pub_->publish(std::move(img_msg));
             }
-            image_pub_->publish(std::move(img_msg));
 
             elapsed = this->now() - start_time;
             cost_ms = elapsed.seconds() * 1000;

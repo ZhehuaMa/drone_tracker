@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include <memory>
 #include "trt_engine.h"
-#include "image_wrapper.h"
+#include "frame/frame.h"
 
 #include <vpi/VPI.h>
 
@@ -12,8 +12,8 @@ class NanoTracker {
 public:
     NanoTracker(const std::string& backbone_path, const std::string& head_path);
     ~NanoTracker();
-    void init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& bbox);
-    float update(const std::shared_ptr<VPIImageWrapper>& frame, cv::Rect2f& output_bbox);
+    void init(const FrameRef& frame, const cv::Rect2f& bbox);
+    float update(const FrameRef& frame, cv::Rect2f& output_bbox);
     void reset();
     bool isInitialized() const { return m_initialized; }
 

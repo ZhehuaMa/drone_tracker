@@ -9,6 +9,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "dcf_tracker.h"
+#include "frame/vpi_frame.h"
 #include "yolo_detector.h"
 
 int main(int argc, char** argv)
@@ -45,7 +46,12 @@ int main(int argc, char** argv)
         cv::rectangle(mat, cv::Rect(cx - sz / 2, cy - sz / 2, sz, sz), cv::Scalar(230), -1);
         cv::circle(mat, cv::Point(cvRound(cx), cvRound(cy)), cvRound(sz / 3), cv::Scalar(140), -1);
 
-        auto frame = std::make_shared<VPIImageWrapper>(mat, 1000000ull + i * 20000ull);
+        FrameRef frame = VpiFrame::copyFrom(mat, 1000000ull + i * 20000ull);
+        if (!frame)
+        {
+            std::printf("failed to create frame %d\n", i);
+            return 2;
+        }
         ++frame_id;
 
         // 模拟主管线：先 tracker 更新（DCF 主机灰度锁），后 YOLO 请求（工作线程）
@@ -67,10 +73,10 @@ int main(int argc, char** argv)
             // 主管线的 catchup 会遍历缓存帧（含当前帧）并做 DCF 主机灰度锁。
             // 工作线程必须已在私有副本上工作，与原帧的主机锁并发也必须安全。
             {
-                VpiGrayLock lock(frame);
-                if (lock.valid()) {
+                std::unique_ptr<FrameReadView> view = frame->mapRead();
+                if (view) {
                     cv::Mat patch;
-                    cv::getRectSubPix(lock.gray(), cv::Size(96, 96), cv::Point2f(cx, cy), patch);
+                    cv::getRectSubPix(view->mat(), cv::Size(96, 96), cv::Point2f(cx, cy), patch);
                 }
             }
         }

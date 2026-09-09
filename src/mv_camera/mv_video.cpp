@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+#include "frame/vpi_frame.h"
+
 #define MEMORY_ALIGNMENT 256
 
 MVVideo::MVVideo(const std::string &video_path, bool use_video_timestamp)
@@ -232,7 +234,12 @@ void MVVideo::decode_worker() {
 
             // 帧时间戳必须是 PTS 的累计值；用 base_ts + ts_diff（帧间增量）会让
             // 第一帧之后的所有帧都拿到几乎相同的时钟，破坏单调性。
-            auto image_buffer = std::make_shared<VPIImageWrapper>(vpiOut, base_ts + timestamp_us);
+            FrameRef image_buffer = VpiFrame::takeOwnership(vpiOut, base_ts + timestamp_us);
+            if (!image_buffer) {
+                std::cerr << "Failed to create frame from decoded VPI image" << std::endl;
+                av_packet_unref(packet);
+                continue;
+            }
 
             now += std::chrono::microseconds(ts_diff);
             std::this_thread::sleep_until(now);
@@ -246,4 +253,4 @@ void MVVideo::decode_worker() {
             }
         }
     }
-}   
+}

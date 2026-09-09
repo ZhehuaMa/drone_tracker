@@ -25,7 +25,6 @@ include_directories(
     ${OpenCV_INCLUDE_DIRS}
     ${TensorRT_INCLUDE_DIRS}
     /usr/include/${CMAKE_LIBRARY_ARCHITECTURE}
-    mv_camera
 )
 
 # Link directories
@@ -56,6 +55,7 @@ set(LIB_HEADERS
 add_library(${PROJECT_NAME} STATIC ${LIB_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
+    drone_frame
     ${OpenCV_LIBS}
     nvinfer
     CUDA::cudart
@@ -78,4 +78,3 @@ if(DRONE_TRACKER_BUILD_TESTS)
     add_executable(replay_harness tests/replay_harness.cpp)
     target_link_libraries(replay_harness PRIVATE ${PROJECT_NAME})
 endif()
-

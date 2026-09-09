@@ -1,39 +1,14 @@
 #ifndef DCF_TRACKER_H
 #define DCF_TRACKER_H
 
-#include <memory>
 #include <cstdint>
+#include <memory>
+#include <string>
 #include <opencv2/opencv.hpp>
-#include <vpi/VPI.h>
 
-#include "image_wrapper.h"
-#include "nano_tracker.h"
+#include "frame/frame.h"
 
-/**
- * @brief VPIImage 的主机端只读灰度锁（RAII）。
- *
- * 导出的 cv::Mat 直接引用 VPI 锁定的内存，生命周期必须短于本对象；
- * 单通道直接返回，三通道现场转灰度。
- */
-class VpiGrayLock
-{
-public:
-    explicit VpiGrayLock(const std::shared_ptr<VPIImageWrapper>& frame);
-    ~VpiGrayLock();
-    VpiGrayLock(const VpiGrayLock&) = delete;
-    VpiGrayLock& operator=(const VpiGrayLock&) = delete;
-
-    bool valid() const { return locked_; }
-    /** @brief 灰度图（CV_8UC1），仅在本对象存活期间有效 */
-    const cv::Mat& gray() const { return gray_; }
-
-private:
-    VPIImage img_ = nullptr;
-    VPIImageData data_{};
-    bool locked_ = false;
-    cv::Mat mat_;
-    cv::Mat gray_;
-};
+class NanoTracker;
 
 /**
  * @brief airsim_tracker/dcf_tracker.py GrayscaleDCF 的 C++ 移植。
@@ -154,12 +129,13 @@ public:
     };
 
     explicit NanoDcfTracker(const Params& params);
+    ~NanoDcfTracker();
 
     /** @brief 用给定框初始化（TRT 引擎只加载一次，重复 init 仅重跑 nano.init） */
-    bool init(const std::shared_ptr<VPIImageWrapper>& frame, const cv::Rect2f& bbox);
+    bool init(const FrameRef& frame, const cv::Rect2f& bbox);
 
     /** @brief 融合更新；返回 (x, y, w, h) 左上角 + 尺寸。失败返回 false */
-    bool update(const std::shared_ptr<VPIImageWrapper>& frame, cv::Rect2f& bbox);
+    bool update(const FrameRef& frame, cv::Rect2f& bbox);
 
     /** @brief 清空 DCF/中心状态（不销毁 TRT 引擎） */
     void reset();

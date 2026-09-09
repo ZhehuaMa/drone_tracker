@@ -13,6 +13,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "hybrid_tracker.h"
+#include "frame/vpi_frame.h"
 
 int main(int argc, char** argv)
 {
@@ -81,8 +82,14 @@ int main(int argc, char** argv)
             gray = frame;
 
         FrameContext ctx;
-        ctx.frame = std::make_shared<VPIImageWrapper>(gray, 1000000ull + i * 20000ull);
-        ctx.frame_ts_us = ctx.now_us = 1000000ull + i * 20000ull;
+        const std::uint64_t timestamp_us = 1000000ull + i * 20000ull;
+        ctx.frame = VpiFrame::copyFrom(gray, timestamp_us);
+        if (!ctx.frame)
+        {
+            std::printf("failed to create frame %d\n", i);
+            return 2;
+        }
+        ctx.now_us = static_cast<int64_t>(timestamp_us);
 
         TrackerOutput out = tracker->update(ctx);
         const cv::Rect2f nano = tracker->lastNanoBox();

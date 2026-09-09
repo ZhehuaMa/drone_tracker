@@ -7,6 +7,7 @@
 #include <opencv2/core.hpp>
 
 #include "dcf_tracker.h"
+#include "frame/frame.h"
 
 // 用于配置 HybridTracker 的结构体（默认值对齐 airsim_tracker launch.py）
 struct TrackerSettings
@@ -43,8 +44,6 @@ struct TrackerSettings
     int kf_history_len = 60;
 };
 
-class VPIImageWrapper;
-
 struct BBoxRect
 {
     int cx; //!< x coordinate of the center
@@ -65,8 +64,7 @@ enum class TrackerState : int8_t
 /** @brief 单帧输入上下文 */
 struct FrameContext
 {
-    std::shared_ptr<VPIImageWrapper> frame;
-    int64_t frame_ts_us = 0;    // 帧采集时刻（系统时钟，us）
+    FrameRef frame;
     int64_t now_us = 0;         // 处理/外推时刻（发布用）
     cv::Matx33d R_cam_at_frame = cv::Matx33d::eye(); // 帧时刻相机旋转（无云台数据时为单位阵）
     cv::Matx33d R_cam_now = cv::Matx33d::eye();      // 当前相机旋转
