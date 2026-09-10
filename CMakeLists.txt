@@ -1,5 +1,16 @@
 cmake_minimum_required(VERSION 3.10)
 
+# 必须先拒绝未实现平台，不能让 CUDA/SDK 发现掩盖平台错误。
+set(DRONE_TRACKER_PLATFORM "jetson" CACHE STRING "Production platform")
+set_property(CACHE DRONE_TRACKER_PLATFORM PROPERTY STRINGS jetson)
+if(NOT DRONE_TRACKER_PLATFORM STREQUAL "jetson")
+    if(DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
+        message(FATAL_ERROR "DRONE_TRACKER_PLATFORM='${DRONE_TRACKER_PLATFORM}' backend not implemented; supported: jetson")
+    else()
+        message(FATAL_ERROR "DRONE_TRACKER_PLATFORM='${DRONE_TRACKER_PLATFORM}' unsupported; supported: jetson")
+    endif()
+endif()
+
 set(CMAKE_CUDA_ARCHITECTURES 87)
 set(CUDA_ARCHITECTURES "87")
 
@@ -28,14 +39,12 @@ find_package(rosbag2_cpp REQUIRED)
 
 find_package(CUDAToolkit REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(Threads REQUIRED)
+option(DRONE_TRACKER_BUILD_TESTS "Build hybrid tracker unit tests" OFF)
+if(DRONE_TRACKER_BUILD_TESTS)
+    enable_testing()
+endif()
 find_package(VPI REQUIRED)
-
-# Include directories
-include_directories(
-    src/mv_camera
-    src/hybrid_tracker
-    src
-)
 
 add_library(drone_frame STATIC
     src/frame/vpi_frame.cpp
@@ -51,6 +60,7 @@ target_link_libraries(drone_frame PUBLIC
 
 add_subdirectory(src/mv_camera)
 add_subdirectory(src/hybrid_tracker)
+add_subdirectory(src/platform)
 
 # Executable
 add_executable(drone_tracker_node
@@ -71,7 +81,7 @@ ament_target_dependencies(drone_tracker_node
 
 target_link_libraries(drone_tracker_node
     hybrid_tracker
-    mv_camera
+    platform_jetson
 )
 
 install(TARGETS

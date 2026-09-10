@@ -28,6 +28,8 @@ public:
     virtual bool run(CallbackFn &&callback=nullptr) override;
     virtual bool run_async(CallbackFn &&callback=nullptr) override;
     virtual bool stop() override;
+    /** @brief 仅供平台装配检查初始化结果，不改变尺寸查询含义。 */
+    bool is_initialized() const noexcept { return initialized_; }
     virtual bool is_running() const override { return initialized_ && is_running_.load(); }
     virtual bool get_image_size(int &width, int &height) const override {
         width = width_;
@@ -46,7 +48,7 @@ private:
     int fd_ = -1;
     int pitch_ = 0;
 
-    const char *i2c_dev;
+    const char *i2c_dev{nullptr};
 
     bool need_save_ = false;
     std::string save_path_ = ".";
@@ -69,6 +71,8 @@ private:
     
     void triggerLoop(double interval_seconds);
     void init();
+    void initDevice();
+    void releaseNativeResources() noexcept;
     void captureLoop(CallbackFn &&callback);
     void cleanup();
     uint16_t get_model();

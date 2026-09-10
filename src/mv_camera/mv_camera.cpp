@@ -126,22 +126,32 @@ MVCamera::MVCamera(
     pitch_ = int(ceil(double(width_) / MEMORY_ALIGNMENT) * MEMORY_ALIGNMENT);
     // std::cout << "Using pitch: " << pitch_ << std::endl;
 
-    jpegenc_ = NvJPEGEncoder::createJPEGEncoder("jpegenc");
-    if (vpiStreamCreate(0, &vpiStream_) != VPI_SUCCESS) {
-        std::cerr << "Failed to create VPI stream" << std::endl;
-        return;
+    try {
+        jpegenc_ = NvJPEGEncoder::createJPEGEncoder("jpegenc");
+        if (!jpegenc_ || vpiStreamCreate(0, &vpiStream_) != VPI_SUCCESS) {
+            std::cerr << "Failed to create camera image resources" << std::endl;
+            releaseNativeResources();
+            return;
+        }
+        init();
+        if (initialized_) { set_image_flip_mirror(flip, mirror); }
+    } catch (...) {
+        // 构造失败不会调用本类析构函数，原生资源必须在此回收。
+        cleanup();
+        releaseNativeResources();
+        throw;
     }
-
-    init();
-    set_image_flip_mirror(flip, mirror);
 }
 
 MVCamera::~MVCamera() {
     stop();
+    releaseNativeResources();
+}
 
-    if (vpiStream_) { 
-        vpiStreamDestroy(vpiStream_); 
-        vpiStream_ = nullptr; 
+void MVCamera::releaseNativeResources() noexcept {
+    if (vpiStream_) {
+        vpiStreamDestroy(vpiStream_);
+        vpiStream_ = nullptr;
     }
     if (jpegenc_) {
         delete reinterpret_cast<NvJPEGEncoder*>(jpegenc_);
@@ -160,20 +170,28 @@ bool MVCamera::run(CallbackFn &&callback) {
         // std::cerr << "Camera is already running." << std::endl;
         return false;
     }
+    if (!vpiStream_ || !jpegenc_) { return false; }
     if (!initialized_) {
         init();
     }
+    if (!initialized_) { return false; }
     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (ioctl(fd_, VIDIOC_STREAMON, &type) < 0) {
         perror("VIDIOC_STREAMON");
+        cleanup();
         return false;
     }
     is_running_.store(true);
     streaming_ = true;
-    if (triggerMode_) {
-        triggerThread_ = std::thread(&MVCamera::triggerLoop, this, 1.0 / fps_);
+    try {
+        if (triggerMode_) {
+            triggerThread_ = std::thread(&MVCamera::triggerLoop, this, 1.0 / fps_);
+        }
+        captureLoop(std::move(callback));
+    } catch (...) {
+        stop();
+        throw;
     }
-    captureLoop(std::move(callback));
     return true;
 }
 
@@ -182,34 +200,35 @@ bool MVCamera::run_async(CallbackFn &&callback) {
         // std::cerr << "Camera is already running." << std::endl;
         return false;
     }
+    if (!vpiStream_ || !jpegenc_) { return false; }
     if (!initialized_) {
         init();
     }
+    if (!initialized_) { return false; }
     v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (ioctl(fd_, VIDIOC_STREAMON, &type) < 0) {
         perror("VIDIOC_STREAMON");
+        cleanup();
         return false;
     }
     is_running_.store(true);
     streaming_ = true;
-    if (triggerMode_) {
-        triggerThread_ = std::thread(&MVCamera::triggerLoop, this, 1.0 / fps_);
+    try {
+        if (triggerMode_) {
+            triggerThread_ = std::thread(&MVCamera::triggerLoop, this, 1.0 / fps_);
+        }
+        captureThread_ = std::thread(&MVCamera::captureLoop, this, std::move(callback));
+    } catch (...) {
+        stop();
+        throw;
     }
-    captureThread_ = std::thread(&MVCamera::captureLoop, this, std::move(callback));
     return true;
 }
 
 bool MVCamera::stop() {
-    if (!initialized_) {
-        std::cerr << "Camera not initialized." << std::endl;
-        return false;
-    }
-    if (!is_running_ && !streaming_) {
-        // std::cerr << "Camera is not running." << std::endl;
-        return false;
-    }
+    // 未开始采集也可能已经打开设备或分配了部分缓冲区。
     is_running_.store(false);
-    if (triggerMode_ && triggerThread_.joinable()) {
+    if (triggerThread_.joinable()) {
         triggerThread_.join();
     }
     std::cout << "Stopping captureThread_..." << std::endl;
@@ -298,7 +317,19 @@ uint16_t MVCamera::get_model() {
     return model;
 }
 
-void MVCamera::init() 
+void MVCamera::init() {
+    if (initialized_) { return; }
+    cleanup();
+    try {
+        initDevice();
+    } catch (...) {
+        cleanup();
+        throw;
+    }
+    if (!initialized_) { cleanup(); }
+}
+
+void MVCamera::initDevice()
 {
     if (initialized_) 
         return;
@@ -593,8 +624,11 @@ void MVCamera::captureLoop(CallbackFn &&callback) {
 }
 
 void MVCamera::cleanup() {
-    if (!initialized_) 
-        return; // already stopped
+    // 先关闭设备，解除尚未 STREAMON 的排队缓冲区，再释放主机存储。
+    if (fd_ >= 0) {
+        close(fd_);
+        fd_ = -1;
+    }
     for (auto &b : buffers_) {
         if (b.first) {
             cudaFreeHost(b.first);
@@ -602,10 +636,6 @@ void MVCamera::cleanup() {
     }
     buffers_.clear();
 
-    if (fd_ >= 0) { 
-        close(fd_); 
-        fd_ = -1; 
-    }
     if (uv_ptr_) {
         // Release UV planes memory
         munlock(uv_ptr_, uv_size_);

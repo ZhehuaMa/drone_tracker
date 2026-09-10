@@ -15,7 +15,7 @@ void RotationKalmanFilter::reset()
 {
     initialized_ = false;
     history_.clear();
-    x_ = cv::Vec6d::zeros();
+    x_ = cv::Vec6d{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     P_ = cv::Matx66d::eye() * 1000.0;
 }
 

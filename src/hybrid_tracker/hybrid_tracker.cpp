@@ -1,8 +1,5 @@
 #include "hybrid_tracker.h"
-#include "preprocess/jetson/jetson_yolo_preprocessor.h"
-#include "preprocess/jetson/jetson_nanotrack_preprocessor.h"
 #include "nano_tracker.h"
-#include "model/jetson/jetson_model_backend.h"
 #include <iostream>
 #include <deque>
 #include <vector>
@@ -11,7 +8,6 @@
 #include "yolo_detector.h"
 #include "nano_tracker.h"
 #include "dcf_tracker.h"
-#include "frame/vpi_frame.h"
 #include "rotation_kf.h"
 
 /**
@@ -24,7 +20,7 @@
 class HybridTrackerImp : public HybridTracker
 {
 public:
-    HybridTrackerImp(const TrackerSettings& settings);
+    HybridTrackerImp(const TrackerSettings& settings, TrackerComponents components, DetectionThreadLauncher launcher);
     virtual ~HybridTrackerImp();
 
     virtual bool init() override;
@@ -86,6 +82,9 @@ private:
 
     // --- 设置 ---
     TrackerSettings m_settings;
+    TrackerComponents m_components;
+    DetectionThreadLauncher m_launcher;
+    bool m_initialized{false};
 
     // --- 状态 ---
     bool m_tracker_initialized = false;
@@ -115,60 +114,68 @@ private:
     std::unique_ptr<RotationKalmanFilter> m_kf;
 };
 
-std::shared_ptr<HybridTracker> HybridTracker::CreateInstance(const TrackerSettings& settings)
+std::shared_ptr<HybridTracker> HybridTracker::CreateInstance(
+    const TrackerSettings& settings, TrackerComponents components, DetectionThreadLauncher launcher)
 {
-    return std::make_shared<HybridTrackerImp>(settings);
+    return std::make_shared<HybridTrackerImp>(settings, std::move(components), std::move(launcher));
 }
 
-HybridTrackerImp::HybridTrackerImp(const TrackerSettings& settings)
-    : m_settings(settings)
+HybridTrackerImp::HybridTrackerImp(
+    const TrackerSettings& settings, TrackerComponents components, DetectionThreadLauncher launcher)
+    : m_settings(settings), m_components(std::move(components)), m_launcher(std::move(launcher))
 {
 }
 
 HybridTrackerImp::~HybridTrackerImp()
 {
-    // m_detector 将在其析构函数中自动停止其线程
+    // 先等待检测结束，再允许缓存、跟踪器和模型成员析构。
+    if (m_detector) { m_detector->stop(); }
 }
 
 bool HybridTrackerImp::init()
 {
+    if (m_initialized) { return true; }
+    if (!m_components.complete()) {
+        std::cerr << "Incomplete tracker components" << std::endl;
+        m_components = {};
+        return false;
+    }
     try {
         m_detector = std::make_unique<YoloV8Detector>(
-            model::createYoloBackend(m_settings.yolo_engine_path),
-            std::make_unique<JetsonYoloPreprocessor>(),
-            m_settings.yolo_conf_threshold,
-            m_settings.yolo_nms_threshold,
-            m_settings.target_class_id,
-            m_settings.yolo_recall_relax_ratio,
-            m_settings.max_box_area_ratio
-        );
+            std::move(m_components.yolo), std::move(m_components.yolo_preprocessor),
+            m_settings.yolo_conf_threshold, m_settings.yolo_nms_threshold,
+            m_settings.target_class_id, m_settings.yolo_recall_relax_ratio,
+            m_settings.max_box_area_ratio, std::move(m_launcher));
+
+        NanoDcfTracker::Params tracker_params;
+        tracker_params.backbone_path = m_settings.nanotrack_backbone_path;
+        tracker_params.head_path = m_settings.nanotrack_head_path;
+        tracker_params.enable_dcf = m_settings.enable_dcf;
+        tracker_params.dcf = m_settings.dcf;
+        tracker_params.max_div_factor = m_settings.dcf_max_div_factor;
+        // enable_dcf=false 时的中心平滑 KF 噪声（与主管线 KF 共用调参入口）
+        tracker_params.center_kf.r_pos = m_settings.kf_r_pos;
+        tracker_params.center_kf.q_a = m_settings.kf_q_a;
+        m_tracker = std::make_unique<NanoDcfTracker>(tracker_params,
+            std::make_unique<NanoTracker>(
+                std::move(m_components.nano),
+                std::move(m_components.nano_preprocessor)));
+
+        reset();
+        if (!m_detector->init()) {
+            throw std::runtime_error("Failed to start YoloV8Detector");
+        }
+        m_initialized = true;
+        return true;
     } catch (const std::exception &error) {
-        std::cerr << "Failed to load YOLO engine: " << error.what() << std::endl;
+        std::cerr << "HybridTracker initialization failed: " << error.what() << std::endl;
+        if (m_detector) { m_detector->stop(); }
+        m_detector.reset();
+        m_tracker.reset();
+        m_kf.reset();
+        m_components = {};
         return false;
     }
-
-    if (!m_detector || !m_detector->init())
-    {
-        std::cerr << "Error: Failed to initialize YoloV8Detector." << std::endl;
-        return false;
-    }
-
-    NanoDcfTracker::Params tracker_params;
-    tracker_params.backbone_path = m_settings.nanotrack_backbone_path;
-    tracker_params.head_path = m_settings.nanotrack_head_path;
-    tracker_params.enable_dcf = m_settings.enable_dcf;
-    tracker_params.dcf = m_settings.dcf;
-    tracker_params.max_div_factor = m_settings.dcf_max_div_factor;
-    // enable_dcf=false 时的中心平滑 KF 噪声（与主管线 KF 共用调参入口）
-    tracker_params.center_kf.r_pos = m_settings.kf_r_pos;
-    tracker_params.center_kf.q_a = m_settings.kf_q_a;
-    m_tracker = std::make_unique<NanoDcfTracker>(tracker_params,
-        std::make_unique<NanoTracker>(
-            model::createNanoTrackBackend(tracker_params.backbone_path, tracker_params.head_path),
-            std::make_unique<JetsonNanoTrackPreprocessor>()));
-
-    reset();
-    return true;
 }
 
 void HybridTrackerImp::reset()
@@ -243,10 +250,10 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
     if (!m_detector || !m_tracker || !m_kf || !ctx.frame)
         return out;
 
-    const VpiFrameRef vpi_frame = std::dynamic_pointer_cast<const VpiFrame>(ctx.frame);
-    if (!vpi_frame)
-    {
-        std::cerr << "HybridTracker requires a VpiFrame on the current Jetson backend" << std::endl;
+    const auto compatibility{m_components.compatibility->validate(ctx.frame)};
+    if (!compatibility.reason.empty()) {
+        out.info = compatibility.describe();
+        std::cerr << out.info << std::endl;
         return out;
     }
 

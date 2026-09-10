@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 
+#include "platform/frame_source_ops.h"
+
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cv_bridge/cv_bridge.h>
 
@@ -24,6 +26,8 @@ DroneTrackerNode::DroneTrackerNode()
 DroneTrackerNode::~DroneTrackerNode()
 {
     stop();
+    if (mv_camera_) { mv_camera_->stop(); }
+    tracker_.reset();
     if (rosbag_writer_)
         rosbag_writer_->close();
 }
@@ -69,20 +73,23 @@ void DroneTrackerNode::setup()
     this->get_parameter("video_source", video_source);
     const bool is_camera = (video_source.substr(0, 5) == "video" && video_source.length() == 6);
 
-    if (is_camera)
-    {
-        RCLCPP_INFO(this->get_logger(), "Opening camera device: %s", video_source.c_str());
-        std::string device = "/dev/";
-        mv_camera_ = std::make_shared<MVCamera>(device.append(video_source), 
-            width_px, height_px, fps, true, output_width_px, output_height_px, flip, mirror);
-    }
-    else
-    {
-        RCLCPP_INFO(this->get_logger(), "Opening video file: %s", video_source.c_str());
-        mv_camera_ = std::make_shared<MVVideo>(video_source, use_history_timestamp_);
-    }
-
-    mv_camera_->get_image_size(output_width_px, output_height_px);
+    auto factory{CreatePlatformFactory()};
+    FrameSourceConfig source_config{};
+    source_config.type = is_camera ? FrameSourceType::Camera : FrameSourceType::Video;
+    source_config.path = is_camera ? "/dev/" + video_source : video_source;
+    source_config.width = width_px;
+    source_config.height = height_px;
+    source_config.fps = fps;
+    source_config.output_width = output_width_px;
+    source_config.output_height = output_height_px;
+    source_config.flip = flip;
+    source_config.mirror = mirror;
+    source_config.use_history_timestamp = use_history_timestamp_;
+    RCLCPP_INFO(this->get_logger(), "Opening %s: %s", is_camera ? "camera device" : "video file", video_source.c_str());
+    auto source{factory->createFrameSource(source_config)};
+    if (!source) { throw std::runtime_error(source.error.describe()); }
+    mv_camera_ = std::move(source.value);
+    mv_camera_->getImageSize(output_width_px, output_height_px);
 
     // Assuming square pixels for simplicity
     float scale_ratio_w = static_cast<float>(output_width_px) / static_cast<float>(width_px);
@@ -143,7 +150,10 @@ void DroneTrackerNode::setup()
     tracker_settings.nanotrack_backbone_path = share_dir + "/models/" + tracker_settings.nanotrack_backbone_path;
     tracker_settings.nanotrack_head_path = share_dir + "/models/" + tracker_settings.nanotrack_head_path;
 
-    tracker_ = HybridTracker::CreateInstance(tracker_settings);
+    auto components{factory->createTrackerComponents({tracker_settings.yolo_engine_path,
+        tracker_settings.nanotrack_backbone_path, tracker_settings.nanotrack_head_path})};
+    if (!components) { throw std::runtime_error(components.error.describe()); }
+    tracker_ = HybridTracker::CreateInstance(tracker_settings, std::move(components.value));
     if (!tracker_->init())
     {
         RCLCPP_ERROR(this->get_logger(), "Failed to initialize HybridTracker");
@@ -190,9 +200,7 @@ void DroneTrackerNode::setup()
                 
                 if (mv_camera_)
                 {
-                    auto camera = std::dynamic_pointer_cast<MVCamera>(mv_camera_);
-                    if (camera)
-                        camera->setup(need_save, save_path, filename_ts);
+                    configureFrameSourceRecording(*mv_camera_, {need_save, save_path, filename_ts});
                 }
                 if (need_save)
                 {
@@ -224,7 +232,7 @@ void DroneTrackerNode::setup()
 
 void DroneTrackerNode::worker()
 {
-    bool success = mv_camera_->run_async();
+    bool success = mv_camera_->start();
     if (!success)
     {
         RCLCPP_ERROR(this->get_logger(), "Failed to open MV Camera ");
@@ -250,15 +258,7 @@ void DroneTrackerNode::worker()
         rclcpp::Time start_time = this->now();
         FrameRef frame_buffer;
 
-        if (mv_camera_->getImageQueue().wait_dequeue_timed(frame_buffer, 1s)) {
-            start_time = this->now();
-            // 排空积压只保留最新帧（消费端操作，SPSC 安全）：跟踪器只需要最新
-            // 状态，过载时直接跳过中间帧，避免队列长期满导致生产端丢帧
-            FrameRef newer;
-            while (mv_camera_->getImageQueue().try_dequeue(newer))
-                frame_buffer = std::move(newer);
-        }
-        else {
+        if (!waitForLatestFrame(*mv_camera_, frame_buffer, 1s, [&] { start_time = this->now(); })) {
             std::cout << "No frame received from camera." << std::endl;
             break;
         }

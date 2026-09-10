@@ -209,7 +209,7 @@ void CenterKalmanFilter::reset()
 {
     initialized_ = false;
     last_ts_us_ = 0;
-    x_ = cv::Vec4d::zeros();
+    x_ = cv::Vec4d{0.0, 0.0, 0.0, 0.0};
     P_ = cv::Matx44d::eye() * 1000.0;
 }
 

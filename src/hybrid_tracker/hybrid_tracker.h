@@ -7,7 +7,9 @@
 #include <opencv2/core.hpp>
 
 #include "dcf_tracker.h"
+#include "detection_thread.h"
 #include "frame/frame.h"
+#include "platform/platform_factory.h"
 
 // 用于配置 HybridTracker 的结构体（默认值对齐 airsim_tracker launch.py）
 struct TrackerSettings
@@ -91,7 +93,8 @@ struct TrackerOutput
 class HybridTracker
 {
 public:
-    static std::shared_ptr<HybridTracker> CreateInstance(const TrackerSettings& settings);
+    static std::shared_ptr<HybridTracker> CreateInstance(const TrackerSettings& settings, TrackerComponents components,
+        DetectionThreadLauncher launcher = launchDetectionThread);
     virtual ~HybridTracker() = default;
 
     /** @brief 初始化检测器线程和跟踪器 */

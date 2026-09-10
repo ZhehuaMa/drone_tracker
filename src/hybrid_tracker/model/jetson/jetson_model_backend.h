@@ -32,8 +32,5 @@ private:
     InputAdapter adapter_;
     Tensor template_{};
 };
-/** @brief 默认生产工厂继续加载原三个引擎路径；加载失败抛出带分类诊断的异常。 */
-std::unique_ptr<YoloBackend> createYoloBackend(const std::string &path);
-std::unique_ptr<NanoTrackBackend> createNanoTrackBackend(const std::string &backbone, const std::string &head);
 } // namespace model
 #endif // JETSON_MODEL_BACKEND_H

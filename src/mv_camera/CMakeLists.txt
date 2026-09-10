@@ -26,7 +26,8 @@ add_library(${PROJECT_NAME} STATIC
     ${COMPONENT_FILES}
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..
+    PRIVATE
     ${JETSON_MULTIMEDIA_API_PATH}/include
     ${JETSON_MULTIMEDIA_API_PATH}/include/libjpeg-8b
 )

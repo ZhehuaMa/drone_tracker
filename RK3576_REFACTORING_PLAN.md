@@ -10,15 +10,15 @@
 
 ## 2. 背景与现状
 
-当前 `rk3576` 分支仍主要是 Jetson 平台代码：
+当前 `rk3576` 分支已提取公共边界，生产后端仍只有 Jetson：
 
-- 顶层构建无条件启用 CUDA，并依赖 VPI。
-- `FrameContext` 直接传递 `VPIImageWrapper`。
-- 相机队列和回调接口暴露 VPI 类型。
-- YOLO 和 NanoTrack 的预处理直接调用 VPI/CUDA。
-- 推理缓冲区直接使用 TensorRT 类型和 CUDA 设备指针。
-- 相机实现依赖 Jetson Multimedia API 和 Tegra 库。
-- 仓库中尚未引入 RKNN Runtime 或 RGA 实现。
+- `FrameContext` 和采集队列传递平台无关的 `FrameRef`，表示共享只读帧。
+- 公共跟踪器接受整套模型、预处理和帧兼容性检查对象，不再自行创建 Jetson 组件。
+- `PlatformFactory` 统一创建帧源、主机图像复制能力及整套跟踪依赖。
+- 公共算法目标只使用 OpenCV、线程库和公共模型/几何代码；Jetson 设备实现由平台目标链接。
+- 默认生产配置仍启用 CUDA 并使用 VPI、TensorRT、Jetson Multimedia API 和 Tegra 库。
+- `DRONE_TRACKER_PLATFORM=rk3576` 当前在硬件发现前明确失败；尚未引入 RKNN Runtime 或 RGA 实现。
+- `introduce-platform-factory` 的验证限定为公共构建、模拟测试与源码审查，不代表 Jetson 执行验证完成。
 
 因此，本次迁移不只是替换 `TrtEngine`。它至少涉及帧表示、预处理、推理运行时、设备资源生命周期和构建系统五个边界。
 
@@ -149,15 +149,19 @@ NanoTrackBackend
 
 ### 5.5 平台工厂
 
-由一个平台工厂创建相互匹配的组件：
+`CreatePlatformFactory()` 返回编译期选中的平台工厂。它提供三个公共入口：
 
-- 帧源或相机实现。
-- 帧对象。
-- 图像预处理器。
-- YOLO 执行器。
-- NanoTrack 执行器。
+- `createFrameSource(config)`：创建相机或视频帧源，直接使用原采集队列。
+- `createFrameBuilder()`：提供 `copyFrom(image, timestamp_us)`，复制主机图像并保留微秒时间戳。
+- `createTrackerComponents(paths)`：成套创建 YOLO、NanoTrack 的模型与预处理器，以及帧兼容性检查对象。
 
-平台工厂应保证这些对象来自同一后端，避免把 Jetson 帧误传给 RK3576 执行器。
+`TrackerComponents` 是只能转移所有权的集合。调用方把它交给公共 `HybridTracker`，组件就绪后才启动检测线程。创建失败不返回半套依赖，诊断包含平台、组件、路径及原因。
+
+`FrameCompatibility` 检查帧的真实资源类型，在跟踪状态变化前拒绝不兼容帧。兼容性不要求来自同一个工厂实例。模型执行和预处理边界仍保留资源检查，不能只靠工厂选择证明输入安全。
+
+默认平台为 `jetson`。当前请求 `rk3576` 或未知值会在 CUDA 和硬件库发现前失败，不自动回退。新增调用方应显式链接公共算法和平台目标；完整示例见 [平台工厂接入说明](src/platform/README.md)。
+
+本阶段只验证公共代码和模拟依赖，并审查 Jetson 适配源码。它不证明 Jetson 可构建、实机行为等价或设备资源安全；后续硬件阶段仍需取得对应证据。
 
 ## 6. 公共逻辑与平台逻辑划分
 
@@ -252,6 +256,10 @@ RK3576 后端以 RKNN Runtime 2.3.0 和 RKNPU 驱动 0.9.8 为兼容性基线。
 - 先让 Jetson 后端通过所有原有验证。
 
 完成条件：公共算法库不直接依赖 CUDA、TensorRT 或 VPI。
+
+### 阶段 3 补充：统一平台装配
+
+`introduce-platform-factory` 已接入统一创建入口，并分离公共构建与 Jetson 目标。公共模拟测试覆盖完整跟踪入口、部分模型加载失败及检测线程生命周期。相机内部最小失败清理修复也已完成源码审查，详见该变更的验证记录；这里不把公共测试视作整个阶段的实机验收。
 
 ### 阶段 4：实现 RK3576 后端
 
@@ -356,6 +364,6 @@ RK3576 后端以 RKNN Runtime 2.3.0 和 RKNPU 驱动 0.9.8 为兼容性基线。
 - **已推荐**：使用编译期平台选择，避免同一二进制链接两套硬件 SDK。
 - **已推荐**：先让现有 Jetson 实现适配新接口，再添加 RK3576 实现。
 - **已推荐**：先验证行为等价，再进行 RK3576 专属性能优化。
-- **待 OpenSpec 确认**：接口的最终类名、文件目录和构建选项名称。
+- **已由 OpenSpec 明确**：`introduce-platform-factory` 使用 `src/platform/`、`PlatformFactory` 与 `DRONE_TRACKER_PLATFORM`；当前仅有 Jetson 生产后端。
 - **待实机确认**：RKNN 模型的精确张量契约、RGA 支持范围和性能目标。
 

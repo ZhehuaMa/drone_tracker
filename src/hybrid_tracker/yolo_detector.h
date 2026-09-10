@@ -14,6 +14,7 @@
 #include "preprocess/image_preprocessor.h"
 #include "model/model_backend.h"
 #include "frame/frame.h"
+#include "detection_thread.h"
 #include "preprocess/preprocess_geometry.h"
 
 
@@ -44,7 +45,8 @@ class YoloV8Detector
 public:
     YoloV8Detector(std::unique_ptr<model::YoloBackend> model,
                    std::unique_ptr<YoloPreprocessor> preprocessor, float conf_thresh, float nms_thresh,
-                   int target_class_id, float recall_relax_ratio, float max_box_area_ratio = 0.8f);
+                   int target_class_id, float recall_relax_ratio, float max_box_area_ratio = 0.8f,
+                   DetectionThreadLauncher launcher = launchDetectionThread);
     ~YoloV8Detector();
 
     /** @brief 校验注入模型的输入契约并启动工作线程 */
@@ -108,6 +110,7 @@ private:
     int m_target_class_id;
 
     // --- 线程通信 ---
+    DetectionThreadLauncher m_launcher;
     std::thread m_worker_thread;
     mutable std::mutex m_mutex;
     std::condition_variable m_cv_request;

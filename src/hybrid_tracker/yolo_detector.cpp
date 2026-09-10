@@ -12,7 +12,7 @@
 
 YoloV8Detector::YoloV8Detector(std::unique_ptr<model::YoloBackend> model,
     std::unique_ptr<YoloPreprocessor> preprocessor, float conf_thresh, float nms_thresh,
-                               int target_class_id, float recall_relax_ratio, float max_box_area_ratio)
+                               int target_class_id, float recall_relax_ratio, float max_box_area_ratio, DetectionThreadLauncher launcher)
     : model_(std::move(model)),
       preprocessor_(std::move(preprocessor)),
       m_conf_thresh(conf_thresh),
@@ -21,6 +21,7 @@ YoloV8Detector::YoloV8Detector(std::unique_ptr<model::YoloBackend> model,
       m_nms_thresh(nms_thresh),
       m_max_box_area_ratio(max_box_area_ratio),
       m_target_class_id(target_class_id),
+      m_launcher(std::move(launcher)),
       m_result_ready(false),
       m_stop_requested(false)
 {
@@ -36,7 +37,8 @@ bool YoloV8Detector::init() {
         input_h = input_contract_.shape[2];
         input_w = input_contract_.shape[3];
         m_stop_requested = false;
-        m_worker_thread = std::thread(&YoloV8Detector::workerThreadLoop, this);
+        m_worker_thread = m_launcher([this] { workerThreadLoop(); });
+        if (!m_worker_thread.joinable()) { return false; }
         return true;
     } catch (const std::exception &error) {
         std::cerr << "YOLO initialization failed: " << error.what() << std::endl;

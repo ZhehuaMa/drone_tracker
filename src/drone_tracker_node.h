@@ -18,8 +18,7 @@
 
 #include "hybrid_tracker.h"
 #include "rotation_history.h"
-#include "mv_camera.h"
-#include "mv_video.h"
+#include "platform/platform_factory.h"
 
 // 相机内参（仅用于从 mv_camera.* 参数推导焦距/主点填充跟踪器 KF；
 // 原 DroneEKF 已由跟踪器内置的旋转补偿 KF 取代并删除）
@@ -115,7 +114,7 @@ private:
     std::unique_ptr<StatusPublisher> status_publisher_;
 
     std::shared_ptr<HybridTracker> tracker_;
-    std::shared_ptr<MVCameraBase> mv_camera_;
+    std::unique_ptr<FrameSource> mv_camera_;
 
     int interval_ms_ = 1;
     bool enable_image_output_ = false;

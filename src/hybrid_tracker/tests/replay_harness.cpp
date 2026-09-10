@@ -13,7 +13,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "hybrid_tracker.h"
-#include "frame/vpi_frame.h"
+#include "platform/platform_factory.h"
 
 int main(int argc, char** argv)
 {
@@ -63,7 +63,15 @@ int main(int argc, char** argv)
     s.kf_cx0 = W / 2.0;
     s.kf_cy0 = H / 2.0;
 
-    auto tracker = HybridTracker::CreateInstance(s);
+    auto factory{CreatePlatformFactory()};
+    auto builder{factory->createFrameBuilder()};
+    auto components{factory->createTrackerComponents({s.yolo_engine_path, s.nanotrack_backbone_path,
+                                                     s.nanotrack_head_path})};
+    if (!builder || !components) {
+        std::fprintf(stderr, "%s\n", (!builder ? builder.error : components.error).describe().c_str());
+        return 2;
+    }
+    auto tracker = HybridTracker::CreateInstance(s, std::move(components.value));
     if (!tracker->init())
     {
         std::printf("tracker init failed\n");
@@ -83,7 +91,8 @@ int main(int argc, char** argv)
 
         FrameContext ctx;
         const std::uint64_t timestamp_us = 1000000ull + i * 20000ull;
-        ctx.frame = VpiFrame::copyFrom(gray, timestamp_us);
+        auto copied{builder.value->copyFrom(gray, timestamp_us)};
+        ctx.frame = std::move(copied.value);
         if (!ctx.frame)
         {
             std::printf("failed to create frame %d\n", i);

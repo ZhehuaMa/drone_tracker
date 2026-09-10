@@ -1,7 +1,4 @@
-#include "model/jetson/jetson_model_backend.h"
 #include "nano_tracker.h"
-#include "preprocess/jetson/jetson_nanotrack_preprocessor.h"
-#include "preprocess/jetson/jetson_yolo_preprocessor.h"
 #include "model/model_backend.h"
 // NanoDcfTracker + YoloV8Detector 压力测试（真实 TRT 引擎，无 ROS）
 // 目的：复现 "Failed to create VPI image view 2" + 堆损坏。
@@ -14,7 +11,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "dcf_tracker.h"
-#include "frame/vpi_frame.h"
+#include "platform/platform_factory.h"
 #include "yolo_detector.h"
 
 int main(int argc, char** argv)
@@ -28,13 +25,17 @@ int main(int argc, char** argv)
     tp.head_path = model_dir + "/nanotrack_head_int8.engine";
     tp.enable_dcf = true;
     tp.max_div_factor = 0.5f;
+    auto factory{CreatePlatformFactory()};
+    auto builder{factory->createFrameBuilder()};
+    auto components{factory->createTrackerComponents({model_dir + "/drone_int8.engine", tp.backbone_path, tp.head_path})};
+    if (!builder || !components) {
+        std::fprintf(stderr, "%s\n", (!builder ? builder.error : components.error).describe().c_str());
+        return 2;
+    }
     NanoDcfTracker tracker(tp, std::make_unique<NanoTracker>(
-        model::createNanoTrackBackend(tp.backbone_path, tp.head_path),
-        std::make_unique<JetsonNanoTrackPreprocessor>()));
-
-    YoloV8Detector yolo{
-        model::createYoloBackend(model_dir + "/drone_int8.engine"),
-        std::make_unique<JetsonYoloPreprocessor>(), 0.4f, 0.45f, 0, 1.0f, 0.8f};
+        std::move(components.value.nano), std::move(components.value.nano_preprocessor)));
+    YoloV8Detector yolo{std::move(components.value.yolo), std::move(components.value.yolo_preprocessor),
+                       0.4f, 0.45f, 0, 1.0f, 0.8f};
     if (!yolo.init())
         return 2;
 
@@ -55,7 +56,8 @@ int main(int argc, char** argv)
         cv::rectangle(mat, cv::Rect(cx - sz / 2, cy - sz / 2, sz, sz), cv::Scalar(230), -1);
         cv::circle(mat, cv::Point(cvRound(cx), cvRound(cy)), cvRound(sz / 3), cv::Scalar(140), -1);
 
-        FrameRef frame = VpiFrame::copyFrom(mat, 1000000ull + i * 20000ull);
+        auto copied{builder.value->copyFrom(mat, 1000000ull + i * 20000ull)};
+        FrameRef frame = std::move(copied.value);
         if (!frame)
         {
             std::printf("failed to create frame %d\n", i);
