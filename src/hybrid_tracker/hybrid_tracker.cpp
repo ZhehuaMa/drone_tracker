@@ -1,4 +1,8 @@
 #include "hybrid_tracker.h"
+#include "preprocess/jetson/jetson_yolo_preprocessor.h"
+#include "preprocess/jetson/jetson_nanotrack_preprocessor.h"
+#include "nano_tracker.h"
+#include "detail/model_calls.h"
 #include <iostream>
 #include <deque>
 #include <vector>
@@ -128,14 +132,20 @@ HybridTrackerImp::~HybridTrackerImp()
 
 bool HybridTrackerImp::init()
 {
-    m_detector = std::make_unique<YoloV8Detector>(
-        m_settings.yolo_engine_path,
-        m_settings.yolo_conf_threshold,
-        m_settings.yolo_nms_threshold,
-        m_settings.target_class_id,
-        m_settings.yolo_recall_relax_ratio,
-        m_settings.max_box_area_ratio
-    );
+    try {
+        m_detector = std::make_unique<YoloV8Detector>(
+            tracker_detail::createYoloModelCalls(m_settings.yolo_engine_path),
+            std::make_unique<JetsonYoloPreprocessor>(),
+            m_settings.yolo_conf_threshold,
+            m_settings.yolo_nms_threshold,
+            m_settings.target_class_id,
+            m_settings.yolo_recall_relax_ratio,
+            m_settings.max_box_area_ratio
+        );
+    } catch (const std::exception &error) {
+        std::cerr << "Failed to load YOLO engine: " << error.what() << std::endl;
+        return false;
+    }
 
     if (!m_detector || !m_detector->init())
     {
@@ -152,7 +162,10 @@ bool HybridTrackerImp::init()
     // enable_dcf=false 时的中心平滑 KF 噪声（与主管线 KF 共用调参入口）
     tracker_params.center_kf.r_pos = m_settings.kf_r_pos;
     tracker_params.center_kf.q_a = m_settings.kf_q_a;
-    m_tracker = std::make_unique<NanoDcfTracker>(tracker_params);
+    m_tracker = std::make_unique<NanoDcfTracker>(tracker_params,
+        std::make_unique<NanoTracker>(
+            tracker_detail::createNanoModelCalls(tracker_params.backbone_path, tracker_params.head_path),
+            std::make_unique<JetsonNanoTrackPreprocessor>()));
 
     reset();
     return true;

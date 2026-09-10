@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include "preprocess/model_input.h"
 #include "NvInfer.h"
 #include <cuda_runtime_api.h>
 
@@ -26,7 +27,7 @@ public:
     void* host_ptr = nullptr;
     void* device_ptr = nullptr;
     size_t size = 0;
-    nvinfer1::Dims dims;
+    nvinfer1::Dims dims{};
     uint64_t timestamp = 0;
 };
 
@@ -37,7 +38,10 @@ public:
     ~TrtEngine();
 
     // Run inference on a list of device TensorBuffer inputs
-    std::vector<TensorBuffer> infer(const std::vector<TensorBuffer*>& inputs);
+    std::vector<TensorBuffer> infer(const std::vector<const TensorBuffer*>& inputs);
+
+    /** @brief 借用准备输入直到同步推理结束；失败返回分类诊断，不绑定不兼容输入。 */
+    PreprocessResult<std::vector<TensorBuffer>> inferPrepared(const PreparedModelInput &input);
 
     /** @brief 获取指定名称张量的（静态或配置文件）维度 */
     nvinfer1::Dims getTensorDims(const std::string& tensor_name) const;
@@ -59,7 +63,7 @@ private:
     std::unique_ptr<nvinfer1::IExecutionContext> m_context;
 
     // CUDA stream
-    cudaStream_t m_stream;
+    cudaStream_t m_stream{nullptr};
     
     // Buffers management
     std::vector<std::pair<void*, size_t>> m_buffers;

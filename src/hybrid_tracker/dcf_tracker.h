@@ -128,7 +128,7 @@ public:
         float max_div_factor = 0.5f;           // 中心发散门限（× 平均边长），DCF 与 KF 路径共用
     };
 
-    explicit NanoDcfTracker(const Params& params);
+    NanoDcfTracker(const Params& params, std::unique_ptr<NanoTracker> nano);
     ~NanoDcfTracker();
 
     /** @brief 用给定框初始化（TRT 引擎只加载一次，重复 init 仅重跑 nano.init） */

@@ -10,12 +10,12 @@
 #include <memory>
 #include <cstdint>
 #include <opencv2/opencv.hpp>
-#include <vpi/VPI.h>
 
-#include "trt_engine.h"
+#include "preprocess/image_preprocessor.h"
+#include "detail/model_calls.h"
 #include "frame/frame.h"
+#include "preprocess/preprocess_geometry.h"
 
-class VpiFrame;
 
 // 用于保存检测结果的结构体
 struct Detection
@@ -30,16 +30,6 @@ struct Detection
     }
 };
 
-// letterbox 变换参数：内容实际写入的整数偏移与每轴缩放
-// （与 Python 端一致：用真实整数 padding 反算，而不是浮点半边距）
-struct LetterboxInfo
-{
-    float scale_x = 1.0f;
-    float scale_y = 1.0f;
-    int left = 0;
-    int top = 0;
-};
-
 // 检测结果：单框 + 它所对应的帧号（异步检测延迟的关键——主循环据此找到
 // 历史帧做补帧初始化）
 struct YoloResult
@@ -52,11 +42,12 @@ struct YoloResult
 class YoloV8Detector
 {
 public:
-    YoloV8Detector(const std::string& engine_path, float conf_thresh, float nms_thresh,
+    YoloV8Detector(std::unique_ptr<tracker_detail::YoloModelCalls> model,
+                   std::unique_ptr<YoloPreprocessor> preprocessor, float conf_thresh, float nms_thresh,
                    int target_class_id, float recall_relax_ratio, float max_box_area_ratio = 0.8f);
     ~YoloV8Detector();
 
-    /** @brief 初始化TRT引擎、分配缓冲区并启动工作线程 */
+    /** @brief 校验注入模型的输入契约并启动工作线程 */
     bool init();
 
     /** @brief 请求对新帧进行检测（ROI -> 全图 -> 自适应切片级联）
@@ -90,18 +81,7 @@ private:
     /** @brief 工作线程的主循环 */
     void workerThreadLoop();
 
-    /** @brief 对图像进行预处理（letterbox, HWC->CHW, normalize）
-     * @param img 输入图像
-     * @param lb [out] letterbox 变换参数（每轴缩放 + 整数偏移）
-     * @param buffer [out] 用于存储预处理后数据的 TensorBuffer
-     * @return 成功则为 true
-     */
-    bool preprocess(VPIImage vpiIm, LetterboxInfo& lb, const cv::Size& image_size, TensorBuffer& buffer);
-
-    /** @brief 在单个图像(或视图)上运行检测 */
-    void detectOnImage(VPIImage image, const cv::Point2f& global_offset, std::vector<Detection>& results);
-
-    void update_resized_image(int new_width, int new_height, VPIImageFormat img_format, int flags);
+    void detectOnImage(YoloFrameSession &session, const cv::Rect &region, std::vector<Detection> &results);
 
     /** @brief 对模型输出进行后处理（解码, NMS）
      * @param output 模型的原始输出
@@ -109,26 +89,12 @@ private:
      * @param global_offset 全局坐标偏移量 (用于切片或ROI)
      * @param results [out] 检测结果列表
      */
-    void postprocess(float* output, const LetterboxInfo& lb, const cv::Size& image_size,
+    void postprocess(float* output, const TensorShape &output_dims, const LetterboxTransform& lb, const cv::Size& image_size,
         const cv::Point2f& global_offset, std::vector<Detection>& results);
 
-    // --- TrtEngine 实例 ---
-    std::string m_engine_path;
-    std::unique_ptr<TrtEngine> m_trt_engine;
-    
-    nvinfer1::Dims m_input_dims;
-    nvinfer1::Dims m_output_dims;
-
-    TensorBuffer input_buffer;
-    TensorBuffer output_buffer;
-
-    VPIStream vpi_stream = nullptr;
-    VPIImage vpi_padded_image = nullptr;
-    VPIImage vpi_resized_image = nullptr;
-    VPIImage vpi_fill_image = nullptr;   // 恒为 114 的 U8 图，用于填充 letterbox 边距
-    VPIImage vpi_frame_copy = nullptr;   // 工作线程私有的帧副本（与主线程的主机读取隔离）
-    int copy_w = 0;
-    int copy_h = 0;
+    std::unique_ptr<tracker_detail::YoloModelCalls> model_;
+    std::unique_ptr<YoloPreprocessor> preprocessor_;
+    ModelInputContract input_contract_{};
 
     int input_w = 0;
     int input_h = 0;
@@ -147,7 +113,7 @@ private:
     std::condition_variable m_cv_request;
 
     struct Request {
-        std::shared_ptr<const VpiFrame> frame;
+        FrameRef frame;
         uint64_t frame_id = 0;
         cv::Rect roi;
     } m_next_request;

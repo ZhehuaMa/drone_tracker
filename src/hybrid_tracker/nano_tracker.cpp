@@ -2,36 +2,13 @@
 #include <numeric>
 #include <algorithm>
 #include <cstring>
-#include <vpi/OpenCVInterop.hpp>
-#include <vpi/algo/Rescale.h>
-#include <vpi/algo/ConvertImageFormat.h>
+#include <iostream>
+#include <stdexcept>
 
-#include "frame/vpi_frame.h"
-
-// Helper to create Dims for TensorBuffer initialization
-static nvinfer1::Dims create_dims(int b, int c, int h, int w) {
-    nvinfer1::Dims dims;
-    dims.nbDims = 4;
-    dims.d[0] = b;
-    dims.d[1] = c;
-    dims.d[2] = h;
-    dims.d[3] = w;
-    return dims;
-}
-
-NanoTracker::NanoTracker(const std::string& backbone_path, const std::string& head_path) :
-    // Initialize input buffers in the member initializer list
-    z_crop_buffer(create_dims(1, 3, template_size, template_size), sizeof(float)),
-    x_crop_buffer(create_dims(1, 3, instance_size, instance_size), sizeof(float))
-{
-    session_backbone = std::make_unique<TrtEngine>(backbone_path);
-    session_head = std::make_unique<TrtEngine>(head_path);
-    
-    if (vpiStreamCreate(0, &vpi_stream) != VPI_SUCCESS) {
-        std::cerr << "Failed to create VPI stream" << std::endl;
-        return;
-    }
-
+NanoTracker::NanoTracker(std::unique_ptr<tracker_detail::NanoModelCalls> model,
+                         std::unique_ptr<NanoTrackPreprocessor> preprocessor)
+    : model_{std::move(model)}, preprocessor_{std::move(preprocessor)} {
+    if (!model_ || !preprocessor_) { throw std::invalid_argument("NanoTracker dependencies are required"); }
     // Create Hanning window
     cv::Mat hanning;
     cv::createHanningWindow(hanning, cv::Size(score_size, score_size), CV_32F);
@@ -40,25 +17,10 @@ NanoTracker::NanoTracker(const std::string& backbone_path, const std::string& he
     generate_points();
 }
 
-NanoTracker::~NanoTracker() {
-    if (vpi_padded_image) {
-        vpiImageDestroy(vpi_padded_image);
-        vpi_padded_image = nullptr;
-    }
-    if (vpi_mean_image) {
-        vpiImageDestroy(vpi_mean_image);
-        vpi_mean_image = nullptr;
-    }
-    for (auto& pair : vpi_model_images) {
-        vpiImageDestroy(pair.second);
-    }
-    if (vpi_stream) {
-        vpiStreamDestroy(vpi_stream);
-        vpi_stream = nullptr;
-    }
-}
+NanoTracker::~NanoTracker() = default;
 
 void NanoTracker::reset() {
+    preprocessor_->reset();
     m_initialized = false;
     center_pos = cv::Point2f(0, 0);
     size = cv::Point2f(0, 0);
@@ -91,17 +53,8 @@ static cv::Mat change(const cv::Mat& r) {
 void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
     m_initialized = false;
 
-    const VpiFrameRef vpi_frame = std::dynamic_pointer_cast<const VpiFrame>(frame);
-    if (!vpi_frame)
-    {
-        std::cerr << "NanoTracker requires a VpiFrame on the current Jetson backend" << std::endl;
-        return;
-    }
-    if (vpi_frame->pixelFormat() != FramePixelFormat::Gray8)
-    {
-        std::cerr << "NanoTracker currently supports only Gray8 VpiFrame input" << std::endl;
-        return;
-    }
+    preprocessor_->reset();
+    if (!frame) { return; }
 
     const int w = frame->width();
     const int h = frame->height();
@@ -110,7 +63,7 @@ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
 
     // 与 Python 端一致：不裁剪输入框本身。目标处于 FOV 边缘时检测框会部分
     // 越界——按图像裁剪会产生狭长的退化模板（边缘跟踪抖动），完全越界时甚至
-    // 得到空框（初始化死循环）。搜索窗越界由 get_subwindow_buffer 的均值填充
+    // 得到空框（初始化死循环）。搜索窗越界由预处理器的均值填充
     // 处理；这里只把中心约束到图像内、尺寸约束到图像量级（下限 min_wh），
     // 保证裁剪窗与图像有重叠且不会产生异常巨大的 padded 图。
     const float cx = bbox.x + (bbox.width - 1) / 2.0f;
@@ -124,101 +77,50 @@ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
 
     float s_z = sz(size.x, size.y);
 
-    // 计算通道均值（Python: channel_average = np.mean(img, axis=(0,1))），
-    // 仅用于搜索窗越界时的均值填充
-    channel_average = 114;
-    {
-        std::unique_ptr<FrameReadView> host_view = frame->mapRead();
-        if (host_view)
-        {
-            channel_average = cv::mean(host_view->mat());
-        }
+    const ModelInputContract contract{{1, 3, template_size, template_size}};
+    auto prepared{preprocessor_->prepareTemplate(frame, center_pos, static_cast<int>(round(s_z)), contract)};
+    if (!prepared || !prepared.value) {
+        std::cerr << "NanoTrack template failed: " << prepared.message << std::endl;
+        return;
     }
-    mean_image_dirty = true;
-
-    cv::Size crop_size;
-    {
-        // get_subwindow_buffer 在返回前同步 vpi_stream，因此读取租约覆盖源帧参与的
-        // 全部原生 VPI 预处理操作。
-        VpiFrameReadAccess source_access = vpi_frame->acquireVpiRead();
-        crop_size = get_subwindow_buffer(source_access.image(), center_pos, template_size,
-                                         static_cast<int>(round(s_z)), z_crop_buffer);
-        if (vpiStreamSync(vpi_stream) != VPI_SUCCESS)
-        {
-            std::cerr << "Failed to synchronize NanoTracker template preprocessing" << std::endl;
-            crop_size = {};
-        }
+    try {
+        model_->setTemplate(*prepared.value);
+        m_initialized = true;
+    } catch (const std::exception &error) {
+        preprocessor_->reset();
+        std::cerr << "NanoTrack template inference failed: " << error.what() << std::endl;
     }
-    if (crop_size.width <= 0 || crop_size.height <= 0)
-        return; // 模板裁剪失败：保持未初始化，由上层回退
-
-    // Use new infer function
-    auto backbone_out_vec = session_backbone->infer({&z_crop_buffer});
-
-    // Move the output buffer into our persistent z_f state
-    z_f = std::move(backbone_out_vec[0]);
-    m_initialized = true;
 }
 
 float NanoTracker::update(const FrameRef& frame, cv::Rect2f& output_bbox) {
     if (!m_initialized) {
         return 0.0f; // 未初始化：与 Python 端 (False, None) 对齐
     }
-    const VpiFrameRef vpi_frame = std::dynamic_pointer_cast<const VpiFrame>(frame);
-    if (!vpi_frame)
-    {
-        std::cerr << "NanoTracker requires a VpiFrame on the current Jetson backend" << std::endl;
-        return -1.0f;
-    }
-    if (vpi_frame->pixelFormat() != FramePixelFormat::Gray8)
-    {
-        std::cerr << "NanoTracker currently supports only Gray8 VpiFrame input" << std::endl;
-        return -1.0f;
-    }
+    if (!frame) { return -1.0f; }
     float s_z = sz(size.x, size.y);
     float scale_z = static_cast<float>(template_size) / s_z;
     float s_x = s_z * (static_cast<float>(instance_size) / template_size);
     
-    cv::Size img_size;
-    {
-        // get_subwindow_buffer 在返回前同步 VPI 与 CUDA 操作，满足读取租约契约。
-        VpiFrameReadAccess source_access = vpi_frame->acquireVpiRead();
-        img_size = get_subwindow_buffer(source_access.image(), center_pos, instance_size,
-                                        static_cast<int>(round(s_x)), x_crop_buffer);
-        if (vpiStreamSync(vpi_stream) != VPI_SUCCESS)
-        {
-            std::cerr << "Failed to synchronize NanoTracker search preprocessing" << std::endl;
-            img_size = {};
-        }
-    }
-    if (img_size.width <= 0 || img_size.height <= 0)
-    {
-        // 搜索窗裁剪失败：保持内部状态不变（不写入退化的 0x0 边界框），
-        // 返回 -1 让上层按"本帧跟踪失败"处理
+    const cv::Size img_size{frame->width(), frame->height()};
+    const ModelInputContract contract{{1, 3, instance_size, instance_size}};
+    auto prepared{preprocessor_->prepareSearch(frame, center_pos, static_cast<int>(round(s_x)), contract)};
+    if (!prepared || !prepared.value) {
+        std::cerr << "NanoTrack search failed: " << prepared.message << std::endl;
         return -1.0f;
     }
+    tracker_detail::ModelOutputs outputs;
+    try {
+        outputs = model_->search(*prepared.value);
+    } catch (const std::exception &error) {
+        std::cerr << "NanoTrack search inference failed: " << error.what() << std::endl;
+        return -1.0f;
+    }
+    if (outputs.tensors.size() < 2 || outputs.tensors[0].dims != 4 || outputs.tensors[1].dims != 4) {
+        return -1.0f;
+    }
+    cv::Mat cls_logits = outputs.tensors[0].size[1] == 2 ? outputs.tensors[0] : outputs.tensors[1];
+    cv::Mat loc_reg = outputs.tensors[0].size[1] == 2 ? outputs.tensors[1] : outputs.tensors[0];
 
-    // Run backbone inference
-    auto x_f_results_vec = session_backbone->infer({&x_crop_buffer});
-    TensorBuffer x_f = std::move(x_f_results_vec[0]); // x_f is local to this function
-
-    // Run head inference
-    // Inputs are the persistent z_f and the local x_f
-    auto head_outputs_vec = session_head->infer({&z_f, &x_f});
-    
-    // Wrap the output TensorBuffers in cv::Mat headers to use existing logic
-    TensorBuffer& out_cls_buf = (head_outputs_vec[0].dims.d[1] == 2) ? head_outputs_vec[0] : head_outputs_vec[1];
-    TensorBuffer& out_loc_buf = (head_outputs_vec[0].dims.d[1] == 2) ? head_outputs_vec[1] : head_outputs_vec[0];
-
-    // Create cv::Mat headers pointing to the host_ptr data
-    // Dims are (1, 2, 15, 15) for cls, (1, 4, 15, 15) for loc
-    int cls_dims_arr[] = {int(out_cls_buf.dims.d[0]), int(out_cls_buf.dims.d[1]), int(out_cls_buf.dims.d[2]), int(out_cls_buf.dims.d[3])};
-    cv::Mat cls_logits(4, cls_dims_arr, CV_32F, out_cls_buf.host_ptr);
-
-    int loc_dims_arr[] = {int(out_loc_buf.dims.d[0]), int(out_loc_buf.dims.d[1]), int(out_loc_buf.dims.d[2]), int(out_loc_buf.dims.d[3])};
-    cv::Mat loc_reg(4, loc_dims_arr, CV_32F, out_loc_buf.host_ptr);
-
-    
     // --- The rest of the tracking logic is unchanged ---
 
     // Reshape cls_logits: (1, 2, 15, 15) -> (2, 225) -> (225, 2)
@@ -277,274 +179,6 @@ float NanoTracker::update(const FrameRef& frame, cv::Rect2f& output_bbox) {
     output_bbox.width = clipped_box.width;
     output_bbox.height = clipped_box.height;
     return scores.at<float>(best_idx);
-}
-
-
-bool NanoTracker::update_padded_image(int new_width, int new_height, int flags)
-{
-    int padded_width = 0;
-    int padded_height = 0;
-    if (vpi_padded_image) {
-        vpiImageGetSize(vpi_padded_image, &padded_width, &padded_height);
-    }
-    if (padded_width != new_width || padded_height != new_height) {
-        if (vpi_padded_image) {
-            vpiImageDestroy(vpi_padded_image);
-            vpi_padded_image = nullptr;
-        }
-        padded_width = new_width;
-        padded_height = new_height;
-        auto status = vpiImageCreate(padded_width, padded_height, VPI_IMAGE_FORMAT_F32, flags, &vpi_padded_image);
-        if (status != VPI_SUCCESS) {
-            // 显式置空句柄，避免后续在悬空句柄上创建视图（会以
-            // VPI_ERROR_INVALID_ARGUMENT 失败并可能破坏 VPI 内部状态）
-            vpi_padded_image = nullptr;
-            std::cerr << "Failed to create VPI padded image (" << new_width << "x" << new_height
-                      << "): " << vpiStatusGetName(status) << std::endl;
-            return false;
-        }
-    }
-    return true;
-}
-
-void NanoTracker::update_mean_image(int new_width, int new_height, int flags)
-{
-    // 尺寸变化或均值变化时重建/重填，避免每帧重复写整图
-    if (vpi_mean_image && mean_image_w == new_width && mean_image_h == new_height && !mean_image_dirty) {
-        return;
-    }
-    if (vpi_mean_image && (mean_image_w != new_width || mean_image_h != new_height)) {
-        vpiImageDestroy(vpi_mean_image);
-        vpi_mean_image = nullptr;
-    }
-    if (!vpi_mean_image) {
-        if (vpiImageCreate(new_width, new_height, VPI_IMAGE_FORMAT_U8, flags, &vpi_mean_image) != VPI_SUCCESS) {
-            std::cerr << "Failed to create VPI mean image" << std::endl;
-            return;
-        }
-        mean_image_w = new_width;
-        mean_image_h = new_height;
-    }
-    VPIImageData data;
-    if (vpiImageLockData(vpi_mean_image, VPI_LOCK_WRITE,
-            VPI_IMAGE_BUFFER_HOST_PITCH_LINEAR, &data) == VPI_SUCCESS) {
-        uint8_t value = static_cast<uint8_t>(cv::saturate_cast<uchar>(channel_average[0]));
-        uint8_t* row = static_cast<uint8_t*>(data.buffer.pitch.planes[0].data);
-        for (int y = 0; y < new_height; ++y)
-            memset(row + y * data.buffer.pitch.planes[0].pitchBytes, value, new_width);
-        vpiImageUnlock(vpi_mean_image);
-        mean_image_dirty = false;
-    }
-}
-
-/**
- * @brief Prepares a subwindow from the image and loads it into a TensorBuffer.
- */
-cv::Size NanoTracker::get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& pos, int model_sz, int original_sz, TensorBuffer& buffer) {
-    float c = (static_cast<float>(original_sz) + 1) / 2.0f;
-    float context_xmin = std::floor(pos.x - c + 0.5f);
-    float context_ymin = std::floor(pos.y - c + 0.5f);
-
-    int im_width = 0;
-    int im_height = 0;
-    vpiImageGetSize(vpiIm, &im_width, &im_height);
-    cv::Size img_size(im_width, im_height);
-
-    int left_pad = std::max(0, -static_cast<int>(context_xmin));
-    int top_pad = std::max(0, -static_cast<int>(context_ymin));
-    int right_pad = std::max(0, static_cast<int>(context_xmin + original_sz - im_width));
-    int bottom_pad = std::max(0, static_cast<int>(context_ymin + original_sz - im_height));
-
-    // auto start = std::chrono::high_resolution_clock::now();
-
-    const int flags = VPI_BACKEND_CUDA | VPI_BACKEND_CPU;
-    if (!update_padded_image(im_width + left_pad + right_pad, im_height + top_pad + bottom_pad, flags))
-        return {};
-
-    // 搜索窗越界时，先用通道均值填满整张 padded 图，再写入图像内容——
-    // 否则边界区域是未初始化显存（Python 端为 copyMakeBorder 均值填充）
-    static const VPIConvertImageFormatParams meanFmtParams {
-        .policy = VPI_CONVERSION_CLAMP,
-        .scale = 1.0f,   // 与下方图像内容转换一致（NanoTrack 输入为 0-255 浮点）
-        .offset = 0.0f,
-        .flags = 0,
-        .chromaUpFilter = VPI_INTERP_NEAREST,
-        .chromaDownFilter = VPI_INTERP_NEAREST,
-    };
-    // 搜索窗越界时用通道均值填充边缘带。绝不能"整图均值填充后再用视图覆写
-    // 内容区"——两次提交重叠写同一张 VPI 图且中间无同步时，VPI 3.2 上两次
-    // 写入会全部丢失（实测得到全零画布）：NanoTrack 完全致盲，网络输出恒定
-    // 位移，边缘目标 bbox 以 ~2px/帧线性漂移、被 YOLO 周期性拉回（锯齿）。
-    // 这里只写与内容区不相交的四条边缘带，所有写入互不相交，单次同步提交。
-    VPIImage pad_views[8] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-    int pad_view_count = 0;
-    const int canvas_w = im_width + left_pad + right_pad;
-    const int canvas_h = im_height + top_pad + bottom_pad;
-    if (left_pad > 0 || top_pad > 0 || right_pad > 0 || bottom_pad > 0) {
-        update_mean_image(canvas_w, canvas_h, flags);
-        if (vpi_mean_image) {
-            const struct { int x, y, w, h; } bands[4] = {
-                {0, 0, canvas_w, top_pad},
-                {0, top_pad + im_height, canvas_w, bottom_pad},
-                {0, top_pad, left_pad, im_height},
-                {left_pad + im_width, top_pad, right_pad, im_height},
-            };
-            for (const auto& band : bands) {
-                if (band.w <= 0 || band.h <= 0)
-                    continue;
-                VPIImage mean_view = nullptr, canvas_view = nullptr;
-                const VPIRectangleI band_rect {band.x, band.y, band.w, band.h};
-                const bool ok_view =
-                    vpiImageCreateView(vpi_mean_image, &band_rect, flags, &mean_view) == VPI_SUCCESS &&
-                    vpiImageCreateView(vpi_padded_image, &band_rect, flags, &canvas_view) == VPI_SUCCESS;
-                if (ok_view &&
-                    vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA, mean_view, canvas_view,
-                                                &meanFmtParams) == VPI_SUCCESS) {
-                    pad_views[pad_view_count++] = mean_view;
-                    pad_views[pad_view_count++] = canvas_view;
-                    continue;
-                }
-                std::cerr << "Failed to fill padded border with channel mean" << std::endl;
-                if (mean_view) vpiImageDestroy(mean_view);
-                if (canvas_view) vpiImageDestroy(canvas_view);
-            }
-        }
-    }
-
-    VPIImage vpiView;
-    VPIRectangleI roi_view {
-        .x = left_pad,
-        .y = top_pad,
-        .width = im_width,
-        .height = im_height
-    };
-    auto status = vpiImageCreateView(vpi_padded_image, &roi_view, flags, &vpiView);
-    if (status != VPI_SUCCESS) {
-        std::cerr << "Failed to create VPI image view: " << vpiStatusGetName(status) << std::endl;
-        for (int k = 0; k < pad_view_count; ++k) vpiImageDestroy(pad_views[k]);
-        return {};
-    }
-    static const VPIConvertImageFormatParams fmtParams {
-        .policy = VPI_CONVERSION_CLAMP,
-        .scale = 1.0f,
-        .offset = 0.0f,
-        .flags = 0,
-        .chromaUpFilter = VPI_INTERP_NEAREST,
-        .chromaDownFilter = VPI_INTERP_NEAREST,
-    };
-    status = vpiSubmitConvertImageFormat(vpi_stream, VPI_BACKEND_CUDA, vpiIm, vpiView, &fmtParams);
-    if (status != VPI_SUCCESS) {
-        std::cerr << "Failed to submit VPI format conversion" << std::endl;
-        vpiImageDestroy(vpiView);
-        for (int k = 0; k < pad_view_count; ++k) vpiImageDestroy(pad_views[k]);
-        return {};
-    }
-
-    vpiStreamSync(vpi_stream);
-    vpiImageDestroy(vpiView);
-    for (int k = 0; k < pad_view_count; ++k)
-        vpiImageDestroy(pad_views[k]);
-
-    VPIImage vpiImPatch;
-    VPIRectangleI roi_patch {
-        .x = static_cast<int>(context_xmin + left_pad),
-        .y = static_cast<int>(context_ymin + top_pad),
-        .width = original_sz,
-        .height = original_sz
-    };
-    status = vpiImageCreateView(vpi_padded_image, &roi_patch, flags, &vpiImPatch);
-    if (status != VPI_SUCCESS) {
-        std::cerr << "Failed to create VPI image patch: " << vpiStatusGetName(status) << std::endl;
-        return {};
-    }
-
-    VPIImage vpiOut = vpiImPatch;
-    if (model_sz != original_sz) {
-        auto it = vpi_model_images.find(model_sz);
-        if (it != vpi_model_images.end()) {
-            vpiOut = it->second;
-        } else {
-            status = vpiImageCreate(model_sz, model_sz, VPI_IMAGE_FORMAT_F32, flags, &vpiOut);
-            if (status != VPI_SUCCESS) {
-                std::cerr << "Failed to create VPI resized image" << std::endl;
-                vpiImageDestroy(vpiImPatch);
-                return {};
-            }
-            vpi_model_images[model_sz] = vpiOut;
-        }
-        status = vpiSubmitRescale(vpi_stream, VPI_BACKEND_CUDA, vpiImPatch, vpiOut, VPI_INTERP_LINEAR, VPI_BORDER_CLAMP, 0);
-        if (status != VPI_SUCCESS) {
-            std::cerr << "Failed to submit VPI rescale" << std::endl;
-            vpiImageDestroy(vpiImPatch);
-            return {};
-        }
-    }
-
-    // printf("Synchronizing VPI stream...\n");
-    vpiStreamSync(vpi_stream);
-
-    VPIImageData f32Data;
-    if (vpiImageLockData(vpiOut, VPI_LOCK_READ, VPI_IMAGE_BUFFER_CUDA_PITCH_LINEAR, &f32Data) != VPI_SUCCESS)
-    {
-        std::cerr << "Failed to lock model image for memcpy" << std::endl;
-        vpiImageDestroy(vpiImPatch);
-        return {};
-    }
-    size_t width_bytes = model_sz * sizeof(float);
-    cudaMemcpy2DAsync(
-        static_cast<float*>(buffer.device_ptr), width_bytes,
-        f32Data.buffer.pitch.planes[0].data, f32Data.buffer.pitch.planes[0].pitchBytes,
-        width_bytes, model_sz, cudaMemcpyDeviceToDevice);
-    cudaMemcpy2DAsync(
-        static_cast<float*>(buffer.device_ptr) + model_sz * model_sz, width_bytes,
-        f32Data.buffer.pitch.planes[0].data, f32Data.buffer.pitch.planes[0].pitchBytes,
-        width_bytes, model_sz, cudaMemcpyDeviceToDevice);
-    cudaMemcpy2DAsync(
-        static_cast<float*>(buffer.device_ptr) + model_sz * model_sz * 2, width_bytes,
-        f32Data.buffer.pitch.planes[0].data, f32Data.buffer.pitch.planes[0].pitchBytes,
-        width_bytes, model_sz, cudaMemcpyDeviceToDevice);
-    cudaStreamSynchronize(0);
-    vpiImageUnlock(vpiOut);
-    vpiImageDestroy(vpiImPatch);
-
-    return img_size;
-    
-    // auto end = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double, std::milli> elapsed = end - start;
-
-    // std::cout << "Elapsed time: " << elapsed.count() << " ms" << std::endl;
-
-    // cv::Mat im_padded;
-    // cv::copyMakeBorder(im, im_padded, top_pad, bottom_pad, left_pad, right_pad, cv::BORDER_CONSTANT, channel_average);
-    
-    // cv::Rect roi(static_cast<int>(context_xmin + left_pad),
-    //              static_cast<int>(context_ymin + top_pad),
-    //              original_sz, original_sz);
-    
-    // cv::Mat im_patch = im_padded(roi);
-    
-    // if (model_sz != original_sz) {
-    //     cv::resize(im_patch, im_patch, cv::Size(model_sz, model_sz));
-    // }
-    
-    // // im_patch is HWC, CV_8UC3
-    // // buffer.host_ptr needs to be filled with CHW, CV_32FC1 data
-    
-    // float* host_data = static_cast<float*>(buffer.host_ptr);
-    // size_t C = 3;
-    // size_t H = model_sz;
-    // size_t W = model_sz;
-    // size_t channel_size = H * W;
-
-    // for (size_t c = 0; c < C; ++c) {
-    //     for (size_t h = 0; h < H; ++h) {
-    //         for (size_t w = 0; w < W; ++w) {
-    //             // Manually convert HWC to CHW and cast from 8U to 32F
-    //             // (Assumes BGR input and model)
-    //             host_data[c * channel_size + h * W + w] = static_cast<float>(im_patch.at<cv::Vec3b>(h, w)[c]);
-    //         }
-    //     }
-    // }
 }
 
 

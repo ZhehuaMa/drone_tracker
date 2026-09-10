@@ -289,9 +289,9 @@ cv::Point2f CenterKalmanFilter::update(const cv::Point2f& meas_center, int64_t t
 // NanoDcfTracker
 // ---------------------------------------------------------------------------
 
-NanoDcfTracker::NanoDcfTracker(const Params& params)
+NanoDcfTracker::NanoDcfTracker(const Params& params, std::unique_ptr<NanoTracker> nano)
     : params_(params),
-      nano_(std::make_unique<NanoTracker>(params.backbone_path, params.head_path)),
+      nano_(std::move(nano)),
       dcf_(std::make_unique<GrayscaleDCF>(params.dcf)),
       center_kf_(params.center_kf)
 {

@@ -1,5 +1,29 @@
 cmake_minimum_required(VERSION 3.10)
 
+# 单独配置本目录即可运行公共预处理测试，无需发现任何硬件 SDK。
+option(DRONE_TRACKER_PREPROCESS_TESTS_ONLY "Build only platform-independent preprocessing tests" OFF)
+if(DRONE_TRACKER_PREPROCESS_TESTS_ONLY)
+    project(preprocess_common LANGUAGES CXX)
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    enable_testing()
+    add_library(preprocess_geometry STATIC preprocess/preprocess_geometry.cpp)
+    target_include_directories(preprocess_geometry PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    # 公共几何和真实算法测试仅依赖 OpenCV 与线程库。
+    find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn)
+    find_package(Threads REQUIRED)
+    target_include_directories(preprocess_geometry SYSTEM PUBLIC ${OpenCV_INCLUDE_DIRS})
+    add_executable(preprocess_common_tests tests/preprocess_geometry_test.cpp)
+    target_include_directories(preprocess_common_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    target_link_libraries(preprocess_common_tests PRIVATE preprocess_geometry)
+    add_test(NAME preprocess_common_tests COMMAND preprocess_common_tests)
+    add_executable(preprocess_contract_tests tests/preprocess_contract_test.cpp nano_tracker.cpp yolo_detector.cpp)
+    target_include_directories(preprocess_contract_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    target_link_libraries(preprocess_contract_tests PRIVATE preprocess_geometry ${OpenCV_LIBS} Threads::Threads)
+    add_test(NAME preprocess_contract_tests COMMAND preprocess_contract_tests)
+    return()
+endif()
+
 set(CMAKE_CUDA_ARCHITECTURES 87)
 set(CUDA_ARCHITECTURES "87")
 
@@ -42,6 +66,11 @@ set(LIB_SOURCES
     rotation_kf.cpp
     nano_tracker.cpp
     trt_engine.cpp
+    detail/jetson_model_calls.cpp
+    preprocess/jetson/jetson_model_input.cpp
+    preprocess/jetson/jetson_image_ops.cpp
+    preprocess/jetson/jetson_yolo_preprocessor.cpp
+    preprocess/jetson/jetson_nanotrack_preprocessor.cpp
 )
 
 set(LIB_HEADERS
@@ -51,11 +80,16 @@ set(LIB_HEADERS
     rotation_history.h
 )
 
+# 几何实现只有一个编译目标，公共测试不链接平台算法库。
+add_library(preprocess_geometry STATIC preprocess/preprocess_geometry.cpp)
+target_include_directories(preprocess_geometry PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
+
 # Create shared library
 add_library(${PROJECT_NAME} STATIC ${LIB_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
     drone_frame
+    preprocess_geometry
     ${OpenCV_LIBS}
     nvinfer
     CUDA::cudart
@@ -66,6 +100,12 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 # 单元测试（DCF/KF/切片，纯主机端，不需要 GPU 与 TRT 引擎）
 option(DRONE_TRACKER_BUILD_TESTS "Build hybrid tracker unit tests" OFF)
 if(DRONE_TRACKER_BUILD_TESTS)
+    add_executable(preprocess_common_tests tests/preprocess_geometry_test.cpp)
+    target_include_directories(preprocess_common_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    target_link_libraries(preprocess_common_tests PRIVATE preprocess_geometry)
+    add_executable(preprocess_contract_tests tests/preprocess_contract_test.cpp nano_tracker.cpp yolo_detector.cpp)
+    target_include_directories(preprocess_contract_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    target_link_libraries(preprocess_contract_tests PRIVATE preprocess_geometry ${OpenCV_LIBS} pthread)
     add_executable(hybrid_tracker_tests tests/test_main.cpp)
     target_link_libraries(hybrid_tracker_tests PRIVATE ${PROJECT_NAME})
     # 压力测试：需要真实 TRT 引擎（<pkg>/models），验证 VPI/内存稳定性

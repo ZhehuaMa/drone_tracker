@@ -2,6 +2,8 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <limits>
+#include "preprocess/jetson/jetson_model_input.h"
 
 TensorBuffer::TensorBuffer(const nvinfer1::Dims &dims, size_t element_size)
     : dims(dims)
@@ -11,8 +13,14 @@ TensorBuffer::TensorBuffer(const nvinfer1::Dims &dims, size_t element_size)
         vol *= dims.d[d];
     }
     size = vol * element_size;
-    cudaHostAlloc(&host_ptr, size, cudaHostAllocMapped);
-    cudaHostGetDevicePointer(&device_ptr, host_ptr, 0);
+    if (cudaHostAlloc(&host_ptr, size, cudaHostAllocMapped) != cudaSuccess) {
+        throw std::runtime_error("Failed to allocate mapped tensor storage");
+    }
+    if (cudaHostGetDevicePointer(&device_ptr, host_ptr, 0) != cudaSuccess) {
+        cudaFreeHost(host_ptr);
+        host_ptr = nullptr;
+        throw std::runtime_error("Failed to map tensor device address");
+    }
 }
 
 TensorBuffer::~TensorBuffer() {
@@ -123,8 +131,9 @@ void TrtEngine::setup() {
     }
 }
 
-std::vector<TensorBuffer> TrtEngine::infer(const std::vector<TensorBuffer*>& inputs)
+std::vector<TensorBuffer> TrtEngine::infer(const std::vector<const TensorBuffer*>& inputs)
 {
+    if (!m_stream) { throw std::runtime_error("Inference stream is unavailable"); }
     if (inputs.size() != m_input_tensor_indices.size()) {
         throw std::runtime_error("Number of inputs does not match engine's expected number of inputs.");
     }
@@ -138,7 +147,9 @@ std::vector<TensorBuffer> TrtEngine::infer(const std::vector<TensorBuffer*>& inp
         if (!m_context->setInputShape(name, input.dims)) {
              throw std::runtime_error("Failed to set input shape for " + std::string(name));
         }
-        m_context->setTensorAddress(name, input.device_ptr);
+        if (!m_context->setTensorAddress(name, input.device_ptr)) {
+            throw std::runtime_error("Failed to bind input " + std::string(name));
+        }
     }
 
     // Ensure all input shapes are set before getting output shapes
@@ -151,16 +162,24 @@ std::vector<TensorBuffer> TrtEngine::infer(const std::vector<TensorBuffer*>& inp
         const char* name = m_io_tensor_names[binding_index].c_str();
         TensorBuffer out_mem(m_context->getTensorShape(name), sizeof(float));
         // printf("Output tensor %s memory address: %p\n", name, out_mem.device_ptr);
-        m_context->setTensorAddress(name, out_mem.device_ptr);
+        if (!m_context->setTensorAddress(name, out_mem.device_ptr)) {
+            throw std::runtime_error("Failed to bind output " + std::string(name));
+        }
         outputs.push_back(std::move(out_mem));
     }
     
     // --- Inference ---
     if (!m_context->enqueueV3(m_stream)) {
+        cudaStreamSynchronize(m_stream);
         throw std::runtime_error("Failed to enqueue inference.");
     }
     
-    cudaStreamSynchronize(m_stream);
+    if (cudaStreamSynchronize(m_stream) != cudaSuccess) {
+        // 先结束 stream 的持有，再允许局部输出和调用方输入租约释放。
+        cudaStreamDestroy(m_stream);
+        m_stream = nullptr;
+        throw std::runtime_error("Failed to synchronize inference");
+    }
     return outputs;
 }
 
@@ -189,3 +208,49 @@ std::string TrtEngine::getPrimaryOutputName() const
     throw std::runtime_error("No output tensors found.");
 }
 
+
+PreprocessResult<std::vector<TensorBuffer>> TrtEngine::inferPrepared(const PreparedModelInput &input) {
+    using Result = PreprocessResult<std::vector<TensorBuffer>>;
+    const auto *jetson{dynamic_cast<const JetsonPreparedModelInput *>(&input)};
+    if (!jetson) {
+        return Result::failure(PreprocessError::PlatformTypeMismatch, "Expected JetsonPreparedModelInput");
+    }
+    const auto &contract{input.contract()};
+    if (m_input_tensor_indices.size() != 1 || contract.shape.size() != 4
+        || contract.element_type != TensorElementType::Float32 || contract.layout != TensorLayout::Nchw) {
+        return Result::failure(PreprocessError::ContractMismatch, "Expected one Float32 NCHW input");
+    }
+    const char *name{m_io_tensor_names[m_input_tensor_indices[0]].c_str()};
+    const auto expected{m_engine->getTensorShape(name)};
+    const auto &storage{jetson->storage()};
+    if (expected.nbDims != 4 || storage.dims.nbDims != 4
+        || m_engine->getTensorDataType(name) != nvinfer1::DataType::kFLOAT
+        || m_engine->getTensorFormat(name) != nvinfer1::TensorFormat::kLINEAR) {
+        return Result::failure(PreprocessError::ContractMismatch, "Engine input type, rank or format mismatch");
+    }
+    std::size_t bytes{sizeof(float)};
+    for (int axis{0}; axis < 4; ++axis) {
+        const int actual{contract.shape[axis]};
+        if (actual <= 0 || storage.dims.d[axis] != actual
+            || (expected.d[axis] != -1 && expected.d[axis] != actual)
+            || bytes > std::numeric_limits<std::size_t>::max() / static_cast<std::size_t>(actual)) {
+            return Result::failure(PreprocessError::ContractMismatch, "Input shape or storage mismatch");
+        }
+        if (expected.d[axis] == -1) {
+            const auto low{m_engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMIN)};
+            const auto high{m_engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMAX)};
+            if (low.nbDims != 4 || high.nbDims != 4 || actual < low.d[axis] || actual > high.d[axis]) {
+                return Result::failure(PreprocessError::ContractMismatch, "Input outside optimization profile");
+            }
+        }
+        bytes *= static_cast<std::size_t>(actual);
+    }
+    if (!storage.device_ptr || storage.size != bytes) {
+        return Result::failure(PreprocessError::ContractMismatch, "Input storage size mismatch");
+    }
+    try {
+        return {infer({&storage})};
+    } catch (const std::exception &error) {
+        return Result::failure(PreprocessError::PlatformFailure, error.what());
+    }
+}

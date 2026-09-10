@@ -3,14 +3,17 @@
 
 #include <opencv2/opencv.hpp>
 #include <memory>
-#include "trt_engine.h"
+#include "preprocess/image_preprocessor.h"
+#include "detail/model_calls.h"
 #include "frame/frame.h"
 
-#include <vpi/VPI.h>
+
 
 class NanoTracker {
 public:
-    NanoTracker(const std::string& backbone_path, const std::string& head_path);
+    /** @brief 独占接收模型调用和预处理实现；模拟实现可运行真实状态逻辑。 */
+    NanoTracker(std::unique_ptr<tracker_detail::NanoModelCalls> model,
+                std::unique_ptr<NanoTrackPreprocessor> preprocessor);
     ~NanoTracker();
     void init(const FrameRef& frame, const cv::Rect2f& bbox);
     float update(const FrameRef& frame, cv::Rect2f& output_bbox);
@@ -18,6 +21,7 @@ public:
     bool isInitialized() const { return m_initialized; }
 
 private:
+    friend struct NanoTrackerTestAccess;
     // Parameters
     const int score_size = 15;
     const int min_wh = 5;
@@ -31,34 +35,13 @@ private:
     // State
     cv::Point2f center_pos;
     cv::Point2f size;
-    cv::Scalar channel_average;
-    TensorBuffer z_f; // template features (now a TensorBuffer)
     cv::Mat window;
     cv::Mat points;
 
-    VPIStream vpi_stream = nullptr;
-    VPIImage vpi_padded_image = nullptr;
-    VPIImage vpi_mean_image = nullptr;
-    int mean_image_w = 0;
-    int mean_image_h = 0;
-    bool mean_image_dirty = true;
-    std::unordered_map<int, VPIImage> vpi_model_images;
+    std::unique_ptr<tracker_detail::NanoModelCalls> model_;
+    std::unique_ptr<NanoTrackPreprocessor> preprocessor_;
 
-    // Input buffers for inference
-    TensorBuffer z_crop_buffer;
-    TensorBuffer x_crop_buffer;
-
-    // Inference engines
-    std::unique_ptr<TrtEngine> session_backbone;
-    std::unique_ptr<TrtEngine> session_head;
-
-    // Helper functions
     void generate_points();
-    cv::Size get_subwindow_buffer(VPIImage vpiIm, const cv::Point2f& pos, int model_sz, int original_sz, TensorBuffer& buffer);
-    bool update_padded_image(int new_width, int new_height, int flags);
-    // 维护一张与 padded 图同尺寸、填充 channel_average 的 U8 图（Python 端
-    // copyMakeBorder 的均值填充），供搜索窗越界时填充边界
-    void update_mean_image(int new_width, int new_height, int flags);
     cv::Mat convert_bbox(const cv::Mat& delta, const cv::Mat& points);
     cv::Rect2f bbox_clip(const cv::Point2f& center, const cv::Point2f& size, const cv::Size& boundary);
 
