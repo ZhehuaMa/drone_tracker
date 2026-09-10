@@ -3,7 +3,7 @@
 
 #include "preprocess/model_input.h"
 #include "preprocess/reusable_input.h"
-#include "trt_engine.h"
+#include "model/jetson/tensor_buffer.h"
 
 /** @brief Jetson 输入只读结果，独占使用租借的缓冲区；结果销毁才允许复用。 */
 class JetsonPreparedModelInput final : public PreparedModelInput {

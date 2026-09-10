@@ -5,7 +5,7 @@
 #include <vector>
 #include <vpi/VPI.h>
 
-#include "trt_engine.h"
+#include "model/jetson/tensor_buffer.h"
 #include <opencv2/core/types.hpp>
 
 namespace jetson_preprocess {

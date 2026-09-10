@@ -2,7 +2,7 @@
 #include "preprocess/jetson/jetson_yolo_preprocessor.h"
 #include "preprocess/jetson/jetson_nanotrack_preprocessor.h"
 #include "nano_tracker.h"
-#include "detail/model_calls.h"
+#include "model/jetson/jetson_model_backend.h"
 #include <iostream>
 #include <deque>
 #include <vector>
@@ -134,7 +134,7 @@ bool HybridTrackerImp::init()
 {
     try {
         m_detector = std::make_unique<YoloV8Detector>(
-            tracker_detail::createYoloModelCalls(m_settings.yolo_engine_path),
+            model::createYoloBackend(m_settings.yolo_engine_path),
             std::make_unique<JetsonYoloPreprocessor>(),
             m_settings.yolo_conf_threshold,
             m_settings.yolo_nms_threshold,
@@ -164,7 +164,7 @@ bool HybridTrackerImp::init()
     tracker_params.center_kf.q_a = m_settings.kf_q_a;
     m_tracker = std::make_unique<NanoDcfTracker>(tracker_params,
         std::make_unique<NanoTracker>(
-            tracker_detail::createNanoModelCalls(tracker_params.backbone_path, tracker_params.head_path),
+            model::createNanoTrackBackend(tracker_params.backbone_path, tracker_params.head_path),
             std::make_unique<JetsonNanoTrackPreprocessor>()));
 
     reset();

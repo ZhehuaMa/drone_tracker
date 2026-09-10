@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include <memory>
 #include "preprocess/image_preprocessor.h"
-#include "detail/model_calls.h"
+#include "model/model_backend.h"
 #include "frame/frame.h"
 
 
@@ -12,7 +12,7 @@
 class NanoTracker {
 public:
     /** @brief 独占接收模型调用和预处理实现；模拟实现可运行真实状态逻辑。 */
-    NanoTracker(std::unique_ptr<tracker_detail::NanoModelCalls> model,
+    NanoTracker(std::unique_ptr<model::NanoTrackBackend> model,
                 std::unique_ptr<NanoTrackPreprocessor> preprocessor);
     ~NanoTracker();
     void init(const FrameRef& frame, const cv::Rect2f& bbox);
@@ -38,7 +38,7 @@ private:
     cv::Mat window;
     cv::Mat points;
 
-    std::unique_ptr<tracker_detail::NanoModelCalls> model_;
+    std::unique_ptr<model::NanoTrackBackend> model_;
     std::unique_ptr<NanoTrackPreprocessor> preprocessor_;
 
     void generate_points();

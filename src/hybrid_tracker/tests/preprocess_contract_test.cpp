@@ -1,3 +1,4 @@
+#include "model_test_support.h"
 #include "nano_tracker.h"
 #include "yolo_detector.h"
 #include "preprocess/input_validation.h"
@@ -76,6 +77,7 @@ PreparedInputResult prepareMock(ReusableInput<int> &cache, const ModelInputContr
 struct SessionTrace {
     int begins{0};
     int inferences{0};
+    bool fail_model{false};
     int hit_call{0};
     float hit_score{0.9f};
     bool fail_prepare{false};
@@ -129,33 +131,38 @@ class MockYoloPreprocessor final : public YoloPreprocessor {
   private:
     std::shared_ptr<SessionTrace> trace_;
 };
-class MockYoloCalls final : public tracker_detail::YoloModelCalls {
+class MockYoloCalls final : public model::YoloBackend {
   public:
     explicit MockYoloCalls(std::shared_ptr<SessionTrace> trace) : trace_{std::move(trace)} {}
     ModelInputContract inputContract() const override {
         return {{1, 3, 64, 64}, TensorElementType::Float32, TensorLayout::Nchw, 1.0f / 255.0f};
     }
-    tracker_detail::ModelOutputs infer(const PreparedModelInput &) override {
+    model::Result<model::YoloPrediction> infer(const PreparedInputRef &) override {
         ++trace_->inferences;
-        const int dims[]{1, 5, 10};
-        cv::Mat tensor{3, dims, CV_32F, cv::Scalar{0}};
-        float *data{tensor.ptr<float>()};
+        if (trace_->fail_model) {
+            return model::Result<model::YoloPrediction>::failure(
+                {model::ModelError::ExecutionFailure, "mock-yolo", {}, {}, {}, "injected failure"});
+        }
+        auto tensor{model_test::tensor({1, 5, 10})};
+        // 测试数据构造期间存储尚未发布给消费者。
+        float *data{const_cast<float *>(tensor.read().data())};
         data[0] = 32;
         data[10] = 32;
         data[20] = 10;
         data[30] = 10;
         data[40] = trace_->inferences == trace_->hit_call ? trace_->hit_score : 0.0f;
-        return {{}, {tensor}};
+        return {{tensor, 1, 2}};
     }
 
   private:
     std::shared_ptr<SessionTrace> trace_;
 };
-void checkYolo(int hit_call, float score, bool fail_prepare = false) {
+void checkYolo(int hit_call, float score, bool fail_prepare = false, bool fail_model = false) {
     auto trace{std::make_shared<SessionTrace>()};
     trace->hit_call = hit_call;
     trace->hit_score = score;
     trace->fail_prepare = fail_prepare;
+    trace->fail_model = fail_model;
     YoloV8Detector detector{
         std::make_unique<MockYoloCalls>(trace), std::make_unique<MockYoloPreprocessor>(trace), 0.5f, 0.5f, 0, 0.5f};
     require(detector.init(), "模拟 YOLO 初始化失败");
@@ -171,7 +178,7 @@ void checkYolo(int hit_call, float score, bool fail_prepare = false) {
     require(received && result.frame_id == 77, "异步结果未返回原帧号");
     require(trace->begins == 1, "一次请求建立了多个快照");
     require(trace->regions.front() == roi, "ROI 未优先执行");
-    const bool expected_hit{!fail_prepare && hit_call > 0 && score >= (hit_call == 1 ? 0.25f : 0.5f)};
+    const bool expected_hit{!fail_prepare && !fail_model && hit_call > 0 && score >= (hit_call == 1 ? 0.25f : 0.5f)};
     require(result.has_target == expected_hit, "检测阈值或目标选择发生变化");
     if (expected_hit) {
         require(trace->inferences == hit_call && trace->regions.size() == static_cast<std::size_t>(hit_call),
@@ -194,6 +201,9 @@ struct NanoTrace {
     int templates{0};
     int searches{0};
     int resets{0};
+    int model_resets{0};
+    bool fail_model_template{false};
+    bool fail_model_search{false};
     bool fail_template{false};
     bool fail_search{false};
 };
@@ -223,15 +233,24 @@ class MockNanoPreprocessor final : public NanoTrackPreprocessor {
     ReusableInput<int> template_{};
     ReusableInput<int> search_{};
 };
-class MockNanoCalls final : public tracker_detail::NanoModelCalls {
+class MockNanoCalls final : public model::NanoTrackBackend {
   public:
     explicit MockNanoCalls(std::shared_ptr<NanoTrace> trace) : trace_{std::move(trace)} {}
-    void setTemplate(const PreparedModelInput &) override { ++trace_->templates; }
-    tracker_detail::ModelOutputs search(const PreparedModelInput &) override {
+    model::Status setTemplate(const PreparedInputRef &) override {
+        ++trace_->templates;
+        if (trace_->fail_model_template) {
+            return model::Status::failure({model::ModelError::ExecutionFailure, "mock-nano", {}, {}, {}, "template"});
+        }
+        return {true};
+    }
+    void reset() noexcept override { ++trace_->model_resets; }
+    model::Result<model::NanoPrediction> search(const PreparedInputRef &) override {
         ++trace_->searches;
-        const int cls_dims[]{1, 2, 15, 15};
-        const int loc_dims[]{1, 4, 15, 15};
-        return {{}, {cv::Mat{4, cls_dims, CV_32F, cv::Scalar{0}}, cv::Mat{4, loc_dims, CV_32F, cv::Scalar{10}}}};
+        if (trace_->fail_model_search) {
+            return model::Result<model::NanoPrediction>::failure(
+                {model::ModelError::ExecutionFailure, "mock-nano", {}, {}, {}, "search"});
+        }
+        return {{model_test::tensor({1, 2, 15, 15}), model_test::tensor({1, 4, 15, 15}, 10)}};
     }
 
   private:
@@ -257,9 +276,22 @@ void checkNano() {
     require(trace->searches == 1, "搜索预处理失败触发了模型调用");
     trace->fail_search = false;
     require(tracker.update(frame, bbox) > 0 && trace->searches == 2, "失败后无法继续搜索或租约未释放");
+    const auto before_model_failure{NanoTrackerTestAccess::state(tracker)};
+    const auto bbox_before_model_failure{bbox};
+    trace->fail_model_search = true;
+    require(tracker.update(frame, bbox) < 0, "模型失败未传播");
+    require(NanoTrackerTestAccess::state(tracker) == before_model_failure && bbox == bbox_before_model_failure,
+            "模型失败修改了目标状态");
+    trace->fail_model_search = false;
+    require(tracker.update(frame, bbox) > 0, "模型失败后不能恢复搜索");
+    trace->fail_model_template = true;
+    tracker.init(frame, {10, 10, 10, 10});
+    require(!tracker.isInitialized(), "新模板模型失败仍初始化");
+    const int model_resets{trace->model_resets};
     const int resets{trace->resets};
     tracker.reset();
     require(trace->resets == resets + 1 && !tracker.isInitialized(), "目标重置未传递");
+    require(trace->model_resets == model_resets + 1, "模型模板未同步重置");
 }
 } // namespace
 
@@ -320,6 +352,7 @@ int main() {
     checkYolo(3, 0.9f);
     checkYolo(2, 0.4f); // 同分数在全图被正常阈值拒绝。
     checkYolo(0, 0.0f, true);
+    checkYolo(1, 0.9f, false, true); // 模型失败仍返回原帧号且继续既有级联。
     checkNano();
     std::cout << "真实级联、状态更新、结果租约和错误传播测试通过\n";
 }

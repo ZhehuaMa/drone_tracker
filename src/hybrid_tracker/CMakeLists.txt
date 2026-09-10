@@ -7,6 +7,9 @@ if(DRONE_TRACKER_PREPROCESS_TESTS_ONLY)
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     enable_testing()
+    add_library(model_common STATIC model/validation.cpp model/jetson/jetson_model_backend.cpp)
+    target_include_directories(model_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
     add_library(preprocess_geometry STATIC preprocess/preprocess_geometry.cpp)
     target_include_directories(preprocess_geometry PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     # 公共几何和真实算法测试仅依赖 OpenCV 与线程库。
@@ -19,8 +22,11 @@ if(DRONE_TRACKER_PREPROCESS_TESTS_ONLY)
     add_test(NAME preprocess_common_tests COMMAND preprocess_common_tests)
     add_executable(preprocess_contract_tests tests/preprocess_contract_test.cpp nano_tracker.cpp yolo_detector.cpp)
     target_include_directories(preprocess_contract_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
-    target_link_libraries(preprocess_contract_tests PRIVATE preprocess_geometry ${OpenCV_LIBS} Threads::Threads)
+    target_link_libraries(preprocess_contract_tests PRIVATE preprocess_geometry model_common ${OpenCV_LIBS} Threads::Threads)
     add_test(NAME preprocess_contract_tests COMMAND preprocess_contract_tests)
+    add_executable(model_contract_tests tests/model_contract_test.cpp)
+    target_link_libraries(model_contract_tests PRIVATE model_common)
+    add_test(NAME model_contract_tests COMMAND model_contract_tests)
     return()
 endif()
 
@@ -65,8 +71,10 @@ set(LIB_SOURCES
     dcf_tracker.cpp
     rotation_kf.cpp
     nano_tracker.cpp
-    trt_engine.cpp
-    detail/jetson_model_calls.cpp
+    model/jetson/tensor_buffer.cpp
+    model/jetson/jetson_storage.cpp
+    model/jetson/tensor_rt_model_executor.cpp
+    model/jetson/jetson_model_factory.cpp
     preprocess/jetson/jetson_model_input.cpp
     preprocess/jetson/jetson_image_ops.cpp
     preprocess/jetson/jetson_yolo_preprocessor.cpp
@@ -84,11 +92,15 @@ set(LIB_HEADERS
 add_library(preprocess_geometry STATIC preprocess/preprocess_geometry.cpp)
 target_include_directories(preprocess_geometry PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
 
+add_library(model_common STATIC model/validation.cpp model/jetson/jetson_model_backend.cpp)
+target_include_directories(model_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 # Create shared library
 add_library(${PROJECT_NAME} STATIC ${LIB_SOURCES})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
     drone_frame
+    model_common
     preprocess_geometry
     ${OpenCV_LIBS}
     nvinfer
@@ -100,12 +112,15 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 # 单元测试（DCF/KF/切片，纯主机端，不需要 GPU 与 TRT 引擎）
 option(DRONE_TRACKER_BUILD_TESTS "Build hybrid tracker unit tests" OFF)
 if(DRONE_TRACKER_BUILD_TESTS)
+    add_executable(model_contract_tests tests/model_contract_test.cpp)
+    target_link_libraries(model_contract_tests PRIVATE model_common)
+    add_test(NAME model_contract_tests COMMAND model_contract_tests)
     add_executable(preprocess_common_tests tests/preprocess_geometry_test.cpp)
     target_include_directories(preprocess_common_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
     target_link_libraries(preprocess_common_tests PRIVATE preprocess_geometry)
     add_executable(preprocess_contract_tests tests/preprocess_contract_test.cpp nano_tracker.cpp yolo_detector.cpp)
     target_include_directories(preprocess_contract_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
-    target_link_libraries(preprocess_contract_tests PRIVATE preprocess_geometry ${OpenCV_LIBS} pthread)
+    target_link_libraries(preprocess_contract_tests PRIVATE preprocess_geometry model_common ${OpenCV_LIBS} pthread)
     add_executable(hybrid_tracker_tests tests/test_main.cpp)
     target_link_libraries(hybrid_tracker_tests PRIVATE ${PROJECT_NAME})
     # 压力测试：需要真实 TRT 引擎（<pkg>/models），验证 VPI/内存稳定性

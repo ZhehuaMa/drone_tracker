@@ -4,8 +4,9 @@
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
+#include "model/validation.h"
 
-NanoTracker::NanoTracker(std::unique_ptr<tracker_detail::NanoModelCalls> model,
+NanoTracker::NanoTracker(std::unique_ptr<model::NanoTrackBackend> model,
                          std::unique_ptr<NanoTrackPreprocessor> preprocessor)
     : model_{std::move(model)}, preprocessor_{std::move(preprocessor)} {
     if (!model_ || !preprocessor_) { throw std::invalid_argument("NanoTracker dependencies are required"); }
@@ -21,6 +22,7 @@ NanoTracker::~NanoTracker() = default;
 
 void NanoTracker::reset() {
     preprocessor_->reset();
+    model_->reset();
     m_initialized = false;
     center_pos = cv::Point2f(0, 0);
     size = cv::Point2f(0, 0);
@@ -54,6 +56,7 @@ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
     m_initialized = false;
 
     preprocessor_->reset();
+    model_->reset();
     if (!frame) { return; }
 
     const int w = frame->width();
@@ -77,17 +80,24 @@ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
 
     float s_z = sz(size.x, size.y);
 
-    const ModelInputContract contract{{1, 3, template_size, template_size}};
+    const auto contract{model_->templateContract()};
     auto prepared{preprocessor_->prepareTemplate(frame, center_pos, static_cast<int>(round(s_z)), contract)};
     if (!prepared || !prepared.value) {
         std::cerr << "NanoTrack template failed: " << prepared.message << std::endl;
         return;
     }
     try {
-        model_->setTemplate(*prepared.value);
+        const auto initialized{model_->setTemplate(prepared.value)};
+        if (!initialized) {
+            preprocessor_->reset();
+            model_->reset();
+            std::cerr << model::describe(initialized.error) << std::endl;
+            return;
+        }
         m_initialized = true;
     } catch (const std::exception &error) {
         preprocessor_->reset();
+        model_->reset();
         std::cerr << "NanoTrack template inference failed: " << error.what() << std::endl;
     }
 }
@@ -102,24 +112,34 @@ float NanoTracker::update(const FrameRef& frame, cv::Rect2f& output_bbox) {
     float s_x = s_z * (static_cast<float>(instance_size) / template_size);
     
     const cv::Size img_size{frame->width(), frame->height()};
-    const ModelInputContract contract{{1, 3, instance_size, instance_size}};
+    const auto contract{model_->searchContract()};
     auto prepared{preprocessor_->prepareSearch(frame, center_pos, static_cast<int>(round(s_x)), contract)};
     if (!prepared || !prepared.value) {
         std::cerr << "NanoTrack search failed: " << prepared.message << std::endl;
         return -1.0f;
     }
-    tracker_detail::ModelOutputs outputs;
+    model::Result<model::NanoPrediction> outputs;
     try {
-        outputs = model_->search(*prepared.value);
+        outputs = model_->search(prepared.value);
     } catch (const std::exception &error) {
         std::cerr << "NanoTrack search inference failed: " << error.what() << std::endl;
         return -1.0f;
     }
-    if (outputs.tensors.size() < 2 || outputs.tensors[0].dims != 4 || outputs.tensors[1].dims != 4) {
+    if (!outputs) {
+        std::cerr << model::describe(outputs.error) << std::endl;
         return -1.0f;
     }
-    cv::Mat cls_logits = outputs.tensors[0].size[1] == 2 ? outputs.tensors[0] : outputs.tensors[1];
-    cv::Mat loc_reg = outputs.tensors[0].size[1] == 2 ? outputs.tensors[1] : outputs.tensors[0];
+    const auto &classification{outputs.value.classification};
+    const auto &location{outputs.value.location};
+    if (model::validateTensor(classification, {"classification", 0, {1, 2, 15, 15}}, "NanoTracker")
+        || model::validateTensor(location, {"location", 1, {1, 4, 15, 15}}, "NanoTracker")) {
+        return -1.0f;
+    }
+    const auto cls_view{classification.read()};
+    const auto loc_view{location.read()};
+    // OpenCV 构造函数不接受 const 数据；只借用读取，两个 view 在后处理结束前持有存储。
+    cv::Mat cls_logits{4, classification.descriptor.shape.data(), CV_32F, const_cast<float *>(cls_view.data())};
+    cv::Mat loc_reg{4, location.descriptor.shape.data(), CV_32F, const_cast<float *>(loc_view.data())};
 
     // --- The rest of the tracking logic is unchanged ---
 

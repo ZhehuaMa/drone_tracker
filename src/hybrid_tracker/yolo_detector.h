@@ -12,7 +12,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "preprocess/image_preprocessor.h"
-#include "detail/model_calls.h"
+#include "model/model_backend.h"
 #include "frame/frame.h"
 #include "preprocess/preprocess_geometry.h"
 
@@ -42,7 +42,7 @@ struct YoloResult
 class YoloV8Detector
 {
 public:
-    YoloV8Detector(std::unique_ptr<tracker_detail::YoloModelCalls> model,
+    YoloV8Detector(std::unique_ptr<model::YoloBackend> model,
                    std::unique_ptr<YoloPreprocessor> preprocessor, float conf_thresh, float nms_thresh,
                    int target_class_id, float recall_relax_ratio, float max_box_area_ratio = 0.8f);
     ~YoloV8Detector();
@@ -89,10 +89,10 @@ private:
      * @param global_offset 全局坐标偏移量 (用于切片或ROI)
      * @param results [out] 检测结果列表
      */
-    void postprocess(float* output, const TensorShape &output_dims, const LetterboxTransform& lb, const cv::Size& image_size,
+    void postprocess(const float* output, const TensorShape &output_dims, const LetterboxTransform& lb, const cv::Size& image_size,
         const cv::Point2f& global_offset, std::vector<Detection>& results);
 
-    std::unique_ptr<tracker_detail::YoloModelCalls> model_;
+    std::unique_ptr<model::YoloBackend> model_;
     std::unique_ptr<YoloPreprocessor> preprocessor_;
     ModelInputContract input_contract_{};
 

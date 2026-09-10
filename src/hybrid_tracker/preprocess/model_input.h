@@ -7,12 +7,7 @@
 #include <utility>
 #include <vector>
 
-/** @brief 模型输入的元素类型；首期仅支持 32 位浮点数。 */
-enum class TensorElementType { Float32 };
-/** @brief Nchw 按批次、通道、高度、宽度排列，各通道独立存储。 */
-enum class TensorLayout { Nchw };
-/** @brief 张量各维长度的自有副本，不包含平台维度类型。 */
-using TensorShape = std::vector<std::int32_t>;
+#include "model/tensor.h"
 
 /**
  * @brief 模型输入的完整数值约定，调用方按值保存。

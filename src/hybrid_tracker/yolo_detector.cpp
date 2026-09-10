@@ -1,3 +1,4 @@
+#include "model/validation.h"
 #include "yolo_detector.h"
 #include <fstream>
 #include <iostream>
@@ -9,7 +10,7 @@
 
 #define TILE_OVERLAP_RATIO  0.2f  // 切片重叠比例
 
-YoloV8Detector::YoloV8Detector(std::unique_ptr<tracker_detail::YoloModelCalls> model,
+YoloV8Detector::YoloV8Detector(std::unique_ptr<model::YoloBackend> model,
     std::unique_ptr<YoloPreprocessor> preprocessor, float conf_thresh, float nms_thresh,
                                int target_class_id, float recall_relax_ratio, float max_box_area_ratio)
     : model_(std::move(model)),
@@ -241,23 +242,26 @@ void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &re
         return;
     }
     try {
-        const auto output{model_->infer(*prepared.value.input)};
-        if (output.tensors.empty() || output.tensors[0].empty() || output.tensors[0].dims != 3) {
-            std::cerr << "Invalid YOLO output" << std::endl;
+        const auto output{model_->infer(prepared.value.input)};
+        if (!output) {
+            std::cerr << model::describe(output.error) << std::endl;
             return;
         }
-        const auto &tensor{output.tensors[0]};
-        const TensorShape dims{tensor.size[0], tensor.size[1], tensor.size[2]};
+        const auto checked{model::yoloPrediction({output.value.predictions}, "YoloV8Detector")};
+        if (!checked || output.value.attribute_axis != checked.value.attribute_axis
+            || output.value.candidate_axis != checked.value.candidate_axis) { return; }
+        const auto view{output.value.predictions.read()};
+        const auto &dims{output.value.predictions.descriptor.shape};
         const auto resolved{resolveYoloRegion(session.sourceSize(), region)};
         if (!resolved) { return; }
-        postprocess(reinterpret_cast<float *>(tensor.data), dims, prepared.value.transform,
+        postprocess(view.data(), dims, prepared.value.transform,
                     resolved.value.size(), cv::Point2f(resolved.value.x, resolved.value.y), results);
     } catch (const std::exception &error) {
         std::cerr << "YOLO inference failed: " << error.what() << std::endl;
     }
 }
 
-void YoloV8Detector::postprocess(float* output, const TensorShape &output_dims, const LetterboxTransform& lb, const cv::Size& image_size,
+void YoloV8Detector::postprocess(const float* output, const TensorShape &output_dims, const LetterboxTransform& lb, const cv::Size& image_size,
     const cv::Point2f& global_offset, std::vector<Detection>& results)
 {
     // Python 版本中的输出形状是 [batch, 84, 8400] 或 [batch, num_classes+4, num_detections]
@@ -304,7 +308,7 @@ void YoloV8Detector::postprocess(float* output, const TensorShape &output_dims, 
             
             // 指向第i个proposal的第一个类别分数
             // (output + (4 * num_proposals) + i)
-            float* class_scores_start = output + 4 * num_proposals; 
+            const float* class_scores_start = output + 4 * num_proposals;
             for (int c = 0; c < num_classes; ++c)
             {
                 // 分数 = (class_scores_start + c * num_proposals)[i]
@@ -347,9 +351,9 @@ void YoloV8Detector::postprocess(float* output, const TensorShape &output_dims, 
         {
             // 第 i 个 proposal 的数据是连续的
             // [cx, cy, w, h, class0_score, class1_score, ...]
-            float* proposal_data = output + i * num_attrs;
+            const float* proposal_data = output + i * num_attrs;
             
-            float* class_scores = proposal_data + 4;
+            const float* class_scores = proposal_data + 4;
             float max_score = -1.0f;
             int max_class_id = -1;
 

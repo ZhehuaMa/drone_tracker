@@ -1,7 +1,8 @@
+#include "model/jetson/jetson_model_backend.h"
 #include "nano_tracker.h"
 #include "preprocess/jetson/jetson_nanotrack_preprocessor.h"
 #include "preprocess/jetson/jetson_yolo_preprocessor.h"
-#include "detail/model_calls.h"
+#include "model/model_backend.h"
 // NanoDcfTracker + YoloV8Detector 压力测试（真实 TRT 引擎，无 ROS）
 // 目的：复现 "Failed to create VPI image view 2" + 堆损坏。
 // 场景：目标框扫过四角/边缘（触发均值填充路径）、框尺寸 20~700px 往复
@@ -28,11 +29,11 @@ int main(int argc, char** argv)
     tp.enable_dcf = true;
     tp.max_div_factor = 0.5f;
     NanoDcfTracker tracker(tp, std::make_unique<NanoTracker>(
-        tracker_detail::createNanoModelCalls(tp.backbone_path, tp.head_path),
+        model::createNanoTrackBackend(tp.backbone_path, tp.head_path),
         std::make_unique<JetsonNanoTrackPreprocessor>()));
 
     YoloV8Detector yolo{
-        tracker_detail::createYoloModelCalls(model_dir + "/drone_int8.engine"),
+        model::createYoloBackend(model_dir + "/drone_int8.engine"),
         std::make_unique<JetsonYoloPreprocessor>(), 0.4f, 0.45f, 0, 1.0f, 0.8f};
     if (!yolo.init())
         return 2;
