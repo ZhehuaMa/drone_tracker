@@ -1,0 +1,17 @@
+template Backbone
+model=/home/firefly/benchmarks/nanotrackv3_evaluation_runs/nanotrackv3-official-20260910/models/components/fp16/template_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,127,127,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=48387 bytes=96774 w_stride=128 h_stride=0 size_with_stride=97536 pass_through=0 fl=0
+output #0 output [1,96,8,8,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=0 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+search Backbone
+model=/home/firefly/benchmarks/nanotrackv3_evaluation_runs/nanotrackv3-official-20260910/models/components/fp16/search_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,255,255,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=195075 bytes=390150 w_stride=256 h_stride=0 size_with_stride=391680 pass_through=0 fl=0
+output #0 output [1,96,16,16,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=0 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+Head
+model=/home/firefly/benchmarks/nanotrackv3_evaluation_runs/nanotrackv3-official-20260910/models/components/int8/rknn_fp16_backbone_int8_head/head.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input1 [1,8,8,96,] rank=4 type=INT8 format=NHWC quant=AFFINE zp=7 scale=0.10386 elems=6144 bytes=6144 w_stride=8 h_stride=0 size_with_stride=6144 pass_through=0 fl=0
+input #1 input2 [1,16,16,96,] rank=4 type=INT8 format=NHWC quant=AFFINE zp=12 scale=0.125582 elems=24576 bytes=24576 w_stride=16 h_stride=0 size_with_stride=24576 pass_through=0 fl=0
+output #0 output1 [1,2,15,15,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=4 scale=0.0651651 elems=450 bytes=450 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+output #1 output2 [1,4,15,15,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=-128 scale=0.384094 elems=900 bytes=900 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+roles: template_input=0 search_input=1 classification_output=0 location_output=1
+submission: Float32, pass_through=0, native logical layout; outputs: want_float=1
+replay input: explicit BGR/BGRA -> Gray8, Float32 0..255 crops

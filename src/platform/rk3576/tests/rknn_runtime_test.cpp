@@ -5,6 +5,7 @@
 #include "model/validation.h"
 #include "yolo_detector.h"
 
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstring>
@@ -57,7 +58,7 @@ int query(rknn_context, rknn_query_cmd cmd, void *ptr, std::uint32_t) {
         std::strcpy(v.drv_version, "0.9.8");
     } else if (cmd == RKNN_QUERY_IN_OUT_NUM) {
         auto &n{*static_cast<rknn_input_output_num *>(ptr)};
-        n.n_input = 1;
+        n.n_input = state->bad_attr == 7 ? 2 : 1;
         n.n_output = state->bad_attr == 1 ? 9 : 6;
     } else {
         auto &a{*static_cast<rknn_tensor_attr *>(ptr)};
@@ -187,7 +188,7 @@ int main() {
         require(fake.destroys == 1 && fake.releases == 2 && survivor.read().data()[0] == 0.125f,
                 "销毁破坏自有输出或重复释放");
     }
-    for (int mode{0}; mode < 8; ++mode) {
+    for (int mode{0}; mode < 9; ++mode) {
         Fake fake;
         state = &fake;
         if (mode == 0) {

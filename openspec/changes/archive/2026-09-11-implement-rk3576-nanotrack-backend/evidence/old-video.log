@@ -1,0 +1,318 @@
+model=/home/firefly/drone_tracker_test/models/yolov8n-model_zoo-int8_fp16-multi_cls.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8 C=4
+#0 images [1,640,640,3,] type=2 format=1 quant=2 zp=-128 scale=0.00392157 elems=1228800 bytes=1228800
+#0 /model.22/cv2.0/cv2.0.2/Conv_output_0 [1,64,80,80,] type=2 format=0 quant=2 zp=43 scale=0.525238 elems=409600 bytes=409600
+#1 /model.22/cv3.0/cv3.0.2/Conv_output_0 [1,4,80,80,] type=1 format=0 quant=2 zp=0 scale=1 elems=25600 bytes=51200
+#2 /model.22/cv2.1/cv2.1.2/Conv_output_0 [1,64,40,40,] type=2 format=0 quant=2 zp=91 scale=0.995673 elems=102400 bytes=102400
+#3 /model.22/cv3.1/cv3.1.2/Conv_output_0 [1,4,40,40,] type=1 format=0 quant=2 zp=0 scale=1 elems=6400 bytes=12800
+#4 /model.22/cv2.2/cv2.2.2/Conv_output_0 [1,64,20,20,] type=2 format=0 quant=2 zp=-12 scale=0.368377 elems=25600 bytes=25600
+#5 /model.22/cv3.2/cv3.2.2/Conv_output_0 [1,4,20,20,] type=1 format=0 quant=2 zp=0 scale=1 elems=1600 bytes=3200
+YOLO worker thread started.
+frame=1 hit=1 class=2 score=0.540651 box=[23.707 x 16.7936 from (461.883, 277.176)]
+frame=2 hit=1 class=2 score=0.528108 box=[22.1849 x 17.2349 from (462.699, 275.444)]
+frame=3 hit=1 class=2 score=0.560974 box=[22.9694 x 16.5172 from (461.898, 274.808)]
+frame=4 hit=1 class=2 score=0.565419 box=[24.3635 x 17.1134 from (460.516, 272.997)]
+frame=5 hit=1 class=2 score=0.550607 box=[23.8322 x 18.1462 from (461.757, 270.936)]
+frame=6 hit=1 class=2 score=0.525201 box=[23.6216 x 18.1185 from (461.246, 269.893)]
+frame=7 hit=1 class=2 score=0.572902 box=[23.3037 x 16.9984 from (461.576, 269.04)]
+frame=8 hit=0
+frame=9 hit=0
+frame=10 hit=0
+frame=11 hit=0
+frame=12 hit=1 class=2 score=0.534977 box=[23.093 x 17.3419 from (462.482, 262.681)]
+frame=13 hit=1 class=2 score=0.543832 box=[24.0093 x 17.2344 from (461.587, 261.765)]
+frame=14 hit=0
+frame=15 hit=1 class=2 score=0.507297 box=[23.8218 x 18.1973 from (461.06, 258.018)]
+frame=16 hit=1 class=2 score=0.530981 box=[25.2979 x 19.0468 from (460.522, 255.901)]
+frame=17 hit=1 class=2 score=0.515666 box=[25.2828 x 19.1167 from (460.516, 254.879)]
+frame=18 hit=0
+frame=19 hit=0
+frame=20 hit=0
+frame=21 hit=1 class=2 score=0.502415 box=[24.95 x 19.7333 from (460.849, 247.94)]
+frame=22 hit=1 class=2 score=0.52441 box=[24.2234 x 19.863 from (461.574, 246.885)]
+frame=23 hit=1 class=2 score=0.550879 box=[25.3043 x 19.4384 from (460.516, 245.767)]
+frame=24 hit=1 class=2 score=0.568296 box=[24.3615 x 19.2161 from (461.583, 244.84)]
+frame=25 hit=1 class=2 score=0.502302 box=[24.5742 x 19.5184 from (461.246, 243.481)]
+frame=26 hit=0
+frame=27 hit=1 class=2 score=0.51975 box=[25.433 x 19.9748 from (460.513, 241.085)]
+frame=28 hit=1 class=2 score=0.524486 box=[24.7053 x 19.2366 from (461.239, 239.929)]
+frame=29 hit=1 class=2 score=0.515338 box=[24.6978 x 19.3654 from (461.246, 238.879)]
+frame=30 hit=1 class=2 score=0.533549 box=[24.7038 x 19.4371 from (461.241, 237.768)]
+frame=31 hit=1 class=2 score=0.535918 box=[26.3406 x 19.4387 from (460.507, 237.767)]
+frame=32 hit=1 class=2 score=0.544287 box=[26.3682 x 20.0983 from (460.507, 235.994)]
+frame=33 hit=1 class=2 score=0.545982 box=[25.6423 x 19.0294 from (461.233, 235.988)]
+frame=34 hit=0
+frame=35 hit=0
+frame=36 hit=0
+frame=37 hit=0
+frame=38 hit=1 class=2 score=0.505024 box=[25.4748 x 21.1915 from (460.508, 231.998)]
+frame=39 hit=0
+frame=40 hit=1 class=2 score=0.502623 box=[25.1006 x 20.0671 from (460.844, 231.941)]
+frame=41 hit=0
+frame=42 hit=1 class=2 score=0.503056 box=[26.5426 x 20.7785 from (460.334, 230.895)]
+frame=43 hit=1 class=2 score=0.504539 box=[27.6175 x 22.5899 from (459.462, 229.748)]
+frame=44 hit=1 class=2 score=0.512944 box=[25.8869 x 19.7935 from (460.844, 231.88)]
+frame=45 hit=1 class=2 score=0.514416 box=[25.6087 x 20.3532 from (461.239, 230.815)]
+frame=46 hit=0
+frame=47 hit=1 class=2 score=0.523953 box=[25.4299 x 20.1418 from (460.516, 230.815)]
+frame=48 hit=1 class=2 score=0.512891 box=[25.4282 x 20.0747 from (460.516, 230.884)]
+frame=49 hit=1 class=2 score=0.514827 box=[25.4299 x 20.1447 from (460.516, 230.815)]
+frame=50 hit=1 class=2 score=0.511778 box=[26.2146 x 20.1418 from (460.516, 230.815)]
+frame=51 hit=1 class=2 score=0.504692 box=[25.4282 x 20.1507 from (460.516, 230.809)]
+frame=52 hit=1 class=2 score=0.50195 box=[27.3941 x 21.9164 from (459.482, 229.751)]
+frame=53 hit=1 class=2 score=0.513882 box=[26.5427 x 19.4029 from (460.334, 231.765)]
+frame=54 hit=1 class=2 score=0.500328 box=[26.3401 x 19.7363 from (460.507, 231.94)]
+frame=55 hit=1 class=2 score=0.500301 box=[27.3939 x 22.4644 from (459.483, 229.878)]
+frame=56 hit=0
+frame=57 hit=0
+frame=58 hit=0
+frame=59 hit=0
+frame=60 hit=0
+frame=61 hit=0
+frame=62 hit=0
+frame=63 hit=0
+frame=64 hit=0
+frame=65 hit=0
+frame=66 hit=0
+frame=67 hit=0
+frame=68 hit=0
+frame=69 hit=0
+frame=70 hit=0
+frame=71 hit=1 class=2 score=0.529963 box=[24.9938 x 19.5484 from (457.249, 236.508)]
+frame=72 hit=0
+frame=73 hit=1 class=2 score=0.501711 box=[24.1862 x 19.3085 from (455.937, 237.897)]
+frame=74 hit=1 class=2 score=0.50436 box=[24.1255 x 19.8682 from (455.937, 238.879)]
+frame=75 hit=1 class=2 score=0.511 box=[24.1692 x 20.0767 from (455.834, 238.885)]
+frame=76 hit=1 class=2 score=0.503292 box=[24.1691 x 19.2284 from (455.797, 239.941)]
+frame=77 hit=0
+frame=78 hit=0
+frame=79 hit=0
+frame=80 hit=0
+frame=81 hit=0
+frame=82 hit=1 class=2 score=0.505653 box=[26.3385 x 20.9008 from (447.904, 243.135)]
+frame=83 hit=1 class=2 score=0.552208 box=[26.3329 x 20.0975 from (445.79, 243.996)]
+frame=84 hit=1 class=2 score=0.564219 box=[26.2163 x 20.2957 from (445.786, 244.84)]
+frame=85 hit=1 class=2 score=0.534035 box=[24.7034 x 20.354 from (445.241, 245.767)]
+frame=86 hit=1 class=2 score=0.516595 box=[25.399 x 19.4364 from (443.483, 246.809)]
+frame=87 hit=1 class=2 score=0.513729 box=[24.8683 x 20.7769 from (443.142, 246.895)]
+frame=88 hit=1 class=2 score=0.532212 box=[26.0377 x 21.4722 from (441.131, 246.866)]
+frame=89 hit=0
+frame=90 hit=0
+frame=91 hit=0
+frame=92 hit=0
+frame=93 hit=1 class=2 score=0.51844 box=[25.0989 x 19.5089 from (434.917, 251.481)]
+frame=94 hit=1 class=2 score=0.533975 box=[26.2383 x 19.5878 from (432.005, 252.505)]
+frame=95 hit=1 class=2 score=0.514759 box=[27.4066 x 20.6549 from (429.796, 252.547)]
+frame=96 hit=0
+frame=97 hit=0
+frame=98 hit=0
+frame=99 hit=1 class=2 score=0.521182 box=[26.2376 x 20.3407 from (424.003, 255.999)]
+frame=100 hit=0
+frame=101 hit=0
+frame=102 hit=0
+frame=103 hit=1 class=2 score=0.512738 box=[24.3864 x 18.6679 from (418.063, 260.332)]
+frame=104 hit=1 class=2 score=0.532243 box=[24.2897 x 19.2182 from (415.833, 260.84)]
+frame=105 hit=1 class=2 score=0.55097 box=[24.2217 x 20.0815 from (414.724, 261.054)]
+frame=106 hit=1 class=2 score=0.505535 box=[25.4282 x 20.9791 from (412.516, 261.768)]
+frame=107 hit=1 class=2 score=0.525978 box=[25.083 x 21.0591 from (410.933, 261.897)]
+frame=108 hit=1 class=2 score=0.53443 box=[27.1669 x 20.871 from (408.001, 262.795)]
+frame=109 hit=1 class=2 score=0.532425 box=[26.2391 x 20.8864 from (408.002, 263.962)]
+frame=110 hit=1 class=2 score=0.514484 box=[26.4914 x 21.2211 from (406.711, 263.963)]
+frame=111 hit=0
+frame=112 hit=0
+frame=113 hit=0
+frame=114 hit=1 class=2 score=0.553143 box=[25.9203 x 19.0058 from (401.249, 267.994)]
+frame=115 hit=1 class=2 score=0.547313 box=[26.3018 x 21.4474 from (399.942, 268.547)]
+frame=116 hit=1 class=2 score=0.547434 box=[25.4129 x 20.4778 from (399.905, 269.561)]
+frame=117 hit=1 class=2 score=0.541348 box=[28.4592 x 21.9067 from (397.781, 269.758)]
+frame=118 hit=1 class=2 score=0.514621 box=[27.6211 x 20.9851 from (397.58, 270.681)]
+frame=119 hit=1 class=2 score=0.508567 box=[26.5131 x 21.953 from (397.578, 270.895)]
+frame=120 hit=1 class=2 score=0.520679 box=[24.2314 x 19.0994 from (397.567, 273.96)]
+frame=121 hit=0
+frame=122 hit=1 class=2 score=0.628521 box=[13.7547 x 9.81259 from (401.661, 279.846)]
+frame=123 hit=1 class=2 score=0.52829 box=[25.2055 x 19.0037 from (395.66, 275.996)]
+frame=124 hit=1 class=2 score=0.555616 box=[25.601 x 20.0782 from (394.415, 277.056)]
+frame=125 hit=1 class=2 score=0.564158 box=[25.0856 x 19.3677 from (394.415, 277.768)]
+frame=126 hit=1 class=2 score=0.535159 box=[25.8868 x 18.3616 from (393.278, 279.88)]
+frame=127 hit=1 class=2 score=0.530221 box=[24.1573 x 19.2226 from (394.083, 279.941)]
+frame=128 hit=1 class=2 score=0.527469 box=[24.9651 x 18.8894 from (393.276, 281.96)]
+frame=129 hit=0
+frame=130 hit=0
+frame=131 hit=1 class=2 score=0.502008 box=[24.2058 x 18.4952 from (391.833, 284.505)]
+frame=132 hit=1 class=2 score=0.52039 box=[25.1455 x 18.4543 from (390.796, 285.565)]
+frame=133 hit=0
+frame=134 hit=0
+frame=135 hit=0
+frame=136 hit=0
+frame=137 hit=0
+frame=138 hit=0
+frame=139 hit=0
+frame=140 hit=1 class=2 score=0.523892 box=[24.358 x 18.6552 from (387.145, 292.334)]
+frame=141 hit=1 class=2 score=0.547676 box=[23.0985 x 17.2278 from (387.145, 293.772)]
+frame=142 hit=1 class=2 score=0.52616 box=[23.2339 x 16.3254 from (386.085, 294.692)]
+frame=143 hit=1 class=2 score=0.542924 box=[24.07 x 18.2495 from (385.249, 294.815)]
+frame=144 hit=1 class=2 score=0.533762 box=[23.9492 x 18.2383 from (385.254, 294.895)]
+frame=145 hit=1 class=2 score=0.533337 box=[25.3959 x 19.9466 from (383.806, 294.868)]
+frame=146 hit=1 class=2 score=0.535159 box=[25.2576 x 18.8826 from (383.944, 295.941)]
+frame=147 hit=1 class=2 score=0.519978 box=[24.2878 x 18.4365 from (383.804, 297.02)]
+frame=148 hit=1 class=2 score=0.529309 box=[25.1855 x 20.3665 from (381.757, 295.968)]
+frame=149 hit=1 class=2 score=0.52613 box=[24.0033 x 18.2614 from (382.843, 298.079)]
+frame=150 hit=1 class=2 score=0.500498 box=[23.2451 x 18.337 from (382.699, 298.216)]
+frame=151 hit=1 class=2 score=0.514644 box=[23.246 x 17.9145 from (382.698, 299.144)]
+frame=152 hit=0
+frame=153 hit=1 class=2 score=0.539529 box=[13.2944 x 9.2594 from (387.025, 303.941)]
+frame=154 hit=0
+frame=155 hit=0
+frame=156 hit=0
+frame=157 hit=1 class=2 score=0.501373 box=[25.6041 x 18.4858 from (379.991, 300.503)]
+frame=158 hit=1 class=2 score=0.508887 box=[25.6045 x 18.6557 from (379.991, 300.333)]
+frame=159 hit=1 class=2 score=0.510176 box=[25.0881 x 18.1471 from (380.507, 300.842)]
+frame=160 hit=1 class=2 score=0.543318 box=[24.8671 x 17.4377 from (379.999, 301.562)]
+frame=161 hit=1 class=2 score=0.558237 box=[24.3491 x 17.2344 from (380.516, 301.765)]
+frame=162 hit=1 class=2 score=0.552449 box=[24.3403 x 17.2347 from (380.516, 301.765)]
+frame=163 hit=1 class=2 score=0.540348 box=[24.3502 x 17.2344 from (380.516, 301.765)]
+frame=164 hit=1 class=2 score=0.559862 box=[23.6195 x 17.2344 from (381.246, 301.765)]
+frame=165 hit=1 class=2 score=0.53607 box=[25.2687 x 17.2347 from (380.516, 301.765)]
+frame=166 hit=1 class=2 score=0.527058 box=[25.283 x 17.2347 from (380.516, 301.765)]
+frame=167 hit=1 class=2 score=0.51687 box=[25.3052 x 18.1597 from (380.516, 300.84)]
+frame=168 hit=0
+frame=169 hit=1 class=2 score=0.509597 box=[25.1443 x 18.4424 from (381.587, 300.547)]
+frame=170 hit=0
+frame=171 hit=0
+frame=172 hit=0
+frame=173 hit=0
+frame=174 hit=0
+frame=175 hit=0
+frame=176 hit=0
+frame=177 hit=1 class=2 score=0.51408 box=[24.2886 x 18.5325 from (383.803, 298.018)]
+frame=178 hit=0
+frame=179 hit=1 class=2 score=0.508254 box=[25.0941 x 18.3267 from (382.871, 298.018)]
+frame=180 hit=1 class=2 score=0.510824 box=[24.0026 x 17.0017 from (383.963, 297.96)]
+frame=181 hit=1 class=2 score=0.516535 box=[24.0659 x 17.9217 from (383.901, 297.037)]
+frame=182 hit=1 class=2 score=0.508773 box=[23.0359 x 18.2473 from (383.88, 295.999)]
+frame=183 hit=1 class=2 score=0.536191 box=[24.1017 x 18.1429 from (382.726, 295.978)]
+frame=184 hit=1 class=2 score=0.524425 box=[23.9138 x 18.1146 from (382.795, 295.88)]
+frame=185 hit=1 class=2 score=0.543832 box=[23.0895 x 18.3241 from (382.708, 294.809)]
+frame=186 hit=1 class=2 score=0.531787 box=[24.5385 x 19.2965 from (381.259, 293.769)]
+frame=187 hit=1 class=2 score=0.548613 box=[24.3488 x 18.163 from (380.516, 293.893)]
+frame=188 hit=1 class=2 score=0.524045 box=[24.0089 x 17.9463 from (380.008, 293.054)]
+frame=189 hit=1 class=2 score=0.526115 box=[23.5135 x 17.577 from (379.994, 292.508)]
+frame=190 hit=0
+frame=191 hit=0
+frame=192 hit=0
+frame=193 hit=0
+frame=194 hit=1 class=2 score=0.515635 box=[25.1979 x 18.0418 from (376.003, 289.96)]
+frame=195 hit=1 class=2 score=0.511648 box=[25.4199 x 19.755 from (375.781, 287.909)]
+frame=196 hit=0
+frame=197 hit=1 class=2 score=0.530829 box=[24.0046 x 19.0611 from (374.842, 286.937)]
+frame=198 hit=0
+frame=199 hit=0
+frame=200 hit=1 class=2 score=0.540742 box=[23.6193 x 18.2914 from (373.246, 285.765)]
+frame=201 hit=1 class=2 score=0.535372 box=[24.5333 x 18.4922 from (372, 284.508)]
+frame=202 hit=0
+frame=203 hit=0
+frame=204 hit=0
+frame=205 hit=0
+frame=206 hit=0
+frame=207 hit=0
+frame=208 hit=1 class=2 score=0.507427 box=[25.3594 x 19.9309 from (367.842, 278.815)]
+frame=209 hit=1 class=2 score=0.532911 box=[27.4037 x 20.4689 from (365.797, 277.758)]
+frame=210 hit=1 class=2 score=0.507152 box=[27.6094 x 21.775 from (365.593, 276.328)]
+frame=211 hit=1 class=2 score=0.544438 box=[24.1381 x 19.0027 from (366.708, 277.055)]
+frame=212 hit=1 class=2 score=0.527697 box=[25.2631 x 19.0223 from (365.583, 275.996)]
+frame=213 hit=1 class=2 score=0.501533 box=[24.9626 x 19.004 from (364.858, 275.996)]
+frame=214 hit=0
+frame=215 hit=0
+frame=216 hit=0
+frame=217 hit=0
+frame=218 hit=1 class=2 score=0.516199 box=[13.7577 x 9.14182 from (368.176, 277.676)]
+frame=219 hit=1 class=2 score=0.513425 box=[13.285 x 9.25497 from (368.176, 276.795)]
+frame=220 hit=1 class=2 score=0.519003 box=[24.7667 x 18.1765 from (362.19, 271.941)]
+frame=221 hit=1 class=2 score=0.538528 box=[25.3641 x 19.3112 from (361.081, 270.796)]
+frame=222 hit=0
+frame=223 hit=1 class=2 score=0.542651 box=[26.3362 x 20.5774 from (359.904, 268.496)]
+frame=224 hit=1 class=2 score=0.533762 box=[26.3564 x 20.0341 from (358.846, 267.989)]
+frame=225 hit=1 class=2 score=0.507003 box=[12.6399 x 8.99442 from (365.609, 273.16)]
+frame=226 hit=0
+frame=227 hit=0
+frame=228 hit=0
+frame=229 hit=0
+frame=230 hit=0
+frame=231 hit=1 class=2 score=0.506366 box=[12.8084 x 8.9967 from (362.656, 269.606)]
+frame=232 hit=0
+frame=233 hit=0
+frame=234 hit=0
+frame=235 hit=1 class=2 score=0.548613 box=[13.9901 x 9.66235 from (361.071, 266.115)]
+frame=236 hit=0
+frame=237 hit=1 class=2 score=0.559892 box=[25.1072 x 19.2138 from (354.394, 260.842)]
+frame=238 hit=1 class=2 score=0.539681 box=[25.6866 x 19.358 from (353.083, 259.659)]
+frame=239 hit=1 class=2 score=0.512883 box=[27.1669 x 20.8333 from (352.002, 259.134)]
+frame=240 hit=1 class=2 score=0.51084 box=[27.1658 x 20.6843 from (352.003, 258.203)]
+frame=241 hit=1 class=2 score=0.512174 box=[25.2316 x 19.7729 from (353.011, 258.203)]
+frame=242 hit=1 class=2 score=0.512243 box=[29.7047 x 21.0263 from (349.795, 256.954)]
+frame=243 hit=1 class=2 score=0.528305 box=[27.7032 x 22.2544 from (350.537, 254.799)]
+frame=244 hit=1 class=2 score=0.529917 box=[26.7806 x 21.5406 from (350.537, 254.797)]
+frame=245 hit=1 class=2 score=0.524288 box=[27.5336 x 20.9817 from (349.783, 254.683)]
+frame=246 hit=0
+frame=247 hit=0
+frame=248 hit=0
+frame=249 hit=0
+frame=250 hit=1 class=2 score=0.501016 box=[24.759 x 18.1543 from (348.831, 252.846)]
+frame=251 hit=0
+frame=252 hit=0
+frame=253 hit=0
+frame=254 hit=0
+frame=255 hit=0
+frame=256 hit=0
+frame=257 hit=0
+frame=258 hit=0
+frame=259 hit=0
+frame=260 hit=1 class=2 score=0.533853 box=[25.3763 x 20.4697 from (343.941, 245.771)]
+frame=261 hit=0
+frame=262 hit=1 class=2 score=0.528138 box=[27.4081 x 21.7372 from (341.794, 244.496)]
+frame=263 hit=1 class=2 score=0.523831 box=[27.7392 x 22.6367 from (341.578, 243.467)]
+frame=264 hit=1 class=2 score=0.533002 box=[26.4095 x 21.095 from (341.554, 243.994)]
+frame=265 hit=1 class=2 score=0.511213 box=[26.4462 x 19.5258 from (341.553, 243.474)]
+frame=266 hit=1 class=2 score=0.503349 box=[26.0413 x 19.5259 from (340.831, 243.474)]
+frame=267 hit=0
+frame=268 hit=0
+frame=269 hit=0
+frame=270 hit=0
+frame=271 hit=0
+frame=272 hit=0
+frame=273 hit=0
+frame=274 hit=0
+frame=275 hit=1 class=2 score=0.503784 box=[26.9333 x 21.4025 from (337.083, 236.84)]
+frame=276 hit=1 class=2 score=0.512235 box=[26.0369 x 20.5538 from (337.133, 237.564)]
+frame=277 hit=1 class=2 score=0.513768 box=[26.0823 x 20.3597 from (337.083, 236.843)]
+frame=278 hit=0
+frame=279 hit=0
+frame=280 hit=0
+frame=281 hit=0
+frame=282 hit=0
+frame=283 hit=0
+frame=284 hit=0
+frame=285 hit=0
+frame=286 hit=0
+frame=287 hit=0
+frame=288 hit=0
+frame=289 hit=1 class=2 score=0.509536 box=[26.6049 x 21.4013 from (335.84, 228.84)]
+frame=290 hit=1 class=2 score=0.518272 box=[27.8802 x 22.7698 from (334.568, 227.472)]
+frame=291 hit=1 class=2 score=0.508331 box=[29.6883 x 22.7935 from (333.818, 226.41)]
+frame=292 hit=0
+frame=293 hit=0
+frame=294 hit=0
+frame=295 hit=1 class=2 score=0.501089 box=[29.5295 x 25.1516 from (333.249, 222.87)]
+frame=296 hit=0
+frame=297 hit=0
+frame=298 hit=0
+frame=299 hit=0
+frame=300 hit=0
+frame=301 hit=0
+frame=302 hit=0
+frame=303 hit=0
+frame=304 hit=0
+frame=305 hit=0
+frame=306 hit=0
+frame=307 hit=0
+frame=308 hit=0
+frame=309 hit=0

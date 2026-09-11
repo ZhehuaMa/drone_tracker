@@ -1,0 +1,7 @@
+{
+  "reference_repeats": 5,
+  "repeat_max_abs": 0.0,
+  "atol": 1e-05,
+  "rtol": 1e-05,
+  "rule": "|actual-reference| <= atol + rtol*|reference|"
+}

@@ -1,0 +1,42 @@
+cycle=0 elapsed_ms=0.182364 VmRSS:	   51524 kB Threads:	1 fd=5
+YOLO worker thread started.
+cycle=1 elapsed_ms=1078.48 VmRSS:	   60976 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=2 elapsed_ms=2048.28 VmRSS:	   61592 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=3 elapsed_ms=2956.39 VmRSS:	   61588 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=4 elapsed_ms=3839.25 VmRSS:	   61160 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=5 elapsed_ms=4751.43 VmRSS:	   61588 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=6 elapsed_ms=5303.99 VmRSS:	   61164 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=7 elapsed_ms=5862.38 VmRSS:	   61592 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=8 elapsed_ms=6608.47 VmRSS:	   61592 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=9 elapsed_ms=7660.85 VmRSS:	   61588 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=10 elapsed_ms=8591.62 VmRSS:	   61588 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=11 elapsed_ms=9445.01 VmRSS:	   61588 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=12 elapsed_ms=10387.7 VmRSS:	   61584 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=13 elapsed_ms=11552.7 VmRSS:	   61556 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=14 elapsed_ms=12542.4 VmRSS:	   61552 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=15 elapsed_ms=13412.7 VmRSS:	   61552 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=16 elapsed_ms=14319.1 VmRSS:	   61544 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=17 elapsed_ms=15335.8 VmRSS:	   61532 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=18 elapsed_ms=16367.1 VmRSS:	   61532 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=19 elapsed_ms=17112 VmRSS:	   61508 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=20 elapsed_ms=18115.4 VmRSS:	   61508 kB Threads:	1 fd=6
+PASS cycles=20 nano_templates=200 nano_searches=200 yolo_results=200 stop_after_entry=20

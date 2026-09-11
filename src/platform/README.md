@@ -2,11 +2,11 @@
 
 `PlatformFactory` 是生产程序统一创建平台资源的入口。它创建帧源、帧创建器和整套跟踪依赖。公共算法只使用接口，不链接硬件实现。
 
-当前生产构建默认使用 `DRONE_TRACKER_PLATFORM=jetson`。完整 `rk3576` 平台尚未实现；选择它或未知值时，CMake 在启用 CUDA 和查找硬件开发库前失败，并列出支持值 `jetson`。RK3576 已有下述独立 YOLO 验证入口，但尚不提供 NanoTrack、采集或完整 ROS 节点。模拟组件仅供测试，不能作为生产平台选项。
+当前生产构建默认使用 `DRONE_TRACKER_PLATFORM=jetson`。完整 `rk3576` 平台尚未实现；选择它或未知值时，CMake 在启用 CUDA 和查找硬件开发库前失败，并列出支持值 `jetson`。RK3576 已有独立 YOLO 和 NanoTrack 验证入口；NanoTrack 全 INT8 已有灰度回放和共存验证。FP16 属性误拒绝已修复；四种精度组合均通过实机查询和 309 帧灰度回放。采集和完整 ROS 节点尚未接通。模拟组件仅供测试，不能作为生产平台选项。
 
 ## RK3576 独立 YOLO 使用
 
-在 ARM64 环境使用 C++17、OpenCV（core、imgproc、dnn、video、imgcodecs、videoio）、线程库及 RKNN Runtime 2.3.0。目标板驱动基线为 0.9.8。此入口无需 ROS、CUDA、TensorRT 或 VPI。开发机的容器和挂载约定见仓库根目录 `AGENTS.local.md`；以下命令在该 ARM64 环境内执行，SDK 路径按实际安装位置填写：
+在 ARM64 环境使用 C++17、OpenCV（core、imgproc、dnn、video、imgcodecs、videoio）、线程库及 RKNN SDK。目标兼容性基线为 Runtime 2.3.2、驱动 0.9.8。本次沿用既有 2.3.0 构建 SDK（编译所用的头文件与链接库），产物在目标板 Runtime 2.3.2 上验证，不要求重建 SDK 镜像。此入口无需 ROS、CUDA、TensorRT 或 VPI。开发机的容器和挂载约定见仓库根目录 `AGENTS.local.md`；以下命令在该 ARM64 环境内执行，SDK 路径按实际安装位置填写：
 
 ```sh
 cmake -S src/platform/rk3576 -B build/rk3576-yolo \
@@ -56,7 +56,43 @@ build/rk3576-yolo/rk3576_yolo_probe --model models/six_classes.rknn \
 | Runtime 执行失败 | context 失效后重新初始化，不消费部分结果 |
 | 无法确认设备停止 | 按致命错误契约终止进程；保留日志检查 SDK/驱动，不继续复用设备存储 |
 
-验证范围和未完成项目见 [本次实机记录](../../openspec/changes/implement-rk3576-yolo-backend/board-validation.md)。独立检测运行不代表完整跟踪平台、Jetson 等价性或性能验收通过。
+验证范围和未完成项目见 [本次实机记录](../../openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md)。独立检测运行不代表完整跟踪平台、Jetson 等价性或性能验收通过。
+
+## RK3576 独立 NanoTrack 使用
+
+与上面的 YOLO 入口使用同一独立 CMake 构建，生成 `rk3576_nanotrack_probe`。目标兼容性基线为 Runtime 2.3.2、驱动 0.9.8；2026-09-11 按用户要求先测试既有 Runtime 2.3.0 构建产物，未重建 SDK 镜像。
+
+Backbone 从图像提取特征，Head 比较模板与搜索特征。分别指定模板 Backbone、搜索 Backbone 和 Head 三个文件。例如在上述构建目录中执行：
+
+```sh
+build/rk3576-yolo/rk3576_nanotrack_probe \
+  --template-model models/template_backbone.rknn \
+  --search-model models/search_backbone.rknn \
+  --head-model models/head.rknn --mode query
+build/rk3576-yolo/rk3576_nanotrack_probe \
+  --template-model models/template_backbone.rknn \
+  --search-model models/search_backbone.rknn \
+  --head-model models/head.rknn --mode replay \
+  --video clip.mp4 --bbox 100,80,40,30
+```
+
+`--bbox` 是首帧目标的左上角 x、y 与宽、高，单位为像素。回放明确将彩色帧转为 Gray8（每像素一个灰度字节），再调用公共 `NanoTracker`。输出包含帧号、成功标记、框、置信度和毫秒耗时；初始化帧没有置信度，失败帧不输出成功框。
+
+公共裁剪输入为 Float32（32 位浮点）、0～255，先转浮点再缩放，不额外除以 255。NCHW 表示批次、通道、高、宽，NHWC 表示批次、高、宽、通道。平台内部支持这两种排列，并将以下形状统一解释为 NCHW：
+
+| 模型 | 输入 | 输出 |
+| --- | --- | --- |
+| 模板 Backbone | `[1,3,127,127]` | `[1,96,8,8]` |
+| 搜索 Backbone | `[1,3,255,255]` | `[1,96,16,16]` |
+| Head | 上述两份特征 | 分类 `[1,2,15,15]`、位置 `[1,4,15,15]` |
+
+角色按唯一形状匹配实际索引，不依赖张量名称。分类必须是未转概率的原值，位置按左、上、右、下距离解释。模型提供方负责保证灰度三通道、归一化及特征的含义兼容；形状检查不能证明这些语义，仍需固定浮点输入对照。
+
+设计支持 FP16（16 位浮点）、Float32 和逐张量仿射 INT8。仿射量化用 scale 和 zp 将整数还原为实数，INT8 要求有效正比例及合法零点。四种 Backbone/Head 精度组合使用 Float32 特征交接；SDK 返回浮点后不再次反量化。FP16/Float32 携带 AFFINE 标记时仍按浮点类型处理，不使用 scale/zp 修改数值或套用 INT8 参数取值限制。旧程序对此误报 `Unsupported NanoTrack quantization` 的检查已移除；未支持的量化形式、类型和布局仍会被拒绝。修复已通过 ARM64 构建与 16 项契约测试，四组合实机查询和回放也已通过，四组合固定输入逐层数值对照也已通过。
+
+契约兼容的权重无需重新编译；结束旧进程后用新的三个路径重新创建后端即可。不设置文件名、哈希或版本白名单，不支持运行中热替换。查询及回放的实机结果、阻塞和未执行项见 [NanoTrack 验证记录](../../openspec/changes/implement-rk3576-nanotrack-backend/validation.md)。
+
+当前全 INT8 在 309 帧标注视频上的 308 次搜索均返回有效框，平均 IoU 为 0.316，平均中心误差为 2.35 像素。IoU 是预测框与标注框的交并比，返回有效框不代表框准确。四精度同条件比较已完成：本序列上 FP16 Backbone + INT8 Head 的平均 IoU 为 0.620。独立数值对照已通过，但不能据单序列结果确定最终部署精度。
 
 ## 新增调用方
 
@@ -118,4 +154,4 @@ ctest --test-dir build/platform-contracts --output-on-failure
 
 此前 `introduce-platform-factory` 变更只提供公共测试和 Jetson 源码审查证据，详见 [平台工厂验证报告](../../openspec/changes/archive/2026-09-10-introduce-platform-factory/verification.md)。该阶段未配置、编译或运行 Jetson 程序，也未验证真实像素、设备资源安全或跟踪行为等价。
 
-当前 `implement-rk3576-yolo-backend` 已补充 RK3576 真实模型、图像、录像和有限资源生命周期验证，详见 [实机记录](../../openspec/changes/implement-rk3576-yolo-backend/board-validation.md) 和 [独立验证报告](../../openspec/changes/implement-rk3576-yolo-backend/verification.md)。这些结果不代表 Jetson 实机等价性或完整跟踪平台验收通过。
+当前 `implement-rk3576-yolo-backend` 已补充 RK3576 真实模型、图像、录像和有限资源生命周期验证，详见 [实机记录](../../openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md) 和 [独立验证报告](../../openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/verification.md)。这些结果不代表 Jetson 实机等价性或完整跟踪平台验收通过。

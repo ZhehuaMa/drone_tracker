@@ -1,0 +1,374 @@
+{
+  "tolerance": {
+    "reference_repeats": 5,
+    "repeat_max_abs": 0.0,
+    "atol": 1e-05,
+    "rtol": 1e-05,
+    "rule": "|actual-reference| <= atol + rtol*|reference|"
+  },
+  "comparisons": {
+    "0-template-input0": {
+      "finite": true,
+      "elements": 48387,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "0-search-input0": {
+      "finite": true,
+      "elements": 195075,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "0-template-output0": {
+      "finite": true,
+      "elements": 6144,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "0-search-output0": {
+      "finite": true,
+      "elements": 24576,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "0-head-input0": {
+      "finite": true,
+      "elements": 6144,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "0-head-input1": {
+      "finite": true,
+      "elements": 24576,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "0-head-output0": {
+      "finite": true,
+      "elements": 450,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "0-head-output1": {
+      "finite": true,
+      "elements": 900,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "0-classification": {
+      "finite": true,
+      "elements": 450,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "0-location": {
+      "finite": true,
+      "elements": 900,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "1-template-input0": {
+      "finite": true,
+      "elements": 48387,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "1-search-input0": {
+      "finite": true,
+      "elements": 195075,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "1-template-output0": {
+      "finite": true,
+      "elements": 6144,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "1-search-output0": {
+      "finite": true,
+      "elements": 24576,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "1-head-input0": {
+      "finite": true,
+      "elements": 6144,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "1-head-input1": {
+      "finite": true,
+      "elements": 24576,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "1-head-output0": {
+      "finite": true,
+      "elements": 450,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "1-head-output1": {
+      "finite": true,
+      "elements": 900,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "1-classification": {
+      "finite": true,
+      "elements": 450,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "1-location": {
+      "finite": true,
+      "elements": 900,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "2-template-input0": {
+      "finite": true,
+      "elements": 48387,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "2-search-input0": {
+      "finite": true,
+      "elements": 195075,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "2-template-output0": {
+      "finite": true,
+      "elements": 6144,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "2-search-output0": {
+      "finite": true,
+      "elements": 24576,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "2-head-input0": {
+      "finite": true,
+      "elements": 6144,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "2-head-input1": {
+      "finite": true,
+      "elements": 24576,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "2-head-output0": {
+      "finite": true,
+      "elements": 450,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "2-head-output1": {
+      "finite": true,
+      "elements": 900,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "2-classification": {
+      "finite": true,
+      "elements": 450,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "2-location": {
+      "finite": true,
+      "elements": 900,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "3-template-input0": {
+      "finite": true,
+      "elements": 48387,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "3-search-input0": {
+      "finite": true,
+      "elements": 195075,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "3-template-output0": {
+      "finite": true,
+      "elements": 6144,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "3-search-output0": {
+      "finite": true,
+      "elements": 24576,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "3-head-input0": {
+      "finite": true,
+      "elements": 6144,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "3-head-input1": {
+      "finite": true,
+      "elements": 24576,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "3-head-output0": {
+      "finite": true,
+      "elements": 450,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "3-head-output1": {
+      "finite": true,
+      "elements": 900,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "3-classification": {
+      "finite": true,
+      "elements": 450,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "3-location": {
+      "finite": true,
+      "elements": 900,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "4-template-input0": {
+      "finite": true,
+      "elements": 48387,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "4-search-input0": {
+      "finite": true,
+      "elements": 195075,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "4-template-output0": {
+      "finite": true,
+      "elements": 6144,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "4-search-output0": {
+      "finite": true,
+      "elements": 24576,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "4-head-input0": {
+      "finite": true,
+      "elements": 6144,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "4-head-input1": {
+      "finite": true,
+      "elements": 24576,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "4-head-output0": {
+      "finite": true,
+      "elements": 450,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "4-head-output1": {
+      "finite": true,
+      "elements": 900,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "4-classification": {
+      "finite": true,
+      "elements": 450,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    },
+    "4-location": {
+      "finite": true,
+      "elements": 900,
+      "max_abs": 0.0,
+      "failed_elements": 0,
+      "passed": true
+    }
+  },
+  "backend_repeat_max_abs": 0.0,
+  "hashes": {
+    "/home/firefly/benchmarks/nanotrackv3_evaluation_runs/nanotrackv3-official-20260910/models/components/int8/rknn_int8/template_backbone.rknn": "848ec40a659b5a3484c0d76ba6ded353250f524c7f384fec95a0f85cf2682bdf",
+    "/home/firefly/benchmarks/nanotrackv3_evaluation_runs/nanotrackv3-official-20260910/models/components/int8/rknn_int8/search_backbone.rknn": "ecabaefdeadba721b466d942f76195bb9a5184e8e0a7d2a8262cc2d86e38ccdd",
+    "/home/firefly/benchmarks/nanotrackv3_evaluation_runs/nanotrackv3-official-20260910/models/components/fp16/head.rknn": "2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889",
+    "int8-fp16/template.f32": "01292604f39bdad7b6cc017eb693ad1af6699ce993daa5f93702c8921dea9b3b",
+    "int8-fp16/search.f32": "0319c43a6caf4ee9740c2c9d5f27ea72f4b1d7f032d4776f21545c3a67becba4"
+  },
+  "fractional_pixels": [
+    22968,
+    104979
+  ],
+  "passed": true
+}

@@ -17,7 +17,7 @@
 - `PlatformFactory` 统一创建帧源、主机图像复制能力及整套跟踪依赖。
 - 公共算法目标只使用 OpenCV、线程库和公共模型/几何代码；Jetson 设备实现由平台目标链接。
 - 默认生产配置仍启用 CUDA 并使用 VPI、TensorRT、Jetson Multimedia API 和 Tegra 库。
-- `DRONE_TRACKER_PLATFORM=rk3576` 当前在硬件发现前明确失败。已有独立 RKNN Runtime YOLO 后端和 OpenCV 灰度预处理；尚无完整 RK3576 工厂、NanoTrack、采集及 RGA 实现。
+- `DRONE_TRACKER_PLATFORM=rk3576` 当前在硬件发现前明确失败。已有独立 RKNN Runtime YOLO 后端，以及 NanoTrack 后端和 OpenCV 灰度预处理。NanoTrack 已通过 ARM64 构建、16 项契约测试、四精度组合实机查询、固定输入数值对照及灰度回放；尚无完整 RK3576 工厂、采集及 RGA 实现。证据与范围见阶段 4。
 - `introduce-platform-factory` 的验证限定为公共构建、模拟测试与源码审查，不代表 Jetson 执行验证完成。
 
 因此，本次迁移不只是替换 `TrtEngine`。它至少涉及帧表示、预处理、推理运行时、设备资源生命周期和构建系统五个边界。
@@ -66,7 +66,7 @@
 +---------------------------+   +---------------------------+
 | Jetson 平台后端           |   | RK3576 平台后端           |
 | VPI 图像与预处理          |   | RGA/OpenCV 图像与预处理   |
-| TensorRT 推理             |   | RKNN Runtime 2.3.0 推理   |
+| TensorRT 推理             |   | RKNN Runtime 2.3.2 推理   |
 | CUDA 设备内存             |   | RKNPU 驱动 0.9.8          |
 | Jetson Multimedia API     |   | RK3576 采集与解码         |
 +---------------------------+   +---------------------------+
@@ -218,7 +218,7 @@ src/
 4. 平台后端分别声明自己的头文件、库和源文件。
 5. 配置失败时输出明确的平台、缺失依赖和预期版本。
 
-RK3576 后端以 RKNN Runtime 2.3.0 和 RKNPU 驱动 0.9.8 为兼容性基线。
+RK3576 后端以目标板 RKNN Runtime 2.3.2 和 RKNPU 驱动 0.9.8 为兼容性基线。本次沿用既有 2.3.0 构建 SDK，即编译所用的头文件与链接库；产物在 Runtime 2.3.2 上验证，不要求重建 SDK 镜像。
 
 ## 9. 分阶段迁移计划
 
@@ -263,13 +263,17 @@ RK3576 后端以 RKNN Runtime 2.3.0 和 RKNPU 驱动 0.9.8 为兼容性基线。
 
 ### 阶段 4：实现 RK3576 后端
 
+`implement-rk3576-nanotrack-backend` 已完成三文件装配、通用模型会话和独立查询/灰度回放入口。2026-09-11 核验时重新构建成功，16/16 契约测试通过。沿用 2.3.0 构建 SDK 的产物在 Runtime 2.3.2、驱动 0.9.8 的开发板上已有以下证据：四精度组合查询成功，各完成 309 帧灰度回放；固定输入逐层对照每组 50 项比较的最大绝对差为 0；全 INT8 完成 20 轮与异步 YOLO 共存及停止检查；提取前后 YOLO 的 309 帧输出一致。
+
+早期 FP16 浮点张量携带 AFFINE 元数据时被误拒绝，现已修复。历史失败及复测结果见 [FP16 修复记录](openspec/changes/implement-rk3576-nanotrack-backend/fp16-fix.md)，当前状态和证据边界见 [NanoTrack 验证记录](openspec/changes/implement-rk3576-nanotrack-backend/validation.md)。独立入口完成不代表完整平台、采集或 ROS 装配完成，也不代表 Jetson 等价性通过。
+
 `implement-rk3576-yolo-backend` 已提供 `src/platform/rk3576` 独立 ARM64 入口。它只连接真实公共 YOLO 检测器，不开放完整平台选择。构建、模型替换、单类别配置和失败诊断见 [独立 YOLO 使用说明](src/platform/README.md)。例如，四类别模型使用 `--target 2`；替换为六类别兼容模型后重新查询并用 `--target 4` 启动。不得把该示例当作真实六类别模型的验收证据。
 
-该变更明确批准 `tracker.yolo_target_class_id` 从类别下限改为精确编号，默认值仍为 0。这是公共 YOLO 行为变化，适用于两个平台；其他参数和跟踪状态语义保持不变。已执行的常量、真实图像、同源 ONNX 数学转换和有限资源验证，以及官方原视频的重复回放证据，见 [实机验证记录](openspec/changes/implement-rk3576-yolo-backend/board-validation.md)。未执行性能或完整跟踪验收。
+该变更明确批准 `tracker.yolo_target_class_id` 从类别下限改为精确编号，默认值仍为 0。这是公共 YOLO 行为变化，适用于两个平台；其他参数和跟踪状态语义保持不变。已执行的常量、真实图像、同源 ONNX 数学转换和有限资源验证，以及官方原视频的重复回放证据，见 [实机验证记录](openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md)。未执行性能或完整跟踪验收。
 
 - 接入 RK3576 帧采集和解码。
 - 实现 RGA/OpenCV 预处理。
-- 接入 RKNN Runtime 2.3.0。
+- 接入目标板 RKNN Runtime 2.3.2。
 - 加载已有的三个 RKNN 模型。
 - 逐项核对输入布局、数据类型、量化参数和输出顺序。
 
@@ -369,5 +373,5 @@ RK3576 后端以 RKNN Runtime 2.3.0 和 RKNPU 驱动 0.9.8 为兼容性基线。
 - **已推荐**：先让现有 Jetson 实现适配新接口，再添加 RK3576 实现。
 - **已推荐**：先验证行为等价，再进行 RK3576 专属性能优化。
 - **已由 OpenSpec 明确**：`introduce-platform-factory` 使用 `src/platform/`、`PlatformFactory` 与 `DRONE_TRACKER_PLATFORM`；当前仅有 Jetson 生产后端。
-- **已有局部实机证据**：当前四类别 YOLO 的张量契约、Runtime 2.3.0 和驱动 0.9.8；证据范围见上述实机记录。
-- **待实机确认**：其他模型的精确张量契约、RGA 支持范围和性能目标。
+- **已有局部实机证据**：当前四类别 YOLO 与 NanoTrack 四精度组合的张量契约，以及 Runtime 2.3.2、驱动 0.9.8 上的上述验证。历史构建 SDK 为 2.3.0，具体模型及输入范围见实机记录。
+- **待实机确认**：新增替换模型的语义兼容性、RGA 支持范围、完整平台行为和性能目标。

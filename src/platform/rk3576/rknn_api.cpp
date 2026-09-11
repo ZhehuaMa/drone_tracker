@@ -1,4 +1,4 @@
-#include "rknn_runtime.h"
+#include "rknn_api.h"
 
 namespace rk3576 {
 RknnApi nativeRknnApi() {

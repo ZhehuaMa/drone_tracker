@@ -1,0 +1,98 @@
+{
+  "hashes": {
+    "/home/firefly/drone_tracker_test/yolo_acceptance_20260910/rk3576_yolo_probe": "b794d3c11b4efb71a62103ab18e3f227cacfe8d90904859d3f828d7aea2daa55",
+    "/home/firefly/drone_tracker_test/nanotrack_acceptance_20260911/rk3576_yolo_probe": "03a7fbd13e2ca7696c1461d8e6ceae526eccc09d5cf1b638c10a202347e3258f",
+    "/home/firefly/drone_tracker_test/models/yolov8n-model_zoo-int8_fp16-multi_cls.rknn": "4d8a22bc8da9fbbc43f190b7ea90c27d9980f77e3e27064ec32cf6566c2680f3",
+    "/home/firefly/drone_tracker_test/yolo_acceptance_20260910/video-frame-1.png": "bd3783fca65e01383666dcbf44c466f3f4bd584364bac3aa83f8e5ebecdafa93",
+    "/home/firefly/drone_tracker_test/yolo_acceptance_20260910/V_DRONE_051.mp4": "01c49506366d2b8f273df4951bc8546e2f0b5920203f815589950d90aa5b53d7"
+  },
+  "cases": {
+    "image": {
+      "old": {
+        "exit": 0,
+        "frames": [
+          "frame=1 hit=1 class=2 score=0.540651 box=[23.707 x 16.7936 from (461.883, 277.176)]"
+        ]
+      },
+      "new": {
+        "exit": 0,
+        "frames": [
+          "frame=1 hit=1 class=2 score=0.540651 box=[23.707 x 16.7936 from (461.883, 277.176)]"
+        ]
+      },
+      "passed": true
+    },
+    "missing-model": {
+      "old": {
+        "exit": 1,
+        "frames": []
+      },
+      "new": {
+        "exit": 1,
+        "frames": []
+      },
+      "passed": true
+    },
+    "missing-image": {
+      "old": {
+        "exit": 1,
+        "frames": []
+      },
+      "new": {
+        "exit": 1,
+        "frames": []
+      },
+      "passed": true
+    },
+    "invalid-target": {
+      "old": {
+        "exit": 1,
+        "frames": []
+      },
+      "new": {
+        "exit": 1,
+        "frames": []
+      },
+      "passed": true
+    },
+    "invalid-roi": {
+      "old": {
+        "exit": 1,
+        "frames": []
+      },
+      "new": {
+        "exit": 1,
+        "frames": []
+      },
+      "passed": true
+    },
+    "wrong-model": {
+      "old": {
+        "exit": 1,
+        "frames": []
+      },
+      "new": {
+        "exit": 1,
+        "frames": []
+      },
+      "passed": true
+    }
+  },
+  "raw_equal": {
+    "input.u8": true,
+    "output0.f32": true,
+    "output1.f32": true,
+    "output2.f32": true,
+    "output3.f32": true,
+    "output4.f32": true,
+    "output5.f32": true,
+    "prediction.f32": true
+  },
+  "video": {
+    "old_frames": 309,
+    "new_frames": 309,
+    "equal": true,
+    "hits": 159
+  },
+  "passed": true
+}
