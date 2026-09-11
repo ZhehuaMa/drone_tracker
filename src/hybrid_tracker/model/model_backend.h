@@ -5,7 +5,7 @@
 #include "preprocess/model_input.h"
 
 namespace model {
-/** @brief 原始预测的属性轴与候选轴，沿用现有解码布局判断。 */
+/** @brief 原始预测的属性轴与候选轴，固定为 [1,4+C,N]。 */
 struct YoloPrediction {
     Tensor predictions{};
     std::size_t attribute_axis{1};
@@ -21,6 +21,8 @@ class YoloBackend {
 public:
     virtual ~YoloBackend() = default;
     virtual ModelInputContract inputContract() const = 0;
+    /** @brief 从已校验的模型输出描述取得类别数；非法描述返回失败。 */
+    virtual Result<int> classCount() const = 0;
     virtual Result<YoloPrediction> infer(const PreparedInputRef &input) = 0;
 };
 /** @brief 只管理模型模板与串联，不计算裁剪区域或更新目标框。 */

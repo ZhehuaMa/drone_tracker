@@ -33,9 +33,23 @@ bool YoloV8Detector::init() {
     if (!model_ || !preprocessor_) { return false; }
     try {
         input_contract_ = model_->inputContract();
-        if (!matchesImageContract(input_contract_, 1.0f / 255.0f)) { return false; }
-        input_h = input_contract_.shape[2];
-        input_w = input_contract_.shape[3];
+        const auto size{yoloInputSize(input_contract_)};
+        const auto count{model_->classCount()};
+        if (!size) {
+            std::cerr << "YOLO initialization failed: " << size.message << std::endl;
+            return false;
+        }
+        if (!count) {
+            std::cerr << model::describe(count.error) << std::endl;
+            return false;
+        }
+        if (m_target_class_id < 0 || m_target_class_id >= count.value) {
+            std::cerr << "YOLO target class " << m_target_class_id << " outside 0.." << count.value - 1 << std::endl;
+            return false;
+        }
+        class_count_ = count.value;
+        input_h = size.value.height;
+        input_w = size.value.width;
         m_stop_requested = false;
         m_worker_thread = m_launcher([this] { workerThreadLoop(); });
         if (!m_worker_thread.joinable()) { return false; }
@@ -144,7 +158,7 @@ std::pair<int, int> YoloV8Detector::getInputSize() const
 
 void YoloV8Detector::workerThreadLoop()
 {
-    std::cout << "TensorRT worker thread started." << std::endl;
+    std::cout << "YOLO worker thread started." << std::endl;
     
     while (true)
     {
@@ -180,7 +194,7 @@ void YoloV8Detector::workerThreadLoop()
         auto collect_target = [&](const std::vector<Detection>& dets) {
             for (const auto& det : dets)
             {
-                if (det.classId >= m_target_class_id && det.score > best.score)
+                if (det.classId == m_target_class_id && det.score > best.score)
                 {
                     best = det;
                     has_target = true;
@@ -254,6 +268,7 @@ void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &re
             || output.value.candidate_axis != checked.value.candidate_axis) { return; }
         const auto view{output.value.predictions.read()};
         const auto &dims{output.value.predictions.descriptor.shape};
+        if (dims[1] - 4 != class_count_) { return; }
         const auto resolved{resolveYoloRegion(session.sourceSize(), region)};
         if (!resolved) { return; }
         postprocess(view.data(), dims, prepared.value.transform,
@@ -266,134 +281,30 @@ void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &re
 void YoloV8Detector::postprocess(const float* output, const TensorShape &output_dims, const LetterboxTransform& lb, const cv::Size& image_size,
     const cv::Point2f& global_offset, std::vector<Detection>& results)
 {
-    // Python 版本中的输出形状是 [batch, 84, 8400] 或 [batch, num_classes+4, num_detections]
-    // 假设 m_output_dims 是 [1, 84, 8400] (对于COCO)
-    // d[0]=batch, d[1]=num_attrs (84), d[2]=num_proposals (8400)
-    
-    // C++ 中我们直接处理 [1, 84, 8400]
-    // 检查：确认 postprocess 逻辑与 TrtEngine 输出的维度匹配
-    
-    int num_proposals = output_dims[2]; // e.g., 8400
-    int num_attrs = output_dims[1]; // e.g., 84 (4 box + 80 class)
-    int num_classes = num_attrs - 4;
-
-    // 逻辑检查：如果 d[1] < d[2] (e.g., 84 < 8400)，则我们假设是 [B, C+4, N]
-    // 如果 d[1] > d[2] (e.g., 8400 > 84)，则我们假设是 [B, N, C+4]
-    
-    if (num_attrs > num_proposals) {
-        // 形状是 [B, N, C+4], e.g., [1, 8400, 84]
-        // 交换它们以便后续逻辑统一
-        std::swap(num_attrs, num_proposals);
-        // num_proposals = 8400, num_attrs = 84
-    }
-    
-    // 此时，num_proposals = 8400, num_attrs = 84, num_classes = 80
-    // 但我们仍然需要知道内存布局
-
+    const std::size_t num_proposals{static_cast<std::size_t>(output_dims[2])};
     std::vector<cv::Rect2d> boxes;
     std::vector<float> scores;
     std::vector<int> class_ids;
-    
-    // 检查内存布局
-    // 假设布局是 [B, C+4, N] (num_attrs, num_proposals)
-    if (output_dims[1] == num_attrs && output_dims[2] == num_proposals)
-    {
-        for (int i = 0; i < num_proposals; ++i)
-        {
-            // output 指向 [84, 8400] 的开头
-            // 第 i 个 proposal 的数据是交错存储的
-            // [cx_0...cx_N], [cy_0...cy_N], ..., [class0_0...class0_N], ...
-
-            // 找到最高分数的类别
-            float max_score = -1.0f;
-            int max_class_id = -1;
-            
-            // 指向第i个proposal的第一个类别分数
-            // (output + (4 * num_proposals) + i)
-            const float* class_scores_start = output + 4 * num_proposals;
-            for (int c = 0; c < num_classes; ++c)
-            {
-                // 分数 = (class_scores_start + c * num_proposals)[i]
-                float score = class_scores_start[c * num_proposals + i];
-                if (score > max_score)
-                {
-                    max_score = score;
-                    max_class_id = c;
-                }
-            }
-
-            // 检查是否满足置信度阈值（类别过滤由调用方的级联收集负责：
-            // 目标类别定义为 cid >= target_class_id）
-            if (max_score >= m_conf_thresh_current)
-            {
-                float cx = output[0 * num_proposals + i];
-                float cy = output[1 * num_proposals + i];
-                float w = output[2 * num_proposals + i];
-                float h = output[3 * num_proposals + i];
-
-                // 将坐标转换回原始图像空间
-                float x1 = (cx - lb.left - w / 2.0f) / lb.scale_x + global_offset.x;
-                float y1 = (cy - lb.top - h / 2.0f) / lb.scale_y + global_offset.y;
-                float x2 = (cx - lb.left + w / 2.0f) / lb.scale_x + global_offset.x;
-                float y2 = (cy - lb.top + h / 2.0f) / lb.scale_y + global_offset.y;
-
-                if ((x2-x1)/image_size.width <= m_max_box_area_ratio && (y2-y1)/image_size.height <= m_max_box_area_ratio)  // 过滤掉过大的框
-                {
-                    boxes.emplace_back(x1, y1, x2 - x1, y2 - y1);
-                    scores.push_back(max_score);
-                    class_ids.push_back(max_class_id);
-                }
+    for (std::size_t i{0}; i < num_proposals; ++i) {
+        const float score{output[(4 + static_cast<std::size_t>(m_target_class_id)) * num_proposals + i]};
+        if (score >= m_conf_thresh_current) {
+            const float cx{output[i]};
+            const float cy{output[num_proposals + i]};
+            const float w{output[2 * num_proposals + i]};
+            const float h{output[3 * num_proposals + i]};
+            const float x1{(cx - lb.left - w / 2.0f) / lb.scale_x + global_offset.x};
+            const float y1{(cy - lb.top - h / 2.0f) / lb.scale_y + global_offset.y};
+            const float x2{(cx - lb.left + w / 2.0f) / lb.scale_x + global_offset.x};
+            const float y2{(cy - lb.top + h / 2.0f) / lb.scale_y + global_offset.y};
+            if ((x2 - x1) / image_size.width <= m_max_box_area_ratio &&
+                (y2 - y1) / image_size.height <= m_max_box_area_ratio) {
+                boxes.emplace_back(x1, y1, x2 - x1, y2 - y1);
+                scores.push_back(score);
+                class_ids.push_back(m_target_class_id);
             }
         }
     }
-    // 假设布局是 [B, N, C+4] (num_proposals, num_attrs)
-    else if (output_dims[1] == num_proposals && output_dims[2] == num_attrs)
-    {
-        for (int i = 0; i < num_proposals; ++i)
-        {
-            // 第 i 个 proposal 的数据是连续的
-            // [cx, cy, w, h, class0_score, class1_score, ...]
-            const float* proposal_data = output + i * num_attrs;
-            
-            const float* class_scores = proposal_data + 4;
-            float max_score = -1.0f;
-            int max_class_id = -1;
 
-            for (int c = 0; c < num_classes; ++c)
-            {
-                if (class_scores[c] > max_score)
-                {
-                    max_score = class_scores[c];
-                    max_class_id = c;
-                }
-            }
-            
-            if (max_score >= m_conf_thresh_current)
-            {
-                float cx = proposal_data[0];
-                float cy = proposal_data[1];
-                float w = proposal_data[2];
-                float h = proposal_data[3];
-
-                float x1 = (cx - lb.left - w / 2.0f) / lb.scale_x + global_offset.x;
-                float y1 = (cy - lb.top - h / 2.0f) / lb.scale_y + global_offset.y;
-                float x2 = (cx - lb.left + w / 2.0f) / lb.scale_x + global_offset.x;
-                float y2 = (cy - lb.top + h / 2.0f) / lb.scale_y + global_offset.y;
-
-                if ((x2-x1)/image_size.width <= m_max_box_area_ratio && (y2-y1)/image_size.height <= m_max_box_area_ratio)  // 过滤掉过大的框
-                {
-                    boxes.emplace_back(x1, y1, x2 - x1, y2 - y1);
-                    scores.push_back(max_score);
-                    class_ids.push_back(max_class_id);
-                }
-            }
-        }
-    }
-    else 
-    {
-        std::cerr << "Error: Unsupported output dimension layout in postprocess." << std::endl;
-    }
-    
     // 执行 NMS
     std::vector<int> indices;
     cv::dnn::NMSBoxes(boxes, scores, m_conf_thresh_current, m_nms_thresh, indices);

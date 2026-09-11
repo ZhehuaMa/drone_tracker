@@ -17,7 +17,7 @@ struct TrackerSettings
     std::string yolo_engine_path = "drone_int8.engine";
     std::string nanotrack_backbone_path = "nanotrackv3_backbone_int8.engine";
     std::string nanotrack_head_path = "nanotrack_head_int8.engine";
-    int target_class_id = 0;                 // 目标类别：接受 cid >= target_class_id
+    int target_class_id = 0;                 // 单个精确目标类别编号：仅接受 cid == target_class_id
     float yolo_conf_threshold = 0.4f;
     float yolo_nms_threshold = 0.4f;
     float yolo_recall_relax_ratio = 1.0f;    // ROI 阶段置信度放宽比例（1.0 = 关闭，Python 无此机制）

@@ -1,0 +1,52 @@
+cycle=0 VmRSS:	   53532 kB Threads:	1 fd=5
+cycle=1 VmRSS:	   58948 kB Threads:	1 fd=6
+cycle=2 VmRSS:	   57688 kB Threads:	1 fd=6
+cycle=3 VmRSS:	   57688 kB Threads:	1 fd=6
+cycle=4 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=5 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=6 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=7 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=8 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=9 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=10 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=11 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=12 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=13 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=14 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=15 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=16 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=17 VmRSS:	   57688 kB Threads:	1 fd=6
+cycle=18 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=19 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=20 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=21 VmRSS:	   57688 kB Threads:	1 fd=6
+cycle=22 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=23 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=24 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=25 VmRSS:	   57688 kB Threads:	1 fd=6
+cycle=26 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=27 VmRSS:	   57688 kB Threads:	1 fd=6
+cycle=28 VmRSS:	   57692 kB Threads:	1 fd=6
+cycle=29 VmRSS:	   57688 kB Threads:	1 fd=6
+cycle=30 VmRSS:	   57692 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=31 VmRSS:	   60496 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=32 VmRSS:	   60496 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=33 VmRSS:	   60496 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=34 VmRSS:	   60496 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=35 VmRSS:	   60496 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=36 VmRSS:	   60496 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=37 VmRSS:	   60496 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=38 VmRSS:	   60496 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=39 VmRSS:	   60496 kB Threads:	1 fd=6
+YOLO worker thread started.
+cycle=40 VmRSS:	   60496 kB Threads:	1 fd=6
+PASS loads=40 serial_inferences=300 invalid_inputs=30 stop_after_run_entry=10 repeated_stops=10

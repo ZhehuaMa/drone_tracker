@@ -17,7 +17,7 @@
 - `PlatformFactory` 统一创建帧源、主机图像复制能力及整套跟踪依赖。
 - 公共算法目标只使用 OpenCV、线程库和公共模型/几何代码；Jetson 设备实现由平台目标链接。
 - 默认生产配置仍启用 CUDA 并使用 VPI、TensorRT、Jetson Multimedia API 和 Tegra 库。
-- `DRONE_TRACKER_PLATFORM=rk3576` 当前在硬件发现前明确失败；尚未引入 RKNN Runtime 或 RGA 实现。
+- `DRONE_TRACKER_PLATFORM=rk3576` 当前在硬件发现前明确失败。已有独立 RKNN Runtime YOLO 后端和 OpenCV 灰度预处理；尚无完整 RK3576 工厂、NanoTrack、采集及 RGA 实现。
 - `introduce-platform-factory` 的验证限定为公共构建、模拟测试与源码审查，不代表 Jetson 执行验证完成。
 
 因此，本次迁移不只是替换 `TrtEngine`。它至少涉及帧表示、预处理、推理运行时、设备资源生命周期和构建系统五个边界。
@@ -263,6 +263,10 @@ RK3576 后端以 RKNN Runtime 2.3.0 和 RKNPU 驱动 0.9.8 为兼容性基线。
 
 ### 阶段 4：实现 RK3576 后端
 
+`implement-rk3576-yolo-backend` 已提供 `src/platform/rk3576` 独立 ARM64 入口。它只连接真实公共 YOLO 检测器，不开放完整平台选择。构建、模型替换、单类别配置和失败诊断见 [独立 YOLO 使用说明](src/platform/README.md)。例如，四类别模型使用 `--target 2`；替换为六类别兼容模型后重新查询并用 `--target 4` 启动。不得把该示例当作真实六类别模型的验收证据。
+
+该变更明确批准 `tracker.yolo_target_class_id` 从类别下限改为精确编号，默认值仍为 0。这是公共 YOLO 行为变化，适用于两个平台；其他参数和跟踪状态语义保持不变。已执行的常量、真实图像、同源 ONNX 数学转换和有限资源验证，以及官方原视频的重复回放证据，见 [实机验证记录](openspec/changes/implement-rk3576-yolo-backend/board-validation.md)。未执行性能或完整跟踪验收。
+
 - 接入 RK3576 帧采集和解码。
 - 实现 RGA/OpenCV 预处理。
 - 接入 RKNN Runtime 2.3.0。
@@ -351,7 +355,7 @@ RK3576 后端以 RKNN Runtime 2.3.0 和 RKNPU 驱动 0.9.8 为兼容性基线。
 1. `rk3576` 构建不包含 CUDA、TensorRT、VPI、Jetson Multimedia API 或 Tegra 依赖。
 2. `jetson` 构建不包含 RKNN Runtime 或 RGA 依赖。
 3. 公共算法头文件不暴露任何平台 SDK 类型。
-4. ROS 输入输出话题、消息类型、参数含义和状态数值保持不变。
+4. ROS 输入输出话题、消息类型和状态数值保持不变。参数含义仅允许已批准 OpenSpec 的明确变更；当前 YOLO 目标编号按单类别精确规则解释。
 5. 三个 RKNN 模型的输入输出契约都有自动化或可重复验证记录。
 6. 固定录像上的检测、跟踪、目标丢失和恢复流程与 Jetson 基线等价。
 7. 异步检测、帧队列、图像访问和设备缓冲区通过压力测试。
@@ -365,5 +369,5 @@ RK3576 后端以 RKNN Runtime 2.3.0 和 RKNPU 驱动 0.9.8 为兼容性基线。
 - **已推荐**：先让现有 Jetson 实现适配新接口，再添加 RK3576 实现。
 - **已推荐**：先验证行为等价，再进行 RK3576 专属性能优化。
 - **已由 OpenSpec 明确**：`introduce-platform-factory` 使用 `src/platform/`、`PlatformFactory` 与 `DRONE_TRACKER_PLATFORM`；当前仅有 Jetson 生产后端。
-- **待实机确认**：RKNN 模型的精确张量契约、RGA 支持范围和性能目标。
-
+- **已有局部实机证据**：当前四类别 YOLO 的张量契约、Runtime 2.3.0 和驱动 0.9.8；证据范围见上述实机记录。
+- **待实机确认**：其他模型的精确张量契约、RGA 支持范围和性能目标。

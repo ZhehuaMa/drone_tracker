@@ -108,6 +108,16 @@ Diagnostic validateInputs(const std::vector<Tensor> &inputs, const ModelDescript
     }
     return {};
 }
+Result<int> yoloClassCount(const TensorDescriptor &descriptor, const std::string &identity) {
+    if (const auto error{validateDescriptor(descriptor, identity, "YOLO")}) {
+        return Result<int>::failure(error);
+    }
+    const auto &shape{descriptor.shape};
+    if (shape.size() != 3 || shape[0] != 1 || shape[1] < 5 || shape[2] <= 0) {
+        return Result<int>::failure(contractMismatch(identity, "YOLO", "[1,4+C,N], C>0, N>0", shapeText(shape)));
+    }
+    return {shape[1] - 4};
+}
 Result<YoloPrediction> yoloPrediction(const std::vector<Tensor> &outputs, const std::string &identity) {
     if (outputs.empty()) {
         return Result<YoloPrediction>::failure(contractMismatch(identity, "YOLO", "first prediction output", "none"));
@@ -117,11 +127,9 @@ Result<YoloPrediction> yoloPrediction(const std::vector<Tensor> &outputs, const 
     if (const auto error{validateTensor(tensor, spec, identity)}) {
         return Result<YoloPrediction>::failure(error);
     }
-    const auto &shape{tensor.descriptor.shape};
-    // 现有解码在转置分支交换轴前计算类别数，拒绝该分支以免越界；不改公共数学公式。
-    if (shape.size() != 3 || shape[0] != 1 || shape[1] < 5 || shape[1] > shape[2]) {
-        return Result<YoloPrediction>::failure(
-            contractMismatch(identity, "YOLO", "[1, attributes>=5, candidates>=attributes]", shapeText(shape)));
+    const auto count{yoloClassCount(tensor.descriptor, identity)};
+    if (!count) {
+        return Result<YoloPrediction>::failure(count.error);
     }
     return {{tensor, 1, 2}};
 }

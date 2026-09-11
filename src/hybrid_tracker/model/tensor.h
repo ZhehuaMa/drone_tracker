@@ -11,7 +11,7 @@
 /** @brief 元素编码；设备实现必须明确拒绝不支持的类型。 */
 enum class TensorElementType { Float32, Float16, Int8, Uint8, Int32, Unknown };
 /** @brief 连续存储的轴顺序；Linear 不给轴附加图像语义。 */
-enum class TensorLayout { Nchw, Linear, Unsupported };
+enum class TensorLayout { Nchw, Nhwc, Linear, Unsupported };
 using TensorShape = std::vector<std::int32_t>;
 
 namespace model {

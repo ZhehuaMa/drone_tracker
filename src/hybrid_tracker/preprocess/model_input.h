@@ -13,7 +13,7 @@
  * @brief 模型输入的完整数值约定，调用方按值保存。
  *
  * 输入为灰度，复制到三个通道。每个值执行 pixel * scale + offset。
- * YOLO 使用 scale=1/255；NanoTrack 使用 scale=1，两者 offset 均为零。
+ * Jetson YOLO 使用 scale=1/255；RKNN UINT8 YOLO 和 NanoTrack 使用 scale=1，offset 均为零。
  */
 struct ModelInputContract {
     TensorShape shape{};

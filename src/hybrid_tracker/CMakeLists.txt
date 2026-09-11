@@ -14,7 +14,7 @@ add_library(platform_interfaces INTERFACE)
 target_include_directories(platform_interfaces INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
 
-add_library(model_common STATIC model/validation.cpp model/jetson/jetson_model_backend.cpp)
+add_library(model_common STATIC model/validation.cpp model/yolo_output_adapter.cpp model/jetson/jetson_model_backend.cpp)
 target_include_directories(model_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(preprocess_geometry STATIC preprocess/preprocess_geometry.cpp)
 target_include_directories(preprocess_geometry PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
@@ -32,7 +32,7 @@ if(DRONE_TRACKER_PREPROCESS_TESTS_ONLY OR DRONE_TRACKER_BUILD_TESTS)
     enable_testing()
     add_library(platform_headers_check OBJECT tests/platform_headers_test.cpp)
     target_link_libraries(platform_headers_check PRIVATE platform_interfaces)
-    foreach(test_name model_contract preprocess_common preprocess_contract hybrid_tracker platform_contract)
+    foreach(test_name yolo_output_adapter model_contract preprocess_common preprocess_contract hybrid_tracker platform_contract)
         if(test_name STREQUAL "preprocess_common")
             set(test_source tests/preprocess_geometry_test.cpp)
         elseif(test_name STREQUAL "hybrid_tracker")
@@ -44,13 +44,17 @@ if(DRONE_TRACKER_PREPROCESS_TESTS_ONLY OR DRONE_TRACKER_BUILD_TESTS)
         target_link_libraries(${test_name}_tests PRIVATE hybrid_tracker jetson_tracker_assembly)
         add_test(NAME ${test_name}_tests COMMAND ${test_name}_tests)
     endforeach()
+    add_executable(rknn_preprocess_tests tests/rknn_preprocess_test.cpp
+        ../platform/rk3576/yolo_preprocessor.cpp ../platform/rk3576/host_frame.cpp)
+    target_link_libraries(rknn_preprocess_tests PRIVATE hybrid_tracker)
+    add_test(NAME rknn_preprocess_tests COMMAND rknn_preprocess_tests)
     add_test(NAME platform_selection_tests COMMAND ${CMAKE_COMMAND}
         -DREPO_ROOT=${CMAKE_CURRENT_SOURCE_DIR}/../..
         -DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/platform_selection
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/platform_selection_test.cmake)
 endif()
 
-if(NOT DRONE_TRACKER_PREPROCESS_TESTS_ONLY AND DRONE_TRACKER_BUILD_TESTS)
+if(NOT DRONE_TRACKER_PREPROCESS_TESTS_ONLY AND NOT DRONE_TRACKER_COMMON_STANDALONE AND DRONE_TRACKER_BUILD_TESTS)
     add_executable(hybrid_tracker_stress tests/stress_main.cpp)
     target_link_libraries(hybrid_tracker_stress PRIVATE hybrid_tracker platform_jetson)
     add_executable(replay_harness tests/replay_harness.cpp)

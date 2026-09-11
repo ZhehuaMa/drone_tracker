@@ -1,0 +1,290 @@
+{
+  "constant-0": {
+    "raw": [
+      {
+        "shape": [
+          1,
+          64,
+          80,
+          80
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          80,
+          80
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          64,
+          40,
+          40
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          40,
+          40
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          64,
+          20,
+          20
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          20,
+          20
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      }
+    ],
+    "prediction_finite": true,
+    "input_sha256": "3630e065eb7b4540fbab11dbfd2619e8500f211b9c404380a1867fdc44b77c0c"
+  },
+  "constant-114": {
+    "raw": [
+      {
+        "shape": [
+          1,
+          64,
+          80,
+          80
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          80,
+          80
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          64,
+          40,
+          40
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          40,
+          40
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          64,
+          20,
+          20
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          20,
+          20
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      }
+    ],
+    "prediction_finite": true,
+    "input_sha256": "bae875806132f594ec536b979ab2bfd4198775eb679c4f32cbcda417c97925ca"
+  },
+  "constant-255": {
+    "raw": [
+      {
+        "shape": [
+          1,
+          64,
+          80,
+          80
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          80,
+          80
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          64,
+          40,
+          40
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          40,
+          40
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          64,
+          20,
+          20
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          20,
+          20
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      }
+    ],
+    "prediction_finite": true,
+    "input_sha256": "f7f3eed6bad2c170eb0bccd6c368b320688a207a59c27321b412dd0774bc4df1"
+  },
+  "image": {
+    "raw": [
+      {
+        "shape": [
+          1,
+          64,
+          80,
+          80
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          80,
+          80
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          64,
+          40,
+          40
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          40,
+          40
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          64,
+          20,
+          20
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      },
+      {
+        "shape": [
+          1,
+          4,
+          20,
+          20
+        ],
+        "finite": true,
+        "max_abs": 0.0,
+        "passed": true
+      }
+    ],
+    "prediction_finite": true,
+    "input_sha256": "478d8ca3142f1adbed4d07f8e256d0964435671b3ff6fda281405b15477029a6"
+  }
+}

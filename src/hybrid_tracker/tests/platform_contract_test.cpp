@@ -131,6 +131,7 @@ private:
 class Yolo final : public model::YoloBackend {
 public:
     explicit Yolo(std::shared_ptr<Trace> trace) : lifetime_{std::move(trace), 0} {}
+    model::Result<int> classCount() const override { return {1}; }
     ModelInputContract inputContract() const override {
         return {{1, 3, 64, 64}, TensorElementType::Float32, TensorLayout::Nchw, 1.0f / 255.0f};
     }

@@ -98,6 +98,7 @@ private:
     std::unique_ptr<YoloPreprocessor> preprocessor_;
     ModelInputContract input_contract_{};
 
+    int class_count_{0};
     int input_w = 0;
     int input_h = 0;
     

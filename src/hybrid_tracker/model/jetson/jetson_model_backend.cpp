@@ -43,6 +43,21 @@ ModelInputContract JetsonYoloBackend::inputContract() const {
     }
     return {spec.shape, spec.type, TensorLayout::Nchw, 1.0f / 255.0f, 0.0f};
 }
+Result<int> JetsonYoloBackend::classCount() const {
+    const auto &description{executor_->description()};
+    if (description.outputs.empty()) {
+        return Result<int>::failure(contractError(description.identity, "Missing YOLO output"));
+    }
+    const auto &spec{description.outputs.front()};
+    if (spec.index != 0) {
+        return Result<int>::failure(contractError(description.identity, "YOLO output must have index 0"));
+    }
+    const auto bytes{tensorBytes(spec.shape, spec.type, description.identity, spec.name)};
+    if (!bytes) {
+        return Result<int>::failure(bytes.error);
+    }
+    return yoloClassCount({spec.shape, spec.type, spec.layout, bytes.value, {}}, description.identity);
+}
 Result<YoloPrediction> JetsonYoloBackend::infer(const PreparedInputRef &input) {
     const auto &identity{executor_->description().identity};
     if (!sameImageContract(input, inputContract())) {

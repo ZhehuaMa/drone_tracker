@@ -1,0 +1,157 @@
+{
+  "source": "https://github.com/DroneDetectionThesis/Drone-detection-dataset/blob/442d0c6750708cc221636f7a1fd31cbd8cb0aeb8/Data/Video_V/V_DRONE_051.mp4",
+  "sha256": "01c49506366d2b8f273df4951bc8546e2f0b5920203f815589950d90aa5b53d7",
+  "width": 640.0,
+  "height": 512.0,
+  "fps": 30.0,
+  "frames": 309,
+  "repeat_equal": true,
+  "hits": 159,
+  "samples": [
+    {
+      "frame": 1,
+      "png_sha256": "bd3783fca65e01383666dcbf44c466f3f4bd584364bac3aa83f8e5ebecdafa93",
+      "raw": [
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        }
+      ],
+      "adapter": {
+        "finite": true,
+        "max_abs": 3.051388921448961e-05,
+        "failed_elements": 0
+      },
+      "detected": "frame=1 hit=1 class=2 score=0.540651 box=[23.707 x 16.7936 from (461.883, 277.176)]",
+      "full_frame_reference": {
+        "score": 0.5406510416970713,
+        "box": [
+          461.8824947977379,
+          277.1758217844278,
+          23.707062377519776,
+          16.79364472799
+        ]
+      }
+    },
+    {
+      "frame": 105,
+      "png_sha256": "9c8dfde2703c9a5779c96171289bb53ff12704760ee61a4062d271b19c177432",
+      "raw": [
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        }
+      ],
+      "adapter": {
+        "finite": true,
+        "max_abs": 3.0497667921736138e-05,
+        "failed_elements": 0
+      },
+      "detected": "frame=1 hit=1 class=2 score=0.55097 box=[24.2217 x 20.0815 from (414.724, 261.054)]",
+      "full_frame_reference": {
+        "score": 0.5509697979208309,
+        "box": [
+          414.72350507845175,
+          261.05448627042676,
+          24.221681789308377,
+          20.08145337220941
+        ]
+      }
+    },
+    {
+      "frame": 309,
+      "png_sha256": "a96504335c918683cec513df3a76db9ee0cacc74d958a692af73a4cf3f6f4694",
+      "raw": [
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        },
+        {
+          "finite": true,
+          "max_abs": 0.0,
+          "failed_elements": 0
+        }
+      ],
+      "adapter": {
+        "finite": true,
+        "max_abs": 3.0507860174111556e-05,
+        "failed_elements": 0
+      },
+      "detected": "frame=1 hit=0",
+      "full_frame_reference": null
+    }
+  ]
+}

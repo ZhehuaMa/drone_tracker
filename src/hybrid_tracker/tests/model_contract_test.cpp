@@ -248,10 +248,17 @@ void checkYolo() {
     trace->output_shapes = {{1, 5, 10}};
     ModelDescription description{"yolo", {{"actual_image", 0, {1, 3, 64, 64}}}, {{"prediction", 0, {1, 5, 10}}}};
     JetsonYoloBackend backend{std::make_unique<Executor>(description, trace), adapt};
+    require(backend.classCount() && backend.classCount().value == 1, "类别数未来自模型描述");
+    for (const auto &shape : std::vector<TensorShape>{{2, 5, 10}, {1, 4, 10}, {1, -1, 10}, {1, 5, 0}}) {
+        auto invalid{description};
+        invalid.outputs.front().shape = shape;
+        JetsonYoloBackend bad{std::make_unique<Executor>(invalid, trace), adapt};
+        require(!bad.classCount(), "非法输出描述提供了类别数");
+    }
     auto input{std::make_shared<Input>(backend.inputContract())};
     auto output{backend.infer(input)};
     require(output && output.value.attribute_axis == 1 && output.value.candidate_axis == 2, "YOLO 布局错误");
-    for (const auto &shape : std::vector<TensorShape>{{2, 5, 10}, {1, 4, 10}, {1, 10}, {1, 10, 5}}) {
+    for (const auto &shape : std::vector<TensorShape>{{2, 5, 10}, {1, 4, 10}, {1, 10}}) {
         trace->output_shapes = {shape};
         require(!backend.infer(input), "非法 YOLO 输出进入公共解码");
     }

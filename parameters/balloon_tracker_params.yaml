@@ -5,7 +5,7 @@ drone_tracker_node:
       yolo_engine: "balloon_int8.engine"
       nano_backbone: "nanotrackv3_backbone_int8.engine"
       nano_head: "nanotrack_head_int8.engine"
-      # 目标类别：接受 cid >= yolo_target_class_id
+      # 单个精确目标类别编号：仅接受 cid == yolo_target_class_id（从 0 开始）
       yolo_target_class_id: 0
       # 检测器阈值保持实机调参值；其余为 hybrid tracker 算法行为参数，
       # 与 airsim_tracker launch.py 对齐（语义已随移植改变）

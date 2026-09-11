@@ -79,6 +79,8 @@ struct SessionTrace {
     int inferences{0};
     bool fail_model{false};
     int hit_call{0};
+    int classes{4};
+    int target{2};
     float hit_score{0.9f};
     bool fail_prepare{false};
     std::vector<cv::Rect> regions{};
@@ -134,6 +136,7 @@ class MockYoloPreprocessor final : public YoloPreprocessor {
 class MockYoloCalls final : public model::YoloBackend {
   public:
     explicit MockYoloCalls(std::shared_ptr<SessionTrace> trace) : trace_{std::move(trace)} {}
+    model::Result<int> classCount() const override { return {trace_->classes}; }
     ModelInputContract inputContract() const override {
         return {{1, 3, 64, 64}, TensorElementType::Float32, TensorLayout::Nchw, 1.0f / 255.0f};
     }
@@ -143,28 +146,36 @@ class MockYoloCalls final : public model::YoloBackend {
             return model::Result<model::YoloPrediction>::failure(
                 {model::ModelError::ExecutionFailure, "mock-yolo", {}, {}, {}, "injected failure"});
         }
-        auto tensor{model_test::tensor({1, 5, 10})};
+        auto tensor{model_test::tensor({1, 4 + trace_->classes, 10})};
         // 测试数据构造期间存储尚未发布给消费者。
         float *data{const_cast<float *>(tensor.read().data())};
         data[0] = 32;
         data[10] = 32;
         data[20] = 10;
         data[30] = 10;
-        data[40] = trace_->inferences == trace_->hit_call ? trace_->hit_score : 0.0f;
+        data[(4 + trace_->target) * 10] = trace_->inferences == trace_->hit_call ? trace_->hit_score : 0.0f;
+        data[40] = 0.99f; // 目标不是 argmax；不能丢弃目标分数。
+        data[1] = 32; data[11] = 32; data[21] = 10; data[31] = 10;
+        data[2] = 12; data[12] = 12; data[22] = 4; data[32] = 4;
+        data[(4 + trace_->target) * 10 + 2] = trace_->inferences == trace_->hit_call ? trace_->hit_score - 0.1f : 0.0f;
+        data[41] = 1.0f; // 高度重叠但目标低分的其他类别，不能参与 NMS。
+
         return {{tensor, 1, 2}};
     }
 
   private:
     std::shared_ptr<SessionTrace> trace_;
 };
-void checkYolo(int hit_call, float score, bool fail_prepare = false, bool fail_model = false) {
+void checkYolo(int hit_call, float score, bool fail_prepare = false, bool fail_model = false, int classes = 4, int target = 2) {
     auto trace{std::make_shared<SessionTrace>()};
+    trace->classes = classes;
+    trace->target = target;
     trace->hit_call = hit_call;
     trace->hit_score = score;
     trace->fail_prepare = fail_prepare;
     trace->fail_model = fail_model;
     YoloV8Detector detector{
-        std::make_unique<MockYoloCalls>(trace), std::make_unique<MockYoloPreprocessor>(trace), 0.5f, 0.5f, 0, 0.5f};
+        std::make_unique<MockYoloCalls>(trace), std::make_unique<MockYoloPreprocessor>(trace), 0.5f, 0.5f, trace->target, 0.5f};
     require(detector.init(), "模拟 YOLO 初始化失败");
     const cv::Rect roi{20, 20, 40, 40};
     require(detector.request(std::make_shared<MockFrame>(), 77, roi), "请求失败");
@@ -181,6 +192,7 @@ void checkYolo(int hit_call, float score, bool fail_prepare = false, bool fail_m
     const bool expected_hit{!fail_prepare && !fail_model && hit_call > 0 && score >= (hit_call == 1 ? 0.25f : 0.5f)};
     require(result.has_target == expected_hit, "检测阈值或目标选择发生变化");
     if (expected_hit) {
+        require(result.best.classId == target && result.best.score == score, "未返回精确目标类别或目标分数");
         require(trace->inferences == hit_call && trace->regions.size() == static_cast<std::size_t>(hit_call),
                 "有效目标没有终止级联或输入未释放");
     }
@@ -297,6 +309,28 @@ void checkNano() {
 
 int main() {
     const ModelInputContract contract{{1, 3, 64, 64}, TensorElementType::Float32, TensorLayout::Nchw, 1.0f / 255.0f};
+    require(yoloInputSize(contract).value == cv::Size(64, 64), "Jetson 尺寸解析错误");
+    const ModelInputContract nhwc{{1, 640, 640, 3}, TensorElementType::Uint8, TensorLayout::Nhwc, 1.0f};
+    require(matchesYoloContract(nhwc) && yoloInputSize(nhwc).value == cv::Size(640, 640), "RKNN 输入被拒绝");
+    require(!matchesImageContract(nhwc, 1.0f), "NanoTrack 检查被放宽");
+    for (int change{0}; change < 6; ++change) {
+        auto invalid{nhwc};
+        if (change == 0) { invalid.element_type = TensorElementType::Float32; }
+        if (change == 1) { invalid.layout = TensorLayout::Nchw; }
+        if (change == 2) { invalid.scale = 1.0f / 255.0f; }
+        if (change == 3) { invalid.shape[3] = 1; }
+        if (change == 4) { invalid.shape[1] = 320; }
+        if (change == 5) { invalid.offset = 1; }
+        require(!yoloInputSize(invalid), "非法 RKNN 契约仍提供尺寸");
+    }
+    for (const int target : {-1, 4}) {
+        auto invalid_trace{std::make_shared<SessionTrace>()};
+        bool launched{false};
+        YoloV8Detector invalid{std::make_unique<MockYoloCalls>(invalid_trace),
+            std::make_unique<MockYoloPreprocessor>(invalid_trace), 0.5f, 0.5f, target, 0.5f, 0.8f,
+            [&](std::function<void()> body) { launched = true; return std::thread(std::move(body)); }};
+        require(!invalid.init() && !launched, "非法编号启动了线程");
+    }
     PreparedInputRef survivor;
     {
         ReusableInput<int> cache;
@@ -347,6 +381,8 @@ int main() {
     require(mean.value() == 90, "新目标复用了旧均值");
     mean.initialize(std::make_shared<MockFrame>(90, FramePixelFormat::Gray8, true));
     require(mean.value() == 114 && !mean.valid(), "映射失败回退或模板提交边界错误");
+    checkYolo(1, 0.7f, false, false, 6, 4);
+    checkYolo(1, 0.7f, false, false, 9000, 8999);
     checkYolo(1, 0.4f); // ROI 使用放宽阈值。
     checkYolo(2, 0.9f);
     checkYolo(3, 0.9f);

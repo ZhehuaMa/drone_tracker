@@ -9,6 +9,7 @@ Result<std::size_t> tensorBytes(const TensorShape &shape, TensorElementType type
 Diagnostic validateTensor(const Tensor &tensor, const TensorSpec &spec, const std::string &identity);
 Diagnostic validateInputs(const std::vector<Tensor> &inputs, const ModelDescription &description);
 Diagnostic validateDescriptor(const TensorDescriptor &descriptor, const std::string &identity, const std::string &name);
+Result<int> yoloClassCount(const TensorDescriptor &descriptor, const std::string &identity);
 Result<YoloPrediction> yoloPrediction(const std::vector<Tensor> &outputs, const std::string &identity);
 Result<NanoPrediction> nanoPrediction(const std::vector<Tensor> &outputs, const std::string &identity);
 /** @brief 设备停止状态无法确认时使用，不执行任何栈展开或静态析构。 */

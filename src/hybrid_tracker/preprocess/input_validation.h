@@ -18,6 +18,22 @@ inline bool matchesImageContract(const ModelInputContract &c, float scale, int s
            c.offset == 0.0f && (size == 0 || (c.shape[2] == size && c.shape[3] == size));
 }
 
+/** @brief YOLO 仅接受已定义的浮点 NCHW 或固定 640 方形字节 NHWC 提交格式。 */
+inline bool matchesYoloContract(const ModelInputContract &c) noexcept {
+    return matchesImageContract(c, 1.0f / 255.0f) ||
+           (c.element_type == TensorElementType::Uint8 && c.layout == TensorLayout::Nhwc &&
+            c.shape.size() == 4 && c.shape[0] == 1 && c.shape[1] == 640 && c.shape[2] == 640 &&
+            c.shape[3] == 3 && c.scale == 1.0f && c.offset == 0.0f);
+}
+
+/** @brief 校验后按实际布局返回宽高；失败不提供可用尺寸。 */
+inline PreprocessResult<cv::Size> yoloInputSize(const ModelInputContract &c) {
+    if (!matchesYoloContract(c)) {
+        return PreprocessResult<cv::Size>::failure(PreprocessError::ContractMismatch, "Invalid YOLO input contract");
+    }
+    return {c.layout == TensorLayout::Nhwc ? cv::Size{c.shape[2], c.shape[1]} : cv::Size{c.shape[3], c.shape[2]}};
+}
+
 /** @brief 解析借用区域；仅默认空矩形代表全图，使用减法避免坐标加法溢出。 */
 inline PreprocessResult<cv::Rect> resolveYoloRegion(const cv::Size &size, const cv::Rect &region) {
     const cv::Rect resolved{region == cv::Rect{} ? cv::Rect{0, 0, size.width, size.height} : region};

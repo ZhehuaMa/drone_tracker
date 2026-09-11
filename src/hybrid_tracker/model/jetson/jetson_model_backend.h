@@ -11,6 +11,7 @@ class JetsonYoloBackend final : public YoloBackend {
 public:
     JetsonYoloBackend(std::unique_ptr<ModelExecutor> executor, InputAdapter adapter);
     ModelInputContract inputContract() const override;
+    Result<int> classCount() const override;
     Result<YoloPrediction> infer(const PreparedInputRef &input) override;
 
 private:

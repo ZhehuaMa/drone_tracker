@@ -1,0 +1,9 @@
+model=models/yolov8n-model_zoo-int8_fp16-multi_cls.rknn runtime=2.3.0 (c949ad889d@2024-11-07T11:35:33) driver=0.9.8 C=4
+#0 images [1,640,640,3,] type=2 format=1 quant=2 zp=-128 scale=0.00392157 elems=1228800 bytes=1228800
+#0 /model.22/cv2.0/cv2.0.2/Conv_output_0 [1,64,80,80,] type=2 format=0 quant=2 zp=43 scale=0.525238 elems=409600 bytes=409600
+#1 /model.22/cv3.0/cv3.0.2/Conv_output_0 [1,4,80,80,] type=1 format=0 quant=2 zp=0 scale=1 elems=25600 bytes=51200
+#2 /model.22/cv2.1/cv2.1.2/Conv_output_0 [1,64,40,40,] type=2 format=0 quant=2 zp=91 scale=0.995673 elems=102400 bytes=102400
+#3 /model.22/cv3.1/cv3.1.2/Conv_output_0 [1,4,40,40,] type=1 format=0 quant=2 zp=0 scale=1 elems=6400 bytes=12800
+#4 /model.22/cv2.2/cv2.2.2/Conv_output_0 [1,64,20,20,] type=2 format=0 quant=2 zp=-12 scale=0.368377 elems=25600 bytes=25600
+#5 /model.22/cv3.2/cv3.2.2/Conv_output_0 [1,4,20,20,] type=1 format=0 quant=2 zp=0 scale=1 elems=1600 bytes=3200
+region resized=[640 x 640] padding=0,0,0,0 scale=1,1
