@@ -95,8 +95,31 @@ void frames() {
         for (auto type : {FrameSourceType::Camera, FrameSourceType::Video}) {
             FrameSourceConfig c{};
             c.type = type;
-            require(!factory->createFrameSource(c), "生产帧源伪成功");
+            auto invalid{factory->createFrameSource(c)};
+            require(!invalid && invalid.error.platform == "rk3576", "相机或空视频路径伪成功");
         }
+        FrameSourceConfig video{};
+        video.type = FrameSourceType::Video;
+        video.path = std::string{VIDEO_FIXTURES} + "/420.mov";
+        video.output_width = 16;
+        video.output_height = 16;
+        video.fps = 1;
+        video.flip = true;
+        video.mirror = true;
+        video.use_history_timestamp = true;
+        auto source{factory->createFrameSource(video)};
+        require(source && !source.value->isRunning(), "合法视频创建失败或提前启动");
+        int width{}, height{};
+        require(source.value->getImageSize(width, height) && width == 641 && height == 479, "视频尺寸被相机配置改变");
+        source.value->configureRecording(true, "/invalid-recording-directory", "unused");
+        require(source.value->start(), "真实工厂视频启动失败");
+        FrameRef first{};
+        require(source.value->waitFrame(first, std::chrono::seconds{1})
+            && first->timestampUs() == 1700000000000000, "工厂首帧或时间错误");
+        source.value->stop();
+        video.path += ".missing";
+        auto bad{factory->createFrameSource(video)};
+        require(!bad && bad.error.path == video.path && !bad.error.reason.empty(), "失败路径或原因丢失");
     }
     require(view->mat().at<cv::Vec3b>(0, 0) == cv::Vec3b(12, 34, 56), "视图跨工厂生命周期失败");
     auto a{rk3576::createFactory({})};

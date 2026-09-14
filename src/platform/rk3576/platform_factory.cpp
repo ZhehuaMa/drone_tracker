@@ -1,6 +1,7 @@
 #include "platform_factory.h"
 
 #include "host_frame.h"
+#include "video_frame_source.h"
 
 namespace rk3576 {
 namespace {
@@ -18,9 +19,16 @@ class Factory final : public PlatformFactory {
 public:
     explicit Factory(AssemblyDependencies dependencies) : dependencies_{std::move(dependencies)} {}
     PlatformResult<std::unique_ptr<FrameSource>> createFrameSource(const FrameSourceConfig &config) override {
+        if (config.type == FrameSourceType::Video) {
+            try {
+                return {std::make_unique<Rk3576VideoFrameSource>(config)};
+            } catch (const std::exception &error) {
+                return PlatformResult<std::unique_ptr<FrameSource>>::failure(
+                    {"rk3576", "video", config.path, error.what()});
+            }
+        }
         return PlatformResult<std::unique_ptr<FrameSource>>::failure(
-            {"rk3576", config.type == FrameSourceType::Camera ? "camera" : "video", config.path,
-             "Production frame source unsupported; use the standalone replay reader"});
+            {"rk3576", "camera", config.path, "Camera frame source unsupported"});
     }
     PlatformResult<std::unique_ptr<FrameBuilder>> createFrameBuilder() override {
         return {std::make_unique<Builder>()};
