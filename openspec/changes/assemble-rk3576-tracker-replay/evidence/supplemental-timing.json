@@ -1,0 +1,10 @@
+{
+  "airsim-30fps": {
+    "frames": 1772,
+    "maximum_interval_error_seconds": 6.666666701946045e-07
+  },
+  "bird": {
+    "frames": 305,
+    "maximum_interval_error_seconds": 6.666666667529131e-07
+  }
+}

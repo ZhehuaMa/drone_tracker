@@ -1,6 +1,7 @@
 #include "platform/jetson/tracker_assembly.h"
 
 #include <stdexcept>
+#include "platform/model_paths.h"
 #include "hybrid_tracker/model/validation.h"
 
 namespace platform_jetson {
@@ -47,6 +48,10 @@ void checkModel(const model::ModelDescription &description, std::size_t inputs, 
 } // namespace
 
 PlatformResult<TrackerComponents> assembleTracker(const ModelPaths &paths, const AssemblyDependencies &d) {
+    const auto invalid{validateModelPaths(paths, "jetson")};
+    if (!invalid.reason.empty()) {
+        return PlatformResult<TrackerComponents>::failure(invalid);
+    }
     std::string component{"YOLO"};
     std::string path{paths.yolo};
     try {

@@ -155,3 +155,72 @@ ctest --test-dir build/platform-contracts --output-on-failure
 此前 `introduce-platform-factory` 变更只提供公共测试和 Jetson 源码审查证据，详见 [平台工厂验证报告](../../openspec/changes/archive/2026-09-10-introduce-platform-factory/verification.md)。该阶段未配置、编译或运行 Jetson 程序，也未验证真实像素、设备资源安全或跟踪行为等价。
 
 当前 `implement-rk3576-yolo-backend` 已补充 RK3576 真实模型、图像、录像和有限资源生命周期验证，详见 [实机记录](../../openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md) 和 [独立验证报告](../../openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/verification.md)。这些结果不代表 Jetson 实机等价性或完整跟踪平台验收通过。
+
+## RK3576 完整跟踪录像回放
+
+新增独立入口 `rk3576_tracker_replay` 通过统一工厂创建四个模型文件对应的组件，并运行真实公共 `HybridTracker`。它从自动检测开始，无需人工首帧框。四文件分别为 YOLO、模板 Backbone、搜索 Backbone 和 Head；两个 Backbone 分别提取模板和搜索图像的特征，Head 比较两者。原有两个 probe 继续保留。
+
+此入口使用上述独立 ARM64 CMake 构建，额外需要 OpenSSL Crypto 开发库，用于计算 SHA-256 文件内容指纹。公共算法和旧 probe 不链接 Crypto。根目录生产构建仍只支持 Jetson；独立 RK3576 工厂的相机和生产视频帧源请求会明确失败。录像工具使用单独的同步解码器，不提供 ROS、相机采集或 RGA 加速。
+
+### 单文件配置与调用
+
+完整示例见 [纯 FP16 配置](../../parameters/replay_fp16.yaml) 和 [纯 INT8 配置](../../parameters/replay_int8.yaml)。FP16 是十六位浮点，INT8 是八位整数模型编码。复制示例后，填写实际的四模型文件、录像路径、帧率、相机内参及新的输出目录。示例中的相机数值只是格式展示，不能作为真实标定。
+
+每次运行恰好传入一份配置：
+
+```sh
+build/rk3576-yolo/rk3576_tracker_replay parameters/replay_fp16.yaml
+build/rk3576-yolo/rk3576_tracker_replay parameters/replay_int8.yaml
+```
+
+模型、录像、相机和算法设置全部来自这一个文件。程序不读取 ROS YAML，不读取环境覆盖，也不接受额外命令选项。相对路径以配置所在目录为基准。例如 `parameters/run.yaml` 中的 `models/yolo.rknn` 指向 `parameters/models/yolo.rknn`，与启动工作目录无关。
+
+配置使用 OpenCV 支持的 YAML 1.0 子集，保留 `%YAML:1.0` 标头。所有字段必填，布尔值仅用整数 `0`/`1`。未知键、重复键、多文档、非有限数、错误类型及越界值均在模型加载前拒绝。整数以十进制书写，范围受有符号 32 位字段限制；帧号和时间记录另用 64 位整数。`max_frames: 0` 表示读到结束，正值表示主动限制帧数。输出目录必须尚不存在；重复运行先在配置中指定新的目录。
+
+`camera.fx/fy/cx/cy` 的单位是像素，必须对应解码图像尺寸。程序不会缩放图像或相机参数。`tracking_roi_scale_factor` 对应公共 `roi_scale_factor`，决定围绕预测位置的搜索区域大小。`yolo_target_class_id` 是精确类别编号，加载后还会确认它小于模型类别数。`enable_dcf` 控制灰度相关滤波辅助跟踪。概率、IoU（框交并比）、倍率及噪声的合法范围见本变更设计，示例列出了全部字段及单位说明。
+
+### 输入时间与送帧规则
+
+使用者必须提供固定帧率录像。程序不能凭平均帧率证明输入不是变帧率录像。Gray8 是单通道八位灰度，BGR8 是三通道八位彩色；彩色帧在回放边界只转一次灰度。其他格式、尺寸中途变化或有效录像帧率与配置冲突都会失败。
+
+第 `i` 帧的时间为 `1000000 + round(i * 1000000 / fps)` 微秒。30 FPS 的前三帧为 1000000、1033333、1066667。预测时间等于该帧时间，旋转矩阵固定为单位阵。帧时间必须严格递增且不能溢出。
+
+送帧使用单调墙钟。下一次更新至少在前次更新结束一个帧周期之后开始。30 FPS 的一次更新若耗时 60 ms，下一次更新还要再等待约 33.333 ms。解码慢时继续顺延，不跳帧、不连续补发追赶。真实 YOLO 保持异步；该节奏和 `update_ms` 都不能作为总模型吞吐量指标。
+
+### 输出解释与结束状态
+
+每次运行产生三个文件：
+
+| 文件 | 内容 |
+| --- | --- |
+| `frames.csv` | 每次 `update` 的输入帧号、采集/预测时间、接受标记、跟踪状态、框与有效性、NanoTrack 分数、文本和计时 |
+| `run.json` | 完整解析配置、绝对路径、程序/配置/四模型/录像 SHA-256、构建提交及修改标记、同次加载的模型张量和 Runtime/驱动属性、输入统计、状态切换、计时和结束原因 |
+| `diagnostics.log` | 模型、算法及主流程诊断；包括 C/C++ 标准输出和错误输出，与 CSV 分开 |
+
+CSV 的 `display_*` 与 `realtime_*` 使用中心坐标 `cx/cy/width/height`；`nano_*` 使用左上角 `x/y/width/height`。无效框坐标留空，非有限分数留空；负 NanoTrack 分数表示该帧没有有效推断。`consumed=false` 的行仍保存，但不计入接受帧数。`Detecting=0`、`TargetFound=1`、`Tracking=2`、`TargetLost=3` 分别表示检测中、发现目标、跟踪中和目标丢失。
+
+CSV 整数直接写入，JSON 的计数与帧号均保存为十进制字符串，解析时转为任意精度或 64 位整数，避免经过双精度浮点丢失精度。模型属性按行保存在 `model_runtime_attributes` 数组中，包含实际查询的 Runtime/驱动和张量描述；不为生成报告再次加载模型。`git_dirty_at_build` 表示构建配置时工作区是否修改，不代表后续仓库状态。
+
+`decode_ms` 为解码时间，`convert_copy_ms` 为转灰度及帧复制时间，`update_ms` 为公共更新调用耗时，`wait_ms` 为调度等待时间。`submit_ns` 为相对本次送帧起点的单调墙钟纳秒数；`interval_ms` 为相邻提交间隔，`lag_ms` 为相对录像时间轴的落后量。汇总给出均值与 P95；P95 取排序后第 `ceil(0.95*N)` 个样本，空样本为 JSON `null`。仅保留计时与状态切换样本，图像及完整 CSV 行不累计在内存中。
+
+`run.json` 先写 `running`，最终汇总通过临时文件替换。写入、刷新或关闭失败会返回失败。普通中断在主线程清理，先停止送帧，再等待检测线程退出；末尾不增加虚拟帧。每个进程只处理一段录像。
+
+| 原因 | 退出码 | 含义 |
+| --- | --- | --- |
+| `eof` | 0 | 停止解码时已达到声明帧数；不证明文件无损 |
+| `frame_limit` | 0 | 达到配置帧上限 |
+| 配置/命令错误 | 2 | 初始化前拒绝；不创建运行目录 |
+| `decode_error` | 1 | 声明帧数未达到、运行中的格式或尺寸错误、解码异常 |
+| `end_unverified` | 1 | 无可信总帧数，无法确认完整结束 |
+| `initialization_error` / `runtime_error` | 1 | 普通初始化或运行失败 |
+| `interrupted` | 130 | SIGINT 已由主流程安全处理 |
+
+不可写目录可能导致完全没有报告。SIGKILL、断电或设备致命失败不能保证最终汇总；已有 `running` 文件可显示未正常结束。普通模型推理失败仍由原算法处理，未发现目标不能单独证明设备故障。成功退出也不代表找到目标或质量合格。
+
+### 本次验证范围
+
+本次新增实机矩阵仅包含纯 FP16 和纯 INT8；每组模板、搜索、Head 必须采用同一精度。两组使用相同 YOLO、录像和算法参数。已有混合精度后端支持保持不变，但不作为本次新增实机前置条件。
+
+待实机验收时，每组重复三次并覆盖 DCF 开/关，分别检查自动捕获、离开返回、无目标、至少 20 轮实例创建销毁、至少 30 分钟资源负载和失败退出。真实异步运行比较状态切换帧差异，不要求 CSV 字节相同。缺少场景素材或标注时保留未覆盖，不用持续跟踪录像替代丢失恢复验收。
+
+当前仅执行 ARM64 容器构建及可控无设备测试。按照本次任务要求，开发板运行与依赖其结果的质量评估尚未执行，详见 [实施验证记录](../../openspec/changes/assemble-rk3576-tracker-replay/validation.md)。Jetson、ROS 和真实相机也不在这次验证范围内。

@@ -142,6 +142,8 @@ public:
 
     bool isInitialized() const;
     float lastScore() const { return last_score_; }
+    /** @brief 清空单帧诊断，不改变模板、滤波或仲裁状态。 */
+    void clearDiagnostics() { last_nano_box_ = {}; last_score_ = -1.0f; }
     /** @brief 诊断：本帧 NanoTrack 的原始输出框（融合/KF 平滑之前） */
     const cv::Rect2f& lastNanoBox() const { return last_nano_box_; }
 

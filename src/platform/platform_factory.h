@@ -81,6 +81,7 @@ struct TrackerComponents {
     std::unique_ptr<model::NanoTrackBackend> nano{};
     std::unique_ptr<NanoTrackPreprocessor> nano_preprocessor{};
     std::unique_ptr<FrameCompatibility> compatibility{};
+    std::string description{};  // 同次模型查询得到的平台与张量属性，不持有设备资源
 
     TrackerComponents() = default;
     TrackerComponents(const TrackerComponents &) = delete;
@@ -96,6 +97,8 @@ struct ModelPaths {
     std::string yolo{};
     std::string backbone{};
     std::string head{};
+    std::string template_backbone{};
+    std::string search_backbone{};
 };
 
 /** @brief 编译期所选平台的生产入口；创建资源不启动检测或采集线程。 */

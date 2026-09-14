@@ -6,9 +6,13 @@
 namespace rk3576 {
 model::Result<NanoTrackComponents> loadNanoTrack(const std::string &template_path, const std::string &search_path,
                                                  const std::string &head_path) {
+    return loadNanoTrack(template_path, search_path, head_path, nativeRknnApi());
+}
+model::Result<NanoTrackComponents> loadNanoTrack(const std::string &template_path, const std::string &search_path,
+                                                 const std::string &head_path, RknnApi api) {
     using Result = model::Result<NanoTrackComponents>;
     try {
-        auto backend{RknnNanoTrackBackend::load(template_path, search_path, head_path, nativeRknnApi())};
+        auto backend{RknnNanoTrackBackend::load(template_path, search_path, head_path, api)};
         if (!backend) {
             return Result::failure(backend.error);
         }

@@ -1,0 +1,982 @@
+{
+  "device_memory_measured": false,
+  "groups": {
+    "int8": {
+      "rounds": 95,
+      "reported_active_seconds": 1809.9741619290003,
+      "completed_eof_rounds": 95,
+      "completed_eof_active_seconds": 1809.9741619290003,
+      "interrupted_runs": [],
+      "unique_pids": 95,
+      "rss_peak_min_kib": 127256,
+      "rss_peak_max_kib": 128028,
+      "rss_peak_first10_mean_kib": 127662,
+      "rss_peak_last10_mean_kib": 127719.2,
+      "rss_peak_linear_slope_kib_per_round": 0.26746920492721166,
+      "thread_peak_values": [
+        17
+      ],
+      "fd_peak_values": [
+        37
+      ],
+      "mem_available_before_first_kib": 7480756,
+      "mem_available_after_last_kib": 7482812,
+      "all_exit_zero_eof": true,
+      "all_reaped_no_replay_processes": true,
+      "timeouts": 0,
+      "forced_kills": 0,
+      "runs": [
+        {
+          "name": "int8-resource-001",
+          "pid": 2170,
+          "peak": {
+            "rss_kib": 127256,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.430588094999997
+        },
+        {
+          "name": "int8-resource-002",
+          "pid": 2190,
+          "peak": {
+            "rss_kib": 127680,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.472686105
+        },
+        {
+          "name": "int8-resource-003",
+          "pid": 2208,
+          "peak": {
+            "rss_kib": 127680,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.95897092
+        },
+        {
+          "name": "int8-resource-004",
+          "pid": 2300,
+          "peak": {
+            "rss_kib": 127520,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.138845118000003
+        },
+        {
+          "name": "int8-resource-005",
+          "pid": 2318,
+          "peak": {
+            "rss_kib": 127676,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.931568593
+        },
+        {
+          "name": "int8-resource-006",
+          "pid": 2335,
+          "peak": {
+            "rss_kib": 127884,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.441142745
+        },
+        {
+          "name": "int8-resource-007",
+          "pid": 2353,
+          "peak": {
+            "rss_kib": 127796,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.369058295
+        },
+        {
+          "name": "int8-resource-008",
+          "pid": 2370,
+          "peak": {
+            "rss_kib": 127672,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.356114556
+        },
+        {
+          "name": "int8-resource-009",
+          "pid": 2456,
+          "peak": {
+            "rss_kib": 127688,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.489872656
+        },
+        {
+          "name": "int8-resource-010",
+          "pid": 2473,
+          "peak": {
+            "rss_kib": 127768,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.614838089
+        },
+        {
+          "name": "int8-resource-011",
+          "pid": 2490,
+          "peak": {
+            "rss_kib": 127560,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.241556364
+        },
+        {
+          "name": "int8-resource-012",
+          "pid": 2578,
+          "peak": {
+            "rss_kib": 127740,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.271665377
+        },
+        {
+          "name": "int8-resource-013",
+          "pid": 2595,
+          "peak": {
+            "rss_kib": 127544,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.819136009999998
+        },
+        {
+          "name": "int8-resource-014",
+          "pid": 2613,
+          "peak": {
+            "rss_kib": 127620,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.787121836999997
+        },
+        {
+          "name": "int8-resource-015",
+          "pid": 2630,
+          "peak": {
+            "rss_kib": 127520,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.932008759
+        },
+        {
+          "name": "int8-resource-016",
+          "pid": 2647,
+          "peak": {
+            "rss_kib": 127600,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.525075469
+        },
+        {
+          "name": "int8-resource-017",
+          "pid": 2664,
+          "peak": {
+            "rss_kib": 127620,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.084767877999997
+        },
+        {
+          "name": "int8-resource-018",
+          "pid": 2681,
+          "peak": {
+            "rss_kib": 127532,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.290782059
+        },
+        {
+          "name": "int8-resource-019",
+          "pid": 2699,
+          "peak": {
+            "rss_kib": 127740,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.136312916999998
+        },
+        {
+          "name": "int8-resource-020",
+          "pid": 2717,
+          "peak": {
+            "rss_kib": 127832,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.822430267
+        },
+        {
+          "name": "int8-resource-021",
+          "pid": 2736,
+          "peak": {
+            "rss_kib": 127640,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.282288149
+        },
+        {
+          "name": "int8-resource-022",
+          "pid": 2753,
+          "peak": {
+            "rss_kib": 127552,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.422988424
+        },
+        {
+          "name": "int8-resource-023",
+          "pid": 2771,
+          "peak": {
+            "rss_kib": 127556,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.677855814999997
+        },
+        {
+          "name": "int8-resource-024",
+          "pid": 2790,
+          "peak": {
+            "rss_kib": 127708,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.63669497
+        },
+        {
+          "name": "int8-resource-025",
+          "pid": 2808,
+          "peak": {
+            "rss_kib": 127460,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.027370921000003
+        },
+        {
+          "name": "int8-resource-026",
+          "pid": 2825,
+          "peak": {
+            "rss_kib": 127716,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.898429815
+        },
+        {
+          "name": "int8-resource-027",
+          "pid": 2842,
+          "peak": {
+            "rss_kib": 127852,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.791156674000003
+        },
+        {
+          "name": "int8-resource-028",
+          "pid": 2860,
+          "peak": {
+            "rss_kib": 127548,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.971453801
+        },
+        {
+          "name": "int8-resource-029",
+          "pid": 2877,
+          "peak": {
+            "rss_kib": 127740,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.842143163
+        },
+        {
+          "name": "int8-resource-030",
+          "pid": 2894,
+          "peak": {
+            "rss_kib": 127964,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.412963768
+        },
+        {
+          "name": "int8-resource-031",
+          "pid": 2911,
+          "peak": {
+            "rss_kib": 127828,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.958258312999998
+        },
+        {
+          "name": "int8-resource-032",
+          "pid": 2928,
+          "peak": {
+            "rss_kib": 127708,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.554609709
+        },
+        {
+          "name": "int8-resource-033",
+          "pid": 2947,
+          "peak": {
+            "rss_kib": 127788,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.083227665
+        },
+        {
+          "name": "int8-resource-034",
+          "pid": 2964,
+          "peak": {
+            "rss_kib": 127544,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.656301016
+        },
+        {
+          "name": "int8-resource-035",
+          "pid": 2982,
+          "peak": {
+            "rss_kib": 128028,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 22.201798161
+        },
+        {
+          "name": "int8-resource-036",
+          "pid": 3000,
+          "peak": {
+            "rss_kib": 127836,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.500890783
+        },
+        {
+          "name": "int8-resource-037",
+          "pid": 3018,
+          "peak": {
+            "rss_kib": 127664,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.719525956000002
+        },
+        {
+          "name": "int8-resource-038",
+          "pid": 3035,
+          "peak": {
+            "rss_kib": 127680,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.654117536
+        },
+        {
+          "name": "int8-resource-039",
+          "pid": 3053,
+          "peak": {
+            "rss_kib": 127616,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.252702571
+        },
+        {
+          "name": "int8-resource-040",
+          "pid": 3070,
+          "peak": {
+            "rss_kib": 127852,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.95991619
+        },
+        {
+          "name": "int8-resource-041",
+          "pid": 3089,
+          "peak": {
+            "rss_kib": 127996,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.751994696999997
+        },
+        {
+          "name": "int8-resource-042",
+          "pid": 3106,
+          "peak": {
+            "rss_kib": 127688,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.466535874
+        },
+        {
+          "name": "int8-resource-043",
+          "pid": 3123,
+          "peak": {
+            "rss_kib": 127884,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.388943477
+        },
+        {
+          "name": "int8-resource-044",
+          "pid": 3141,
+          "peak": {
+            "rss_kib": 127852,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.150249917
+        },
+        {
+          "name": "int8-resource-045",
+          "pid": 3158,
+          "peak": {
+            "rss_kib": 127576,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.829805419
+        },
+        {
+          "name": "int8-resource-046",
+          "pid": 3175,
+          "peak": {
+            "rss_kib": 127552,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.323639345
+        },
+        {
+          "name": "int8-resource-047",
+          "pid": 3192,
+          "peak": {
+            "rss_kib": 127688,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.337404693
+        },
+        {
+          "name": "int8-resource-048",
+          "pid": 3209,
+          "peak": {
+            "rss_kib": 127748,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.259745984000002
+        },
+        {
+          "name": "int8-resource-049",
+          "pid": 3228,
+          "peak": {
+            "rss_kib": 127844,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.973500221
+        },
+        {
+          "name": "int8-resource-050",
+          "pid": 3246,
+          "peak": {
+            "rss_kib": 127612,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.169379473
+        },
+        {
+          "name": "int8-resource-051",
+          "pid": 3263,
+          "peak": {
+            "rss_kib": 127792,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.393266495
+        },
+        {
+          "name": "int8-resource-052",
+          "pid": 3282,
+          "peak": {
+            "rss_kib": 127728,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.806816293
+        },
+        {
+          "name": "int8-resource-053",
+          "pid": 3300,
+          "peak": {
+            "rss_kib": 127808,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.512672905
+        },
+        {
+          "name": "int8-resource-054",
+          "pid": 3317,
+          "peak": {
+            "rss_kib": 127616,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.640217788
+        },
+        {
+          "name": "int8-resource-055",
+          "pid": 3335,
+          "peak": {
+            "rss_kib": 127796,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.854720126
+        },
+        {
+          "name": "int8-resource-056",
+          "pid": 3354,
+          "peak": {
+            "rss_kib": 128028,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.487242578
+        },
+        {
+          "name": "int8-resource-057",
+          "pid": 3372,
+          "peak": {
+            "rss_kib": 127588,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.396161151
+        },
+        {
+          "name": "int8-resource-058",
+          "pid": 3389,
+          "peak": {
+            "rss_kib": 127640,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.450252001
+        },
+        {
+          "name": "int8-resource-059",
+          "pid": 3406,
+          "peak": {
+            "rss_kib": 127588,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.324025824
+        },
+        {
+          "name": "int8-resource-060",
+          "pid": 3423,
+          "peak": {
+            "rss_kib": 127692,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.887676279
+        },
+        {
+          "name": "int8-resource-061",
+          "pid": 3440,
+          "peak": {
+            "rss_kib": 127532,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.497406894
+        },
+        {
+          "name": "int8-resource-062",
+          "pid": 3457,
+          "peak": {
+            "rss_kib": 127712,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.550255147
+        },
+        {
+          "name": "int8-resource-063",
+          "pid": 3474,
+          "peak": {
+            "rss_kib": 127632,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.466865065999997
+        },
+        {
+          "name": "int8-resource-064",
+          "pid": 3491,
+          "peak": {
+            "rss_kib": 127524,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.773269556
+        },
+        {
+          "name": "int8-resource-065",
+          "pid": 3509,
+          "peak": {
+            "rss_kib": 127644,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.615233304
+        },
+        {
+          "name": "int8-resource-066",
+          "pid": 3527,
+          "peak": {
+            "rss_kib": 127892,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.223906922999998
+        },
+        {
+          "name": "int8-resource-067",
+          "pid": 3545,
+          "peak": {
+            "rss_kib": 127620,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.447350544000003
+        },
+        {
+          "name": "int8-resource-068",
+          "pid": 3562,
+          "peak": {
+            "rss_kib": 127648,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.206711984000002
+        },
+        {
+          "name": "int8-resource-069",
+          "pid": 3579,
+          "peak": {
+            "rss_kib": 127744,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.588061703
+        },
+        {
+          "name": "int8-resource-070",
+          "pid": 3598,
+          "peak": {
+            "rss_kib": 127572,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.151428843999998
+        },
+        {
+          "name": "int8-resource-071",
+          "pid": 3616,
+          "peak": {
+            "rss_kib": 127660,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 21.923285923999998
+        },
+        {
+          "name": "int8-resource-072",
+          "pid": 3634,
+          "peak": {
+            "rss_kib": 127720,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.33514881
+        },
+        {
+          "name": "int8-resource-073",
+          "pid": 3653,
+          "peak": {
+            "rss_kib": 127592,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.733835340000002
+        },
+        {
+          "name": "int8-resource-074",
+          "pid": 3670,
+          "peak": {
+            "rss_kib": 127576,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.795148232
+        },
+        {
+          "name": "int8-resource-075",
+          "pid": 3689,
+          "peak": {
+            "rss_kib": 127812,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.071235399000003
+        },
+        {
+          "name": "int8-resource-076",
+          "pid": 3706,
+          "peak": {
+            "rss_kib": 127460,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.317434109
+        },
+        {
+          "name": "int8-resource-077",
+          "pid": 3723,
+          "peak": {
+            "rss_kib": 127736,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.93451164
+        },
+        {
+          "name": "int8-resource-078",
+          "pid": 3740,
+          "peak": {
+            "rss_kib": 127764,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.367075729
+        },
+        {
+          "name": "int8-resource-079",
+          "pid": 3757,
+          "peak": {
+            "rss_kib": 127664,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.401862944
+        },
+        {
+          "name": "int8-resource-080",
+          "pid": 3774,
+          "peak": {
+            "rss_kib": 127644,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.043418259
+        },
+        {
+          "name": "int8-resource-081",
+          "pid": 3791,
+          "peak": {
+            "rss_kib": 127600,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.265534635
+        },
+        {
+          "name": "int8-resource-082",
+          "pid": 3808,
+          "peak": {
+            "rss_kib": 127740,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.049234595999998
+        },
+        {
+          "name": "int8-resource-083",
+          "pid": 3826,
+          "peak": {
+            "rss_kib": 127696,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.642900421
+        },
+        {
+          "name": "int8-resource-084",
+          "pid": 3843,
+          "peak": {
+            "rss_kib": 127656,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.250575776
+        },
+        {
+          "name": "int8-resource-085",
+          "pid": 3860,
+          "peak": {
+            "rss_kib": 127452,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.160829633000002
+        },
+        {
+          "name": "int8-resource-086",
+          "pid": 3878,
+          "peak": {
+            "rss_kib": 127728,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 20.800797023999998
+        },
+        {
+          "name": "int8-resource-087",
+          "pid": 3896,
+          "peak": {
+            "rss_kib": 127880,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.218376672999998
+        },
+        {
+          "name": "int8-resource-088",
+          "pid": 3913,
+          "peak": {
+            "rss_kib": 127680,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.421168180000002
+        },
+        {
+          "name": "int8-resource-089",
+          "pid": 3931,
+          "peak": {
+            "rss_kib": 127528,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.289277048
+        },
+        {
+          "name": "int8-resource-090",
+          "pid": 3950,
+          "peak": {
+            "rss_kib": 127772,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.373155330000003
+        },
+        {
+          "name": "int8-resource-091",
+          "pid": 3968,
+          "peak": {
+            "rss_kib": 127676,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.71314328
+        },
+        {
+          "name": "int8-resource-092",
+          "pid": 3986,
+          "peak": {
+            "rss_kib": 127772,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 17.887287038
+        },
+        {
+          "name": "int8-resource-093",
+          "pid": 4073,
+          "peak": {
+            "rss_kib": 127700,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 16.614185458
+        },
+        {
+          "name": "int8-resource-094",
+          "pid": 4090,
+          "peak": {
+            "rss_kib": 127760,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 18.695968934
+        },
+        {
+          "name": "int8-resource-095",
+          "pid": 4107,
+          "peak": {
+            "rss_kib": 127696,
+            "threads": 17,
+            "fds": 37
+          },
+          "seconds": 19.124795503
+        }
+      ]
+    }
+  }
+}

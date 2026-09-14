@@ -22,7 +22,7 @@ model::Result<NanoTrackRoles> validateNanoTrackSessions(const RknnSession &z, co
         if (session->inputs().size() != 1 || session->outputs().size() != 1 ||
             nchwShape(session->inputs()[0]) != TensorShape{1, 3, image, image} ||
             nchwShape(session->outputs()[0]) != TensorShape{1, 96, feature, feature}) {
-            return Result::failure({model::ModelError::ContractMismatch, session->identity(), "Backbone",
+            return Result::failure({model::ModelError::ContractMismatch, session->identity(), session == &z ? "template_backbone" : "search_backbone",
                                     "one image [1,3," + std::to_string(image) + "," + std::to_string(image) +
                                         "] -> one feature [1,96," + std::to_string(feature) + "," +
                                         std::to_string(feature) + "]",

@@ -1,0 +1,57 @@
+%YAML:1.0
+---
+# 示例：须按实际文件、固定帧率录像和相机标定填写。路径相对于本配置目录。
+# NanoTrack 的模板、搜索和 Head 必须来自同一纯精度组；文件名不作为精度证明。
+schema_version: 1
+models:
+  yolo: "models/yolo.rknn"
+  template_backbone: "models/fp16/template_backbone.rknn"
+  search_backbone: "models/fp16/search_backbone.rknn"
+  head: "models/fp16/head.rknn"
+input:
+  video: "videos/clip.mp4"
+  # fps：帧/秒；max_frames：帧，0 表示读到结束（整数上限 2147483647）。
+  fps: 30.0
+  max_frames: 0
+camera:
+  # 焦距和主点单位为像素，必须对应录像解码尺寸；以下不是实测标定。
+  fx: 800.0
+  fy: 800.0
+  cx: 320.0
+  cy: 256.0
+tracker:
+  # 概率/IoU/学习率为 0–1，比例无量纲，位置为像素，间隔/缓存为帧数。
+  # DCF 为灰度相关滤波辅助跟踪；model_sz 为像素，PSR 为峰值相对背景指标。
+  # KF 测量噪声为像素平方，过程噪声沿用公共滤波器定义，旋转固定为单位阵。
+  # 布尔值仅使用整数 0/1。
+  yolo_target_class_id: 2
+  yolo_conf_threshold: 0.5
+  yolo_nms_threshold: 0.45
+  yolo_interval: 4
+  yolo_recall_relax_ratio: 1.0
+  iou_reset_threshold: 0.4
+  iou_calibrate_threshold: 0.8
+  max_position_jump: 150.0
+  max_size_jump_ratio: 2.0
+  max_box_area_ratio: 0.8
+  tracking_roi_scale_factor: 2.0
+  lost_max_count: 5
+  frame_buffer_size: 30
+  jump_tolerance: 3
+  enable_dcf: 1
+  dcf_fixed_template: 1
+  dcf_learning_rate: 0.01
+  dcf_lambda: 0.0001
+  dcf_psr_thresh: 5.0
+  dcf_max_div_factor: 0.5
+  dcf_model_sz: 96
+  dcf_pad: 1.0
+  dcf_sigma_factor: 0.1
+  dcf_eps: 0.00001
+  kf_r_pos: 4.0
+  kf_r_size: 4.0
+  kf_q_a: 50000.0
+  kf_q_size: 1000.0
+  kf_history_len: 60
+output:
+  directory: "runs/fp16-001"

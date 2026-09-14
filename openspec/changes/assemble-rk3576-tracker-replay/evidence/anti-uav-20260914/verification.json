@@ -1,0 +1,10 @@
+{
+  "runs_verified": 9,
+  "rgb_runs": 6,
+  "configuration_hashes_verified": true,
+  "runtime_driver_precision_verified": true,
+  "same_rgb_input_yolo_parameters_verified": true,
+  "process_cleanup_verified": true,
+  "archive_sha256": "f658a80713143ca4701b66917368ea1c1f5465ca0a73779648d32669ee801e28",
+  "quality_passed": false
+}

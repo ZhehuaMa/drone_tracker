@@ -242,6 +242,7 @@ bool HybridTrackerImp::catchupTracker(const BufferedFrame& hist,
 
 TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
 {
+    if (m_tracker) { m_tracker->clearDiagnostics(); }
     TrackerOutput out;
     out.state = m_state;
     out.info = m_display_info;

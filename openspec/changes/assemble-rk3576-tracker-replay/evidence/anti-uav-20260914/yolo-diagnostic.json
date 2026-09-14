@@ -1,0 +1,81 @@
+{
+  "probe_sha256": "b794d3c11b4efb71a62103ab18e3f227cacfe8d90904859d3f828d7aea2daa55",
+  "frames": {
+    "0": {
+      "command": [
+        "/home/firefly/drone_tracker_test/yolo_acceptance_20260910/rk3576_yolo_probe",
+        "--model",
+        "/home/firefly/drone_tracker_test/models/yolov8n-model_zoo-int8_fp16-multi_cls.rknn",
+        "--mode",
+        "region",
+        "--image",
+        "anti-uav-20260914/yolo-diagnostic/frame-0.png",
+        "--dump",
+        "anti-uav-20260914/yolo-diagnostic/frame-0"
+      ],
+      "max_probability_per_class": [
+        4.611274925991893e-05,
+        0.00010071400174638256,
+        0.00023231418163049966,
+        0.0003611769643612206
+      ]
+    },
+    "100": {
+      "command": [
+        "/home/firefly/drone_tracker_test/yolo_acceptance_20260910/rk3576_yolo_probe",
+        "--model",
+        "/home/firefly/drone_tracker_test/models/yolov8n-model_zoo-int8_fp16-multi_cls.rknn",
+        "--mode",
+        "region",
+        "--image",
+        "anti-uav-20260914/yolo-diagnostic/frame-100.png",
+        "--dump",
+        "anti-uav-20260914/yolo-diagnostic/frame-100"
+      ],
+      "max_probability_per_class": [
+        0.0002591582597233355,
+        0.0017073674825951457,
+        6.452214438468218e-05,
+        0.002115703420713544
+      ]
+    },
+    "360": {
+      "command": [
+        "/home/firefly/drone_tracker_test/yolo_acceptance_20260910/rk3576_yolo_probe",
+        "--model",
+        "/home/firefly/drone_tracker_test/models/yolov8n-model_zoo-int8_fp16-multi_cls.rknn",
+        "--mode",
+        "region",
+        "--image",
+        "anti-uav-20260914/yolo-diagnostic/frame-360.png",
+        "--dump",
+        "anti-uav-20260914/yolo-diagnostic/frame-360"
+      ],
+      "max_probability_per_class": [
+        8.682210318511352e-05,
+        0.04940524697303772,
+        0.018617801368236542,
+        0.018194368109107018
+      ]
+    },
+    "420": {
+      "command": [
+        "/home/firefly/drone_tracker_test/yolo_acceptance_20260910/rk3576_yolo_probe",
+        "--model",
+        "/home/firefly/drone_tracker_test/models/yolov8n-model_zoo-int8_fp16-multi_cls.rknn",
+        "--mode",
+        "region",
+        "--image",
+        "anti-uav-20260914/yolo-diagnostic/frame-420.png",
+        "--dump",
+        "anti-uav-20260914/yolo-diagnostic/frame-420"
+      ],
+      "max_probability_per_class": [
+        0.0005072812782600522,
+        0.007093861699104309,
+        0.015365341678261757,
+        0.6413100361824036
+      ]
+    }
+  }
+}

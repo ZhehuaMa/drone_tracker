@@ -93,14 +93,17 @@ model::Result<std::unique_ptr<RknnNanoTrackBackend>> RknnNanoTrackBackend::load(
     using Result = model::Result<std::unique_ptr<RknnNanoTrackBackend>>;
     auto z{RknnSession::load(template_path, api)};
     if (!z) {
+        z.error.tensor = "template_backbone: " + z.error.tensor;
         return Result::failure(z.error);
     }
     auto x{RknnSession::load(search_path, api)};
     if (!x) {
+        x.error.tensor = "search_backbone: " + x.error.tensor;
         return Result::failure(x.error);
     }
     auto head{RknnSession::load(head_path, api)};
     if (!head) {
+        head.error.tensor = "head: " + head.error.tensor;
         return Result::failure(head.error);
     }
     const auto roles{validateNanoTrackSessions(*z.value, *x.value, *head.value)};

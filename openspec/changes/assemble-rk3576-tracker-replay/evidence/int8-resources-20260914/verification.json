@@ -1,0 +1,9 @@
+{
+  "rounds": 95,
+  "readable_fd_samples": 7409,
+  "unavailable_fd_samples": 10,
+  "sample_count": 7419,
+  "submitted_frames": 29355,
+  "all_csv_contiguous_and_consumed": true,
+  "archive_sha256": "5230e6c800800073b27415876af14d4492611f42bd72b0e31dd2a18302ff3bda"
+}

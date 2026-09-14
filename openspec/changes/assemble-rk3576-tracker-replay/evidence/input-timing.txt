@@ -1,0 +1,6 @@
+输入：V_DRONE_051.mp4
+尺寸：640×512
+解码时间戳数量：309
+相邻间隔相对 1/30 秒的最大绝对误差：0.000000666667 秒
+同名标注文件数：309
+逐帧原始时间戳：.docker-artifacts/log/replay-input-timestamps.log

@@ -1,0 +1,291 @@
+{
+  "fp16-airsim-dcf1-001": {
+    "status": "eof",
+    "end_reason": "eof",
+    "sha256": {
+      "configuration": "8b08e805c8372ab6b755f6f8629cf418b9c5731fa71c45c5888e66a15325afff",
+      "head": "2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889",
+      "program": "7e787d84e6474a6a7d05f42f8eb1f3a8a35587e50da552d231ecc510b10605ef",
+      "search_backbone": "9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44",
+      "template_backbone": "622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2",
+      "video": "95725ccfc3e926dd700e629f5a7d0f6cd34d9b5c9e0810cc7027a3b5888218af",
+      "yolo": "4d8a22bc8da9fbbc43f190b7ea90c27d9980f77e3e27064ec32cf6566c2680f3"
+    },
+    "input": {
+      "width": 960,
+      "height": 968,
+      "decoder": "FFMPEG",
+      "metadata_fps_available": 1,
+      "metadata_fps": 30.0,
+      "declared_frames": "1772",
+      "read_frames": "1772",
+      "submitted_frames": "1772",
+      "accepted_frames": "1772"
+    },
+    "state_counts": {
+      "state_0": "1545",
+      "state_1": "5",
+      "state_2": "217",
+      "state_3": "5"
+    },
+    "state_transitions": [
+      {
+        "frame_index": "0",
+        "state": 0
+      },
+      {
+        "frame_index": "151",
+        "state": 1
+      },
+      {
+        "frame_index": "152",
+        "state": 2
+      },
+      {
+        "frame_index": "237",
+        "state": 3
+      },
+      {
+        "frame_index": "238",
+        "state": 0
+      },
+      {
+        "frame_index": "916",
+        "state": 1
+      },
+      {
+        "frame_index": "917",
+        "state": 2
+      },
+      {
+        "frame_index": "940",
+        "state": 3
+      },
+      {
+        "frame_index": "941",
+        "state": 0
+      },
+      {
+        "frame_index": "1027",
+        "state": 1
+      },
+      {
+        "frame_index": "1028",
+        "state": 2
+      },
+      {
+        "frame_index": "1048",
+        "state": 3
+      },
+      {
+        "frame_index": "1049",
+        "state": 1
+      },
+      {
+        "frame_index": "1050",
+        "state": 2
+      },
+      {
+        "frame_index": "1108",
+        "state": 3
+      },
+      {
+        "frame_index": "1109",
+        "state": 0
+      },
+      {
+        "frame_index": "1172",
+        "state": 1
+      },
+      {
+        "frame_index": "1173",
+        "state": 2
+      },
+      {
+        "frame_index": "1204",
+        "state": 3
+      },
+      {
+        "frame_index": "1205",
+        "state": 0
+      }
+    ],
+    "elapsed_wall_ms": 64511.861234,
+    "timings": {
+      "decode": {
+        "mean_ms": 4.66595517945824,
+        "p95_ms": 6.633659
+      },
+      "convert_copy": {
+        "mean_ms": 1.1163062533860044,
+        "p95_ms": 1.686677
+      },
+      "update": {
+        "mean_ms": 2.7272512381489844,
+        "p95_ms": 18.429718
+      },
+      "wait": {
+        "mean_ms": 27.387032798532733,
+        "p95_ms": 28.375724
+      },
+      "interval": {
+        "mean_ms": 36.16368905474041,
+        "p95_ms": 51.895523
+      },
+      "lag": {
+        "mean_ms": 2955.248359081264,
+        "p95_ms": 5041.532922999999
+      }
+    }
+  },
+  "fp16-bird-dcf1-001": {
+    "status": "eof",
+    "end_reason": "eof",
+    "sha256": {
+      "configuration": "0619caef904e691745c339ef2a2f016d4afb02151f48973f2b434ce43639f9cb",
+      "head": "2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889",
+      "program": "7e787d84e6474a6a7d05f42f8eb1f3a8a35587e50da552d231ecc510b10605ef",
+      "search_backbone": "9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44",
+      "template_backbone": "622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2",
+      "video": "062059c958360e552fa475f73ad32431441abc3970939e6a12f464a76d1095bf",
+      "yolo": "4d8a22bc8da9fbbc43f190b7ea90c27d9980f77e3e27064ec32cf6566c2680f3"
+    },
+    "input": {
+      "width": 640,
+      "height": 512,
+      "decoder": "FFMPEG",
+      "metadata_fps_available": 1,
+      "metadata_fps": 30.0,
+      "declared_frames": "305",
+      "read_frames": "305",
+      "submitted_frames": "305",
+      "accepted_frames": "305"
+    },
+    "state_counts": {
+      "state_0": "305",
+      "state_1": "0",
+      "state_2": "0",
+      "state_3": "0"
+    },
+    "state_transitions": [
+      {
+        "frame_index": "0",
+        "state": 0
+      }
+    ],
+    "elapsed_wall_ms": 10590.857419,
+    "timings": {
+      "decode": {
+        "mean_ms": 2.20618657704918,
+        "p95_ms": 2.93429
+      },
+      "convert_copy": {
+        "mean_ms": 0.8542544163934426,
+        "p95_ms": 1.314549
+      },
+      "update": {
+        "mean_ms": 0.024710947540983606,
+        "p95_ms": 0.049793
+      },
+      "wait": {
+        "mean_ms": 30.022486150819674,
+        "p95_ms": 30.988236
+      },
+      "interval": {
+        "mean_ms": 33.39579761967213,
+        "p95_ms": 33.584032
+      },
+      "lag": {
+        "mean_ms": 35.11989760983609,
+        "p95_ms": 58.33480799999961
+      }
+    }
+  },
+  "fp16-dcf1-001": {
+    "status": "eof",
+    "end_reason": "eof",
+    "sha256": {
+      "configuration": "563ad18c99fa2a797b773324620982a4ff627dc612c9dbd7b510a0ed2a7af947",
+      "head": "2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889",
+      "program": "7e787d84e6474a6a7d05f42f8eb1f3a8a35587e50da552d231ecc510b10605ef",
+      "search_backbone": "9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44",
+      "template_backbone": "622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2",
+      "video": "01c49506366d2b8f273df4951bc8546e2f0b5920203f815589950d90aa5b53d7",
+      "yolo": "4d8a22bc8da9fbbc43f190b7ea90c27d9980f77e3e27064ec32cf6566c2680f3"
+    },
+    "input": {
+      "width": 640,
+      "height": 512,
+      "decoder": "FFMPEG",
+      "metadata_fps_available": 1,
+      "metadata_fps": 30.0,
+      "declared_frames": "309",
+      "read_frames": "309",
+      "submitted_frames": "309",
+      "accepted_frames": "309"
+    },
+    "state_counts": {
+      "state_0": "5",
+      "state_1": "2",
+      "state_2": "301",
+      "state_3": "1"
+    },
+    "state_transitions": [
+      {
+        "frame_index": "0",
+        "state": 0
+      },
+      {
+        "frame_index": "3",
+        "state": 1
+      },
+      {
+        "frame_index": "4",
+        "state": 2
+      },
+      {
+        "frame_index": "85",
+        "state": 3
+      },
+      {
+        "frame_index": "86",
+        "state": 0
+      },
+      {
+        "frame_index": "88",
+        "state": 1
+      },
+      {
+        "frame_index": "89",
+        "state": 2
+      }
+    ],
+    "elapsed_wall_ms": 19287.04053,
+    "timings": {
+      "decode": {
+        "mean_ms": 4.344820886731392,
+        "p95_ms": 7.053425
+      },
+      "convert_copy": {
+        "mean_ms": 1.0254246796116504,
+        "p95_ms": 2.007093
+      },
+      "update": {
+        "mean_ms": 27.865929236245954,
+        "p95_ms": 47.374476
+      },
+      "wait": {
+        "mean_ms": 26.92626618446602,
+        "p95_ms": 30.795333
+      },
+      "interval": {
+        "mean_ms": 61.129036957928804,
+        "p95_ms": 80.858096
+      },
+      "lag": {
+        "mean_ms": 4220.599854754046,
+        "p95_ms": 8254.731674
+      }
+    }
+  }
+}

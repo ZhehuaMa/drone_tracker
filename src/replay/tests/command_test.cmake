@@ -1,0 +1,8 @@
+execute_process(COMMAND "${PROGRAM}" RESULT_VARIABLE no_args OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(NOT no_args EQUAL 2)
+    message(FATAL_ERROR "No arguments must exit 2, got ${no_args}: ${out}${err}")
+endif()
+execute_process(COMMAND "${PROGRAM}" nonexistent.yaml --fps 60 RESULT_VARIABLE extra OUTPUT_VARIABLE out ERROR_VARIABLE err)
+if(NOT extra EQUAL 2)
+    message(FATAL_ERROR "Extra arguments must exit 2, got ${extra}: ${out}${err}")
+endif()
