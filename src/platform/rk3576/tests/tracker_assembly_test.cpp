@@ -79,6 +79,12 @@ void failures() {
     }
 }
 void frames() {
+    auto production{CreatePlatformFactory()};
+    FrameSourceConfig camera{};
+    camera.path = "/dev/camera-must-not-be-opened";
+    auto rejected{production->createFrameSource(camera)};
+    require(!rejected && rejected.error.reason == "Camera frame source unsupported",
+            "正式 ROS 工厂意外开放相机或尝试访问设备");
     std::unique_ptr<FrameReadView> view{};
     {
         auto factory{rk3576::createFactory({})};

@@ -41,6 +41,9 @@ struct FrameSourceConfig {
     bool flip{};
     bool mirror{};
     bool use_history_timestamp{};
+    std::string camera_media_device{};
+    std::string camera_sensor_entity{};
+    int camera_buffer_count{4};
 };
 
 enum class FrameSourceState { Unknown, Ready, Running, Stopped, Eof, Failed };

@@ -318,3 +318,121 @@ ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header "{frame_id: OFF}"
 `need_save=true` 时，每轮在 `save_path` 下按触发时间创建独立 ROS bag（ROS 消息记录文件）。目录碰撞或打开失败会拒绝本轮；写入失败结束本轮。姿态、里程计、检测框及开启的图像输出按原话题和时间记录。视频输入不创建额外相机录像。OFF、EOF 和普通错误均关闭记录；恢复文件或目录后可重试。
 
 ROS 视频接入已完成规定的 RK3576 实机验收，包括纯 FP16 和纯 INT8 模型配置的基础集成、失败清理，以及固定 INT8 配置下同进程 20 轮启停和额外至少 30 分钟播放负载。验证证据与缺口见 [ROS 视频接入验证记录](../../openspec/changes/integrate-rk3576-ros-video/validation.md)。这些结果不代表模型检测质量、部署性能或 Jetson 实机等价性通过；NPU 设备内存尚未测量。前序完整回放的 7.2、7.3 仍未完成。
+
+## RK3576 独立原生灰度相机源
+
+`implement-rk3576-camera-frame-source` 提供 AR0234 连续采集的独立入口。输出为原尺寸 `Gray8`，即每个像素一个八位灰度值。它通过 V4L2（Linux 视频设备接口）采集，不加载模型，不使用显示链，也不开放正式 ROS 相机入口。
+
+### 配置与接口
+
+必须显式提供采集节点、媒体设备、传感器实体、宽高和整数帧率。传感器实体是媒体拓扑中标识传感器的名称。下面的路径和实体名仅展示配置格式，使用前必须根据当前连接的相机替换：
+
+```cpp
+#include "platform/rk3576/platform_factory.h"
+
+FrameSourceConfig config{};
+config.type = FrameSourceType::Camera;
+config.path = "/dev/videoX";                     // 当前采集节点
+config.camera_media_device = "/dev/mediaX";     // 当前媒体设备
+config.camera_sensor_entity = "actual sensor"; // 当前传感器实体
+config.width = 1920;
+config.height = 1200;
+config.fps = 60;
+config.trigger_mode = false;                   // 必须显式选择连续采集
+config.output_width = 0;                       // 0 表示保留原尺寸
+config.output_height = 0;
+config.camera_buffer_count = 4;                // 允许 2–32
+
+rk3576::FactoryOptions options{};
+options.enable_camera = true;
+auto factory = rk3576::createFactory({}, options);
+auto result = factory->createFrameSource(config);
+// 检查 result；失败时 result.error.describe() 给出平台、设备路径和原因。
+// 成功时通过 result.value 的 start()/waitFrame()/stop() 操作。
+```
+
+输出尺寸也可显式填为输入尺寸。触发采集、缩放、翻转、镜像和历史时间均被拒绝。实体名不能包含引号或控制字符。`configureRecording(true, ...)` 抛出 `std::invalid_argument`，表示不支持录像；禁用录像安全接受。工具保存的少量静态快照不属于录像功能。
+
+工厂创建阶段只设置传感器并核验设备格式，随后关闭设备。此时不申请采集缓冲、不启动线程。每次 `start()` 重新打开设备，并核对实际的灰度格式、尺寸、帧间隔和行跨度。行跨度是相邻两行起点之间的字节数。例如输入宽 1920、行跨度 2048 时，每行只复制前 1920 字节，输出不含 128 字节填充。
+
+每个输出帧都有独立像素存储。设备缓冲在复制后立即归还。消费者持有的帧及只读视图在源停止或销毁后仍有效。缓冲索引、平面数量、偏移、使用长度和错误标志不合法时，本轮失败，不交付该帧。
+
+### 启停、队列和时间
+
+调用方须串行执行 `start()`、`stop()`。启动和销毁前，消费者必须停止取帧；`stop()` 可以与一个消费者并发执行。队列仍为 `BlockingReaderWriterQueue<FrameRef>(30)`，使用不扩容的 `try_enqueue()`；实际容量由该队列实现决定。满队列丢弃新帧，生产线程不取走旧帧。
+
+`tryFrame()` 非阻塞取帧；`waitFrame()` 限时等待。返回 false 时，两者都会清空输出引用。需要最新帧时，可用已有 `waitForLatestFrame()` 排空旧帧。停止保留本轮已入队的尾帧；下一次启动清除旧队列。`isRunning()==false` 不代表队列为空，应结合 `status()` 查询结束原因。相机不会返回文件 `Eof` 状态。
+
+停止事件通过 `eventfd` 唤醒 `poll`。前者是可被等待线程检测到的事件句柄，后者是等待设备可读的系统调用。连续两秒没有成功出队帧会报告采集超时。停流失败时先关闭采集设备，再解除映射；错误在清理后保留。无设备测试的停止上限是 250 ms，实机要求是 1 秒；开发板 2 本次 122 轮最大停止为 60.961 ms。
+
+每轮用单调时钟的前后两个样本夹取系统时间，以中点计算固定偏移。单调时钟不随系统校时跳变。本轮不会重新计算偏移：
+
+- `driver_monotonic`：驱动明确声明时间属于单调时钟，输出时间为驱动时间加固定偏移。
+- `dequeue_fallback`：驱动没有声明时钟域，或使用 COPY 标志。输出采用成功出队时采样的单调时间加固定偏移，仅代表出队时刻。
+
+例如，驱动时间为 `10000000` 微秒，偏移为 `1700000000000000` 微秒，输出为 `1700000010000000` 微秒。重复、倒退、溢出、非法原始时间或轮内策略变化均使本轮失败，不人工增加时间。原始 flags 和时间会保留；SOE 表示驱动声明曝光开始，EOF 表示帧结束，本次没有验证它们与真实曝光的同步精度。
+
+### 不依赖设备 SDK 的构建
+
+在 Linux 环境、仓库根目录执行：
+
+```bash
+cmake -S src/platform/rk3576 -B build/camera-only \
+  -DDRONE_TRACKER_CAMERA_ONLY=ON -DDRONE_TRACKER_BUILD_TESTS=ON \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build build/camera-only -j4
+ctest --test-dir build/camera-only --output-on-failure
+```
+
+该入口需要 C++17、线程库、OpenCV，以及 JPEG、libavformat、libavcodec、libavutil 开发库。保留视频依赖是为了复用同一个公共平台工厂及其视频功能。该入口不查找 RKNN、ROS、RGA、DRM 或 Jetson SDK。运行相机时还需要 `media-ctl` 配置工具、可用驱动，以及对显式配置设备的访问权限。构建完整 RK3576 后端仍使用原入口，不添加 `DRONE_TRACKER_CAMERA_ONLY`。
+
+本机按 `AGENTS.local.md` 使用临时 ARM64 容器。测试不访问真实相机。构建所得 `camera_source_driver` 是 Linux ARM64 程序，不能直接在 macOS 上执行。
+
+### 独立工具与实机验收命令
+
+以下命令用于连接相机后的实机验收。开发板 2 已完成短采集、20 轮启停、100 次新建销毁和 600 秒慢消费负载，详见 [实机验收记录](../../openspec/changes/implement-rk3576-camera-frame-source/board2-validation.md)。先核对实际拓扑和设备占用，再填写参数。不要根据历史节点编号自动猜测设备，不要停止其他占用程序。
+
+```bash
+v4l2-ctl --list-devices
+# 用实际媒体设备替换以下值，再查看其中的传感器实体。
+MEDIA_DEVICE=/dev/mediaX
+media-ctl -d "$MEDIA_DEVICE" -p
+VIDEO_DEVICE=/dev/videoX
+SENSOR_ENTITY='actual sensor'
+fuser "$VIDEO_DEVICE"
+```
+
+短采集示例使用原尺寸连续灰度配置，保存三张无损 PGM 快照。PGM 是可直接保存原始八位灰度的图像格式。`--compare-pixels` 在同一个驱动缓冲仍由本进程持有时，逐行比较输出副本和原始有效像素；不比较两次独立采集的动态画面。
+
+```bash
+./camera_source_driver \
+  --video-device "$VIDEO_DEVICE" --media-device "$MEDIA_DEVICE" \
+  --sensor-entity "$SENSOR_ENTITY" --width 1920 --height 1200 --fps 60 \
+  --buffers 4 --frames 300 --snapshots 3 --compare-pixels \
+  --output camera-short-new
+```
+
+输出目录必须不存在，其父目录必须已存在。参数错误返回退出码 2；设备、报告写入、像素对照、无帧或停止超时失败返回 1；成功返回 0。SIGINT/SIGTERM 会请求停止并释放资源，随后以非零状态退出。工具不会覆盖旧结果，写入失败也不会报成功。
+
+重复与负载验收可复用上述设备参数，分别选择以下参数组合，并为每次运行使用新输出目录：
+
+| 目的 | 参数组合 |
+|---|---|
+| 同一个源至少 20 轮启停 | `--rounds 20 --frames 300 --snapshots 0` |
+| 同进程至少 100 次新建销毁 | `--instances 100 --frames 10 --snapshots 0` |
+| 连续至少 10 分钟 | `--seconds 600 --snapshots 0` |
+| 慢消费者负载 | `--seconds 600 --slow-ms 60 --snapshots 0` |
+
+`--frames` 限制消费者取得的帧数。`--seconds` 限制每轮时长，两者都给出时先达到者生效。`--slow-ms` 在每次消费尝试后等待指定毫秒数，不改变采集帧率。多轮时每轮都应用这些限制。
+
+报告内容：
+
+- `config.txt`：完整请求配置、时间含义及资源统计口径。
+- `frames.csv`：所有成功复制并归还的帧，包括被队列丢弃的新帧。包含原始时间、sequence（驱动序号）、flags、时间策略、固定偏移及采样跨度、实际宽高和行跨度、复制耗时、像素对照结果及两类丢帧统计。
+- `rounds.csv`：每轮消费/采集数量、以整个轮次耗时计算的实测吞吐量、停止和设备清理耗时、状态及原因。帧率是测量值，不沿用历史 60 FPS。
+- `resources.csv`：创建前、运行中约每秒、停止后和销毁后的主机内存、线程与文件描述符数量。文件描述符是进程打开资源的句柄；统计包含报告文件和查询本身，不包含 NPU 设备内存。
+- `frame-*.pgm`：每轮开头的少量无损灰度快照，数量由 `--snapshots` 决定。
+
+`CameraDependencies::observe` 在生产线程同步接收逐帧报告，回调抛异常会使本轮失败。报告与快照写入会影响测得吞吐量，评估时应保留对应配置。`diagnostic()` 只读快照另外提供停止及清理耗时；`status()` 提供公共状态和队列统计，不消费帧。
+
+无设备测试、构建及已完成的开发板 2 实机验收见 [相机帧源验证记录](../../openspec/changes/implement-rk3576-camera-frame-source/validation.md)。这些结果不代表 ROS 相机、模型质量、曝光同步、Jetson 等价性或部署性能达标。实拍画面偏暗、模糊，仍需另行检查图像质量。
