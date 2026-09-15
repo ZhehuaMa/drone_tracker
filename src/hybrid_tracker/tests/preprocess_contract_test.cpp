@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <thread>
+#include <future>
 
 // 只读检查真实内部状态，不提供可绕过生产初始化的入口。
 struct NanoTrackerTestAccess {
@@ -75,6 +76,11 @@ PreparedInputResult prepareMock(ReusableInput<int> &cache, const ModelInputContr
     return {std::make_shared<MockInput>(std::move(storage), contract)};
 }
 struct SessionTrace {
+    std::function<void()> before_infer{};
+    std::function<void()> before_begin{};
+    std::atomic<int> sessions{0};
+    std::atomic<int> ended{0};
+    bool fail_begin{false};
     int begins{0};
     int inferences{0};
     bool fail_model{false};
@@ -88,7 +94,8 @@ struct SessionTrace {
 class MockSession final : public YoloFrameSession {
   public:
     MockSession(std::shared_ptr<SessionTrace> trace, ModelInputContract contract)
-        : trace_{std::move(trace)}, contract_{std::move(contract)} {}
+        : trace_{std::move(trace)}, contract_{std::move(contract)} { ++trace_->sessions; }
+    ~MockSession() override { --trace_->sessions; ++trace_->ended; }
     cv::Size sourceSize() const noexcept override { return {100, 80}; }
     PreprocessResult<YoloPreparedRegion> prepare(const cv::Rect &region) override {
         using Result = PreprocessResult<YoloPreparedRegion>;
@@ -119,7 +126,9 @@ class MockYoloPreprocessor final : public YoloPreprocessor {
     PreprocessResult<std::unique_ptr<YoloFrameSession>> beginFrame(const FrameRef &frame,
                                                                    const ModelInputContract &contract) override {
         using Result = PreprocessResult<std::unique_ptr<YoloFrameSession>>;
+        if (trace_->before_begin) { trace_->before_begin(); }
         ++trace_->begins;
+        if (trace_->fail_begin) { return Result::failure(PreprocessError::PlatformFailure, "begin failure"); }
         const auto error{validatePreprocessFrame(frame)};
         if (error != PreprocessError::None) {
             return Result::failure(error, "invalid frame");
@@ -141,6 +150,7 @@ class MockYoloCalls final : public model::YoloBackend {
         return {{1, 3, 64, 64}, TensorElementType::Float32, TensorLayout::Nchw, 1.0f / 255.0f};
     }
     model::Result<model::YoloPrediction> infer(const PreparedInputRef &) override {
+        if (trace_->before_infer) { trace_->before_infer(); }
         ++trace_->inferences;
         if (trace_->fail_model) {
             return model::Result<model::YoloPrediction>::failure(
@@ -166,6 +176,75 @@ class MockYoloCalls final : public model::YoloBackend {
   private:
     std::shared_ptr<SessionTrace> trace_;
 };
+void checkRoundCleanup() {
+    using namespace std::chrono_literals;
+    // 延迟整个工作线程，确定请求尚未执行时可以撤销。
+    std::promise<void> launch_gate{};
+    auto gate{launch_gate.get_future().share()};
+    auto pending_trace{std::make_shared<SessionTrace>()};
+    YoloV8Detector pending{std::make_unique<MockYoloCalls>(pending_trace),
+        std::make_unique<MockYoloPreprocessor>(pending_trace), 0.5f, 0.5f, 2, 1.0f, 0.8f,
+        [gate](std::function<void()> work) { return std::thread{[gate, work] { gate.wait(); work(); }}; }};
+    require(pending.init(), "pending init");
+    auto frame{std::make_shared<MockFrame>()};
+    std::weak_ptr<const Frame> lifetime{frame};
+    require(pending.request(frame, 1), "pending request");
+    frame.reset();
+    pending.finishRound();
+    require(lifetime.expired(), "cancelled request retained frame");
+    launch_gate.set_value();
+    pending.stop();
+    require(pending_trace->begins == 0, "cancelled request executed");
+
+    for (int mode{0}; mode < 4; ++mode) {
+        auto trace{std::make_shared<SessionTrace>()};
+        trace->hit_call = 1;
+        trace->fail_begin = mode == 1;
+        trace->fail_prepare = mode == 2;
+        trace->fail_model = mode == 3;
+        std::promise<void> entered{}, release{};
+        auto release_gate{release.get_future().share()};
+        auto block{[&entered, release_gate] { entered.set_value(); release_gate.wait(); }};
+        if (mode == 0) { trace->before_infer = block; } else { trace->before_begin = block; }
+        YoloV8Detector detector{std::make_unique<MockYoloCalls>(trace),
+            std::make_unique<MockYoloPreprocessor>(trace), 0.5f, 0.5f, 2, 1.0f};
+        require(detector.init(), "cleanup init");
+        require(detector.request(std::make_shared<MockFrame>(), 1), "cleanup request");
+        require(entered.get_future().wait_for(2s) == std::future_status::ready, "worker did not enter");
+        auto cleanup{std::async(std::launch::async, [&] { detector.finishRound(); })};
+        require(cleanup.wait_for(30ms) == std::future_status::timeout, "cleanup returned before frame access ended");
+        release.set_value();
+        require(cleanup.wait_for(2s) == std::future_status::ready, "cleanup deadlocked");
+        cleanup.get();
+        require(trace->sessions == 0, "cleanup retained session");
+        YoloResult result{};
+        require(!detector.get_result(result), "old result survived cleanup");
+        trace->before_begin = {};
+        trace->before_infer = {};
+        trace->fail_begin = false;
+        trace->fail_prepare = false;
+        trace->fail_model = false;
+        trace->hit_call = trace->inferences + 1;
+        require(detector.request(std::make_shared<MockFrame>(), 1), "same frame id not reusable");
+        const auto deadline{std::chrono::steady_clock::now() + 2s};
+        bool ready{false};
+        while (!(ready = detector.get_result(result)) && std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::sleep_for(1ms);
+        }
+        require(ready && result.has_target && result.frame_id == 1, "new round result incorrect");
+        detector.finishRound();
+        const int ended{trace->ended.load()};
+        require(detector.request(std::make_shared<MockFrame>(), 1), "ready-result request");
+        const auto ready_deadline{std::chrono::steady_clock::now() + 2s};
+        while (trace->ended == ended && std::chrono::steady_clock::now() < ready_deadline) {
+            std::this_thread::sleep_for(1ms);
+        }
+        require(trace->ended > ended, "result did not become ready");
+        detector.finishRound();
+        require(!detector.get_result(result), "ready result survived cleanup");
+    }
+}
+
 void checkYolo(int hit_call, float score, bool fail_prepare = false, bool fail_model = false, int classes = 4, int target = 2) {
     auto trace{std::make_shared<SessionTrace>()};
     trace->classes = classes;
@@ -308,6 +387,7 @@ void checkNano() {
 } // namespace
 
 int main() {
+    checkRoundCleanup();
     const ModelInputContract contract{{1, 3, 64, 64}, TensorElementType::Float32, TensorLayout::Nchw, 1.0f / 255.0f};
     require(yoloInputSize(contract).value == cv::Size(64, 64), "Jetson 尺寸解析错误");
     const ModelInputContract nhwc{{1, 640, 640, 3}, TensorElementType::Uint8, TensorLayout::Nhwc, 1.0f};

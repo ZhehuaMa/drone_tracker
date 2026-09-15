@@ -43,6 +43,18 @@ struct FrameSourceConfig {
     bool use_history_timestamp{};
 };
 
+enum class FrameSourceState { Unknown, Ready, Running, Stopped, Eof, Failed };
+/** @brief 只读状态快照；计数只属于当前轮次，查询不会消费帧。 */
+struct FrameSourceStatus {
+    FrameSourceState state{FrameSourceState::Unknown};
+    std::string path{};
+    std::string reason{};
+    std::uint64_t frame_index{};
+    std::uint64_t read{};
+    std::uint64_t enqueued{};
+    std::uint64_t dropped{};
+};
+
 /** @brief 单消费者帧源；实现直接使用原采集队列，不增加中转线程。 */
 class FrameSource {
 public:
@@ -51,6 +63,8 @@ public:
     virtual bool start() = 0;
     virtual bool stop() = 0;
     virtual bool isRunning() const = 0;
+    /** @brief 并发只读查询，不消费帧；未适配的平台默认返回 Unknown。 */
+    virtual FrameSourceStatus status() const { return {}; }
     virtual bool getImageSize(int &width, int &height) const = 0;
     /** @brief 最多等待 timeout 后取一帧；超时返回 false。 */
     virtual bool waitFrame(FrameRef &frame, std::chrono::microseconds timeout) = 0;

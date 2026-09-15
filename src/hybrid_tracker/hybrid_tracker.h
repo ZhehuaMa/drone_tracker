@@ -102,6 +102,8 @@ public:
 
     /** @brief 触发器 ON 时复位全部状态（TRT 引擎保留） */
     virtual void reset() = 0;
+    /** @brief 无并发 update 时结束本轮；保留模型，等待检测不再访问旧帧。 */
+    virtual void finishRound() = 0;
 
     /** @brief 处理单个视频帧 */
     virtual TrackerOutput update(const FrameContext& ctx) = 0;

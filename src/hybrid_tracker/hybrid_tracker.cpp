@@ -25,6 +25,7 @@ public:
 
     virtual bool init() override;
     virtual void reset() override;
+    void finishRound() override { if (m_detector) { m_detector->finishRound(); } }
     virtual TrackerOutput update(const FrameContext& ctx) override;
     virtual cv::Rect2f lastNanoBox() const override { return m_tracker ? m_tracker->lastNanoBox() : cv::Rect2f(); }
     virtual float lastNanoScore() const override { return m_tracker ? m_tracker->lastScore() : -1.0f; }

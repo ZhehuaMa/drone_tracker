@@ -87,6 +87,12 @@ void queueAndOwnership() {
         require(source.start(), "Start failed");
         finish(source);
         const auto stats{source.diagnostic()};
+        const FrameSource &public_source{source};
+        for (int query{0}; query < 20; ++query) {
+            const auto snapshot{public_source.status()};
+            require(snapshot.state == FrameSourceState::Eof && snapshot.read == 100
+                && snapshot.enqueued == stats.enqueued, "Public EOF snapshot lost statistics");
+        }
         require(stats.state == VideoState::Eof && stats.read == 100 && stats.dropped > 0
             && stats.enqueued + stats.dropped == 100, "Queue accounting or EOF");
         require(source.tryFrame(held) && held->timestampUs() == 1700000000000000, "Queue evicted oldest frame");
@@ -105,6 +111,7 @@ void queueAndOwnership() {
         for (int round{0}; round < 3; ++round) {
             require(source.start(), "EOF restart failed");
             finish(source);
+            require(source.status().read == 100, "Restart statistics accumulated");
             require(source.tryFrame(frame) && frame->timestampUs() == held->timestampUs(), "History restart residue");
             // 故意保留其余尾帧，下次 start 必须清除。
         }
@@ -157,7 +164,7 @@ void clocksAndFailures() {
     injected.open = [&opens](const std::string &, const std::atomic<bool> &) {
         auto reader{std::make_unique<Reader>()};
         reader->count = 3;
-        reader->failure = ++opens == 1 ? 1 : -1;
+        reader->failure = ++opens == 2 ? 1 : -1;
         return reader;
     };
     Rk3576VideoFrameSource io{config, injected};
@@ -165,6 +172,8 @@ void clocksAndFailures() {
     finish(io);
     require(io.diagnostic().state == VideoState::Failed
         && io.diagnostic().reason.find("I/O") != std::string::npos, "I/O confused with EOF");
+    require(io.status().state == FrameSourceState::Failed
+        && io.status().reason.find("I/O") != std::string::npos, "Stop erased public failure");
     require(io.start(), "I/O retry");
     finish(io);
     require(io.diagnostic().state == VideoState::Eof, "Retry failed");
@@ -183,7 +192,7 @@ void clocksAndFailures() {
     injected.open = [&reopen_count](const std::string &, const std::atomic<bool> &) {
         auto reader{std::make_unique<Reader>()};
         reader->count = 1;
-        if (++reopen_count == 2) {
+        if (++reopen_count == 3) {
             reader->buffer = cv::Mat{4, 6, CV_8UC1, cv::Scalar{0}};
         }
         return reader;
@@ -197,6 +206,26 @@ void clocksAndFailures() {
     require(changed.start(), "Retry after preparation failure");
     finish(changed);
 }
+void missingBeforeFirstStart(const std::string &root) {
+    const auto suffix{std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())};
+    const auto path{std::filesystem::temp_directory_path() / ("first-start-" + suffix + ".mov")};
+    const auto moved{std::filesystem::temp_directory_path() / ("first-start-" + suffix + ".saved")};
+    std::filesystem::copy_file(std::filesystem::path{root} / "420.mov", path);
+    FrameSourceConfig config{};
+    config.path = path.string();
+    Rk3576VideoFrameSource source{config};
+    std::filesystem::rename(path, moved);
+    require(!source.start(), "First start accepted a missing path");
+    require(source.status().state == FrameSourceState::Failed && !source.status().reason.empty(),
+        "Missing first-start input has no failure diagnostic");
+    FrameRef frame{};
+    require(!source.tryFrame(frame), "Failed first start exposed cached frame");
+    source.stop();
+    std::filesystem::rename(moved, path);
+    require(source.start() && source.waitFrame(frame, 1s), "Restored input did not restart");
+    source.stop();
+    std::filesystem::remove(path);
+}
 void concurrentStop(const std::string &root) {
     FrameSourceConfig config{};
     config.path = root + "/long.mov";
@@ -206,6 +235,17 @@ void concurrentStop(const std::string &root) {
     require(!source.start(), "Running start accepted");
     FrameRef first{};
     require(source.waitFrame(first, 1s), "First frame missing");
+    FrameRef timeout{};
+    require(!source.waitFrame(timeout, 20ms) && source.status().state == FrameSourceState::Running,
+        "Long gap confused with EOF");
+    std::atomic_bool querying{true};
+    auto observer{std::async(std::launch::async, [&] {
+        while (querying) {
+            const auto value{source.status()};
+            require(value.enqueued <= value.read, "Incoherent concurrent status");
+            std::this_thread::yield();
+        }
+    })};
     auto consumer{std::async(std::launch::async, [&] {
         FrameRef frame{first};
         return !source.waitFrame(frame, 100ms) && !frame;
@@ -214,6 +254,8 @@ void concurrentStop(const std::string &root) {
     source.stop();
     require(std::chrono::steady_clock::now() - before < 1s, "Stop blocked for PTS gap");
     require(consumer.get(), "Stop/consumer overlap failed");
+    querying = false;
+    observer.get();
     require(source.stop(), "Repeated stop failed");
     require(source.start() && source.waitFrame(first, 1s), "Midstream restart first frame");
     require(first->timestampUs() == 1700000000000000, "History first frame changed");
@@ -251,6 +293,7 @@ int main(int argc, char **argv) {
         require(argc == 2, "Expected fixture directory");
         queueAndOwnership();
         clocksAndFailures();
+        missingBeforeFirstStart(argv[1]);
         concurrentStop(argv[1]);
         std::cout << "Video queue, restart, clock, failure and ownership tests passed\n";
     } catch (const std::exception &error) {

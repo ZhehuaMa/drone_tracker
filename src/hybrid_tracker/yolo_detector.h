@@ -74,6 +74,8 @@ public:
 
     /** @brief 停止工作线程 */
     void stop();
+    /** @brief 停止提交 update 后调用；撤销排队任务，等待帧访问结束并清空旧结果。 */
+    void finishRound();
 
     /** @brief 自适应重叠切片（Python create_overlapping_tiles 移植）：
      * 短边固定 2 份，长边自适应最少份数(>=2)使每块尽量正方形 */
@@ -115,6 +117,9 @@ private:
     std::thread m_worker_thread;
     mutable std::mutex m_mutex;
     std::condition_variable m_cv_request;
+    std::condition_variable m_cv_idle{};
+    bool m_executing{false};
+    bool m_cleaning{false};
 
     struct Request {
         FrameRef frame;

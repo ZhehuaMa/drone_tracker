@@ -1,3 +1,7 @@
+if(DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
+    add_subdirectory(rk3576 production)
+    return()
+endif()
 # 仅由已选择 Jetson 的生产构建进入；公共算法不反向依赖本目标。
 set(TRACKER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../hybrid_tracker)
 add_library(platform_jetson STATIC

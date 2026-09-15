@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DRONE_TRACKER_NODE_H
+#define DRONE_TRACKER_NODE_H
 #include <rclcpp/rclcpp.hpp>
 #include <opencv2/opencv.hpp>
 
@@ -14,6 +15,9 @@
 #include <thread>
 #include <mutex>
 #include <tuple>
+#include <functional>
+#include <condition_variable>
+#include <limits>
 #include <rosbag2_cpp/writer.hpp>
 
 #include "hybrid_tracker.h"
@@ -42,13 +46,18 @@ private:
 class DroneTrackerNode : public rclcpp::Node
 {
 public:
-    DroneTrackerNode();
+    explicit DroneTrackerNode(const rclcpp::NodeOptions &options = rclcpp::NodeOptions{},
+        std::unique_ptr<PlatformFactory> factory = {},
+        std::function<std::thread(std::function<void()>)> launcher = {},
+        std::function<void(const char *)> recording_hook = {});
     ~DroneTrackerNode();
 
     void run();
+    void run(const builtin_interfaces::msg::Time &stamp);
     void stop();
 
 private:
+    friend struct DroneTrackerNodeTestAccess;
     void declare_parameters() {
         this->declare_parameter<std::string>("video_source", "0");
         this->declare_parameter<bool>("need_save", false);
@@ -56,9 +65,20 @@ private:
         this->declare_parameter<bool>("visualized_result", false);
         this->declare_parameter<bool>("use_history_timestamp", false);
 
+#ifdef DRONE_TRACKER_RK3576
+        this->declare_parameter<std::string>("tracker.yolo_engine", "");
+        this->declare_parameter<std::string>("tracker.nano_backbone", "");
+        this->declare_parameter<std::string>("tracker.nano_head", "");
+#else
         this->declare_parameter<std::string>("tracker.yolo_engine", "drone_int8.engine");
         this->declare_parameter<std::string>("tracker.nano_backbone", "nanotrackv3_backbone_int8.engine");
         this->declare_parameter<std::string>("tracker.nano_head", "nanotrack_head_int8.engine");
+#endif
+        this->declare_parameter<std::string>("tracker.nano_template_backbone", "");
+        this->declare_parameter<std::string>("tracker.nano_search_backbone", "");
+        for (const auto *name : {"camera.fx", "camera.fy", "camera.cx", "camera.cy"}) {
+            this->declare_parameter<double>(name, std::numeric_limits<double>::quiet_NaN());
+        }
 
         this->declare_parameter<int>("tracker.yolo_target_class_id", 0);
         this->declare_parameter<float>("tracker.yolo_conf_threshold", 0.4f);
@@ -96,8 +116,35 @@ private:
         this->declare_parameter<float>("mv_camera.focal_length_mm", 12.0f);
     }
 
-    void setup();
+    void setup(PlatformFactory &factory);
     void worker();
+    void processFrames();
+    void openRecording(const builtin_interfaces::msg::Time &stamp);
+    void closeRecording() noexcept;
+    template<typename Message> void record(const Message &message, const std::string &topic,
+                                           const rclcpp::Time &stamp) {
+        std::lock_guard<std::mutex> lock{bag_mutex_};
+        if (!rosbag_writer_) { return; }
+        try {
+            if (recording_hook_) { recording_hook_("write"); }
+            rosbag_writer_->write(message, topic, stamp);
+        } catch (const std::exception &error) {
+            RCLCPP_ERROR(get_logger(), "Recording write failed: %s", error.what());
+            recording_failed_ = true;
+            running = false;
+            wait_cv_.notify_all();
+        }
+    }
+    enum class RunState { Idle, Starting, Running, Stopping };
+    std::atomic<RunState> run_state_{RunState::Idle};
+    std::mutex control_mutex_{}; // 仅控制侧持有；worker 收尾不需要此锁。
+    std::mutex bag_mutex_{};
+    std::function<void(const char *)> recording_hook_{};
+    std::mutex wait_mutex_{};
+    std::condition_variable wait_cv_{};
+    std::atomic_bool recording_failed_{false};
+    std::function<std::thread(std::function<void()>)> launcher_{};
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_guard_{};
 
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
     void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
@@ -131,3 +178,4 @@ private:
     std::atomic_bool running = false;
     int8_t last_tracker_state = -1;
 };
+#endif // DRONE_TRACKER_NODE_H

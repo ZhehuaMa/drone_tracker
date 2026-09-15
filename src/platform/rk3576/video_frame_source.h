@@ -42,8 +42,9 @@ public:
     bool waitFrame(FrameRef &frame, std::chrono::microseconds timeout) override;
     bool tryFrame(FrameRef &frame) override;
     void configureRecording(bool, const std::string &, const std::string &) override;
-    /** @brief 线程安全地复制最近状态与本轮统计；不改变公共接口。 */
+    /** @brief 线程安全地复制最近状态与本轮统计；不消费帧。 */
     VideoDiagnostic diagnostic() const;
+    FrameSourceStatus status() const override;
 private:
     struct Impl;
     std::unique_ptr<Impl> impl_;

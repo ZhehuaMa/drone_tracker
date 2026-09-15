@@ -34,7 +34,6 @@ struct Rk3576VideoFrameSource::Impl {
     std::thread worker{};
     int width{};
     int height{};
-    bool attempted{};
     std::int64_t base{};
     VideoClock::TimePoint origin{};
     VideoDiagnostic record{};
@@ -59,6 +58,8 @@ struct Rk3576VideoFrameSource::Impl {
         }
         record.path = config.path;
         prepare();
+        reader.reset();
+        first = {};
         publish(VideoState::Ready);
     }
     void prepare() {
@@ -181,16 +182,14 @@ bool Rk3576VideoFrameSource::start() {
         impl_->worker.join();
     }
     impl_->stopped.store(false);
-    const bool reopen{impl_->attempted};
-    impl_->attempted = true;
     try {
         impl_->record = {};
         impl_->record.path = impl_->config.path;
         impl_->queue = std::make_unique<Impl::Queue>(30);
-        if (reopen) {
-            impl_->reader.reset();
-            impl_->prepare();
-        }
+        // 初始化仅验证输入；每轮都按当前路径打开，避免沿用已移走的文件句柄。
+        impl_->reader.reset();
+        impl_->first = {};
+        impl_->prepare();
         if (!impl_->config.use_history_timestamp) {
             impl_->base = impl_->dependencies.clock->systemUs();
         }
@@ -226,7 +225,6 @@ bool Rk3576VideoFrameSource::stop() {
     }
     impl_->reader.reset();
     impl_->first = {};
-    impl_->attempted = true;
     if (impl_->state.load() == VideoState::Ready) {
         impl_->record.reason = "Stopped before start";
         impl_->publish(VideoState::Stopped);
@@ -253,5 +251,17 @@ void Rk3576VideoFrameSource::configureRecording(bool, const std::string &, const
 VideoDiagnostic Rk3576VideoFrameSource::diagnostic() const {
     std::lock_guard<std::mutex> lock{impl_->diagnostic_mutex};
     return impl_->published;
+}
+FrameSourceStatus Rk3576VideoFrameSource::status() const {
+    const auto value{diagnostic()};
+    FrameSourceState state{FrameSourceState::Unknown};
+    switch (value.state) {
+    case VideoState::Ready: state = FrameSourceState::Ready; break;
+    case VideoState::Running: state = FrameSourceState::Running; break;
+    case VideoState::Stopped: state = FrameSourceState::Stopped; break;
+    case VideoState::Eof: state = FrameSourceState::Eof; break;
+    case VideoState::Failed: state = FrameSourceState::Failed; break;
+    }
+    return {state, value.path, value.reason, value.frame_index, value.read, value.enqueued, value.dropped};
 }
 } // namespace rk3576

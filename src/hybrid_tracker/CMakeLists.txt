@@ -54,7 +54,7 @@ if(DRONE_TRACKER_PREPROCESS_TESTS_ONLY OR DRONE_TRACKER_BUILD_TESTS)
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/platform_selection_test.cmake)
 endif()
 
-if(NOT DRONE_TRACKER_PREPROCESS_TESTS_ONLY AND NOT DRONE_TRACKER_COMMON_STANDALONE AND DRONE_TRACKER_BUILD_TESTS)
+if(DRONE_TRACKER_PLATFORM STREQUAL "jetson" AND DRONE_TRACKER_BUILD_TESTS)
     add_executable(hybrid_tracker_stress tests/stress_main.cpp)
     target_link_libraries(hybrid_tracker_stress PRIVATE hybrid_tracker platform_jetson)
     add_executable(replay_harness tests/replay_harness.cpp)

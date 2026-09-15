@@ -2,7 +2,7 @@
 
 `PlatformFactory` 是生产程序统一创建平台资源的入口。它创建帧源、帧创建器和整套跟踪依赖。公共算法只使用接口，不链接硬件实现。
 
-当前生产构建默认使用 `DRONE_TRACKER_PLATFORM=jetson`。完整 `rk3576` 平台尚未实现；选择它或未知值时，CMake 在启用 CUDA 和查找硬件开发库前失败，并列出支持值 `jetson`。RK3576 已有独立 YOLO 和 NanoTrack 验证入口；NanoTrack 全 INT8 已有灰度回放和共存验证。FP16 属性误拒绝已修复；四种精度组合均通过实机查询和 309 帧灰度回放。采集和完整 ROS 节点尚未接通。模拟组件仅供测试，不能作为生产平台选项。
+生产构建默认使用 `DRONE_TRACKER_PLATFORM=jetson`，也支持显式选择 `rk3576` 的本地 MJPEG 视频节点。未知值在硬件依赖发现前拒绝。RK3576 相机、硬件解码和 RGA 图像加速仍未提供。可控模型仅在测试中注入，生产程序没有假模型选项。
 
 ## RK3576 独立 YOLO 使用
 
@@ -150,7 +150,7 @@ cmake --build build/platform-contracts -j4
 ctest --test-dir build/platform-contracts --output-on-failure
 ```
 
-此入口编译真实公共跟踪器及可替换加载器的实际装配函数，不发现硬件开发库。测试没有真实模型或采集输入。平台选项测试只请求拒绝 `rk3576` 和 `other`，不配置 Jetson 目标。
+此入口编译真实公共跟踪器及可替换加载器的实际装配函数，不发现硬件开发库。测试没有真实模型或采集输入。平台选项测试检查默认 Jetson、未知值提前拒绝及 RK3576 缺失 RKNN 依赖的诊断；不执行 Jetson 编译。
 
 此前 `introduce-platform-factory` 变更只提供公共测试和 Jetson 源码审查证据，详见 [平台工厂验证报告](../../openspec/changes/archive/2026-09-10-introduce-platform-factory/verification.md)。该阶段未配置、编译或运行 Jetson 程序，也未验证真实像素、设备资源安全或跟踪行为等价。
 
@@ -160,7 +160,7 @@ ctest --test-dir build/platform-contracts --output-on-failure
 
 新增独立入口 `rk3576_tracker_replay` 通过统一工厂创建四个模型文件对应的组件，并运行真实公共 `HybridTracker`。它从自动检测开始，无需人工首帧框。四文件分别为 YOLO、模板 Backbone、搜索 Backbone 和 Head；两个 Backbone 分别提取模板和搜索图像的特征，Head 比较两者。原有两个 probe 继续保留。
 
-此入口使用上述独立 ARM64 CMake 构建，额外需要 OpenSSL Crypto 开发库，用于计算 SHA-256 文件内容指纹。公共算法和旧 probe 不链接 Crypto。根目录生产构建仍只支持 Jetson；独立 RK3576 工厂拒绝相机请求，视频请求按下文的 MJPEG 帧源契约提供。原录像回放工具继续使用单独的同步解码器，不提供 ROS、相机采集或 RGA 加速。
+此入口使用上述独立 ARM64 CMake 构建，额外需要 OpenSSL Crypto 开发库，用于计算 SHA-256 文件内容指纹。公共算法和旧 probe 不链接 Crypto。根目录生产构建现已支持 Jetson 和 RK3576 ROS 视频；独立 RK3576 工厂拒绝相机请求，视频请求按下文的 MJPEG 帧源契约提供。原录像回放工具继续使用单独的同步解码器，不提供 ROS、相机采集或 RGA 加速。
 
 ### 单文件配置与调用
 
@@ -227,7 +227,7 @@ CSV 整数直接写入，JSON 的计数与帧号均保存为十进制字符串�
 
 ## RK3576 持续视频帧源
 
-`createFactory(...)->createFrameSource(config)` 现在支持 `FrameSourceType::Video`。创建时打开文件并检查首帧，返回对象尚未启动。`getImageSize()` 在启动前即可查询实际尺寸，首帧仍会参与播放。视频忽略相机尺寸、fps、翻转和镜像设置；提交录像配置不会创建录像目录或输出文件。
+`createFactory(...)->createFrameSource(config)` 现在支持 `FrameSourceType::Video`。创建时打开文件并检查首帧，随后关闭文件，返回对象尚未启动。`getImageSize()` 在启动前即可查询实际尺寸。每次 `start()`（包括第一次）重新打开当前路径并从首帧播放；文件被移走、不可读或尺寸变化时启动失败，恢复后可重试。视频忽略相机尺寸、fps、翻转和镜像设置；提交录像配置不会创建录像目录或输出文件。
 
 | 入口 | 输入与用途 | 消费较慢时 |
 | --- | --- | --- |
@@ -272,3 +272,49 @@ Linux 实机另提供 `video_board_validation FIXTURE_DIRECTORY 600`。它先检
 平台内部 `diagnostic()` 提供线程安全快照。`VideoState` 值依次为 Ready=0、Running=1、Stopped=2、Eof=3、Failed=4，与公共跟踪器的 `TrackerState` 无关。诊断包含路径、从 1 开始的帧序号、原始 PTS、原因和本轮统计。`read` 统计成功读取并进入处理的帧，`enqueued` 统计入队帧，`dropped` 统计队列满而丢弃的新帧。读取或解码失败会标明尝试读取的下一帧序号。默认日志在状态切换时输出，可注入诊断回调供测试使用；回调异常不会终止生产线程。
 
 本地容器测试与实机验收分开记录，见 [视频帧源验证记录](../../openspec/changes/implement-rk3576-video-frame-source/validation.md)。RK3576 已通过两种时间模式的慢消费与各 20 轮启停、同进程 100 次创建销毁，以及 600.187 秒内 318 轮重启/慢消费资源检查。未执行 Jetson、ROS、相机或模型质量验收。
+
+## RK3576 ROS 视频节点
+
+在满足依赖的 ARM64 ROS 2 Humble 环境中，从工作区根目录构建：
+
+```bash
+colcon build --packages-select drone_tracker --cmake-args \
+  -DCMAKE_BUILD_TYPE=Release -DDRONE_TRACKER_PLATFORM=rk3576 \
+  -DDRONE_TRACKER_BUILD_TESTS=ON
+source install/setup.bash
+# 运行时库目录必须指向当前机器安装的 RKNN Runtime；开发板应使用 2.3.2。
+export LD_LIBRARY_PATH=/path/to/rknn-runtime/lib:${LD_LIBRARY_PATH}
+ctest --test-dir build/drone_tracker --output-on-failure
+```
+
+节点沿用 `vision_msgs`、`mavros_msgs`、`cv_bridge` 和 `rosbag2_cpp` 等 ROS 依赖。RKNN 编译依赖默认位于 `/opt/rknn-runtime/include` 和 `/opt/rknn-runtime/lib/librknnrt.so`，可用 `RKNN_INCLUDE_DIR`、`RKNN_LIBRARY` 显式覆盖。目标版本仍为 Runtime 2.3.2、驱动 0.9.8；现有 2.3.0 编译 SDK 不需要重建。开发机环境补充约定见 `AGENTS.local.md`。
+
+先复制安装目录中的 `parameters/rk3576_video_params.yaml`，填写四个模型角色和视频内参。示例保留空模型路径和无效内参，以免误用后静默启动：
+
+- `tracker.yolo_engine`：YOLO 检测模型。
+- `tracker.nano_template_backbone`：模板图像特征提取模型。
+- `tracker.nano_search_backbone`：搜索图像特征提取模型。
+- `tracker.nano_head`：两组特征的匹配模型。
+- `tracker.nano_backbone`：在 RK3576 必须为空。Jetson 继续使用原三路径默认值。
+
+模型绝对路径直接使用；相对路径基于安装包的 `share/drone_tracker/models/`。无需复制大模型进仓库。目标类别从零开始，必须落在模型类别范围内。
+
+`camera.fx/fy/cx/cy` 是实际视频像素坐标中的焦距和主点，用于旋转补偿和预测。四值必须有限，fx/fy 必须大于零。例如，某段 640×480 视频的标定可能为 `800.0/810.0/320.0/240.0`；这只是格式示例，必须替换成该录像对应的标定。节点不按 `mv_camera.*` 再缩放这组值。
+
+```bash
+ros2 launch drone_tracker rk3576_video.launch.py \
+  params_file:=/absolute/path/video_params.yaml \
+  video_source:=/absolute/path/recording.mov
+ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header "{frame_id: ON}"
+ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header "{frame_id: OFF}"
+```
+
+视频必须显式提供。相对视频路径基于启动进程的工作目录，因此推荐绝对路径。只接受本地 MJPEG，即逐帧 JPEG 编码的视频。节点初始化后等待 ON；ON 从头播放，重复 ON 不增开线程。OFF 主动停止，EOF（文件正常结束）自动收尾。收尾后可再次 ON，四模型复用，旧检测请求和结果清空。SIGINT 退出进程时等待设备不再访问帧后释放资源。
+
+`use_history_timestamp` 和 `use_sim_time` 都必须为 false。帧时间采用系统起点加 PTS（视频帧显示时刻），等待采用单调时钟。输出图像保留帧时间，检测框使用当前预测时间。运行中普通超时继续等待，不会把长帧间隔误判为 EOF。历史姿态同步不在本阶段范围内；独立顺序回放和独立视频帧源的历史模式继续可用。
+
+启动后不能修改输入、模型、内参、算法、记录或时钟配置。修改参数文件后重启节点。launch 只覆盖视频路径，不覆盖 DCF 等算法参数。DCF 是用于辅助跟踪的相关滤波器。
+
+`need_save=true` 时，每轮在 `save_path` 下按触发时间创建独立 ROS bag（ROS 消息记录文件）。目录碰撞或打开失败会拒绝本轮；写入失败结束本轮。姿态、里程计、检测框及开启的图像输出按原话题和时间记录。视频输入不创建额外相机录像。OFF、EOF 和普通错误均关闭记录；恢复文件或目录后可重试。
+
+ROS 视频接入已完成规定的 RK3576 实机验收，包括纯 FP16 和纯 INT8 模型配置的基础集成、失败清理，以及固定 INT8 配置下同进程 20 轮启停和额外至少 30 分钟播放负载。验证证据与缺口见 [ROS 视频接入验证记录](../../openspec/changes/integrate-rk3576-ros-video/validation.md)。这些结果不代表模型检测质量、部署性能或 Jetson 实机等价性通过；NPU 设备内存尚未测量。前序完整回放的 7.2、7.3 仍未完成。

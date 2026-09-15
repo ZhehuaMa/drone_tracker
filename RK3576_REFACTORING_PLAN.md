@@ -10,14 +10,15 @@
 
 ## 2. 背景与现状
 
-当前 `rk3576` 分支已提取公共边界，生产后端仍只有 Jetson：
+当前 `rk3576` 分支已提取公共边界，生产入口支持 Jetson 和 RK3576 本地视频：
 
 - `FrameContext` 和采集队列传递平台无关的 `FrameRef`，表示共享只读帧。
 - 公共跟踪器接受整套模型、预处理和帧兼容性检查对象，不再自行创建 Jetson 组件。
 - `PlatformFactory` 统一创建帧源、主机图像复制能力及整套跟踪依赖。
 - 公共算法目标只使用 OpenCV、线程库和公共模型/几何代码；Jetson 设备实现由平台目标链接。
 - 默认生产配置仍启用 CUDA 并使用 VPI、TensorRT、Jetson Multimedia API 和 Tegra 库。
-- `DRONE_TRACKER_PLATFORM=rk3576` 当前在硬件发现前明确失败。已有独立 RKNN Runtime YOLO 后端，以及 NanoTrack 后端和 OpenCV 灰度预处理。NanoTrack 已通过 ARM64 构建、16 项契约测试、四精度组合实机查询、固定输入数值对照及灰度回放；新增独立完整跟踪工厂和单配置录像回放入口，尚无生产采集及 RGA 实现。该完整回放的实机验收按本次任务要求暂缓，证据与范围见阶段 4。
+- `DRONE_TRACKER_PLATFORM=rk3576` 已接入 ROS 视频节点，共用已有 RKNN 模型后端与软件 MJPEG 帧源。相机、硬件解码和 RGA 加速仍未实现。
+- ROS 视频接入已完成规定的 RK3576 实机验收，包括两种模型精度的基础集成、失败清理、同进程 20 轮启停及额外至少 30 分钟播放负载，详见 [ROS 视频接入验证记录](openspec/changes/integrate-rk3576-ros-video/validation.md)。这些结果不代表模型检测质量、部署性能或 Jetson 实机等价性通过；NPU（神经网络处理器）设备内存尚未测量，前序独立回放质量任务仍未完成。
 - `introduce-platform-factory` 的验证限定为公共构建、模拟测试与源码审查，不代表 Jetson 执行验证完成。
 
 因此，本次迁移不只是替换 `TrtEngine`。它至少涉及帧表示、预处理、推理运行时、设备资源生命周期和构建系统五个边界。
@@ -159,7 +160,7 @@ NanoTrackBackend
 
 `FrameCompatibility` 检查帧的真实资源类型，在跟踪状态变化前拒绝不兼容帧。兼容性不要求来自同一个工厂实例。模型执行和预处理边界仍保留资源检查，不能只靠工厂选择证明输入安全。
 
-默认平台为 `jetson`。当前请求 `rk3576` 或未知值会在 CUDA 和硬件库发现前失败，不自动回退。新增调用方应显式链接公共算法和平台目标；完整示例见 [平台工厂接入说明](src/platform/README.md)。
+默认平台为 `jetson`。`rk3576` 使用已有 RKNN 后端支持 ROS 视频；未知值在 CUDA 和硬件库发现前失败，不自动回退。新增调用方应显式链接公共算法和平台目标；完整示例见 [平台工厂接入说明](src/platform/README.md)。
 
 本阶段只验证公共代码和模拟依赖，并审查 Jetson 适配源码。它不证明 Jetson 可构建、实机行为等价或设备资源安全；后续硬件阶段仍需取得对应证据。
 
@@ -299,7 +300,15 @@ RK3576 后端以目标板 RKNN Runtime 2.3.2 和 RKNPU 驱动 0.9.8 为兼容性
 
 首轮完成约定 ARM64 容器构建、可控逻辑及生成素材测试，随后在 RK3576 补齐第 5 组实机验收。历史/实时模式各完成 20 轮启停，同进程完成 100 次新建销毁和 600.187 秒、318 轮重启/慢消费负载。未观察到资源持续增长或遗留线程，变更进度为 26/26。命令、像素对照、停止耗时与验证边界见 [视频帧源验证记录](openspec/changes/implement-rk3576-video-frame-source/validation.md)。这些证据不等于完整跟踪性能或模型质量达标。
 
-相机、ROS 接入、硬件解码与 RGA 加速仍未提供；根目录仍拒绝 RK3576 生产构建。前序完整回放的 7.2、7.3 模型质量验收继续未完成，总进度仍为 31/33，本变更不改变该结论。
+该视频帧源变更完成时，ROS 入口尚未开放。后续 `integrate-rk3576-ros-video` 已接通根目录 ROS 视频构建，详见下节。相机、硬件解码与 RGA 加速仍未提供。前序完整回放的 7.2、7.3 模型质量验收继续未完成，总进度仍为 31/33，本变更不改变该结论。
+
+### 阶段 4 补充：ROS 视频接入
+
+`integrate-rk3576-ros-video` 复用公共节点和 RKNN 后端，新增四文件模型配置、实际视频像素内参、只读帧源诊断和跨轮检测收尾。ON/OFF、EOF 后再启动均复用模型；记录器的创建、写入和关闭使用同一互斥锁。
+
+首版只接受实时系统时钟和本地 MJPEG 视频。`use_history_timestamp`、`use_sim_time` 必须为 false。图像使用原帧时间，检测框使用预测时间。内参必须对应实际视频尺寸，不按相机尺寸再次缩放。构建、参数文件、模型路径及 ON/OFF 命令见 [ROS 视频运行说明](src/platform/README.md#rk3576-ros-视频节点)。
+
+2026-09-14 首轮按用户要求未执行 RK3576 实机任务。2026-09-15 续做已补齐实机验收，并修复首次 ON 沿用已移走文件句柄的问题，当前进度 34/34。公共测试、ROS 可控模型测试、ARM64 构建与真实模型负载的证据分层记录，详见 [验证记录](openspec/changes/integrate-rk3576-ros-video/validation.md)。独立回放的 7.2、7.3 保持未完成。
 
 ### 阶段 5：跨平台行为等价验证
 
@@ -394,6 +403,12 @@ RK3576 后端以目标板 RKNN Runtime 2.3.2 和 RKNPU 驱动 0.9.8 为兼容性
 - **已推荐**：使用编译期平台选择，避免同一二进制链接两套硬件 SDK。
 - **已推荐**：先让现有 Jetson 实现适配新接口，再添加 RK3576 实现。
 - **已推荐**：先验证行为等价，再进行 RK3576 专属性能优化。
-- **已由 OpenSpec 明确**：`introduce-platform-factory` 使用 `src/platform/`、`PlatformFactory` 与 `DRONE_TRACKER_PLATFORM`；当前仅有 Jetson 生产后端。
+- **已由 OpenSpec 明确**：`introduce-platform-factory` 使用 `src/platform/`、`PlatformFactory` 与 `DRONE_TRACKER_PLATFORM`；后续 `integrate-rk3576-ros-video` 已开放 RK3576 视频生产入口。
 - **已有局部实机证据**：当前四类别 YOLO 与 NanoTrack 四精度组合的张量契约，以及 Runtime 2.3.2、驱动 0.9.8 上的上述验证。历史构建 SDK 为 2.3.0，具体模型及输入范围见实机记录。
 - **待实机确认**：新增替换模型的语义兼容性、RGA 支持范围、完整平台行为和性能目标。
+
+## 2026-09-15 ROS 视频实机续做补充
+
+`integrate-rk3576-ros-video` 已完成独立部署、FP16/INT8 基础 ROS 集成与失败重试验收。首次启动文件消失问题已修复：初始化校验后关闭文件，每次 ON 都重新打开当前路径。当前进度 34/34。
+
+最终固定 INT8 节点在同一进程完成 20 轮交替启停，再额外完成 181 轮、1801.933221 秒有效播放。四模型只加载一次，退出码 0，无残留进程。RSS 中途一次性增大后维持平台状波动；未测 NPU 设备内存。首次驱动交接失败的未完成负载不计入最终时长。详细证据见该变更的 [验证记录](openspec/changes/integrate-rk3576-ros-video/validation.md)。这些结果不改变前序模型质量任务结论。

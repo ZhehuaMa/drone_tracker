@@ -1,0 +1,8 @@
+set(RKNN_INCLUDE_DIR "/opt/rknn-runtime/include" CACHE PATH "RKNN SDK include directory (target Runtime 2.3.2; existing build SDK 2.3.0)")
+set(RKNN_LIBRARY "/opt/rknn-runtime/lib/librknnrt.so" CACHE FILEPATH "ARM64 librknnrt.so for linking (target Runtime 2.3.2; existing build SDK 2.3.0)")
+if(NOT EXISTS "${RKNN_INCLUDE_DIR}/rknn_api.h" OR NOT EXISTS "${RKNN_LIBRARY}")
+    message(FATAL_ERROR "RK3576 backends target RKNN Runtime 2.3.2 and driver 0.9.8. Set RKNN_INCLUDE_DIR to the SDK directory containing rknn_api.h and RKNN_LIBRARY to ARM64 librknnrt.so. Existing validation used build SDK 2.3.0 with target Runtime 2.3.2; rebuilding that SDK image is not required.")
+endif()
+if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+    message(FATAL_ERROR "RK3576 backend requires an ARM64 target environment")
+endif()

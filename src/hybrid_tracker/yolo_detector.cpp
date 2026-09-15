@@ -62,9 +62,9 @@ bool YoloV8Detector::init() {
 
 void YoloV8Detector::stop()
 {
-    if (m_stop_requested.exchange(true))
     {
-        return; // 已经请求停止
+        std::lock_guard<std::mutex> lock{m_mutex};
+        if (m_stop_requested.exchange(true)) { return; }
     }
 
     m_cv_request.notify_one(); // 唤醒工作线程以使其退出
@@ -79,7 +79,7 @@ bool YoloV8Detector::request(const FrameRef& frame, uint64_t frame_id, const cv:
     if (validatePreprocessFrame(frame) != PreprocessError::None) { return false; }
 
     std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_new_request || m_result_ready)
+    if (m_cleaning || m_stop_requested || m_new_request || m_result_ready)
     {
         return false; // 上一个请求还未处理，忽略此请求（与Python逻辑一致）
     }
@@ -93,6 +93,17 @@ bool YoloV8Detector::request(const FrameRef& frame, uint64_t frame_id, const cv:
     return true;
 }
 
+void YoloV8Detector::finishRound() {
+    std::unique_lock<std::mutex> lock{m_mutex};
+    m_cleaning = true;
+    m_new_request = false;
+    m_next_request = {};
+    m_cv_idle.wait(lock, [this] { return !m_executing; });
+    m_last_result = {};
+    m_result_ready = false;
+    m_cleaning = false;
+}
+
 bool YoloV8Detector::isBusy() const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -101,9 +112,8 @@ bool YoloV8Detector::isBusy() const
 
 bool YoloV8Detector::get_result(YoloResult& result)
 {
-    if (!m_result_ready)
-        return false;
     std::lock_guard<std::mutex> lock(m_mutex);
+    if (!m_result_ready || m_cleaning) { return false; }
     result = m_last_result;
     m_result_ready = false; // 标记结果已被取走
     return true;
@@ -172,79 +182,95 @@ void YoloV8Detector::workerThreadLoop()
             req = std::move(m_next_request);
             m_next_request = Request{};
             m_new_request = false;
+            m_executing = true;
         } 
         
-        if (!req.frame) continue;
+        // 此守卫先创建，确保会话和请求帧先释放，再发布空闲通知。
+        auto complete{[this](void *) {
+            std::lock_guard<std::mutex> lock{m_mutex};
+            m_executing = false;
+            m_cv_idle.notify_all();
+        }};
+        std::unique_ptr<void, decltype(complete)> execution{this, complete};
+        try {
+            if (!req.frame) { continue; }
 
-        auto session_result{preprocessor_->beginFrame(req.frame, input_contract_)};
-        req.frame.reset();
-        if (!session_result || !session_result.value) {
-            std::cerr << "YOLO beginFrame failed: " << session_result.message << std::endl;
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_last_result = YoloResult{req.frame_id, false, Detection{}};
-            m_result_ready = true;
-            continue;
-        }
-        auto &session{*session_result.value};
+            auto session_result{preprocessor_->beginFrame(req.frame, input_contract_)};
+            req.frame.reset();
+            if (!session_result || !session_result.value) {
+                std::cerr << "YOLO beginFrame failed: " << session_result.message << std::endl;
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_last_result = YoloResult{req.frame_id, false, Detection{}};
+                m_result_ready = true;
+                continue;
+            }
+            auto &session{*session_result.value};
 
-        // 检测级联（与 Python 端 trt_worker 一致）：ROI -> 全图 -> 自适应切片，
-        // 第一个产出目标类别检测的阶段胜出，最终取置信度最高的单框
-        Detection best{};
-        bool has_target = false;
-        auto collect_target = [&](const std::vector<Detection>& dets) {
-            for (const auto& det : dets)
-            {
-                if (det.classId == m_target_class_id && det.score > best.score)
+            // 检测级联（与 Python 端 trt_worker 一致）：ROI -> 全图 -> 自适应切片，
+            // 第一个产出目标类别检测的阶段胜出，最终取置信度最高的单框
+            Detection best{};
+            bool has_target = false;
+            auto collect_target = [&](const std::vector<Detection>& dets) {
+                for (const auto& det : dets)
                 {
-                    best = det;
-                    has_target = true;
+                    if (det.classId == m_target_class_id && det.score > best.score)
+                    {
+                        best = det;
+                        has_target = true;
+                    }
+                }
+            };
+
+            // 1. ROI 优先（置信度阈值放宽以提高召回率）
+            if (req.roi.width > 0 && req.roi.height > 0)
+            {
+                m_conf_thresh_current = m_conf_thresh * m_relax_ratio;
+                std::vector<Detection> roi_detections;
+                detectOnImage(session, req.roi, roi_detections);
+                collect_target(roi_detections);
+            }
+
+            // 2. ROI 未找到目标，全图检测
+            if (!has_target)
+            {
+                m_conf_thresh_current = m_conf_thresh;
+                std::vector<Detection> full_detections;
+                detectOnImage(session, {}, full_detections);
+                collect_target(full_detections);
+            }
+
+            // 3. 全图仍然失败，自适应切片检测（一旦找到目标就停止）
+            if (!has_target)
+            {
+                m_conf_thresh_current = m_conf_thresh;
+                const int w{session.sourceSize().width};
+                const int h{session.sourceSize().height};
+                for (const auto& tile : createOverlappingTiles(w, h, TILE_OVERLAP_RATIO))
+                {
+                    std::vector<Detection> tile_detections;
+                    detectOnImage(session, tile, tile_detections);
+                    collect_target(tile_detections);
+                    if (has_target)
+                        break;
                 }
             }
-        };
 
-        // 1. ROI 优先（置信度阈值放宽以提高召回率）
-        if (req.roi.width > 0 && req.roi.height > 0)
-        {
-            m_conf_thresh_current = m_conf_thresh * m_relax_ratio;
-            std::vector<Detection> roi_detections;
-            detectOnImage(session, req.roi, roi_detections);
-            collect_target(roi_detections);
-        }
-
-        // 2. ROI 未找到目标，全图检测
-        if (!has_target)
-        {
-            m_conf_thresh_current = m_conf_thresh;
-            std::vector<Detection> full_detections;
-            detectOnImage(session, {}, full_detections);
-            collect_target(full_detections);
-        }
-
-        // 3. 全图仍然失败，自适应切片检测（一旦找到目标就停止）
-        if (!has_target)
-        {
-            m_conf_thresh_current = m_conf_thresh;
-            const int w{session.sourceSize().width};
-            const int h{session.sourceSize().height};
-            for (const auto& tile : createOverlappingTiles(w, h, TILE_OVERLAP_RATIO))
+            // 存储结果：单框 + 帧号（Python 端 new_detections=[best_box], processed_frame_id）
             {
-                std::vector<Detection> tile_detections;
-                detectOnImage(session, tile, tile_detections);
-                collect_target(tile_detections);
-                if (has_target)
-                    break;
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_last_result = YoloResult{req.frame_id, has_target, best};
+                m_result_ready = true;
             }
-        }
 
-        // 存储结果：单框 + 帧号（Python 端 new_detections=[best_box], processed_frame_id）
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_last_result = YoloResult{req.frame_id, has_target, best};
+            // Release frame reference
+            req.frame.reset();
+        } catch (const std::exception &error) {
+            req.frame.reset();
+            std::cerr << "YOLO request failed: " << error.what() << std::endl;
+            std::lock_guard<std::mutex> lock{m_mutex};
+            m_last_result = YoloResult{req.frame_id, false, Detection{}};
             m_result_ready = true;
         }
-
-        // Release frame reference
-        req.frame.reset();
     }
 
     // std::cout << "TensorRT worker thread finished." << std::endl;
