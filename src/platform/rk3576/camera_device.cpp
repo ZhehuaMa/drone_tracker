@@ -11,13 +11,16 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <algorithm>
 #include <array>
 #include <cerrno>
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <thread>
 
 #include "host_frame.h"
 
@@ -27,6 +30,12 @@ namespace {
 std::string systemError(const std::string &operation) {
     return operation + ": " + std::strerror(errno);
 }
+constexpr std::uint32_t TRIGGER_MODE{0x00981901};
+constexpr std::uint32_t TRIGGER_SOURCE{0x00981902};
+constexpr std::uint32_t SOFTWARE_TRIGGER{0x00981903};
+constexpr std::uint32_t FRAME_RATE{0x00981904};
+constexpr std::int64_t CONTROL_VERIFY_TIMEOUT_US{100000};
+constexpr std::int64_t CONTROL_VERIFY_INTERVAL_US{5000};
 struct PlaneBuffer {
     v4l2_plane plane{};
     v4l2_buffer buffer{};
@@ -81,6 +90,9 @@ std::int64_t CameraSystem::clockUs(clockid_t clock) {
         throw std::runtime_error(systemError("clock_gettime"));
     }
     return cameraTimevalUs(value.tv_sec, value.tv_nsec / 1000);
+}
+void CameraSystem::sleepUs(std::int64_t duration_us) {
+    std::this_thread::sleep_for(std::chrono::microseconds{duration_us});
 }
 std::string CameraSystem::execute(const std::vector<std::string> &arguments, int timeout_ms) {
     if (arguments.empty() || timeout_ms <= 0) {
@@ -194,9 +206,19 @@ void validateCameraConfig(const FrameSourceConfig &config) {
     if (config.camera_buffer_count < 2 || config.camera_buffer_count > 32) {
         throw std::invalid_argument("Camera buffer count must be 2..32");
     }
-    if (config.trigger_mode || config.flip || config.mirror || config.use_history_timestamp) {
+    if (!std::isfinite(config.camera_trigger_rate_hz)) {
+        throw std::invalid_argument("Camera camera_trigger_rate_hz must be finite");
+    }
+    if (config.trigger_mode) {
+        if (config.camera_trigger_rate_hz < 1.0 || config.camera_trigger_rate_hz > config.fps) {
+            throw std::invalid_argument("Camera software trigger requires camera_trigger_rate_hz in 1..fps");
+        }
+    } else if (config.camera_trigger_rate_hz != 0.0) {
+        throw std::invalid_argument("Camera continuous mode requires camera_trigger_rate_hz=0");
+    }
+    if (config.flip || config.mirror || config.use_history_timestamp) {
         throw std::invalid_argument(
-            "Camera trigger/flip/mirror/history timestamp unsupported; continuous mode required");
+            "Camera flip/mirror/history timestamp unsupported");
     }
     if ((config.output_width != 0 && config.output_width != config.width)
         || (config.output_height != 0 && config.output_height != config.height)) {
@@ -210,31 +232,37 @@ CameraDevice::CameraDevice(FrameSourceConfig config, std::shared_ptr<CameraSyste
 }
 CameraDevice::~CameraDevice() {
     try { finish(); } catch (...) {}
+    if (sensor_fd_ >= 0) { system_->close(sensor_fd_); }
 }
 void CameraDevice::check(int result, const std::string &operation) {
     if (result < 0) { throw std::runtime_error(systemError(config_.path + " " + operation)); }
 }
 void CameraDevice::configureSensor() {
-    const auto expression{"\"" + config_.camera_sensor_entity + "\":0[fmt:Y8_1X8/"
-        + std::to_string(config_.width) + "x" + std::to_string(config_.height)
-        + "@1/" + std::to_string(config_.fps) + " field:none]"};
-    system_->execute({"media-ctl", "-d", config_.camera_media_device, "--set-v4l2", expression}, 3000);
     auto subdev{system_->execute({"media-ctl", "-d", config_.camera_media_device,
                                  "-e", config_.camera_sensor_entity}, 3000)};
     while (!subdev.empty() && (subdev.back() == '\n' || subdev.back() == '\r')) { subdev.pop_back(); }
     if (subdev.rfind("/dev/", 0) != 0 || subdev.find_first_of("\n\r") != std::string::npos) {
         throw std::runtime_error("media-ctl returned invalid sensor device: " + subdev);
     }
-    const int fd{system_->open(subdev, O_RDWR | O_CLOEXEC)};
-    check(fd, "open sensor " + subdev);
-    try {
+    sensor_path_ = subdev;
+    sensor_fd_ = system_->open(subdev, O_RDWR | O_CLOEXEC);
+    check(sensor_fd_, "open sensor " + subdev);
+    snapshotControls();
+    const auto expression{"\"" + config_.camera_sensor_entity + "\":0[fmt:Y8_1X8/"
+        + std::to_string(config_.width) + "x" + std::to_string(config_.height)
+        + "@1/" + std::to_string(config_.fps) + " field:none]"};
+    system_->execute({"media-ctl", "-d", config_.camera_media_device, "--set-v4l2", expression}, 3000);
+    setControl(TRIGGER_MODE, config_.trigger_mode ? 1 : 0, "trigger_mode");
+    setControl(TRIGGER_SOURCE, config_.trigger_mode ? 0 : 1, "trigger_src");
+    setControl(FRAME_RATE, config_.fps, "frame_rate");
+    {
         v4l2_subdev_format format{};
         format.which = V4L2_SUBDEV_FORMAT_ACTIVE;
         format.pad = 0;
-        check(system_->ioctl(fd, VIDIOC_SUBDEV_G_FMT, &format), "sensor G_FMT");
+        check(system_->ioctl(sensor_fd_, VIDIOC_SUBDEV_G_FMT, &format), "sensor G_FMT");
         v4l2_subdev_frame_interval interval{};
         interval.pad = 0;
-        check(system_->ioctl(fd, VIDIOC_SUBDEV_G_FRAME_INTERVAL, &interval), "sensor G_FRAME_INTERVAL");
+        check(system_->ioctl(sensor_fd_, VIDIOC_SUBDEV_G_FRAME_INTERVAL, &interval), "sensor G_FRAME_INTERVAL");
         if (format.format.width != static_cast<unsigned>(config_.width)
             || format.format.height != static_cast<unsigned>(config_.height)
             || format.format.code != MEDIA_BUS_FMT_Y8_1X8 || format.format.field != V4L2_FIELD_NONE
@@ -247,18 +275,95 @@ void CameraDevice::configureSensor() {
                 + " field=" + std::to_string(format.format.field) + " interval="
                 + std::to_string(interval.interval.numerator) + "/" + std::to_string(interval.interval.denominator));
         }
-    } catch (const std::exception &error) {
-        const std::string original{error.what()};
-        if (system_->close(fd) < 0) {
-            throw std::runtime_error(original + "; " + systemError("sensor close"));
-        }
-        throw;
-    } catch (...) {
-        system_->close(fd);
-        throw;
     }
-    check(system_->close(fd), "close sensor");
 }
+void CameraDevice::snapshotControls() {
+    controls_.clear();
+    for (const auto &entry : std::vector<SavedControl>{{TRIGGER_MODE, 0, "trigger_mode", false},
+             {TRIGGER_SOURCE, 0, "trigger_src", false}, {FRAME_RATE, 0, "frame_rate", false}}) {
+        v4l2_queryctrl query{};
+        query.id = entry.id;
+        check(system_->ioctl(sensor_fd_, VIDIOC_QUERYCTRL, &query), sensor_path_ + " query " + entry.name);
+        const int desired{entry.id == FRAME_RATE ? config_.fps
+            : (entry.id == TRIGGER_MODE ? (config_.trigger_mode ? 1 : 0) : (config_.trigger_mode ? 0 : 1))};
+        if (query.type != V4L2_CTRL_TYPE_INTEGER || std::string{reinterpret_cast<char *>(query.name), strnlen(reinterpret_cast<char *>(query.name), sizeof(query.name))} != entry.name
+            || (query.flags & (V4L2_CTRL_FLAG_DISABLED | V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_WRITE_ONLY))
+            || query.step <= 0 || desired < query.minimum || desired > query.maximum
+            || (desired - query.minimum) % query.step != 0) {
+            throw std::runtime_error(sensor_path_ + " incompatible control " + entry.name);
+        }
+        v4l2_control value{};
+        value.id = entry.id;
+        check(system_->ioctl(sensor_fd_, VIDIOC_G_CTRL, &value), sensor_path_ + " read " + entry.name);
+        controls_.push_back({entry.id, value.value, entry.name, false});
+    }
+    if (config_.trigger_mode) {
+        v4l2_queryctrl query{};
+        query.id = SOFTWARE_TRIGGER;
+        check(system_->ioctl(sensor_fd_, VIDIOC_QUERYCTRL, &query), sensor_path_ + " query soft_trgone");
+        if (query.type != V4L2_CTRL_TYPE_BUTTON || std::string{reinterpret_cast<char *>(query.name), strnlen(reinterpret_cast<char *>(query.name), sizeof(query.name))} != "soft_trgone"
+            || (query.flags & (V4L2_CTRL_FLAG_DISABLED | V4L2_CTRL_FLAG_READ_ONLY))) {
+            throw std::runtime_error(sensor_path_ + " incompatible soft_trgone control");
+        }
+    }
+    // media-ctl 设置帧间隔也可能修改 frame_rate；必须在它运行前保存并标记恢复责任。
+    for (auto &entry : controls_) { entry.changed = true; }
+}
+void CameraDevice::setControl(std::uint32_t id, int value, const std::string &name) {
+    std::lock_guard<std::mutex> lock{control_mutex_};
+    writeAndVerifyControl(id, value, sensor_path_ + " set " + name);
+}
+void CameraDevice::writeAndVerifyControl(std::uint32_t id, int value, const std::string &operation) {
+    v4l2_control control{};
+    control.id = id;
+    control.value = value;
+    check(system_->ioctl(sensor_fd_, VIDIOC_S_CTRL, &control), operation);
+    const auto begin{system_->clockUs(CLOCK_MONOTONIC)};
+    for (;;) {
+        check(system_->ioctl(sensor_fd_, VIDIOC_G_CTRL, &control), operation + " readback");
+        const auto elapsed{system_->clockUs(CLOCK_MONOTONIC) - begin};
+        if (control.value == value && elapsed <= CONTROL_VERIFY_TIMEOUT_US) { return; }
+        if (elapsed >= CONTROL_VERIFY_TIMEOUT_US) {
+            throw std::runtime_error(operation + " readback timeout expected=" + std::to_string(value)
+                + " actual=" + std::to_string(control.value) + " elapsed_us=" + std::to_string(elapsed)
+                + " timeout_us=" + std::to_string(CONTROL_VERIFY_TIMEOUT_US));
+        }
+        system_->sleepUs(std::min(CONTROL_VERIFY_INTERVAL_US, CONTROL_VERIFY_TIMEOUT_US - elapsed));
+    }
+}
+void CameraDevice::trigger() {
+    std::lock_guard<std::mutex> lock{control_mutex_};
+    if (!streaming_ || !config_.trigger_mode || sensor_fd_ < 0) {
+        throw std::logic_error(config_.path + " software trigger requires streaming software mode");
+    }
+    v4l2_control control{};
+    control.id = SOFTWARE_TRIGGER;
+    control.value = 1;
+    check(system_->ioctl(sensor_fd_, VIDIOC_S_CTRL, &control), sensor_path_ + " soft_trgone");
+}
+std::string CameraDevice::restoreControls() {
+    std::lock_guard<std::mutex> lock{control_mutex_};
+    std::string errors{};
+    for (auto it{controls_.rbegin()}; it != controls_.rend(); ++it) {
+        if (!it->changed) { continue; }
+        try {
+            writeAndVerifyControl(it->id, it->value, sensor_path_ + " restore " + it->name);
+            it->changed = false;
+        } catch (const std::exception &error) {
+            errors += "; " + std::string{error.what()};
+        }
+    }
+    return errors;
+}
+std::vector<std::string> CameraDevice::unrestoredControls() const {
+    std::lock_guard<std::mutex> lock{control_mutex_};
+    std::vector<std::string> result{};
+    for (const auto &entry : controls_) {
+        if (entry.changed) { result.push_back(entry.name); }
+    }
+    return result;
+}
+
 void CameraDevice::checkFormat() {
     v4l2_format value{};
     value.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
@@ -276,7 +381,9 @@ void CameraDevice::checkFormat() {
     }
 }
 void CameraDevice::prepare() {
-    if (fd_ >= 0) { throw std::logic_error("Camera already prepared"); }
+    if (fd_ >= 0 || sensor_fd_ >= 0 || !unrestoredControls().empty()) {
+        throw std::logic_error("Camera already prepared or controls still require restoration");
+    }
     try {
         configureSensor();
         fd_ = system_->open(config_.path, O_RDWR | O_NONBLOCK | O_CLOEXEC);
@@ -363,6 +470,14 @@ CameraSample CameraDevice::next(int timeout_ms, bool compare_pixels) {
     check(result, "DQBUF");
     CameraSample sample{};
     sample.dequeue_us = system_->clockUs(CLOCK_MONOTONIC);
+    // 仅保留当前时钟偏移与轮次固定偏移的差，不用它重标帧时间。
+    const auto realtime{system_->clockUs(CLOCK_REALTIME)};
+    const auto offset_delta{static_cast<__int128>(realtime) - sample.dequeue_us - pair_.offset_us};
+    if (offset_delta < std::numeric_limits<std::int64_t>::min()
+        || offset_delta > std::numeric_limits<std::int64_t>::max()) {
+        throw std::runtime_error("Camera clock offset diagnostic overflow");
+    }
+    sample.clock_offset_delta_us = static_cast<std::int64_t>(offset_delta);
     const auto &plane{dequeued.plane};
     const auto &buffer{dequeued.buffer};
     if (buffer.index >= mappings_.size() || buffer.length != 1 || (buffer.flags & V4L2_BUF_FLAG_ERROR)
@@ -441,6 +556,16 @@ std::string CameraDevice::finish() {
     {
         std::lock_guard<std::mutex> lock{wake_mutex_};
         if (wake_fd_ >= 0) { record(system_->close(wake_fd_), "close eventfd"); wake_fd_ = -1; }
+    }
+    if (sensor_fd_ < 0 && !unrestoredControls().empty()) {
+        sensor_fd_ = system_->open(sensor_path_, O_RDWR | O_CLOEXEC);
+        record(sensor_fd_, "reopen sensor for control restoration");
+    }
+    if (sensor_fd_ >= 0) {
+        errors += restoreControls();
+        // 本次尝试结束后释放句柄，未恢复项仍保留；重复 finish 可重新打开并重试。
+        record(system_->close(sensor_fd_), "close sensor");
+        sensor_fd_ = -1;
     }
     timing_.reset();
     return errors;

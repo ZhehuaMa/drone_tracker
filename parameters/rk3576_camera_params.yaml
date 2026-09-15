@@ -1,0 +1,71 @@
+# RK3576 相机入口：启动后等待 ON；必须先填写模型路径。内参暂用模拟值。
+drone_tracker_node:
+  ros__parameters:
+    need_save: false
+    save_path: "/tmp/drone-recordings"
+    visualized_result: true
+    use_history_timestamp: false
+    use_sim_time: false
+    # 2026-09-15 用户确认：1920×1200 图像暂用模拟内参，单位为像素。
+    # fx/fy=1000 是人为选定的测试值；cx/cy 暂取图像中心，不是实测标定。
+    # 仅用于集成测试，不据此验收旋转补偿精度；正式标定后替换以下四值并重启节点。
+    camera:
+      fx: 1000.0
+      fy: 1000.0
+      cx: 960.0
+      cy: 600.0
+    tracker:
+      # 四文件必须显式填写；绝对路径直接使用，相对路径基于包 share/models。
+      yolo_engine: ""
+      nano_backbone: ""  # RK3576 共享 Backbone 字段必须为空。
+      nano_template_backbone: ""  # 模板图像特征提取模型。
+      nano_search_backbone: ""  # 搜索图像特征提取模型。
+      nano_head: ""  # 模板与搜索特征匹配模型。
+      # 单个精确目标类别编号：仅接受 cid == yolo_target_class_id（从 0 开始）
+      yolo_target_class_id: 0
+      # 检测器阈值保持实机调参值；其余为 hybrid tracker 算法行为参数，
+      # 与 airsim_tracker launch.py 对齐（语义已随移植改变）
+      yolo_conf_threshold: 0.5
+      yolo_nms_threshold: 0.45
+      yolo_interval: 4
+      yolo_recall_relax_ratio: 1.0   # 1.0 = 关闭（Python 端无此放宽机制）
+      iou_reset_threshold: 0.4       # IoU 低于此值时重置跟踪器
+      iou_calibrate_threshold: 0.8   # IoU 高于此值时视为 YOLO 确认，不干预
+      max_position_jump: 150.0       # 像素（绝对值；原 1536x960 调参，960x960 下可适当调小）
+      max_size_jump_ratio: 2.0
+      max_box_area_ratio: 0.8
+      tracking_roi_scale_factor: 2.0
+      lost_max_count: 5              # 连续未确认判定上限：无检测 / 低IoU重初始化 / 未确认跳变均计数，
+                                     # x yolo_interval(4) ≈ 20 帧 (~0.67s)；持续误检不会再无限重初始化
+      frame_buffer_size: 30
+      jump_tolerance: 3
+      enable_dcf: true               # DCF 融合开关（A/B 对比用）；false 时由 kf_r_pos/kf_q_a
+                                     # 驱动的中心平滑 KF 承担稳心角色
+      dcf_fixed_template: true
+      dcf_learning_rate: 0.01
+      dcf_lambda: 0.0001
+      dcf_psr_thresh: 5.0
+      dcf_max_div_factor: 0.5        # 中心发散重锚定门限（DCF 与 KF 路径共用）
+      # KF 噪声（旋转补偿回溯卡尔曼滤波；r_pos/q_a 同时用于 enable_dcf=false 时的
+      # 跟踪器内中心平滑 KF）
+      kf_r_pos: 4.0
+      kf_r_size: 4.0
+      kf_q_a: 50000.0
+      kf_q_size: 1000.0
+    mv_camera:
+      # 以下设备拓扑和尺寸须在部署时复核，不是自动发现结果。
+      capture_mode: software_trigger
+      trigger_rate_hz: 20.0  # 开发板 2 已通过重复及持续负载验收；不代表硬件最高频率。
+      # 连续采集示例：capture_mode: continuous，同时 trigger_rate_hz: 0.0。
+      media_device: /dev/media0
+      sensor_entity: "m00_b_mvcam 4-003b"  # 必须替换为 media-ctl -p 显示的实体名称。
+      buffer_count: 4
+      width_px: 1920
+      height_px: 1200
+      fps: 60  # 设备帧率，与软件命令频率独立。
+      output_width_px: 0  # 0 表示保持实际输入尺寸。
+      output_height_px: 0
+      flip: false
+      mirror: false
+      pixel_size_um: 3.45  # RK3576 不据此推导 camera 内参。
+      focal_length_mm: 12.0

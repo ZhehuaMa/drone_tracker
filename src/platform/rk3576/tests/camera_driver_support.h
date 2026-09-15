@@ -16,6 +16,9 @@ struct Options {
     int slow_ms{};
     int snapshots{1};
     bool compare{};
+    bool finite_commands{};
+    std::uint64_t commands{};
+    int tail_ms{500};
 };
 Options parse(int argc, char **argv);
 /** @brief 通过公共工厂采集并保存报告；依赖注入仅供无设备测试，不提供模拟设备 CLI。 */

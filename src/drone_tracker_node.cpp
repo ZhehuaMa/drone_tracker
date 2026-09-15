@@ -1,6 +1,7 @@
 #include "drone_tracker_node.h"
 
 #include <unordered_map>
+#include <algorithm>
 #include <filesystem>
 #include <stdexcept>
 
@@ -68,6 +69,8 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
         tracker_->finishRound();
         tracker_->reset();
         last_tracker_state = -1;
+        consumed_frames_ = 0;
+        last_acquisition_report_ = std::chrono::steady_clock::now();
         running = true;
         openRecording(stamp);
         worker_thread_ = launcher_([this] { worker(); });
@@ -81,10 +84,15 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
 }
 
 void DroneTrackerNode::stop() {
+    const auto before{std::chrono::steady_clock::now()};
     std::lock_guard<std::mutex> control{control_mutex_};
     running = false;
     wait_cv_.notify_all();
     if (worker_thread_.joinable()) { worker_thread_.join(); }
+    if (camera_input_) {
+        RCLCPP_INFO(get_logger(), "Node OFF total_us=%ld", static_cast<long>(
+            std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - before).count()));
+    }
 }
 
 void DroneTrackerNode::openRecording(const builtin_interfaces::msg::Time &stamp) {
@@ -149,11 +157,43 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
 
     std::string video_source;
     this->get_parameter("video_source", video_source);
+#ifdef DRONE_TRACKER_RK3576
+    const bool shorthand{video_source.rfind("video", 0) == 0 && video_source.size() > 5
+        && std::all_of(video_source.begin() + 5, video_source.end(), [](char c) { return c >= '0' && c <= '9'; })};
+    const bool is_camera{shorthand || video_source.rfind("/dev/", 0) == 0};
+#else
     const bool is_camera = (video_source.substr(0, 5) == "video" && video_source.length() == 6);
+#endif
+#ifdef DRONE_TRACKER_RK3576
+    camera_input_ = is_camera;
+#endif
 
     FrameSourceConfig source_config{};
     source_config.type = is_camera ? FrameSourceType::Camera : FrameSourceType::Video;
+#ifdef DRONE_TRACKER_RK3576
+    source_config.path = shorthand ? "/dev/" + video_source : video_source;
+    if (is_camera) {
+        if (get_parameter("need_save").as_bool()) {
+            throw std::invalid_argument("RK3576 camera requires need_save=false; recording unsupported");
+        }
+        const auto mode{get_parameter("mv_camera.capture_mode").as_string()};
+        if (mode != "continuous" && mode != "software_trigger") {
+            throw std::invalid_argument("mv_camera.capture_mode requires continuous or software_trigger");
+        }
+        source_config.trigger_mode = mode == "software_trigger";
+        source_config.camera_trigger_rate_hz = get_parameter("mv_camera.trigger_rate_hz").as_double();
+        source_config.camera_media_device = get_parameter("mv_camera.media_device").as_string();
+        source_config.camera_sensor_entity = get_parameter("mv_camera.sensor_entity").as_string();
+        source_config.camera_buffer_count = static_cast<int>(get_parameter("mv_camera.buffer_count").as_int());
+        const double rate{source_config.camera_trigger_rate_hz};
+        if (source_config.camera_media_device.empty() || source_config.camera_sensor_entity.empty()
+            || !std::isfinite(rate) || (source_config.trigger_mode ? rate < 1 || rate > fps : rate != 0)) {
+            throw std::invalid_argument("Camera requires media_device, sensor_entity and mode-compatible trigger_rate_hz");
+        }
+    }
+#else
     source_config.path = is_camera ? "/dev/" + video_source : video_source;
+#endif
     source_config.width = width_px;
     source_config.height = height_px;
     source_config.fps = fps;
@@ -306,12 +346,43 @@ void DroneTrackerNode::worker() {
     }
     run_state_ = RunState::Stopping;
     running = false;
-    mv_camera_->stop();
+    const auto stop_begin{std::chrono::steady_clock::now()};
+    const bool source_stopped{mv_camera_->stop()};
+    if (!source_stopped) { RCLCPP_ERROR(get_logger(), "Input cleanup failed: %s", mv_camera_->status().reason.c_str()); }
     tracker_->finishRound();
+    reportAcquisition(true);
+    if (camera_input_) {
+        RCLCPP_INFO(get_logger(), "Round cleanup including model wait_us=%ld", static_cast<long>(
+            std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - stop_begin).count()));
+    }
     closeRecording();
     if (recording_failed_) { RCLCPP_ERROR(get_logger(), "Round ended: recording failure"); }
     status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1, "Drone Tracker Stopped", true);
     run_state_ = RunState::Idle;
+}
+
+void DroneTrackerNode::reportAcquisition(bool final) {
+#ifdef DRONE_TRACKER_RK3576
+    if (!camera_input_) { return; }
+    const auto now{std::chrono::steady_clock::now()};
+    if (!final && now - last_acquisition_report_ < 1s) { return; }
+    last_acquisition_report_ = now;
+    const auto state{mv_camera_->status()};
+    RCLCPP_INFO(get_logger(),
+        "Camera %s mode=%s requested_hz=%.3f actual_hz=%.3f commands=%lu command_errors=%lu skipped=%lu "
+        "read=%lu enqueued=%lu queue_dropped=%lu sequence_gaps=%lu consumed=%lu time=%s "
+        "unattributed_command_frame_difference=%ld clock_offset_delta_us=%ld stop_us=%ld restored=%d state=%d reason=%s",
+        final ? "final" : "running", state.software_trigger ? "software_trigger" : "continuous",
+        state.requested_trigger_hz, state.actual_trigger_hz, static_cast<unsigned long>(state.trigger_success),
+        static_cast<unsigned long>(state.trigger_errors), static_cast<unsigned long>(state.trigger_skipped),
+        static_cast<unsigned long>(state.read), static_cast<unsigned long>(state.enqueued),
+        static_cast<unsigned long>(state.dropped), static_cast<unsigned long>(state.sequence_gaps),
+        static_cast<unsigned long>(consumed_frames_), state.time_source.c_str(),
+        static_cast<long>(state.trigger_success) - static_cast<long>(state.read),
+        static_cast<long>(state.clock_offset_delta_us), static_cast<long>(state.stop_us), state.controls_restored, static_cast<int>(state.state), state.reason.c_str());
+#else
+    (void)final;
+#endif
 }
 
 void DroneTrackerNode::processFrames() {
@@ -330,6 +401,7 @@ void DroneTrackerNode::processFrames() {
     // Main processing loop
     while (rclcpp::ok() && running)
     {
+        reportAcquisition(false);
         rclcpp::Time start_time = this->now();
         FrameRef frame_buffer;
 
@@ -376,6 +448,7 @@ void DroneTrackerNode::processFrames() {
 
         if (out.consumed)
         {
+            ++consumed_frames_;
             // 发布实时预测框（KF predict_only(now) 外推），空 frame_id 表示无效检测。
             // 时间戳用外推时刻（与外推框同 epoch，避免下游对已外推的测量二次外推）
             auto detection_msg = std::make_unique<vision_msgs::msg::Detection2D>();

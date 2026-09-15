@@ -63,6 +63,46 @@ void reports(const fs::path &root) {
     failing.stop(); system->clean();
     require(failing.status().reason.find("output write failed") != std::string::npos, "Output failure invisible");
 }
+void finiteReports(const fs::path &root) {
+    for (int commands : {0, 1, 120}) {
+        auto system{std::make_shared<System>()};
+        system->width = 8; system->height = 3; system->stride = 16;
+        system->frame_limit = commands == 120 ? 60 : commands;
+        camera_driver::Options options{};
+        options.config = config(); options.config.width = 8; options.config.height = 3;
+        options.config.trigger_mode = true; options.config.camera_trigger_rate_hz = 20;
+        options.finite_commands = true; options.commands = commands; options.tail_ms = 10; options.snapshots = 0;
+        options.output = root / ("finite-" + std::to_string(commands));
+        auto injected{dependencies(system)};
+        std::atomic<std::int64_t> clock{0};
+        injected.trigger_now = [&] { return clock.load(); };
+        injected.trigger_wait = [&](std::condition_variable &, std::unique_lock<std::mutex> &,
+                                    std::int64_t due, const std::function<bool()> &) { clock = due; };
+        camera_driver::run(options, injected);
+        system->clean();
+        require(system->trigger_calls == static_cast<unsigned>(commands), "Finite command limit ignored");
+        const auto rounds{read(options.output / "rounds.csv")};
+        require(rounds.find("command_frame_difference") != std::string::npos
+            && rounds.find("software_trigger,20,") != std::string::npos, "Missing difference diagnostics");
+        if (commands == 120) {
+            require(rounds.find(",60,0,1,\"\"") != std::string::npos,
+                    "120 commands/60 frames not reported as unattributed difference");
+        }
+        const auto events{read(options.output / "triggers.csv")};
+        require(std::count(events.begin(), events.end(), '\n') == commands + 1, "Missing command events");
+    }
+    auto system{std::make_shared<System>()};
+    system->width = 8; system->height = 3; system->stride = 16;
+    camera_driver::Options options{};
+    options.config = config(); options.config.width = 8; options.config.height = 3;
+    options.config.trigger_mode = true; options.config.camera_trigger_rate_hz = 1;
+    options.finite_commands = true; options.commands = 120; options.seconds = 1; options.snapshots = 0;
+    options.output = root / "finite-timeout";
+    rejects([&] { camera_driver::run(options, dependencies(system)); }, "tool timeout");
+    system->clean();
+    require(read(options.output / "rounds.csv").find(",1,1,\"\"") != std::string::npos,
+            "Timeout/restore result not saved");
+}
 } // namespace
 int main(int argc, char **argv) {
     try {
@@ -72,6 +112,7 @@ int main(int argc, char **argv) {
         fs::remove_all(root);
         fs::create_directories(root);
         reports(root);
+        finiteReports(root);
         std::cout << "camera driver tests passed\n";
         return 0;
     } catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 1; }

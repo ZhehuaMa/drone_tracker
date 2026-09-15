@@ -105,6 +105,13 @@ private:
         this->declare_parameter<double>("tracker.kf_q_a", 5e4);
         this->declare_parameter<double>("tracker.kf_q_size", 1e3);
 
+#ifdef DRONE_TRACKER_RK3576
+        this->declare_parameter<std::string>("mv_camera.capture_mode", "");
+        this->declare_parameter<double>("mv_camera.trigger_rate_hz", std::numeric_limits<double>::quiet_NaN());
+        this->declare_parameter<std::string>("mv_camera.media_device", "");
+        this->declare_parameter<std::string>("mv_camera.sensor_entity", "");
+        this->declare_parameter<int>("mv_camera.buffer_count", 4);
+#endif
         this->declare_parameter<int>("mv_camera.width_px", 1920);
         this->declare_parameter<int>("mv_camera.height_px", 1920);
         this->declare_parameter<bool>("mv_camera.flip", false);
@@ -119,6 +126,10 @@ private:
     void setup(PlatformFactory &factory);
     void worker();
     void processFrames();
+    void reportAcquisition(bool final);
+    bool camera_input_{};
+    std::uint64_t consumed_frames_{};
+    std::chrono::steady_clock::time_point last_acquisition_report_{};
     void openRecording(const builtin_interfaces::msg::Time &stamp);
     void closeRecording() noexcept;
     template<typename Message> void record(const Message &message, const std::string &topic,

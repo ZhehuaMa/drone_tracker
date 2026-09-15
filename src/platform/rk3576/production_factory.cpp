@@ -36,6 +36,8 @@ AssemblyDependencies productionDependencies(RknnApi api, std::function<void(cons
 }
 } // namespace rk3576
 std::unique_ptr<PlatformFactory> CreatePlatformFactory() {
+    rk3576::FactoryOptions options{};
+    options.enable_camera = true;
     return rk3576::createFactory(rk3576::productionDependencies(
-        rk3576::nativeRknnApi(), [](const std::string &description) { std::cout << description << std::flush; }));
+        rk3576::nativeRknnApi(), [](const std::string &description) { std::cout << description << std::flush; }), options);
 }

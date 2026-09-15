@@ -26,6 +26,7 @@ using model_test::require;
 using namespace std::chrono_literals;
 struct SourceTrace {
     std::string video{};
+    FrameSourceConfig config{};
     std::atomic<int> starts{}, stops{}, delivered{};
     std::atomic_bool active{}, eof{}, fail_start{}, fail_input{}, tail_race{}, long_gap{};
     std::atomic<int> limit{10000};
@@ -91,6 +92,7 @@ public:
         : trace_{std::move(trace)}, source_{std::move(source)}, paths_{std::move(paths)} {}
     PlatformResult<std::unique_ptr<FrameSource>> createFrameSource(const FrameSourceConfig &config) override {
         require(!config.use_history_timestamp, "historical time leaked");
+        source_->config = config;
         if (!source_->video.empty()) {
             auto video_config{config};
             video_config.path = source_->video;
@@ -304,6 +306,98 @@ void cleanupAndFailures() {
     thread_failure.until([&] { return thread_failure.source->starts == 1; }, "thread failure retry");
     thread_failure.node->stop();
 }
+void cameraContracts() {
+    for (const auto *mode : {"continuous", "software_trigger"}) {
+        const bool software{std::string{mode} == "software_trigger"};
+        auto params{options({{"video_source", software ? "video10" : "/dev/video10"},
+            {"mv_camera.capture_mode", mode}, {"mv_camera.trigger_rate_hz", software ? 20.0 : 0.0},
+            {"mv_camera.media_device", "/dev/media0"}, {"mv_camera.sensor_entity", "test sensor"},
+            {"mv_camera.buffer_count", 6}, {"mv_camera.fps", 60}, {"mv_camera.width_px", 100},
+            {"mv_camera.height_px", 80}, {"mv_camera.output_width_px", 0}, {"mv_camera.output_height_px", 0}})};
+        Harness h{params};
+        require(h.source->config.type == FrameSourceType::Camera && h.source->config.path == "/dev/video10"
+            && h.source->config.trigger_mode == software && h.source->config.camera_trigger_rate_hz == (software ? 20 : 0)
+            && h.source->config.camera_buffer_count == 6 && h.source->config.camera_sensor_entity == "test sensor",
+            "Camera parameter mapping failed");
+        require(DroneTrackerNodeTestAccess::intrinsics(*h.node).fx == 100, "Camera intrinsics rescaled");
+        require(!h.node->set_parameter({"mv_camera.trigger_rate_hz", 15.0}).successful
+            && !h.node->set_parameter({"mv_camera.capture_mode", "continuous"}).successful,
+            "Runtime camera parameter changed");
+        require(h.source->starts == 0, "Camera initialization started acquisition");
+        h.source->fail_start = true;
+        h.trigger("ON");
+        h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "Failed camera start not idle");
+        h.source->fail_start = false;
+        h.trigger("ON"); h.trigger("ON");
+        h.until([&] { return h.detections.size() >= 3; }, "Camera no-target messages missing");
+        require(h.source->starts == 2 && h.states.front() == 0 && h.detections.front().header.frame_id.empty(),
+                "Camera duplicate ON or Detecting contract");
+        h.trace->target = true;
+        h.until([&] { return std::find(h.states.begin(), h.states.end(), 2) != h.states.end(); }, "Camera did not track");
+        require(std::find(h.states.begin(), h.states.end(), 1) != h.states.end(), "Camera TargetFound missing");
+        h.trace->target = false; h.trace->nano_ok = false;
+        h.until([&] { return std::find(h.states.begin(), h.states.end(), 3) != h.states.end(); }, "Camera lost state missing");
+        h.node->stop(); h.pump(30ms);
+        const auto before{h.states.size()};
+        h.trace->target = false; h.trace->nano_ok = true;
+        h.trigger("ON");
+        h.until([&] { return h.states.size() > before; }, "Camera new round state missing");
+        require(h.states.back() == 0 && h.trace->assemblies == 1, "Camera stale round/model reload");
+        h.source->fail_input = true;
+        h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "Camera input failure not cleaned");
+        h.pump(20ms);
+        require(h.states.back() == 0, "Camera failure fabricated TargetLost");
+        h.trigger("OFF"); h.trigger("OFF");
+        for (const auto &img : h.images) {
+            const auto ts{rclcpp::Time(img.header.stamp).nanoseconds() / 1000};
+            std::lock_guard<std::mutex> lock{h.source->mutex};
+            require(img.encoding == "bgr8" && img.width == 100 && img.height == 80
+                && std::find(h.source->timestamps.begin(), h.source->timestamps.end(), ts) != h.source->timestamps.end(),
+                "Camera image time/format mismatch");
+        }
+        require(!h.images.empty(), "Camera images missing");
+        params.append_parameter_override("visualized_result", false);
+        {
+            Harness off{params};
+            require(DroneTrackerNodeTestAccess::rotation(*off.node) == cv::Matx33d::eye(), "Missing pose not identity");
+            auto imu{off.observer->create_publisher<sensor_msgs::msg::Imu>("/fpv/gimbal", rclcpp::QoS{1}.best_effort())};
+            off.pump(150ms);
+            sensor_msgs::msg::Imu pose{};
+            pose.header.stamp = off.observer->now(); pose.orientation.w = std::sqrt(0.5); pose.orientation.z = std::sqrt(0.5);
+            imu->publish(pose); off.pump(30ms);
+            require(std::abs(DroneTrackerNodeTestAccess::rotation(*off.node)(0, 1) + 1.0) < 1e-9,
+                    "Camera pose lookup changed");
+            off.trace->target = true; off.trace->block = true;
+            off.node->run();
+            {
+                std::unique_lock<std::mutex> lock{off.trace->mutex};
+                require(off.trace->cv.wait_for(lock, 2s, [&] { return off.trace->entered; }), "Camera inference not entered");
+            }
+            auto stopped{std::async(std::launch::async, [&] { off.node->stop(); })};
+            require(stopped.wait_for(30ms) == std::future_status::timeout, "Camera OFF did not wait for model");
+            {
+                std::lock_guard<std::mutex> lock{off.trace->mutex};
+                off.trace->release = true; off.trace->cv.notify_all();
+            }
+            require(stopped.wait_for(2s) == std::future_status::ready, "Camera OFF deadlocked");
+            stopped.get(); off.pump(30ms);
+            require(off.images.empty(), "Disabled camera image published");
+            off.trace->target = false;
+            const auto previous{off.detections.size()};
+            off.node->run();
+            off.until([&] { return off.detections.size() > previous; }, "Camera retry after model wait failed");
+            off.node->stop(); off.pump(20ms);
+            require(off.detections.back().header.frame_id.empty() && off.trace->assemblies == 1,
+                    "In-flight old camera result leaked");
+        }
+        params.append_parameter_override("need_save", true);
+        bool rejected{false};
+        try { Harness invalid{params}; } catch (const std::exception &error) {
+            rejected = std::string{error.what()}.find("need_save=false") != std::string::npos;
+        }
+        require(rejected, "Camera recording was not rejected at initialization");
+    }
+}
 void realVideo() {
     Harness h{options(), {}, {}, std::string{ROS_VIDEO_FIXTURES} + "/long.mov"};
     h.node->run();
@@ -402,6 +496,7 @@ int main(int argc, char **argv) {
         cleanupAndFailures();
         recording();
         realVideo();
+        cameraContracts();
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         rclcpp::shutdown();

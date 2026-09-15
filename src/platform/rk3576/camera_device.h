@@ -23,6 +23,8 @@ public:
     virtual int event();
     virtual int signal(int fd);
     virtual std::int64_t clockUs(clockid_t clock);
+    /** @brief 控制读回重试之间等待；测试替身可推进单调时钟。 */
+    virtual void sleepUs(std::int64_t duration_us);
     /** @brief 执行参数数组，返回标准输出；缺工具、超时和非零退出分别抛出诊断。 */
     virtual std::string execute(const std::vector<std::string> &arguments, int timeout_ms);
 };
@@ -39,6 +41,7 @@ struct CameraSample {
     std::int64_t microseconds{};
     std::int64_t dequeue_us{};
     std::int64_t copy_us{};
+    std::int64_t clock_offset_delta_us{};
     std::uint32_t flags{};
     std::uint32_t sequence{};
     std::string strategy{};
@@ -48,7 +51,7 @@ struct CameraSample {
 };
 /** @brief 校验不支持的选项，任何设备操作前调用。 */
 void validateCameraConfig(const FrameSourceConfig &config);
-/** @brief 单生产线程拥有设备会话；仅 wake 可由控制线程并发调用。 */
+/** @brief 单采集线程读取；控制调用串行，生命周期所有者回收两线程后清理。 */
 class CameraDevice final {
 public:
     CameraDevice(FrameSourceConfig config, std::shared_ptr<CameraSystem> system);
@@ -58,6 +61,9 @@ public:
     /** @brief 只设置/查询格式，不申请缓冲或开流。 */
     void prepare();
     void start();
+    /** @brief 直接发送单次软件命令；成功不表示相机已经曝光。 */
+    void trigger();
+    std::vector<std::string> unrestoredControls() const;
     /** @brief 无帧/停止返回空帧；设备错误抛异常。每次等待至多 timeout_ms。 */
     CameraSample next(int timeout_ms, bool compare_pixels = false);
     /** @brief 唤醒 poll，不关闭采集句柄；空字符串表示成功。 */
@@ -70,6 +76,15 @@ private:
     struct Mapping { void *address{}; std::size_t length{}; };
     void check(int result, const std::string &operation);
     void configureSensor();
+    void snapshotControls();
+    void setControl(std::uint32_t id, int value, const std::string &name);
+    void writeAndVerifyControl(std::uint32_t id, int value, const std::string &operation);
+    std::string restoreControls();
+    struct SavedControl { std::uint32_t id{}; int value{}; std::string name{}; bool changed{}; };
+    std::vector<SavedControl> controls_{};
+    mutable std::mutex control_mutex_{};
+    int sensor_fd_{-1};
+    std::string sensor_path_{};
     void checkFormat();
     FrameSourceConfig config_{};
     std::shared_ptr<CameraSystem> system_{};

@@ -2,7 +2,7 @@
 
 `PlatformFactory` 是生产程序统一创建平台资源的入口。它创建帧源、帧创建器和整套跟踪依赖。公共算法只使用接口，不链接硬件实现。
 
-生产构建默认使用 `DRONE_TRACKER_PLATFORM=jetson`，也支持显式选择 `rk3576` 的本地 MJPEG 视频节点。未知值在硬件依赖发现前拒绝。RK3576 相机、硬件解码和 RGA 图像加速仍未提供。可控模型仅在测试中注入，生产程序没有假模型选项。
+生产构建默认使用 `DRONE_TRACKER_PLATFORM=jetson`，也支持显式选择 `rk3576` 的本地 MJPEG 视频与相机节点。未知值在硬件依赖发现前拒绝。RK3576 相机支持连续及软件触发；硬件解码和 RGA 图像加速仍未提供。可控模型仅在测试中注入，生产程序没有假模型选项。
 
 ## RK3576 独立 YOLO 使用
 
@@ -321,7 +321,7 @@ ROS 视频接入已完成规定的 RK3576 实机验收，包括纯 FP16 和纯 I
 
 ## RK3576 独立原生灰度相机源
 
-`implement-rk3576-camera-frame-source` 提供 AR0234 连续采集的独立入口。输出为原尺寸 `Gray8`，即每个像素一个八位灰度值。它通过 V4L2（Linux 视频设备接口）采集，不加载模型，不使用显示链，也不开放正式 ROS 相机入口。
+`implement-rk3576-camera-frame-source` 提供 AR0234 连续采集的独立入口。输出为原尺寸 `Gray8`，即每个像素一个八位灰度值。它通过 V4L2（Linux 视频设备接口）采集，不加载模型，不使用显示链。后续 ROS 相机变更已增加周期软件触发和正式入口，见下节。
 
 ### 配置与接口
 
@@ -338,7 +338,8 @@ config.camera_sensor_entity = "actual sensor"; // 当前传感器实体
 config.width = 1920;
 config.height = 1200;
 config.fps = 60;
-config.trigger_mode = false;                   // 必须显式选择连续采集
+config.trigger_mode = false;                   // 连续采集；软件触发改为 true
+config.camera_trigger_rate_hz = 0;              // 软件触发须显式填写 1..fps 的频率
 config.output_width = 0;                       // 0 表示保留原尺寸
 config.output_height = 0;
 config.camera_buffer_count = 4;                // 允许 2–32
@@ -351,9 +352,9 @@ auto result = factory->createFrameSource(config);
 // 成功时通过 result.value 的 start()/waitFrame()/stop() 操作。
 ```
 
-输出尺寸也可显式填为输入尺寸。触发采集、缩放、翻转、镜像和历史时间均被拒绝。实体名不能包含引号或控制字符。`configureRecording(true, ...)` 抛出 `std::invalid_argument`，表示不支持录像；禁用录像安全接受。工具保存的少量静态快照不属于录像功能。
+输出尺寸也可显式填为输入尺寸。外部引脚触发、缩放、翻转、镜像和历史时间均被拒绝。实体名不能包含引号或控制字符。`configureRecording(true, ...)` 抛出 `std::invalid_argument`，表示不支持录像；禁用录像安全接受。工具保存的少量静态快照不属于录像功能。
 
-工厂创建阶段只设置传感器并核验设备格式，随后关闭设备。此时不申请采集缓冲、不启动线程。每次 `start()` 重新打开设备，并核对实际的灰度格式、尺寸、帧间隔和行跨度。行跨度是相邻两行起点之间的字节数。例如输入宽 1920、行跨度 2048 时，每行只复制前 1920 字节，输出不含 128 字节填充。
+工厂创建阶段只设置传感器并核验设备格式，随后恢复本次修改的控制项并关闭设备。此时不申请采集缓冲、不启动线程。每次 `start()` 重新打开设备，并核对实际的灰度格式、尺寸、帧间隔和行跨度。行跨度是相邻两行起点之间的字节数。例如输入宽 1920、行跨度 2048 时，每行只复制前 1920 字节，输出不含 128 字节填充。
 
 每个输出帧都有独立像素存储。设备缓冲在复制后立即归还。消费者持有的帧及只读视图在源停止或销毁后仍有效。缓冲索引、平面数量、偏移、使用长度和错误标志不合法时，本轮失败，不交付该帧。
 
@@ -436,3 +437,70 @@ fuser "$VIDEO_DEVICE"
 `CameraDependencies::observe` 在生产线程同步接收逐帧报告，回调抛异常会使本轮失败。报告与快照写入会影响测得吞吐量，评估时应保留对应配置。`diagnostic()` 只读快照另外提供停止及清理耗时；`status()` 提供公共状态和队列统计，不消费帧。
 
 无设备测试、构建及已完成的开发板 2 实机验收见 [相机帧源验证记录](../../openspec/changes/implement-rk3576-camera-frame-source/validation.md)。这些结果不代表 ROS 相机、模型质量、曝光同步、Jetson 等价性或部署性能达标。实拍画面偏暗、模糊，仍需另行检查图像质量。
+
+
+## RK3576 ROS 相机节点与软件触发
+
+正式入口复用独立相机后端。连续模式由相机自行出帧；软件触发模式由独立线程周期发送拍摄命令。命令线程不读取图像，图像队列仍只有一个采集生产者。ROS 的 ON 表示开始整轮运行，不是单次拍照；OFF 结束本轮，随后 ON 复用已加载模型。
+
+### 填写配置并启动
+
+1. 复制 `parameters/rk3576_camera_params.yaml` 到部署目录。
+2. 根据 `media-ctl -p` 核对媒体设备、传感器实体、采集设备与尺寸。示例实体来自历史连接，重新接线后须复核。
+3. 填写四个模型文件路径：YOLO、模板 Backbone、搜索 Backbone、Head。Backbone 提取图像特征，Head 匹配模板和搜索特征。共享 `nano_backbone` 留空。
+4. 核对 `camera.fx/fy/cx/cy`，分别为像素焦距和主点坐标。当前按用户确认，对 1920×1200 图像暂用模拟值 `1000.0/1000.0/960.0/600.0`：焦距人为选定，主点暂取图像中心。可用来继续接入测试，但不代表镜头标定或旋转补偿精度通过。正式标定后替换四值并重启节点。节点不会再次缩放这些值；缺失或 `.nan` 仍会被拒绝。
+5. 在已构建和加载 ROS 包环境的目标系统执行以下命令。首次启动完成初始化后等待 ON。
+
+```bash
+ros2 launch drone_tracker rk3576_camera.launch.py \
+  params_file:=/absolute/path/camera.yaml video_source:=video0
+ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: ON}'
+ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: OFF}'
+```
+
+`video_source` 支持 `video10` 等多位设备号和 `/dev/video10` 等绝对设备路径。launch 只覆盖输入路径，算法与模式来自参数文件。初始化核验采集能力；设备恢复后，再次 ON 会重新打开和核验设备。
+
+| 参数 | 约束 |
+|---|---|
+| `mv_camera.capture_mode` | 必填 `continuous` 或 `software_trigger` |
+| `mv_camera.fps` | 正整数设备帧率，独立于命令频率 |
+| `mv_camera.trigger_rate_hz` | 软件模式为有限的 1 至 fps；连续模式为 0.0 |
+| `mv_camera.media_device`、`sensor_entity` | 显式媒体节点及其传感器实体 |
+| `mv_camera.buffer_count` | 2–32，默认 4 |
+| `mv_camera.width_px/height_px` | 实际输入像素尺寸 |
+| `mv_camera.output_width_px/output_height_px` | 与输入相同或为 0，0 表示不缩放 |
+| `need_save`、`use_sim_time`、`use_history_timestamp` | 均为 false |
+
+20 Hz 已在开发板 2 通过新实现的三轮有限计数、20 轮启停、100 次新建销毁、10 分钟慢消费，以及同一 ROS 节点 20 轮启停后额外 30 分钟负载。该结论针对本次设备和配置，不代表相机硬件最高频率。30/60 Hz 新实现测试的命令数与帧数仍不一致，未归因，不能宣称支持一触发一帧。完整环境、模型和限制见 [最终实机记录](../../openspec/changes/integrate-rk3576-ros-camera/final-board-validation.md)。代码不会因推理慢或缺帧自动降低频率。改为连续模式时必须同时设置 `trigger_rate_hz: 0.0`。运行期修改模式、频率、内参、模型等启动配置会被拒绝，修改文件后须重启节点。
+
+### 独立有限触发工具
+
+在上文的独立 ARM64 构建完成后，使用 `camera_source_driver`，无需加载模型。下面的命令只作为后续实机步骤，本次未执行：
+
+```bash
+./camera_source_driver \
+  --video-device /dev/video0 --media-device /dev/media0 \
+  --sensor-entity 'm00_b_mvcam 4-003b' --width 1920 --height 1200 --fps 60 \
+  --mode software_trigger --trigger-hz 20 --commands 60 --tail-ms 500 \
+  --snapshots 0 --output camera-trigger-new
+```
+
+`--commands 0` 验证无触发，`--commands 1` 验证单发；其余正整数为每轮最多发送的命令数。达到命令上限后停止发送，采集继续等待 `--tail-ms` 毫秒尾帧，再关闭设备。尾帧等待范围为 0–1500 ms，避免与两秒无帧故障阈值冲突。`--seconds` 在有限模式下还可指定整轮工具超时；未完成时超时明确失败。输出目录必须不存在。原连续工具调用仍可使用，不传 `--mode` 时为连续模式。
+
+`triggers.csv` 独立记录每次命令调用前后单调时间、调用成功与错误。`frames.csv` 保留驱动时间、主机出队时间、固定系统时间偏移和独立图像帧时间。`clock_offset_delta_us` 记录当前系统时钟偏移与本轮固定偏移的差，可用于发现校时跳变，不据此重标帧时间。这些时间不代表已证明的曝光时刻，也不按先后顺序强行配对。例如 120 个成功命令只返回 60 帧时，报告数量差 60，不据此判定是相机拒绝还是传输损失。
+
+`rounds.csv` 分别记录调用错误、计划周期跳过、驱动序号缺口、队列丢新帧及消费数量。还包含停止发送时帧数、尾帧数、停止发送及关闭时未确认请求数、工具超时和控制恢复结果。连续模式的命令数为零，命令与帧数差异不用于评价连续模式。有限计数验收须结合原始逐帧报告，区分起始帧、稳定阶段和尾部；零退出码本身不证明一触发一帧。
+
+### 故障与恢复
+
+每轮先保存 `trigger_mode`、`trigger_src`、`frame_rate` 的可读原值，再配置设备。读取失败时不修改控制。初始化验证结束、部分失败及正常停止均尝试恢复；恢复错误保留控制名称及原因，未恢复项可以在再次停止时重试。恢复仅针对本次控制项，不代表整个媒体拓扑已恢复。
+
+设置和恢复控制值后，每项最多等待 100 毫秒，每隔 5 毫秒读回一次，首次一致即继续。等待期间不会重复写入。超时仍不一致时报告设备、控制名、预期值、实际读回值和等待耗时；系统调用本身报错仍按设备错误处理。该时间限制不保证能中断阻塞的驱动调用。
+
+软件命令使用已核实控制接口，直接调用 V4L2，不为每帧启动 shell。周期按本轮起点安排，落后时跳过过期周期，不突发补发。OFF 或工作线程故障会唤醒等待；生命周期所有者先回收命令和采集线程，再停流、恢复、关闭。驱动调用若无法返回，不能保证停止期限，须判为实机失败，不能强制关闭在途句柄。
+
+首帧或后续连续两秒无成功出队为采集故障，短暂等待不等于文件结束。ROS 每秒最多输出一次常规采集汇总，终态另输出完整统计。相机停止耗时与包含模型等待的节点停止耗时分别报告。输入故障和 OFF 不伪造算法的 TargetLost 状态。
+
+相机 `need_save=true` 在初始化时失败，不创建部分 ROS bag 或录像。视频及 Jetson 记录行为保持不变。图像使用原帧时间，预测框使用当前预测时间；六个原有输入输出话题及状态数值保持不变。
+
+本变更的构建、无设备测试及暂缓实机项目见 [ROS 相机实施记录](../../openspec/changes/integrate-rk3576-ros-camera/validation.md)。历史连续相机和 shell 触发记录不能替代新实现验收；模型质量、曝光同步、Jetson 等价性及前序回放 7.2、7.3 的结论保持不变。

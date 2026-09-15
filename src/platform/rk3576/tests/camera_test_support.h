@@ -40,6 +40,10 @@ inline FrameSourceConfig config() {
 /** @brief 替身执行真实 CameraDevice 的调用流程；不打开任何相机设备。 */
 class System : public rk3576::CameraSystem {
 public:
+    std::recursive_mutex api_mutex{};
+    std::map<unsigned, int> controls{{0x00981901, 0}, {0x00981902, 1}, {0x00981904, 60}};
+    std::function<void()> trigger_hook{};
+    std::atomic<unsigned> trigger_calls{0};
     std::vector<std::string> calls{};
     std::map<std::string, int> counts{};
     std::string failure{};
@@ -75,6 +79,7 @@ public:
     std::mutex wait_mutex{};
     std::condition_variable cv{};
     bool hit(const std::string &name) {
+        std::lock_guard<std::recursive_mutex> lock{api_mutex};
         calls.push_back(name);
         const int count{++counts[name]};
         if (name == failure && count == occurrence) { errno = EIO; return true; }
@@ -117,16 +122,17 @@ public:
         require(count == 2, "Missing stop poll fd");
         if (hit("poll")) { return -1; }
         if (produced < frame_limit) { fds[0].revents = POLLIN; return 1; }
-        if (auto_timeout) { monotonic += 100000; return 0; }
+        if (auto_timeout) { std::lock_guard<std::recursive_mutex> api_lock{api_mutex}; monotonic += 100000; return 0; }
         std::unique_lock<std::mutex> lock{wait_mutex};
         waiting.store(true);
         cv.wait_for(lock, std::chrono::milliseconds{timeout}, [&] { return wake_pending; });
         waiting.store(false);
         if (wake_pending) { fds[1].revents = POLLIN; return 1; }
-        monotonic += 100000;
+        { std::lock_guard<std::recursive_mutex> api_lock{api_mutex}; monotonic += 100000; }
         return 0;
     }
     std::int64_t clockUs(clockid_t clock) override {
+        std::lock_guard<std::recursive_mutex> lock{api_mutex};
         if (hit("clock")) { throw std::runtime_error("injected clock failure"); }
         if (clock == CLOCK_REALTIME) { ++realtime_reads; return realtime; }
         return monotonic++;
@@ -143,8 +149,34 @@ public:
         require(mapped.erase(address) == 1, "Double unmap");
         return failed ? -1 : 0;
     }
-    int ioctl(int, unsigned long request, void *argument) override {
-        if (request == VIDIOC_SUBDEV_G_FMT) {
+    int ioctl(int fd, unsigned long request, void *argument) override {
+        if (request == VIDIOC_S_CTRL && static_cast<v4l2_control *>(argument)->id == 0x00981903) {
+            if (trigger_hook) { trigger_hook(); }
+            std::lock_guard<std::recursive_mutex> lock{api_mutex};
+            require(descriptors.count(fd) && streaming, "Trigger used closed/unready device");
+            if (hit("trigger")) { return -1; }
+            ++trigger_calls;
+            return 0;
+        }
+        std::lock_guard<std::recursive_mutex> lock{api_mutex};
+        if (request == VIDIOC_QUERYCTRL) {
+            if (hit("control_query")) { return -1; }
+            auto &value{*static_cast<v4l2_queryctrl *>(argument)};
+            const std::map<unsigned, std::string> names{{0x00981901, "trigger_mode"},
+                {0x00981902, "trigger_src"}, {0x00981903, "soft_trgone"}, {0x00981904, "frame_rate"}};
+            std::strncpy(reinterpret_cast<char *>(value.name), names.at(value.id).c_str(), sizeof(value.name));
+            value.type = value.id == 0x00981903 ? V4L2_CTRL_TYPE_BUTTON : V4L2_CTRL_TYPE_INTEGER;
+            value.maximum = value.id == 0x00981904 ? 60 : (value.id == 0x00981901 ? 2 : 1);
+            value.step = 1;
+        } else if (request == VIDIOC_G_CTRL) {
+            if (hit("control_get")) { return -1; }
+            auto &value{*static_cast<v4l2_control *>(argument)};
+            value.value = controls.at(value.id);
+        } else if (request == VIDIOC_S_CTRL) {
+            if (hit("control_set")) { return -1; }
+            const auto &value{*static_cast<v4l2_control *>(argument)};
+            controls.at(value.id) = value.value;
+        } else if (request == VIDIOC_SUBDEV_G_FMT) {
             if (hit("sensor_format")) { return -1; }
             auto &value{*static_cast<v4l2_subdev_format *>(argument)};
             value.format.width = width + (bad_sensor ? 1 : 0);

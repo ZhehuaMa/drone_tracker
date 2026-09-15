@@ -44,6 +44,8 @@ struct FrameSourceConfig {
     std::string camera_media_device{};
     std::string camera_sensor_entity{};
     int camera_buffer_count{4};
+    /** @brief 软件触发命令频率（Hz），独立于设备 fps；连续模式为零。 */
+    double camera_trigger_rate_hz{};
 };
 
 enum class FrameSourceState { Unknown, Ready, Running, Stopped, Eof, Failed };
@@ -56,6 +58,19 @@ struct FrameSourceStatus {
     std::uint64_t read{};
     std::uint64_t enqueued{};
     std::uint64_t dropped{};
+    bool software_trigger{};
+    double requested_trigger_hz{};
+    double actual_trigger_hz{};
+    std::uint64_t trigger_success{};
+    std::uint64_t trigger_errors{};
+    std::uint64_t trigger_skipped{};
+    std::uint64_t sequence_gaps{};
+    std::string time_source{};
+    std::int64_t stop_us{};
+    bool controls_restored{};
+    std::int64_t first_trigger_us{};
+    std::int64_t last_trigger_us{};
+    std::int64_t clock_offset_delta_us{};
 };
 
 /** @brief 单消费者帧源；实现直接使用原采集队列，不增加中转线程。 */

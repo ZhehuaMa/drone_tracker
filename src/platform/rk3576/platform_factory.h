@@ -3,7 +3,7 @@
 #include "tracker_assembly.h"
 #include "camera_frame_source.h"
 namespace rk3576 {
-/** @brief 独立调用方显式开启；正式 ROS 装配保留默认关闭。 */
+/** @brief 独立调用方默认关闭；正式 ROS 装配显式开启相机。 */
 struct FactoryOptions {
     bool enable_camera{};
     CameraDependencies camera{};
