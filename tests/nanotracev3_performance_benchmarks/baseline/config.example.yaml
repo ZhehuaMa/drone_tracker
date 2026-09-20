@@ -1,0 +1,16 @@
+%YAML:1.0
+---
+schema_version: 1
+board: "开发板 2"
+video: "input.mjpeg.mov"
+bbox: [124.929280, 22.944768, 75.848960, 39.202816]
+template_model: "models/template_backbone.rknn"
+search_model: "models/search_backbone.rknn"
+head_model: "models/head.rknn"
+precision_evidence: "evidence/models.yaml"
+warmup_updates: 30
+max_updates: 0
+repeats: 3
+output: "baseline-run-001"
+environment_interval_ms: 1000
+detailed_observation: 1

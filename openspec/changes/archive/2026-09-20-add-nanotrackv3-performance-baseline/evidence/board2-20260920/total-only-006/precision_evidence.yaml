@@ -1,0 +1,7 @@
+%YAML:1.0
+---
+schema_version: 1
+models:
+  - { role: "template_backbone", sha256: "c0002d937a7a414a7ef829b206f1674e0aff3311bf7bd5514baaa0106c2e7059", precision: "FP16", export_record: "template_backbone.yaml", export_record_sha256: "12806979f8591b3aa061e9292dcb8b043efdba841152b16ffb55178e1c6b6d9e" }
+  - { role: "search_backbone", sha256: "8985bc1f825dac3ac28bd1805abfee2cc81112acf8f3945cd495c9d325b4c754", precision: "FP16", export_record: "search_backbone.yaml", export_record_sha256: "df58c25c65a39e3aa67260d8c084a885953d000f46e0edd85aa45b96117ce121" }
+  - { role: "head", sha256: "f93e5c0e0b2a2a8bfe0425d9d43e6f0a6659a6464a9b09d94d35f21fa64f15bd", precision: "FP16", export_record: "head.yaml", export_record_sha256: "425aa55a97f23d6f1a8ad4f9dab6d80862e9e889ab4ef2aedece04f04f44fa2e" }

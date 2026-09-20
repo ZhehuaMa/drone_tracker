@@ -1,0 +1,51 @@
+Starting >>> drone_tracker
+Finished <<< drone_tracker [3.18s]
+
+Summary: 1 package finished [3.25s]
+Internal ctest changing into directory: /work/ros2_ws/build/drone_tracker
+Test project /work/ros2_ws/build/drone_tracker
+      Start  1: ros_video_generate_fixtures
+ 1/20 Test  #1: ros_video_generate_fixtures .............   Passed    0.13 sec
+      Start  2: ros_video_tests
+ 2/20 Test  #2: ros_video_tests .........................   Passed    6.09 sec
+      Start  3: ros_initialization_tests
+ 3/20 Test  #3: ros_initialization_tests ................   Passed    0.37 sec
+      Start  4: jetson_config_tests
+ 4/20 Test  #4: jetson_config_tests .....................   Passed    0.16 sec
+      Start  5: yolo_output_adapter_tests
+ 5/20 Test  #5: yolo_output_adapter_tests ...............   Passed    1.29 sec
+      Start  6: model_contract_tests
+ 6/20 Test  #6: model_contract_tests ....................   Passed    0.00 sec
+      Start  7: preprocess_common_tests
+ 7/20 Test  #7: preprocess_common_tests .................   Passed    0.00 sec
+      Start  8: preprocess_contract_tests
+ 8/20 Test  #8: preprocess_contract_tests ...............   Passed    0.19 sec
+      Start  9: hybrid_tracker_tests
+ 9/20 Test  #9: hybrid_tracker_tests ....................   Passed    0.01 sec
+      Start 10: platform_contract_tests
+10/20 Test #10: platform_contract_tests .................   Passed    0.04 sec
+      Start 11: rknn_preprocess_tests
+11/20 Test #11: rknn_preprocess_tests ...................   Passed    0.02 sec
+      Start 12: platform_selection_tests
+12/20 Test #12: platform_selection_tests ................   Passed    0.23 sec
+      Start 13: nanotrack_baseline_tests
+13/20 Test #13: nanotrack_baseline_tests ................   Passed    0.01 sec
+      Start 14: nanotrack_baseline_help
+14/20 Test #14: nanotrack_baseline_help .................   Passed    0.01 sec
+      Start 15: baseline_rknn_session_tests
+15/20 Test #15: baseline_rknn_session_tests .............   Passed    0.00 sec
+      Start 16: baseline_rknn_nanotrack_backend_tests
+16/20 Test #16: baseline_rknn_nanotrack_backend_tests ...   Passed    0.02 sec
+      Start 17: baseline_nanotrack_preprocess_tests
+17/20 Test #17: baseline_nanotrack_preprocess_tests .....   Passed    0.00 sec
+      Start 18: baseline_video_fixtures
+18/20 Test #18: baseline_video_fixtures .................   Passed    0.13 sec
+      Start 19: baseline_video_observation
+19/20 Test #19: baseline_video_observation ..............   Passed    0.02 sec
+      Start 20: baseline_runner_tests
+20/20 Test #20: baseline_runner_tests ...................   Passed    0.10 sec
+
+100% tests passed, 0 tests failed out of 20
+
+Total Test time (real) =   8.86 sec
+构建成功，安装目录：/Users/mazhehua/projects/drone_tracker/.docker-artifacts/install

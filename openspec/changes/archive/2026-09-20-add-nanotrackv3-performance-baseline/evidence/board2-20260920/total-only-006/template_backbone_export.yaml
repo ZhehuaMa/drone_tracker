@@ -1,0 +1,8 @@
+%YAML:1.0
+---
+role: "template_backbone"
+model_sha256: "c0002d937a7a414a7ef829b206f1674e0aff3311bf7bd5514baaa0106c2e7059"
+precision: "FP16"
+status: "success"
+source_record: "template_backbone-source.json"
+source_record_sha256: "affcde339747f0c85fc4988b7cf0386bc5d3efeced532098385e83630a4af24e"

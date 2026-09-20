@@ -7,6 +7,7 @@
 #include "model/validation.h"
 #include "nanotrack_preprocessor.h"
 #include "preprocess/input_validation.h"
+#include "timing_observer.h"
 
 namespace rk3576 {
 namespace {
@@ -119,6 +120,8 @@ bool RknnNanoTrackBackend::ready() const noexcept {
 void RknnNanoTrackBackend::reset() noexcept { template_feature_ = {}; }
 model::Result<model::Tensor> RknnNanoTrackBackend::backbone(RknnSession &session, const PreparedInputRef &input,
                                                             int size) {
+    timing::Span model_span{size == 127 ? timing::Stage::TemplateBackbone : timing::Stage::SearchBackbone};
+    timing::Span input_prepare{timing::Stage::InputPrepare};
     using Result = model::Result<model::Tensor>;
     const auto floating{std::dynamic_pointer_cast<const FloatInput>(input)};
     if (!floating) {
@@ -135,10 +138,14 @@ model::Result<model::Tensor> RknnNanoTrackBackend::backbone(RknnSession &session
     std::copy(floating->values()->begin(), floating->values()->end(), storage->values.begin());
     model::Tensor tensor{
         {floating->contract().shape, TensorElementType::Float32, TensorLayout::Nchw, storage->byteSize(), {}}, storage};
-    auto outputs{session.execute({submission(tensor, session.inputs()[0])})};
+    auto input_submission{submission(tensor, session.inputs()[0])};
+    input_prepare.finish();
+    auto outputs{session.execute({input_submission})};
     if (!outputs) {
+        model_span.finish(false);
         return Result::failure(outputs.error);
     }
+    timing::Span normalize{timing::Stage::Normalize};
     return {toNchw(outputs.value[0])};
 }
 model::Status RknnNanoTrackBackend::setTemplate(const PreparedInputRef &input) {
@@ -168,12 +175,18 @@ model::Result<model::NanoPrediction> RknnNanoTrackBackend::search(const Prepared
         if (!feature) {
             return Result::failure(feature.error);
         }
-        auto outputs{
-            head_session_->execute({submission(template_feature_, head_session_->inputs()[roles_.template_input]),
-                                    submission(feature.value, head_session_->inputs()[roles_.search_input])})};
+        timing::Span head_span{timing::Stage::Head};
+        timing::Span input_prepare{timing::Stage::InputPrepare};
+        std::vector<SessionInput> inputs{
+            submission(template_feature_, head_session_->inputs()[roles_.template_input]),
+            submission(feature.value, head_session_->inputs()[roles_.search_input])};
+        input_prepare.finish();
+        auto outputs{head_session_->execute(inputs)};
         if (!outputs) {
+            head_span.finish(false);
             return Result::failure(outputs.error);
         }
+        timing::Span normalize{timing::Stage::Normalize};
         return model::nanoPrediction(
             {toNchw(outputs.value[roles_.classification_output]), toNchw(outputs.value[roles_.location_output])},
             head_session_->identity());
@@ -181,6 +194,16 @@ model::Result<model::NanoPrediction> RknnNanoTrackBackend::search(const Prepared
         return Result::failure(
             {model::ModelError::ExecutionFailure, head_session_->identity(), "search", {}, {}, error.what()});
     }
+}
+bool RknnNanoTrackBackend::floatingInterfaces() const noexcept {
+    for (const auto *session : {template_session_.get(), search_session_.get(), head_session_.get()}) {
+        for (const auto *attributes : {&session->inputs(), &session->outputs()}) {
+            for (const auto &attribute : *attributes) {
+                if (attribute.type != RKNN_TENSOR_FLOAT16 && attribute.type != RKNN_TENSOR_FLOAT32) { return false; }
+            }
+        }
+    }
+    return true;
 }
 std::string RknnNanoTrackBackend::describe() const {
     std::ostringstream out;

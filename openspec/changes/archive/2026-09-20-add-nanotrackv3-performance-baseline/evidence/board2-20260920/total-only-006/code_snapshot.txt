@@ -1,0 +1,2428 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7515dc1..8c3075f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -62,6 +62,9 @@ if(DRONE_TRACKER_PLATFORM STREQUAL "jetson")
+ endif()
+ add_subdirectory(src/hybrid_tracker)
+ add_subdirectory(src/platform)
++if(DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
++    add_subdirectory(tests/nanotracev3_performance_benchmarks/baseline)
++endif()
+ 
+ # Executable
+ add_library(drone_tracker_ros STATIC src/drone_tracker_node.cpp)
+diff --git a/src/hybrid_tracker/nano_tracker.cpp b/src/hybrid_tracker/nano_tracker.cpp
+index 62ec9f8..ed074a3 100644
+--- a/src/hybrid_tracker/nano_tracker.cpp
++++ b/src/hybrid_tracker/nano_tracker.cpp
+@@ -5,6 +5,7 @@
+ #include <iostream>
+ #include <stdexcept>
+ #include "model/validation.h"
++#include "timing_observer.h"
+ 
+ NanoTracker::NanoTracker(std::unique_ptr<model::NanoTrackBackend> model,
+                          std::unique_ptr<NanoTrackPreprocessor> preprocessor)
+@@ -53,6 +54,8 @@ static cv::Mat change(const cv::Mat& r) {
+ };
+ 
+ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
++    timing::Span preprocessing{timing::Stage::Preprocess};
++    timing::Span geometry{timing::Stage::Geometry};
+     m_initialized = false;
+ 
+     preprocessor_->reset();
+@@ -81,13 +84,18 @@ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
+     float s_z = sz(size.x, size.y);
+ 
+     const auto contract{model_->templateContract()};
++    geometry.finish();
+     auto prepared{preprocessor_->prepareTemplate(frame, center_pos, static_cast<int>(round(s_z)), contract)};
+     if (!prepared || !prepared.value) {
++        preprocessing.finish(false);
+         std::cerr << "NanoTrack template failed: " << prepared.message << std::endl;
+         return;
+     }
++    preprocessing.finish();
+     try {
++        timing::Span inference{timing::Stage::Inference};
+         const auto initialized{model_->setTemplate(prepared.value)};
++        inference.finish(static_cast<bool>(initialized));
+         if (!initialized) {
+             preprocessor_->reset();
+             model_->reset();
+@@ -107,20 +115,27 @@ float NanoTracker::update(const FrameRef& frame, cv::Rect2f& output_bbox) {
+         return 0.0f; // 未初始化：与 Python 端 (False, None) 对齐
+     }
+     if (!frame) { return -1.0f; }
++    timing::Span preprocessing{timing::Stage::Preprocess};
++    timing::Span geometry{timing::Stage::Geometry};
+     float s_z = sz(size.x, size.y);
+     float scale_z = static_cast<float>(template_size) / s_z;
+     float s_x = s_z * (static_cast<float>(instance_size) / template_size);
+     
+     const cv::Size img_size{frame->width(), frame->height()};
+     const auto contract{model_->searchContract()};
++    geometry.finish();
+     auto prepared{preprocessor_->prepareSearch(frame, center_pos, static_cast<int>(round(s_x)), contract)};
+     if (!prepared || !prepared.value) {
++        preprocessing.finish(false);
+         std::cerr << "NanoTrack search failed: " << prepared.message << std::endl;
+         return -1.0f;
+     }
++    preprocessing.finish();
+     model::Result<model::NanoPrediction> outputs;
+     try {
++        timing::Span inference{timing::Stage::Inference};
+         outputs = model_->search(prepared.value);
++        inference.finish(static_cast<bool>(outputs));
+     } catch (const std::exception &error) {
+         std::cerr << "NanoTrack search inference failed: " << error.what() << std::endl;
+         return -1.0f;
+@@ -129,10 +144,12 @@ float NanoTracker::update(const FrameRef& frame, cv::Rect2f& output_bbox) {
+         std::cerr << model::describe(outputs.error) << std::endl;
+         return -1.0f;
+     }
++    timing::Span postprocessing{timing::Stage::Postprocess};
+     const auto &classification{outputs.value.classification};
+     const auto &location{outputs.value.location};
+     if (model::validateTensor(classification, {"classification", 0, {1, 2, 15, 15}}, "NanoTracker")
+         || model::validateTensor(location, {"location", 1, {1, 4, 15, 15}}, "NanoTracker")) {
++        postprocessing.finish(false);
+         return -1.0f;
+     }
+     const auto cls_view{classification.read()};
+diff --git a/src/platform/rk3576/mjpeg_video_reader.cpp b/src/platform/rk3576/mjpeg_video_reader.cpp
+index 42e69eb..ceed7ad 100644
+--- a/src/platform/rk3576/mjpeg_video_reader.cpp
++++ b/src/platform/rk3576/mjpeg_video_reader.cpp
+@@ -1,4 +1,5 @@
+ #include "mjpeg_video_reader.h"
++#include "timing_observer.h"
+ 
+ #include <array>
+ #include <csetjmp>
+@@ -131,8 +132,10 @@ struct MjpegVideoReader::Impl {
+             }
+             VideoReadResult result{VideoReadStatus::Frame, {{}, packet->pts, packet->pts != AV_NOPTS_VALUE}, {}};
+             try {
++                timing::Span decode{timing::Stage::Decode};
+                 auto jpeg{std::make_unique<JpegState>()};
+                 if (!decodeJpeg(jpeg.get(), packet->data, static_cast<unsigned long>(packet->size), result.sample.gray)) {
++                    decode.finish(false);
+                     result.status = VideoReadStatus::DecodeError;
+                     result.reason = jpeg->message.data();
+                 } else if (width != 0 && (width != result.sample.gray.cols || height != result.sample.gray.rows)) {
+diff --git a/src/platform/rk3576/nanotrack_preprocessor.cpp b/src/platform/rk3576/nanotrack_preprocessor.cpp
+index 2f0a975..93d7ab4 100644
+--- a/src/platform/rk3576/nanotrack_preprocessor.cpp
++++ b/src/platform/rk3576/nanotrack_preprocessor.cpp
+@@ -4,6 +4,7 @@
+ #include <limits>
+ 
+ #include "preprocess/input_validation.h"
++#include "timing_observer.h"
+ 
+ #include <opencv2/imgproc.hpp>
+ 
+@@ -21,25 +22,31 @@ PreparedInputResult NanoTrackPreprocessor::prepareSearch(const FrameRef &frame,
+ PreparedInputResult NanoTrackPreprocessor::prepare(const FrameRef &frame, const cv::Point2f &position,
+                                                    int original_size, const ModelInputContract &contract,
+                                                    bool is_template) {
++    timing::Span image_prepare{timing::Stage::ImagePrepare};
+     const auto error{validatePreprocessFrame(frame)};
+     if (error != PreprocessError::None) {
++        image_prepare.finish(false);
+         return PreparedInputResult::failure(error, preprocessErrorName(error));
+     }
+     const int size{is_template ? 127 : 255};
+     if (!matchesImageContract(contract, 1.0f, size)) {
++        image_prepare.finish(false);
+         return PreparedInputResult::failure(PreprocessError::ContractMismatch, "Expected Float32 NCHW NanoTrack input");
+     }
+     if (!is_template && !mean_.valid()) {
++        image_prepare.finish(false);
+         return PreparedInputResult::failure(PreprocessError::ContractMismatch, "Current target template is required");
+     }
+     const auto geometry{calculateNanoCropGeometry({frame->width(), frame->height()}, position, original_size)};
+     if (!geometry) {
++        image_prepare.finish(false);
+         return PreparedInputResult::failure(geometry.error, geometry.message);
+     }
+     try {
+         auto storage{cache_[is_template ? 0 : 1].acquire(
+             [size] { return std::make_shared<std::vector<float>>(3 * size * size); })};
+         if (!storage) {
++            image_prepare.finish(false);
+             return PreparedInputResult::failure(PreprocessError::InputBusy, "Previous input still owns cache lease");
+         }
+         if (is_template) {
+@@ -49,6 +56,7 @@ PreparedInputResult NanoTrackPreprocessor::prepare(const FrameRef &frame, const
+         {
+             const auto view{frame->mapRead()};
+             if (!view) {
++                image_prepare.finish(false);
+                 return PreparedInputResult::failure(PreprocessError::PlatformFailure, "Frame mapping failed");
+             }
+             const auto &mat{view->mat()};
+@@ -57,6 +65,7 @@ PreparedInputResult NanoTrackPreprocessor::prepare(const FrameRef &frame, const
+                 mat.cols != frame->width() || mat.rows != frame->height() || !mat.data ||
+                 view->rowStrideBytes() != mat.step[0] || mat.step[0] < static_cast<std::size_t>(mat.cols) ||
+                 mat.step[0] > std::numeric_limits<std::size_t>::max() / static_cast<std::size_t>(mat.rows)) {
++                image_prepare.finish(false);
+                 return PreparedInputResult::failure(PreprocessError::PlatformTypeMismatch, "Invalid Gray8 mapping");
+             }
+             mat.convertTo(snapshot, CV_32F);
+@@ -77,6 +86,7 @@ PreparedInputResult NanoTrackPreprocessor::prepare(const FrameRef &frame, const
+         }
+         return {std::move(prepared)};
+     } catch (const std::exception &exception) {
++        image_prepare.finish(false);
+         return PreparedInputResult::failure(PreprocessError::PlatformFailure, exception.what());
+     }
+ }
+diff --git a/src/platform/rk3576/rknn_nanotrack_backend.cpp b/src/platform/rk3576/rknn_nanotrack_backend.cpp
+index b583968..4bab92b 100644
+--- a/src/platform/rk3576/rknn_nanotrack_backend.cpp
++++ b/src/platform/rk3576/rknn_nanotrack_backend.cpp
+@@ -7,6 +7,7 @@
+ #include "model/validation.h"
+ #include "nanotrack_preprocessor.h"
+ #include "preprocess/input_validation.h"
++#include "timing_observer.h"
+ 
+ namespace rk3576 {
+ namespace {
+@@ -119,6 +120,8 @@ bool RknnNanoTrackBackend::ready() const noexcept {
+ void RknnNanoTrackBackend::reset() noexcept { template_feature_ = {}; }
+ model::Result<model::Tensor> RknnNanoTrackBackend::backbone(RknnSession &session, const PreparedInputRef &input,
+                                                             int size) {
++    timing::Span model_span{size == 127 ? timing::Stage::TemplateBackbone : timing::Stage::SearchBackbone};
++    timing::Span input_prepare{timing::Stage::InputPrepare};
+     using Result = model::Result<model::Tensor>;
+     const auto floating{std::dynamic_pointer_cast<const FloatInput>(input)};
+     if (!floating) {
+@@ -135,10 +138,14 @@ model::Result<model::Tensor> RknnNanoTrackBackend::backbone(RknnSession &session
+     std::copy(floating->values()->begin(), floating->values()->end(), storage->values.begin());
+     model::Tensor tensor{
+         {floating->contract().shape, TensorElementType::Float32, TensorLayout::Nchw, storage->byteSize(), {}}, storage};
+-    auto outputs{session.execute({submission(tensor, session.inputs()[0])})};
++    auto input_submission{submission(tensor, session.inputs()[0])};
++    input_prepare.finish();
++    auto outputs{session.execute({input_submission})};
+     if (!outputs) {
++        model_span.finish(false);
+         return Result::failure(outputs.error);
+     }
++    timing::Span normalize{timing::Stage::Normalize};
+     return {toNchw(outputs.value[0])};
+ }
+ model::Status RknnNanoTrackBackend::setTemplate(const PreparedInputRef &input) {
+@@ -168,12 +175,18 @@ model::Result<model::NanoPrediction> RknnNanoTrackBackend::search(const Prepared
+         if (!feature) {
+             return Result::failure(feature.error);
+         }
+-        auto outputs{
+-            head_session_->execute({submission(template_feature_, head_session_->inputs()[roles_.template_input]),
+-                                    submission(feature.value, head_session_->inputs()[roles_.search_input])})};
++        timing::Span head_span{timing::Stage::Head};
++        timing::Span input_prepare{timing::Stage::InputPrepare};
++        std::vector<SessionInput> inputs{
++            submission(template_feature_, head_session_->inputs()[roles_.template_input]),
++            submission(feature.value, head_session_->inputs()[roles_.search_input])};
++        input_prepare.finish();
++        auto outputs{head_session_->execute(inputs)};
+         if (!outputs) {
++            head_span.finish(false);
+             return Result::failure(outputs.error);
+         }
++        timing::Span normalize{timing::Stage::Normalize};
+         return model::nanoPrediction(
+             {toNchw(outputs.value[roles_.classification_output]), toNchw(outputs.value[roles_.location_output])},
+             head_session_->identity());
+@@ -182,6 +195,16 @@ model::Result<model::NanoPrediction> RknnNanoTrackBackend::search(const Prepared
+             {model::ModelError::ExecutionFailure, head_session_->identity(), "search", {}, {}, error.what()});
+     }
+ }
++bool RknnNanoTrackBackend::floatingInterfaces() const noexcept {
++    for (const auto *session : {template_session_.get(), search_session_.get(), head_session_.get()}) {
++        for (const auto *attributes : {&session->inputs(), &session->outputs()}) {
++            for (const auto &attribute : *attributes) {
++                if (attribute.type != RKNN_TENSOR_FLOAT16 && attribute.type != RKNN_TENSOR_FLOAT32) { return false; }
++            }
++        }
++    }
++    return true;
++}
+ std::string RknnNanoTrackBackend::describe() const {
+     std::ostringstream out;
+     out << "template Backbone\n"
+diff --git a/src/platform/rk3576/rknn_nanotrack_backend.h b/src/platform/rk3576/rknn_nanotrack_backend.h
+index 7f94569..93d1326 100644
+--- a/src/platform/rk3576/rknn_nanotrack_backend.h
++++ b/src/platform/rk3576/rknn_nanotrack_backend.h
+@@ -16,6 +16,7 @@ public:
+     model::Result<model::NanoPrediction> search(const PreparedInputRef &input) override;
+     void reset() noexcept override;
+     std::string describe() const;
++    bool floatingInterfaces() const noexcept;
+ 
+ private:
+     bool ready() const noexcept;
+diff --git a/src/platform/rk3576/rknn_nanotrack_factory.cpp b/src/platform/rk3576/rknn_nanotrack_factory.cpp
+index f6295cc..66680ed 100644
+--- a/src/platform/rk3576/rknn_nanotrack_factory.cpp
++++ b/src/platform/rk3576/rknn_nanotrack_factory.cpp
+@@ -17,7 +17,8 @@ model::Result<NanoTrackComponents> loadNanoTrack(const std::string &template_pat
+             return Result::failure(backend.error);
+         }
+         auto description{backend.value->describe()};
+-        return {{std::move(backend.value), std::make_unique<NanoTrackPreprocessor>(), std::move(description)}};
++        const bool floating_interfaces{backend.value->floatingInterfaces()};
++        return {{std::move(backend.value), std::make_unique<NanoTrackPreprocessor>(), std::move(description), floating_interfaces}};
+     } catch (const std::exception &error) {
+         return Result::failure({model::ModelError::LoadFailure, head_path, "assemble NanoTrack", {}, {}, error.what()});
+     }
+diff --git a/src/platform/rk3576/rknn_nanotrack_factory.h b/src/platform/rk3576/rknn_nanotrack_factory.h
+index ddc6859..ee7f525 100644
+--- a/src/platform/rk3576/rknn_nanotrack_factory.h
++++ b/src/platform/rk3576/rknn_nanotrack_factory.h
+@@ -9,6 +9,7 @@ struct NanoTrackComponents {
+     std::unique_ptr<model::NanoTrackBackend> backend{};
+     std::unique_ptr<::NanoTrackPreprocessor> preprocessor{};
+     std::string description{};
++    bool floating_interfaces{};
+ };
+ model::Result<NanoTrackComponents> loadNanoTrack(const std::string &template_path, const std::string &search_path,
+                                                  const std::string &head_path);
+diff --git a/src/platform/rk3576/rknn_session.cpp b/src/platform/rk3576/rknn_session.cpp
+index b9f206a..a4a890b 100644
+--- a/src/platform/rk3576/rknn_session.cpp
++++ b/src/platform/rk3576/rknn_session.cpp
+@@ -1,4 +1,5 @@
+ #include "rknn_session.h"
++#include "timing_observer.h"
+ 
+ #include <cmath>
+ #include <cstring>
+@@ -194,6 +195,7 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
+         return Result::failure({model::ModelError::ContractMismatch, path_, "inputs", std::to_string(inputs_.size()),
+                                 std::to_string(inputs.size()), "Input count mismatch"});
+     }
++    timing::Span input_prepare{timing::Stage::InputPrepare};
+     std::vector<rknn_input> submissions(inputs.size());
+     std::vector<bool> seen(inputs.size(), false);
+     for (const auto &input : inputs) {
+@@ -240,14 +242,19 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
+     }
+     // 在设备提交前完成可能分配内存的请求数组准备。
+     std::vector<rknn_output> outputs(outputs_.size());
++    input_prepare.finish();
++    timing::Span inputs_set{timing::Stage::InputsSet};
+     int status{api_.inputs_set(context_, static_cast<std::uint32_t>(submissions.size()), submissions.data())};
++    inputs_set.finish(status == RKNN_SUCC);
+     if (status != RKNN_SUCC) {
+         const auto error{failure("inputs_set", status)};
+         invalidate(); // 本次尚未提交 run。
+         return Result::failure(error);
+     }
+     running_ = true;
++    timing::Span run{timing::Stage::Run};
+     status = api_.run(context_, nullptr);
++    run.finish(status == RKNN_SUCC);
+     if (status != RKNN_SUCC) {
+         const auto error{failure("run", status)};
+         confirmStopped();
+@@ -258,7 +265,9 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
+         outputs[i].index = static_cast<std::uint32_t>(i);
+         outputs[i].want_float = 1;
+     }
++    timing::Span outputs_get{timing::Stage::OutputsGet};
+     status = api_.outputs_get(context_, static_cast<std::uint32_t>(outputs.size()), outputs.data(), nullptr);
++    outputs_get.finish(status == RKNN_SUCC);
+     if (status != RKNN_SUCC) {
+         const auto error{failure("outputs_get", status)};
+         confirmStopped();
+@@ -268,6 +277,7 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
+     }
+     running_ = false; // 成功 get 的 API 契约明确等待推理结束。
+     Result result;
++    timing::Span output_copy{timing::Stage::OutputCopy};
+     try {
+         for (std::size_t i{0}; i < outputs.size(); ++i) {
+             if (!outputs[i].buf || outputs[i].size != descriptors_[i].bytes) {
+@@ -283,7 +293,10 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
+     } catch (const std::exception &error) {
+         result = Result::failure({model::ModelError::ExecutionFailure, path_, "copy outputs", {}, {}, error.what()});
+     }
++    output_copy.finish(static_cast<bool>(result));
++    timing::Span outputs_release{timing::Stage::OutputsRelease};
+     status = api_.outputs_release(context_, static_cast<std::uint32_t>(outputs.size()), outputs.data());
++    outputs_release.finish(status == RKNN_SUCC);
+     if (status != RKNN_SUCC) {
+         result = Result::failure(failure("outputs_release", status));
+     }
+diff --git a/src/platform/rk3576/tests/nanotrack_preprocess_test.cpp b/src/platform/rk3576/tests/nanotrack_preprocess_test.cpp
+index 95d1ad4..deefc45 100644
+--- a/src/platform/rk3576/tests/nanotrack_preprocess_test.cpp
++++ b/src/platform/rk3576/tests/nanotrack_preprocess_test.cpp
+@@ -6,6 +6,7 @@
+ #include <stdexcept>
+ 
+ #include "../host_frame.h"
++#include "timing_observer.h"
+ 
+ namespace {
+ void require(bool ok, const char *message) {
+@@ -108,8 +109,29 @@ void numeric(int crop, cv::Point2f center, int left, int top) {
+         require(fractional, "缩放结果被量化回 uint8");
+     }
+ }
++void observationPixels() {
++    class Observer final : public timing::Observer {
++    public:
++        int calls{};
++        std::uint32_t begin(timing::Stage) noexcept override { ++calls; return 1; }
++        void end(std::uint32_t, bool) noexcept override {}
++    } observer;
++    std::vector<float> expected;
++    for (bool enabled : {false, true}) {
++        auto trace{std::make_shared<Trace>()};
++        auto frame{std::make_shared<TestFrame>(trace)};
++        rk3576::NanoTrackPreprocessor preprocessor;
++        timing::Observation observation{enabled ? &observer : nullptr};
++        auto prepared{preprocessor.prepareTemplate(frame, {0, 0}, 9, ModelInputContract{{1, 3, 127, 127}})};
++        require(static_cast<bool>(prepared), "非连续行边缘裁剪失败");
++        const auto values{std::dynamic_pointer_cast<const rk3576::FloatInput>(prepared.value)->values()};
++        if (enabled) { require(*values == expected && observer.calls == 1, "观测改变非连续行像素"); }
++        else { expected = *values; }
++    }
++}
+ } // namespace
+ int main() {
++    observationPixels();
+     numeric(5, {2, 1}, -1, -2);
+     numeric(6, {2, 1}, -1, -2);
+     numeric(4, {4, 3}, 2, 1);
+diff --git a/src/platform/rk3576/tests/rknn_nanotrack_backend_test.cpp b/src/platform/rk3576/tests/rknn_nanotrack_backend_test.cpp
+index 27297fe..6ccfe93 100644
+--- a/src/platform/rk3576/tests/rknn_nanotrack_backend_test.cpp
++++ b/src/platform/rk3576/tests/rknn_nanotrack_backend_test.cpp
+@@ -8,6 +8,8 @@
+ #include "../nanotrack_preprocessor.h"
+ #include "../yolo_preprocessor.h"
+ #include "nano_tracker.h"
++#include "timing_observer.h"
++#include <array>
+ #include "rknn_test_support.h"
+ 
+ namespace {
+@@ -225,11 +227,53 @@ void realTracker() {
+     tracker.reset();
+     tracker.reset();
+ }
++class Counter final : public timing::Observer {
++public:
++    std::array<int, 18> counts{};
++    std::uint32_t begin(timing::Stage stage) noexcept override {
++        ++counts[static_cast<std::size_t>(stage)];
++        return 1;
++    }
++    void end(std::uint32_t, bool) noexcept override {}
++};
++void observationComparison() {
++    std::array<cv::Rect2f, 10> reference_boxes{};
++    std::array<float, 10> reference_scores{};
++    for (bool observed : {false, true}) {
++        auto fake{models(false, false, true, true)};
++        sdk = &fake;
++        auto backend{load()};
++        require(backend.value->floatingInterfaces(), "纯浮点接口未识别");
++        NanoTracker tracker{std::move(backend.value), std::make_unique<rk3576::NanoTrackPreprocessor>()};
++        Counter counter;
++        timing::Observation observation{observed ? &counter : nullptr};
++        const auto frame{rk3576::copyGrayFrame(cv::Mat(200, 200, CV_8UC1, cv::Scalar{73}))};
++        tracker.init(frame, {-3, 4, 20, 20});
++        require(tracker.isInitialized(), "边缘模板初始化失败");
++        for (std::size_t i{0}; i < reference_boxes.size(); ++i) {
++            cv::Rect2f box;
++            const float score{tracker.update(frame, box)};
++            if (observed) {
++                require(box == reference_boxes[i] && score == reference_scores[i], "观测改变框或分数");
++            } else { reference_boxes[i] = box; reference_scores[i] = score; }
++        }
++        require(fake.models[0].runs == 1 && fake.models[1].runs == 10 && fake.models[2].runs == 10,
++                "观测改变模型调用次数");
++        if (observed) {
++            require(counter.counts[static_cast<int>(timing::Stage::TemplateBackbone)] == 1
++                && counter.counts[static_cast<int>(timing::Stage::SearchBackbone)] == 10
++                && counter.counts[static_cast<int>(timing::Stage::Head)] == 10
++                && counter.counts[static_cast<int>(timing::Stage::OutputsGet)] == 21,
++                "模型角色或结果获取区间缺失");
++        }
++    }
++}
+ } // namespace
+ int main() {
+     checkCombinations();
+     failures();
+     floatingAffineMetadata();
+     realTracker();
++    observationComparison();
+     std::cout << "NanoTrack 四精度组合、角色重排、失败状态与真实跟踪链通过\n";
+ }
+
+新增文件 src/hybrid_tracker/timing_observer.h
+#ifndef DRONE_TRACKER_TIMING_OBSERVER_H
+#define DRONE_TRACKER_TIMING_OBSERVER_H
+
+#include <cstdint>
+#include <exception>
+
+namespace timing {
+enum class Stage : std::uint8_t {
+    DecodeToResult,
+    Decode,
+    FrameCopy,
+    Preprocess,
+    Inference,
+    Postprocess,
+    Geometry,
+    ImagePrepare,
+    TemplateBackbone,
+    SearchBackbone,
+    Head,
+    InputPrepare,
+    InputsSet,
+    Run,
+    OutputsGet,
+    OutputCopy,
+    OutputsRelease,
+    Normalize
+};
+/** @brief 同一线程的借用观察器；回调不得抛异常、分配内存或执行文件 I/O。 */
+class Observer {
+  public:
+    virtual ~Observer() = default;
+    virtual std::uint32_t begin(Stage stage) noexcept = 0;
+    virtual void end(std::uint32_t id, bool complete) noexcept = 0;
+};
+inline thread_local Observer *current{nullptr};
+/** @brief 只在当前线程启用观察，作用域结束后恢复原观察器。 */
+class Observation final {
+  public:
+    explicit Observation(Observer *observer) noexcept : previous_{current} { current = observer; }
+    ~Observation() noexcept { current = previous_; }
+    Observation(const Observation &) = delete;
+    Observation &operator=(const Observation &) = delete;
+
+  private:
+    Observer *previous_{};
+};
+/** @brief 轻量计时区间；显式 finish(false) 可标记普通返回值表示的失败。 */
+class Span final {
+  public:
+    explicit Span(Stage stage) noexcept : observer_{current}, exceptions_{std::uncaught_exceptions()} {
+        if (observer_) {
+            id_ = observer_->begin(stage);
+        }
+    }
+    ~Span() noexcept { finish(std::uncaught_exceptions() == exceptions_); }
+    void finish(bool complete = true) noexcept {
+        if (observer_) {
+            observer_->end(id_, complete);
+            observer_ = nullptr;
+        }
+    }
+    Span(const Span &) = delete;
+    Span &operator=(const Span &) = delete;
+
+  private:
+    Observer *observer_{};
+    std::uint32_t id_{};
+    int exceptions_{};
+};
+} // namespace timing
+#endif // DRONE_TRACKER_TIMING_OBSERVER_H
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/CMakeLists.txt
+cmake_minimum_required(VERSION 3.16)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    project(nanotrackv3_baseline LANGUAGES CXX)
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    option(DRONE_TRACKER_BUILD_TESTS "Build controlled baseline tests" ON)
+    enable_testing()
+    set(REPOSITORY_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
+    include(${REPOSITORY_ROOT}/src/platform/rk3576/dependencies.cmake)
+    find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn video imgcodecs videoio)
+    add_subdirectory(${REPOSITORY_ROOT}/src/hybrid_tracker common)
+    add_subdirectory(${REPOSITORY_ROOT}/src/platform/rk3576 rk3576)
+endif()
+get_filename_component(REPOSITORY_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+find_package(JPEG REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(BASELINE_AV REQUIRED IMPORTED_TARGET libavformat libavcodec libavutil)
+execute_process(COMMAND git rev-parse HEAD WORKING_DIRECTORY ${REPOSITORY_ROOT}
+    OUTPUT_VARIABLE BASELINE_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND git diff HEAD -- WORKING_DIRECTORY ${REPOSITORY_ROOT} OUTPUT_VARIABLE BASELINE_SOURCE_SNAPSHOT)
+execute_process(COMMAND git ls-files --others --exclude-standard WORKING_DIRECTORY ${REPOSITORY_ROOT}
+    OUTPUT_VARIABLE BASELINE_UNTRACKED OUTPUT_STRIP_TRAILING_WHITESPACE)
+string(REPLACE "\n" ";" BASELINE_UNTRACKED "${BASELINE_UNTRACKED}")
+foreach(path IN LISTS BASELINE_UNTRACKED)
+    if(path MATCHES "^(src/|tests/nanotracev3_performance_benchmarks/baseline/)" AND path MATCHES "\\.(cpp|h|yaml|txt|in)$")
+        file(READ "${REPOSITORY_ROOT}/${path}" content)
+        string(APPEND BASELINE_SOURCE_SNAPSHOT "\n新增文件 ${path}\n${content}\n")
+    endif()
+endforeach()
+# 使用内容派生的原始字符串分隔符，避免快照中的 C++ 文本截断生成头文件。
+string(SHA256 BASELINE_SNAPSHOT_HASH "${BASELINE_SOURCE_SNAPSHOT}")
+string(SUBSTRING "${BASELINE_SNAPSHOT_HASH}" 0 12 BASELINE_SNAPSHOT_SUFFIX)
+set(BASELINE_SNAPSHOT_DELIMITER "snap${BASELINE_SNAPSHOT_SUFFIX}")
+configure_file(code_identity.h.in code_identity.h @ONLY)
+add_library(nanotrack_baseline_support STATIC config.cpp timing_recorder.cpp result_writer.cpp statistics.cpp model_preparation.cpp)
+target_link_libraries(nanotrack_baseline_support PUBLIC hybrid_tracker OpenSSL::Crypto)
+target_include_directories(nanotrack_baseline_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(nanotrack_baseline_runner STATIC benchmark_runner.cpp)
+target_include_directories(nanotrack_baseline_runner PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(nanotrack_baseline_runner PUBLIC nanotrack_baseline_support rk3576_yolo_sdk rk3576_video PRIVATE PkgConfig::BASELINE_AV JPEG::JPEG)
+add_executable(nanotrackv3_baseline main.cpp)
+target_link_libraries(nanotrackv3_baseline PRIVATE nanotrack_baseline_runner)
+install(TARGETS nanotrackv3_baseline DESTINATION lib/drone_tracker)
+if(DRONE_TRACKER_BUILD_TESTS)
+    add_executable(nanotrack_baseline_tests tests/baseline_test.cpp)
+    target_link_libraries(nanotrack_baseline_tests PRIVATE nanotrack_baseline_support rk3576_video rk3576_yolo_runtime)
+    add_test(NAME nanotrack_baseline_tests COMMAND nanotrack_baseline_tests)
+    add_test(NAME nanotrack_baseline_help COMMAND nanotrackv3_baseline --help)
+endif()
+if(DRONE_TRACKER_BUILD_TESTS)
+    foreach(name rknn_session rknn_nanotrack_backend nanotrack_preprocess)
+        add_executable(baseline_${name}_tests ${REPOSITORY_ROOT}/src/platform/rk3576/tests/${name}_test.cpp)
+        target_include_directories(baseline_${name}_tests PRIVATE ${RKNN_INCLUDE_DIR})
+        target_link_libraries(baseline_${name}_tests PRIVATE rk3576_yolo_runtime)
+        add_test(NAME baseline_${name}_tests COMMAND baseline_${name}_tests)
+    endforeach()
+    add_executable(baseline_video_fixtures ${REPOSITORY_ROOT}/src/platform/rk3576/tests/video_fixture_generator.cpp)
+    target_link_libraries(baseline_video_fixtures PRIVATE rk3576_video JPEG::JPEG PkgConfig::BASELINE_AV)
+    add_test(NAME baseline_video_fixtures COMMAND baseline_video_fixtures ${CMAKE_CURRENT_BINARY_DIR}/fixtures)
+    set_tests_properties(baseline_video_fixtures PROPERTIES FIXTURES_SETUP baseline_video)
+    add_test(NAME baseline_video_observation COMMAND nanotrack_baseline_tests ${CMAKE_CURRENT_BINARY_DIR}/fixtures)
+    set_tests_properties(baseline_video_observation PROPERTIES FIXTURES_REQUIRED baseline_video)
+endif()
+
+if(DRONE_TRACKER_BUILD_TESTS)
+    add_executable(baseline_runner_tests tests/runner_test.cpp)
+    target_include_directories(baseline_runner_tests PRIVATE ${RKNN_INCLUDE_DIR})
+    target_link_libraries(baseline_runner_tests PRIVATE nanotrack_baseline_runner)
+    add_test(NAME baseline_runner_tests COMMAND baseline_runner_tests ${CMAKE_CURRENT_BINARY_DIR}/fixtures)
+    set_tests_properties(baseline_runner_tests PROPERTIES FIXTURES_REQUIRED baseline_video)
+endif()
+if(DRONE_TRACKER_BUILD_TESTS)
+    add_executable(baseline_verify_records tests/verify_records.cpp)
+    target_link_libraries(baseline_verify_records PRIVATE nanotrack_baseline_support)
+endif()
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/benchmark_runner.cpp
+#include "benchmark_runner.h"
+#include "code_identity.h"
+#include "model/validation.h"
+#include "model_preparation.h"
+#include "nano_tracker.h"
+#include "platform/rk3576/host_frame.h"
+#include "platform/rk3576/mjpeg_video_reader.h"
+#include "platform/rk3576/rknn_nanotrack_factory.h"
+#include "statistics.h"
+#include <atomic>
+#include <cmath>
+#include <iostream>
+#include <jpeglib.h>
+#include <libavcodec/version.h>
+#include <libavformat/version.h>
+#include <memory>
+#include <stdexcept>
+namespace baseline {
+volatile std::sig_atomic_t interrupted{0};
+namespace {
+void saveText(const std::filesystem::path &path, const std::string &text) {
+    std::ofstream output;
+    output.exceptions(std::ios::badbit | std::ios::failbit);
+    output.open(path, std::ios::binary);
+    output << text;
+    output.close();
+}
+bool finiteBox(const cv::Rect2f &box) {
+    return std::isfinite(box.x) && std::isfinite(box.y) && std::isfinite(box.width) && std::isfinite(box.height) &&
+           box.width > 0 && box.height > 0;
+}
+} // namespace
+int runBenchmark(const Config &config, const ModelLoader &loader) {
+    std::unique_ptr<ResultWriter> writer;
+    std::string status{"failed"}, reason{"preparation_error"};
+    int exit_code{1};
+    TimingRecorder recorder{config.detailed};
+    std::size_t valid{};
+    try {
+        writer = std::make_unique<ResultWriter>(config);
+        writer->identity["code_commit"] = BASELINE_COMMIT;
+        writer->identity["build_flags"] = BASELINE_BUILD_FLAGS;
+        writer->identity["compiler"] = __VERSION__;
+        writer->identity["opencv"] = CV_VERSION;
+        writer->identity["ffmpeg_avcodec"] = AV_STRINGIFY(LIBAVCODEC_VERSION);
+        writer->identity["ffmpeg_avformat"] = AV_STRINGIFY(LIBAVFORMAT_VERSION);
+        writer->identity["jpeg_version"] = std::to_string(JPEG_LIB_VERSION);
+        saveText(config.output / "code_snapshot.txt", BASELINE_SOURCE_SNAPSHOT);
+        writer->identity["code_snapshot_sha256"] = sha256(config.output / "code_snapshot.txt");
+        writer->identity["executable_sha256"] = sha256("/proc/self/exe");
+        writer->identity["video_sha256"] = sha256(config.video);
+        {
+            std::ifstream mappings("/proc/self/maps");
+            std::string line;
+            while (std::getline(mappings, line)) {
+                const auto offset{line.find('/')};
+                if (offset != std::string::npos && line.find("librknnrt.so", offset) != std::string::npos) {
+                    const auto library{line.substr(offset)};
+                    writer->identity["rknn_library_path"] = library;
+                    writer->identity["rknn_library_sha256"] = sha256(library);
+                    break;
+                }
+            }
+            if (!writer->identity.count("rknn_library_path")) {
+                writer->identity["rknn_library_missing_reason"] = "进程映射中没有可识别的 librknnrt.so 路径";
+            }
+        }
+        for (std::size_t i{0}; i < config.models.size(); ++i) {
+            writer->identity["model_" + std::to_string(i) + "_sha256"] = sha256(config.models[i]);
+        }
+        saveText(config.output / "config.yaml", readText(config.source));
+        reason = "model_error";
+        auto components{loader ? loader(config)
+                               : rk3576::loadNanoTrack(config.models[0].string(), config.models[1].string(),
+                                                       config.models[2].string())};
+        if (!components) {
+            throw std::runtime_error(model::describe(components.error));
+        }
+        writer->identity["model_attributes_runtime_driver"] = components.value.description;
+        writer->diagnostic(components.value.description);
+        reason = "precision_unverified";
+        verifyPrecision(config, *writer, components.value.floating_interfaces);
+        reason = "runtime_version_mismatch";
+        if (components.value.description.find("runtime=2.3.2") == std::string::npos ||
+            components.value.description.find("driver=0.9.8") == std::string::npos) {
+            throw std::runtime_error("实机版本必须为 Runtime 2.3.2 / 驱动 0.9.8");
+        }
+        NanoTracker tracker{std::move(components.value.backend), std::move(components.value.preprocessor)};
+        writer->manifest("running", "measuring");
+        std::atomic<bool> stop{false};
+        for (int repeat{0}; repeat <= config.repeats; ++repeat) {
+            tracker.reset();
+            std::unique_ptr<rk3576::MjpegVideoReader> reader;
+            const bool warmup{repeat == 0};
+            const int limit{warmup ? config.warmup_updates : config.max_updates};
+            int updates{};
+            for (int index{0};; ++index) {
+                if (interrupted) {
+                    status = "interrupted";
+                    reason = "signal";
+                    exit_code = 130;
+                    break;
+                }
+                recorder.clear();
+                writer->environment(recorder.now());
+                FrameRecord frame;
+                frame.repeat = repeat;
+                frame.index = index;
+                frame.warmup = warmup;
+                frame.init = index == 0;
+                reason = "read_error";
+                rk3576::VideoReadResult decoded;
+                bool eof{false};
+                {
+                    timing::Observation observe{&recorder};
+                    try {
+                        if (!reader) {
+                            reader = std::make_unique<rk3576::MjpegVideoReader>(config.video.string(), stop);
+                        }
+                        decoded = reader->next();
+                        frame.pts = decoded.sample.pts;
+                        frame.pts_valid = decoded.sample.has_pts;
+                        if (decoded.status == rk3576::VideoReadStatus::Eof) {
+                            eof = true;
+                        } else if (decoded.status != rk3576::VideoReadStatus::Frame) {
+                            reason =
+                                decoded.status == rk3576::VideoReadStatus::ReadError ? "read_error" : "decode_error";
+                            throw std::runtime_error(decoded.reason);
+                        } else {
+                            reason = "frame_copy_error";
+                            FrameRef input;
+                            {
+                                timing::Span copy{Stage::FrameCopy};
+                                input = rk3576::copyGrayFrame(decoded.sample.gray, 0);
+                            }
+                            reason = "model_error";
+                            if (frame.init) {
+                                tracker.init(input, config.bbox);
+                                recorder.finish(true);
+                                if (!tracker.isInitialized()) {
+                                    reason = "model_error";
+                                    throw std::runtime_error("模板初始化失败");
+                                }
+                                frame.bbox = config.bbox;
+                                frame.bbox_valid = true;
+                            } else {
+                                const float score{tracker.update(input, frame.bbox)};
+                                recorder.finish(true);
+                                if (score < 0 || !std::isfinite(score) || !finiteBox(frame.bbox)) {
+                                    reason = "model_error";
+                                    throw std::runtime_error("跟踪返回失败或非有限值");
+                                }
+                                frame.score = score;
+                                frame.bbox_valid = true;
+                            }
+                            frame.status = "success";
+                        }
+                    } catch (const std::exception &error) {
+                        if (recorder.active() && recorder.spans()[0].end == 0) {
+                            recorder.finish(false);
+                        }
+                        recorder.markFailed();
+                        frame.error = error.what();
+                        if (reason == "read_error") {
+                            reason = recorder.active() ? "decode_error" : "read_error";
+                        }
+                    }
+                }
+                if (eof) {
+                    if (warmup && updates < limit) {
+                        reason = "warmup_insufficient";
+                        throw std::runtime_error("录像不足预热次数");
+                    }
+                    reason = "eof";
+                    break;
+                }
+                writer->writeFrame(frame, recorder);
+                if (frame.status != "success") {
+                    throw std::runtime_error(frame.error);
+                }
+                if (frame.init) {
+                    const auto base{reader->timeBase()};
+                    writer->identity["pts_time_base"] = std::to_string(base.first) + "/" + std::to_string(base.second);
+                } else {
+                    ++updates;
+                    if (!warmup) {
+                        ++valid;
+                    }
+                }
+                if ((warmup || limit > 0) && updates >= limit) {
+                    reason = "frame_limit";
+                    break;
+                }
+            }
+            if (status == "interrupted") {
+                break;
+            }
+        }
+        if (status != "interrupted") {
+            if (!valid) {
+                reason = "no_valid_updates";
+                throw std::runtime_error("没有有效正式更新");
+            }
+            status = "complete";
+            exit_code = 0;
+        }
+    } catch (const std::ios_base::failure &error) {
+        status = "failed";
+        reason = "output_error";
+        exit_code = 1;
+        std::cerr << reason << ": " << error.what() << '\n';
+    } catch (const std::exception &error) {
+        status = "failed";
+        exit_code = 1;
+        std::cerr << reason << ": " << error.what() << '\n';
+        if (writer) {
+            try {
+                writer->diagnostic(error.what());
+            } catch (...) {
+                std::cerr << "诊断输出也失败\n";
+            }
+        }
+    }
+    if (writer) {
+        try {
+            writer->environment(recorder.now(), true);
+            const auto counted{writeReports(config.output, status, reason)};
+            if (status == "complete" && counted != valid) {
+                throw std::runtime_error("落盘有效帧数不一致");
+            }
+            writer->manifest(status, reason);
+        } catch (const std::exception &error) {
+            std::cerr << "output_error: " << error.what() << '\n';
+            try {
+                writer->manifest("failed", "output_error");
+            } catch (...) {
+            }
+            return 1;
+        }
+    }
+    return exit_code;
+}
+} // namespace baseline
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/benchmark_runner.h
+#ifndef NANOTRACK_BASELINE_BENCHMARK_RUNNER_H
+#define NANOTRACK_BASELINE_BENCHMARK_RUNNER_H
+#include "config.h"
+#include "platform/rk3576/rknn_nanotrack_factory.h"
+#include <csignal>
+#include <functional>
+namespace baseline {
+extern volatile std::sig_atomic_t interrupted;
+using ModelLoader = std::function<model::Result<rk3576::NanoTrackComponents>(const Config &)>;
+int runBenchmark(const Config &config, const ModelLoader &loader = {});
+} // namespace baseline
+#endif // NANOTRACK_BASELINE_BENCHMARK_RUNNER_H
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/code_identity.h.in
+#ifndef NANOTRACK_BASELINE_CODE_IDENTITY_H
+#define NANOTRACK_BASELINE_CODE_IDENTITY_H
+inline constexpr const char *BASELINE_COMMIT{R"identity(@BASELINE_COMMIT@)identity"};
+inline constexpr const char *BASELINE_BUILD_FLAGS{R"identity(@CMAKE_CXX_FLAGS@ @CMAKE_CXX_FLAGS_RELEASE@; @CMAKE_CXX_COMPILER@; C++17)identity"};
+inline constexpr const char *BASELINE_SOURCE_SNAPSHOT{R"@BASELINE_SNAPSHOT_DELIMITER@(@BASELINE_SOURCE_SNAPSHOT@)@BASELINE_SNAPSHOT_DELIMITER@"};
+#endif // NANOTRACK_BASELINE_CODE_IDENTITY_H
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/config.cpp
+#include "config.h"
+#include <cmath>
+#include <limits>
+#include <stdexcept>
+namespace baseline {
+namespace {
+int integer(const cv::FileStorage &file, const char *key, int fallback, int minimum) {
+    const auto node{file[key]};
+    if (node.empty()) {
+        return fallback;
+    }
+    if (!node.isInt() && !node.isReal()) {
+        throw std::invalid_argument(std::string(key) + " 必须为整数");
+    }
+    const double value{static_cast<double>(node)};
+    if (!std::isfinite(value) || value < minimum || value > std::numeric_limits<int>::max() ||
+        std::floor(value) != value) {
+        throw std::invalid_argument(std::string(key) + " 数值非法");
+    }
+    return static_cast<int>(value);
+}
+} // namespace
+Config loadConfig(const std::filesystem::path &path) {
+    Config config;
+    config.source = std::filesystem::absolute(path).lexically_normal();
+    cv::FileStorage file(config.source.string(), cv::FileStorage::READ);
+    if (!file.isOpened()) {
+        throw std::invalid_argument("配置无法打开");
+    }
+    if (integer(file, "schema_version", 0, 1) != 1) {
+        throw std::invalid_argument("schema_version 必须为 1");
+    }
+    const auto resolve{[&](const char *key, bool input) {
+        const auto node{file[key]};
+        if (!node.isString() || node.string().empty()) {
+            throw std::invalid_argument(std::string(key) + " 缺失");
+        }
+        std::filesystem::path result{node.string()};
+        if (result.is_relative()) {
+            result = config.source.parent_path() / result;
+        }
+        result = result.lexically_normal();
+        if (input && !std::filesystem::is_regular_file(result)) {
+            throw std::invalid_argument(std::string(key) + " 必须为本地普通文件: " + result.string());
+        }
+        return result;
+    }};
+    config.video = resolve("video", true);
+    config.models = {resolve("template_model", true), resolve("search_model", true), resolve("head_model", true)};
+    config.evidence = resolve("precision_evidence", false);
+    config.output = resolve("output", false);
+    if (std::filesystem::exists(config.output)) {
+        throw std::invalid_argument("输出目录已存在");
+    }
+    const auto box{file["bbox"]};
+    if (!box.isSeq() || box.size() != 4) {
+        throw std::invalid_argument("bbox 必须为四个有限数值");
+    }
+    std::array<float, 4> values{};
+    for (int i{0}; i < 4; ++i) {
+        const auto node{box[i]};
+        const double value{static_cast<double>(node)};
+        if ((!node.isInt() && !node.isReal()) || !std::isfinite(value) ||
+            std::abs(value) > std::numeric_limits<float>::max()) {
+            throw std::invalid_argument("bbox 非法");
+        }
+        values[i] = static_cast<float>(value);
+    }
+    if (values[2] <= 0 || values[3] <= 0) {
+        throw std::invalid_argument("bbox 宽高必须为正");
+    }
+    config.bbox = {values[0], values[1], values[2], values[3]};
+    config.warmup_updates = integer(file, "warmup_updates", 30, 0);
+    config.max_updates = integer(file, "max_updates", 0, 0);
+    config.repeats = integer(file, "repeats", 3, 1);
+    config.environment_interval_ms = integer(file, "environment_interval_ms", 1000, 1);
+    config.detailed = integer(file, "detailed_observation", 1, 0) != 0;
+    if (integer(file, "detailed_observation", 1, 0) > 1) {
+        throw std::invalid_argument("detailed_observation 仅为 0/1");
+    }
+    config.board = file["board"].string();
+    if (config.board.empty()) {
+        throw std::invalid_argument("board 必须说明板卡编号");
+    }
+    return config;
+}
+} // namespace baseline
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/config.example.yaml
+%YAML:1.0
+---
+schema_version: 1
+board: "开发板 2"
+video: "input.mjpeg.mov"
+bbox: [124.929280, 22.944768, 75.848960, 39.202816]
+template_model: "models/template_backbone.rknn"
+search_model: "models/search_backbone.rknn"
+head_model: "models/head.rknn"
+precision_evidence: "evidence/models.yaml"
+warmup_updates: 30
+max_updates: 0
+repeats: 3
+output: "baseline-run-001"
+environment_interval_ms: 1000
+detailed_observation: 1
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/config.h
+#ifndef NANOTRACK_BASELINE_CONFIG_H
+#define NANOTRACK_BASELINE_CONFIG_H
+#include <array>
+#include <filesystem>
+#include <opencv2/core.hpp>
+#include <string>
+namespace baseline {
+struct Config {
+    std::filesystem::path source{}, video{}, output{}, evidence{};
+    std::array<std::filesystem::path, 3> models{};
+    cv::Rect2f bbox{};
+    int warmup_updates{30}, max_updates{0}, repeats{3}, environment_interval_ms{1000};
+    bool detailed{true};
+    std::string board{};
+};
+Config loadConfig(const std::filesystem::path &path);
+} // namespace baseline
+#endif // NANOTRACK_BASELINE_CONFIG_H
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/main.cpp
+#include "benchmark_runner.h"
+#include <iostream>
+int main(int argc, char **argv) {
+    if (argc == 2 && std::string(argv[1]) == "--help") {
+        std::cout << "用法: nanotrackv3_baseline CONFIG.yaml\n仅接受本地 MJPEG 与有导出证据的 FP16 模型。\n";
+        return 0;
+    }
+    if (argc != 2) {
+        std::cerr << "需要一个 YAML 配置文件；使用 --help 查看用法。\n";
+        return 2;
+    }
+    baseline::Config config;
+    try {
+        config = baseline::loadConfig(argv[1]);
+    } catch (const std::exception &error) {
+        std::cerr << "配置错误: " << error.what() << '\n';
+        return 2;
+    }
+    std::signal(SIGINT, [](int) { baseline::interrupted = 1; });
+    std::signal(SIGTERM, [](int) { baseline::interrupted = 1; });
+    return baseline::runBenchmark(config);
+}
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/model_preparation.cpp
+#include "model_preparation.h"
+#include <algorithm>
+#include <set>
+#include <stdexcept>
+namespace baseline {
+void verifyPrecision(const Config &config, ResultWriter &writer, bool floating_interfaces) {
+    writer.identity["precision_status"] = "precision_unverified";
+    writer.identity["precision_evidence_sha256"] = sha256(config.evidence);
+    std::filesystem::copy_file(config.evidence, config.output / "precision_evidence.yaml");
+    if (!floating_interfaces) {
+        throw std::runtime_error("precision_unverified: 模型含整数接口");
+    }
+    cv::FileStorage evidence(config.evidence.string(), cv::FileStorage::READ);
+    if (!evidence.isOpened() || int(evidence["schema_version"]) != 1) {
+        throw std::runtime_error("precision_unverified: 证据格式非法");
+    }
+    const auto models{evidence["models"]};
+    if (!models.isSeq() || models.size() != 3) {
+        throw std::runtime_error("precision_unverified: 需要三份模型证据");
+    }
+    const std::array<std::string, 3> roles{"template_backbone", "search_backbone", "head"};
+    std::set<std::string> seen;
+    for (const auto &entry : models) {
+        const std::string role{entry["role"].string()};
+        const auto match{std::find(roles.begin(), roles.end(), role)};
+        if (match == roles.end() || !seen.insert(role).second) {
+            throw std::runtime_error("precision_unverified: 角色非法");
+        }
+        const auto index{static_cast<std::size_t>(match - roles.begin())};
+        const auto hash{sha256(config.models[index])};
+        writer.identity[role + "_sha256"] = hash;
+        if (entry["sha256"].string() != hash || entry["precision"].string() != "FP16") {
+            throw std::runtime_error("precision_unverified: 模型指纹不符或非纯 FP16");
+        }
+        std::filesystem::path record{entry["export_record"].string()};
+        if (record.empty()) {
+            throw std::runtime_error("precision_unverified: 导出记录缺失");
+        }
+        if (record.is_relative()) {
+            record = config.evidence.parent_path() / record;
+        }
+        const auto record_hash{sha256(record)};
+        if (entry["export_record_sha256"].string() != record_hash) {
+            throw std::runtime_error("precision_unverified: 导出记录指纹不符");
+        }
+        cv::FileStorage exported(record.string(), cv::FileStorage::READ);
+        if (!exported.isOpened() || exported["model_sha256"].string() != hash ||
+            exported["precision"].string() != "FP16" || exported["role"].string() != role ||
+            exported["status"].string() != "success" || exported["source_record"].string().empty()) {
+            throw std::runtime_error("precision_unverified: 导出记录与清单矛盾或缺少来源");
+        }
+        std::filesystem::path source{exported["source_record"].string()};
+        if (source.is_relative()) {
+            source = record.parent_path() / source;
+        }
+        if (sha256(source) != exported["source_record_sha256"].string()) {
+            throw std::runtime_error("precision_unverified: 原始导出证据指纹不符");
+        }
+        std::filesystem::copy_file(record, config.output / (role + "_export.yaml"));
+        std::filesystem::copy_file(source, config.output / (role + "_source_record.txt"));
+        writer.identity[role + "_export_sha256"] = record_hash;
+    }
+    writer.identity["precision_status"] = "verified_export_evidence";
+}
+} // namespace baseline
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/model_preparation.h
+#ifndef NANOTRACK_BASELINE_MODEL_PREPARATION_H
+#define NANOTRACK_BASELINE_MODEL_PREPARATION_H
+#include "result_writer.h"
+namespace baseline {
+/** @brief 检查清单与模型指纹、精度声明及导出记录的绑定；不重新转换模型。 */
+void verifyPrecision(const Config &config, ResultWriter &writer, bool floating_interfaces);
+} // namespace baseline
+#endif // NANOTRACK_BASELINE_MODEL_PREPARATION_H
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/result_writer.cpp
+#include "result_writer.h"
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <iomanip>
+#include <limits>
+#include <memory>
+#include <openssl/evp.h>
+#include <sched.h>
+#include <sstream>
+#include <stdexcept>
+#include <sys/utsname.h>
+#include <unistd.h>
+namespace baseline {
+std::string jsonString(const std::string &value) {
+    std::ostringstream out;
+    out << '"';
+    for (const unsigned char c : value) {
+        if (c == '"' || c == '\\') {
+            out << '\\' << c;
+        } else if (c < 32) {
+            out << "\\u" << std::hex << std::setw(4) << std::setfill('0') << static_cast<int>(c);
+        } else {
+            out << c;
+        }
+    }
+    out << '"';
+    return out.str();
+}
+std::string csvString(const std::string &value) {
+    std::string result{"\""};
+    for (const char c : value) {
+        if (c == '"') {
+            result += '"';
+        }
+        result += c;
+    }
+    return result + '"';
+}
+std::string number(double value) {
+    if (!std::isfinite(value)) {
+        return "null";
+    }
+    std::ostringstream out;
+    out << std::setprecision(std::numeric_limits<double>::max_digits10) << value;
+    return out.str();
+}
+std::string readText(const std::filesystem::path &path) {
+    std::ifstream input(path, std::ios::binary);
+    if (!input) {
+        throw std::runtime_error("读取失败: " + path.string());
+    }
+    std::ostringstream out;
+    out << input.rdbuf();
+    if (input.bad()) {
+        throw std::runtime_error("读取失败: " + path.string());
+    }
+    return out.str();
+}
+std::string sha256(const std::filesystem::path &path) {
+    std::ifstream input(path, std::ios::binary);
+    std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context{EVP_MD_CTX_new(), EVP_MD_CTX_free};
+    if (!input || !context || EVP_DigestInit_ex(context.get(), EVP_sha256(), nullptr) != 1) {
+        throw std::runtime_error("文件指纹初始化失败: " + path.string());
+    }
+    std::array<char, 65536> buffer{};
+    while (input) {
+        input.read(buffer.data(), buffer.size());
+        if (EVP_DigestUpdate(context.get(), buffer.data(), static_cast<std::size_t>(input.gcount())) != 1) {
+            throw std::runtime_error("文件指纹更新失败");
+        }
+    }
+    if (!input.eof()) {
+        throw std::runtime_error("文件指纹读取失败");
+    }
+    std::array<unsigned char, EVP_MAX_MD_SIZE> digest{};
+    unsigned int length{};
+    if (EVP_DigestFinal_ex(context.get(), digest.data(), &length) != 1) {
+        throw std::runtime_error("指纹结束失败");
+    }
+    std::ostringstream out;
+    for (unsigned int i{0}; i < length; ++i) {
+        out << std::hex << std::setw(2) << std::setfill('0') << int(digest[i]);
+    }
+    return out.str();
+}
+ResultWriter::ResultWriter(const Config &config) : config_{config} {
+    if (!std::filesystem::create_directory(config.output)) {
+        throw std::runtime_error("不能新建输出目录");
+    }
+    const auto open{[&](std::ofstream &out, const char *name) {
+        out.exceptions(std::ios::badbit | std::ios::failbit);
+        out.open(config.output / name, std::ios::binary);
+    }};
+    open(frames_, "frames.csv");
+    open(spans_, "spans.csv");
+    open(environment_, "environment.csv");
+    open(diagnostics_, "diagnostics.log");
+    frames_ << "schema_version,run_id,repeat_id,phase,operation,frame_index,pts,pts_valid,status,bbox_valid,"
+               "x,y,width,height,score,decode_ns,frame_copy_ns,preprocess_ns,inference_ns,postprocess_ns,other_ns,"
+               "decode_to_result_ns,error,bbox_kind\n";
+    spans_ << "schema_version,run_id,repeat_id,phase,operation,frame_index,span_id,parent_id,stage,model_role,"
+              "start_ns,end_ns,complete,residual_ns\n";
+    environment_ << "schema_version,time_ns,field,value,missing_reason\n";
+    frames_.flush();
+    spans_.flush();
+    environment_.flush();
+    const auto started{
+        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch())
+            .count()};
+    identity["started_unix_ns"] = std::to_string(started);
+    identity["run_id"] = std::to_string(started) + "-" + std::to_string(getpid());
+    identity["board"] = config.board;
+    struct utsname system{};
+    if (uname(&system) == 0) {
+        identity["system"] = system.sysname;
+        identity["kernel"] = system.release;
+        identity["machine"] = system.machine;
+        identity["hostname"] = system.nodename;
+    } else {
+        identity["system_missing_reason"] = "uname 失败";
+    }
+    cpu_set_t cpus;
+    CPU_ZERO(&cpus);
+    if (sched_getaffinity(0, sizeof(cpus), &cpus) == 0) {
+        for (int i{0}; i < CPU_SETSIZE; ++i) {
+            if (CPU_ISSET(i, &cpus)) {
+                identity["cpu_affinity"] += std::to_string(i) + " ";
+            }
+        }
+    } else {
+        identity["cpu_affinity_missing_reason"] = "sched_getaffinity 失败";
+    }
+    manifest("running", "preparing");
+}
+void ResultWriter::diagnostic(const std::string &message) {
+    diagnostics_ << message << '\n';
+    diagnostics_.flush();
+}
+void ResultWriter::writeFrame(const FrameRecord &frame, const TimingRecorder &recorder) {
+    if (!recorder.valid()) {
+        throw std::runtime_error("计时区间错误或缓冲容量不足");
+    }
+    const std::string phase{frame.warmup ? "warmup" : "measure"};
+    const std::string operation{frame.init ? "init" : "track"};
+    std::ostringstream prefix;
+    prefix << "1," << csvString(identity.at("run_id")) << "," << frame.repeat << ',' << phase << ',' << operation << ','
+           << frame.index << ',';
+    frames_ << prefix.str();
+    if (frame.pts_valid) {
+        frames_ << frame.pts;
+    }
+    frames_ << ',' << frame.pts_valid << ',' << frame.status << ',' << frame.bbox_valid << ',';
+    for (const auto value : {frame.bbox.x, frame.bbox.y, frame.bbox.width, frame.bbox.height}) {
+        if (frame.bbox_valid && std::isfinite(value)) {
+            frames_ << number(value);
+        }
+        frames_ << ',';
+    }
+    if (frame.score && std::isfinite(*frame.score)) {
+        frames_ << number(*frame.score);
+    }
+    frames_ << ',';
+    std::int64_t stages{};
+    for (const auto stage :
+         {Stage::Decode, Stage::FrameCopy, Stage::Preprocess, Stage::Inference, Stage::Postprocess}) {
+        const auto value{recorder.duration(stage)};
+        if (value) {
+            frames_ << *value;
+            stages += *value;
+        }
+        frames_ << ',';
+    }
+    const auto total{recorder.duration(Stage::DecodeToResult)};
+    if (total) {
+        if (*total < stages) {
+            throw std::runtime_error("顶层计时重复或超出总区间");
+        }
+        frames_ << *total - stages;
+    }
+    frames_ << ',';
+    if (total) {
+        frames_ << *total;
+    }
+    frames_ << ',' << csvString(frame.error) << ',' << (frame.init ? "input" : "prediction") << '\n';
+    for (std::size_t i{0}; i < recorder.size(); ++i) {
+        const auto &span{recorder.spans()[i]};
+        std::int64_t children{};
+        for (std::size_t j{0}; j < recorder.size(); ++j) {
+            const auto &child{recorder.spans()[j]};
+            if (child.parent == span.id) {
+                children += child.end - child.start;
+            }
+        }
+        if (children > span.end - span.start) {
+            throw std::runtime_error("子区间超出父区间");
+        }
+        spans_ << prefix.str() << serial_ + span.id << ',';
+        if (span.parent) {
+            spans_ << serial_ + span.parent;
+        }
+        spans_ << ',' << stageName(span.stage) << ',' << modelRole(recorder, span) << ',' << span.start << ','
+               << span.end << ',' << span.complete << ',' << span.end - span.start - children << '\n';
+    }
+    serial_ += recorder.size();
+    frames_.flush();
+    spans_.flush();
+}
+void ResultWriter::environment(std::int64_t now, bool force) {
+    if (!force && last_environment_ >= 0 &&
+        now - last_environment_ < std::int64_t(config_.environment_interval_ms) * 1000000) {
+        return;
+    }
+    last_environment_ = now;
+    const auto sample{[&](const std::filesystem::path &path) {
+        std::string value, reason;
+        try {
+            value = readText(path);
+        } catch (const std::exception &error) {
+            reason = error.what();
+        }
+        environment_ << "1," << now << ',' << csvString(path.string()) << ',' << csvString(value) << ','
+                     << csvString(reason) << '\n';
+    }};
+    for (const auto &root : {"/sys/class/thermal", "/sys/devices/system/cpu/cpufreq", "/sys/class/devfreq"}) {
+        std::error_code error;
+        std::filesystem::directory_iterator entries(root, error);
+        if (error) {
+            environment_ << "1," << now << ',' << csvString(root) << ",," << csvString(error.message()) << '\n';
+            continue;
+        }
+        for (const auto &entry : entries) {
+            const std::string name{entry.path().filename().string()};
+            if (name.rfind("thermal_zone", 0) == 0) {
+                sample(entry.path() / "type");
+                sample(entry.path() / "temp");
+            } else if (name.rfind("policy", 0) == 0) {
+                for (const char *field :
+                     {"scaling_governor", "scaling_cur_freq", "scaling_min_freq", "scaling_max_freq"}) {
+                    sample(entry.path() / field);
+                }
+            } else if (std::string(root) == "/sys/class/devfreq") {
+                for (const char *field : {"governor", "cur_freq", "min_freq", "max_freq"}) {
+                    sample(entry.path() / field);
+                }
+            }
+        }
+    }
+    environment_.flush();
+}
+void ResultWriter::manifest(const std::string &status, const std::string &reason) {
+    const auto temporary{config_.output / "manifest.tmp"};
+    std::ofstream out;
+    out.exceptions(std::ios::badbit | std::ios::failbit);
+    out.open(temporary);
+    out << "{\n\"schema_version\":1,\"status\":" << jsonString(status) << ",\"reason\":" << jsonString(reason)
+        << ",\"config\":{\"schema_version\":1,\"source\":" << jsonString(config_.source.string())
+        << ",\"video\":" << jsonString(config_.video.string()) << ",\"output\":" << jsonString(config_.output.string())
+        << ",\"precision_evidence\":" << jsonString(config_.evidence.string()) << ",\"models\":[";
+    for (int i{0}; i < 3; ++i) {
+        if (i) {
+            out << ',';
+        }
+        out << jsonString(config_.models[i].string());
+    }
+    out << "],\"bbox\":[" << number(config_.bbox.x) << ',' << number(config_.bbox.y) << ','
+        << number(config_.bbox.width) << ',' << number(config_.bbox.height)
+        << "],\"warmup_updates\":" << config_.warmup_updates << ",\"max_updates\":" << config_.max_updates
+        << ",\"repeats\":" << config_.repeats << ",\"environment_interval_ms\":" << config_.environment_interval_ms
+        << ",\"detailed_observation\":" << (config_.detailed ? "true" : "false")
+        << ",\"board\":" << jsonString(config_.board) << "},\"identity\":{";
+    bool first{true};
+    for (const auto &entry : identity) {
+        if (!first) {
+            out << ',';
+        }
+        first = false;
+        out << jsonString(entry.first) << ':' << jsonString(entry.second);
+    }
+    out << "}}\n";
+    out.close();
+    std::filesystem::rename(temporary, config_.output / "manifest.json");
+}
+} // namespace baseline
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/result_writer.h
+#ifndef NANOTRACK_BASELINE_RESULT_WRITER_H
+#define NANOTRACK_BASELINE_RESULT_WRITER_H
+#include "config.h"
+#include "timing_recorder.h"
+#include <fstream>
+#include <map>
+#include <optional>
+#include <vector>
+namespace baseline {
+std::string jsonString(const std::string &value);
+std::string csvString(const std::string &value);
+std::string sha256(const std::filesystem::path &path);
+std::string readText(const std::filesystem::path &path);
+std::string number(double value);
+struct FrameRecord {
+    int repeat{}, index{};
+    bool warmup{}, init{}, pts_valid{}, bbox_valid{};
+    std::int64_t pts{};
+    cv::Rect2f bbox{};
+    std::optional<double> score{};
+    std::string status{"failed"}, error{};
+};
+/** @brief 每帧结束后同步排空固定容量区间；写入失败抛异常交由运行器处理。 */
+class ResultWriter final {
+  public:
+    explicit ResultWriter(const Config &config);
+    void writeFrame(const FrameRecord &frame, const TimingRecorder &recorder);
+    void environment(std::int64_t now, bool force = false);
+    void manifest(const std::string &status, const std::string &reason);
+    void diagnostic(const std::string &message);
+    std::map<std::string, std::string> identity{};
+
+  private:
+    const Config &config_;
+    std::ofstream frames_{}, spans_{}, environment_{}, diagnostics_{};
+    std::int64_t last_environment_{-1};
+    std::uint64_t serial_{};
+};
+} // namespace baseline
+#endif // NANOTRACK_BASELINE_RESULT_WRITER_H
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/statistics.cpp
+#include "statistics.h"
+#include <algorithm>
+#include <cmath>
+#include <functional>
+#include <numeric>
+#include <stdexcept>
+namespace baseline {
+bool readCsvRecord(std::istream &input, std::vector<std::string> &row) {
+    row.clear();
+    std::string field;
+    bool quoted{false}, started{false};
+    char c{};
+    while (input.get(c)) {
+        started = true;
+        if (c == '"') {
+            if (quoted && input.peek() == '"') {
+                input.get(c);
+                field += '"';
+            } else {
+                quoted = !quoted;
+            }
+        } else if (c == ',' && !quoted) {
+            row.push_back(field);
+            field.clear();
+        } else if (c == '\n' && !quoted) {
+            row.push_back(field);
+            return true;
+        } else {
+            field += c;
+        }
+    }
+    if (quoted || started || input.bad()) {
+        throw std::runtime_error("CSV 尾行不完整或读取失败");
+    }
+    return false;
+}
+Distribution distribution(std::vector<std::int64_t> samples) {
+    Distribution result;
+    result.count = samples.size();
+    if (samples.empty()) {
+        return result;
+    }
+    std::sort(samples.begin(), samples.end());
+    long double total{};
+    for (const auto value : samples) {
+        total += value;
+    }
+    const long double mean{total / samples.size()};
+    long double squared{};
+    for (const auto value : samples) {
+        squared += (value - mean) * (value - mean);
+    }
+    result.mean = static_cast<double>(mean);
+    result.standard_deviation = static_cast<double>(std::sqrt(squared / samples.size()));
+    result.minimum = samples.front();
+    result.maximum = samples.back();
+    const auto percentile{
+        [&](double p) { return samples.at(static_cast<std::size_t>(std::ceil(p * samples.size())) - 1); }};
+    result.p50 = percentile(0.50);
+    result.p90 = percentile(0.90);
+    result.p95 = percentile(0.95);
+    result.p99 = percentile(0.99);
+    return result;
+}
+namespace {
+using Groups = std::map<std::string, std::map<std::string, std::vector<std::int64_t>>>;
+void readRows(const std::filesystem::path &path, const std::function<void(const CsvRow &)> &consume) {
+    std::ifstream file(path);
+    if (!file) {
+        throw std::runtime_error("统计输入无法打开");
+    }
+    std::vector<std::string> headers, values;
+    if (!readCsvRecord(file, headers)) {
+        throw std::runtime_error("CSV 表头缺失");
+    }
+    while (readCsvRecord(file, values)) {
+        if (values.size() != headers.size()) {
+            throw std::runtime_error("CSV 列数不匹配");
+        }
+        CsvRow row;
+        for (std::size_t i{0}; i < headers.size(); ++i) {
+            row[headers[i]] = values[i];
+        }
+        consume(row);
+    }
+}
+std::string frameKey(const CsvRow &row) {
+    return row.at("repeat_id") + "/" + row.at("phase") + "/" + row.at("frame_index");
+}
+} // namespace
+std::size_t writeReports(const std::filesystem::path &directory, const std::string &status, const std::string &reason) {
+    Groups groups;
+    std::map<std::string, std::string> frame_groups;
+    std::map<std::string, std::size_t> counts;
+    std::size_t valid{}, failed{}, warmup{}, initializations{};
+    const std::array<std::string, 7> metrics{"decode_ns",      "frame_copy_ns", "preprocess_ns",      "inference_ns",
+                                             "postprocess_ns", "other_ns",      "decode_to_result_ns"};
+    readRows(directory / "frames.csv", [&](const CsvRow &row) {
+        const bool measure{row.at("phase") == "measure"};
+        const bool ok{row.at("status") == "success"};
+        const std::string kind{ok ? row.at("operation") : "failed"};
+        const std::string group{row.at("repeat_id") + "/" + kind};
+        if (!measure) {
+            ++warmup;
+            return;
+        }
+        if (!ok) {
+            ++failed;
+        } else if (kind == "track") {
+            ++valid;
+        } else {
+            ++initializations;
+        }
+        for (const auto *category : {"init", "track", "failed"}) {
+            for (const auto &metric : metrics) {
+                groups[row.at("repeat_id") + "/" + category][metric];
+            }
+        }
+        frame_groups[frameKey(row)] = group;
+        for (const auto &key : {group, "all/" + kind}) {
+            ++counts[key];
+            for (const auto &metric : metrics) {
+                auto &samples{groups[key][metric]};
+                if (!row.at(metric).empty()) {
+                    samples.push_back(std::stoll(row.at(metric)));
+                }
+            }
+        }
+    });
+    readRows(directory / "spans.csv", [&](const CsvRow &row) {
+        const auto frame{frame_groups.find(frameKey(row))};
+        if (frame == frame_groups.end()) {
+            return;
+        }
+        const auto slash{frame->second.find('/')};
+        const std::string kind{frame->second.substr(slash + 1)};
+        const std::string metric{"span/" + row.at("model_role") + "/" + row.at("stage")};
+        const auto duration{std::stoll(row.at("end_ns")) - std::stoll(row.at("start_ns"))};
+        if (duration < 0) {
+            throw std::runtime_error("负计时区间");
+        }
+        for (const auto &key : {frame->second, "all/" + kind}) {
+            groups[key][metric].push_back(duration);
+            groups[key][metric + "/residual"].push_back(std::stoll(row.at("residual_ns")));
+        }
+    });
+    for (const auto &kind : {"init", "track", "failed"}) {
+        for (const auto &metric : metrics) {
+            groups[std::string("all/") + kind][metric];
+        }
+    }
+    std::ofstream json, markdown;
+    json.exceptions(std::ios::badbit | std::ios::failbit);
+    markdown.exceptions(std::ios::badbit | std::ios::failbit);
+    json.open(directory / "summary.json");
+    markdown.open(directory / "report.md");
+    json << "{\"schema_version\":1,\"status\":" << jsonString(status) << ",\"reason\":" << jsonString(reason)
+         << ",\"valid_updates\":" << valid << ",\"failed_frames\":" << failed
+         << ",\"initializations\":" << initializations << ",\"warmup_frames\":" << warmup << ",\"groups\":{";
+    markdown << "# NanoTrackV3 性能基线\n\n状态：" << status << "；原因：" << reason << "。\n\n有效正式更新 " << valid
+             << "，正式初始化 " << initializations << "，正式失败 " << failed << "，预热记录 " << warmup
+             << "。低分有效结果保留。\n\n"
+                "唯一端到端延迟为 `decode_to_result`（从开始解码到结果可读）。表中时长单位为纳秒。"
+                "父区间与子区间不能相加；residual 表示父区间扣除直接子区间的剩余耗时。"
+                "初始化、更新、失败分别统计，预热不参与统计。\n\n"
+                "分位数按排序后第 ceil(p×N) 项计算，标准差为总体标准差。"
+                "解码至结果处理速率按有效更新数除以总延迟计算，不包含读盘、写盘和等待。"
+                "本报告不判定跟踪质量，也不代表 Jetson 等价性或相机系统验收。\n";
+    bool first_group{true};
+    std::vector<double> repeat_means;
+    for (const auto &group : groups) {
+        if (!first_group) {
+            json << ',';
+        }
+        first_group = false;
+        json << jsonString(group.first) << ":{\"frames\":" << counts[group.first] << ",\"metrics\":{";
+        markdown << "\n## 分组 " << group.first
+                 << "\n\n"
+                    "| 阶段 | 样本数 | 均值 | 标准差 | 最小 | 最大 | P50 | P90 | P95 | P99 |\n"
+                    "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n";
+        bool first_metric{true};
+        for (const auto &metric : group.second) {
+            const auto d{distribution(metric.second)};
+            if (!first_metric) {
+                json << ',';
+            }
+            first_metric = false;
+            json << jsonString(metric.first) << ":{\"count\":" << d.count;
+            markdown << "| " << metric.first << " | " << d.count;
+            const std::array<std::pair<const char *, std::string>, 8> values{
+                {{"mean", number(d.mean)},
+                 {"standard_deviation", number(d.standard_deviation)},
+                 {"minimum", std::to_string(d.minimum)},
+                 {"maximum", std::to_string(d.maximum)},
+                 {"p50", std::to_string(d.p50)},
+                 {"p90", std::to_string(d.p90)},
+                 {"p95", std::to_string(d.p95)},
+                 {"p99", std::to_string(d.p99)}}};
+            for (const auto &value : values) {
+                json << ',' << jsonString(value.first) << ':' << (d.count ? jsonString(value.second) : "null");
+                markdown << " | " << (d.count ? value.second : "—");
+            }
+            json << '}';
+            markdown << " |\n";
+        }
+        json << "},\"decode_to_result_processing_fps\":";
+        const auto &total{group.second.at("decode_to_result_ns")};
+        const bool tracks{group.first.substr(group.first.find('/') + 1) == "track"};
+        const long double sum{std::accumulate(total.begin(), total.end(), 0.0L)};
+        if (tracks && !total.empty() && sum > 0) {
+            const double fps{static_cast<double>(total.size() * 1e9L / sum)};
+            json << number(fps);
+            markdown << "\n解码至结果处理速率：" << number(fps) << " 帧/秒。\n";
+            if (group.first.rfind("all/", 0) != 0) {
+                repeat_means.push_back(static_cast<double>(sum / total.size()));
+            }
+        } else {
+            json << "null";
+        }
+        json << '}';
+    }
+    json << "},\"repeat_update_mean_range_ns\":";
+    if (repeat_means.empty()) {
+        json << "null";
+    } else {
+        const auto range{std::minmax_element(repeat_means.begin(), repeat_means.end())};
+        json << '[' << jsonString(number(*range.first)) << ',' << jsonString(number(*range.second)) << ']';
+        markdown << "\n各轮更新均值范围：" << number(*range.first) << "～" << number(*range.second) << " 纳秒。\n";
+    }
+    json << "}\n";
+    json.close();
+    markdown.close();
+    return valid;
+}
+} // namespace baseline
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/statistics.h
+#ifndef NANOTRACK_BASELINE_STATISTICS_H
+#define NANOTRACK_BASELINE_STATISTICS_H
+#include "result_writer.h"
+#include <istream>
+#include <map>
+#include <vector>
+namespace baseline {
+using CsvRow = std::map<std::string, std::string>;
+bool readCsvRecord(std::istream &input, std::vector<std::string> &row);
+struct Distribution {
+    std::size_t count{};
+    double mean{}, standard_deviation{};
+    std::int64_t minimum{}, maximum{}, p50{}, p90{}, p95{}, p99{};
+};
+Distribution distribution(std::vector<std::int64_t> samples);
+/** @brief 只读取落盘原始记录生成报告，返回成功正式更新数。 */
+std::size_t writeReports(const std::filesystem::path &directory, const std::string &status, const std::string &reason);
+} // namespace baseline
+#endif // NANOTRACK_BASELINE_STATISTICS_H
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/tests/baseline_test.cpp
+#include "platform/rk3576/mjpeg_video_reader.h"
+#include "statistics.h"
+#include <cmath>
+#include <iostream>
+#include <stdexcept>
+#include <unistd.h>
+namespace {
+std::int64_t time_ns{};
+std::int64_t controlledClock() noexcept { return time_ns; }
+void require(bool condition, const char *message) {
+    if (!condition) {
+        throw std::runtime_error(message);
+    }
+}
+} // namespace
+int main(int argc, char **argv) {
+    using namespace baseline;
+    try {
+        TimingRecorder timer{true, controlledClock};
+        {
+            timing::Observation observation{&timer};
+            {
+                timing::Span decode{Stage::Decode};
+                time_ns += 7;
+            }
+            {
+                timing::Span infer{Stage::Inference};
+                {
+                    timing::Span model{Stage::SearchBackbone};
+                    {
+                        timing::Span run{Stage::Run};
+                        time_ns += 2;
+                    }
+                    {
+                        timing::Span get{Stage::OutputsGet};
+                        time_ns += 11;
+                    }
+                }
+            }
+            time_ns += 3;
+            timer.finish(true);
+        }
+        require(timer.valid() && timer.duration(Stage::DecodeToResult) == 23, "完整计时");
+        require(timer.duration(Stage::Inference) == 13 && timer.duration(Stage::OutputsGet) == 11, "等待归属");
+        require(!timer.duration(Stage::Postprocess), "未执行阶段为空");
+        require(timer.spans()[4].parent == 4, "SDK 父区间");
+        const auto d{distribution({20000000, 30000000})};
+        require(d.mean == 25000000 && d.p50 == 20000000 && d.p99 == 30000000, "分位数");
+        require(d.standard_deviation == 5000000, "总体标准差");
+        require(distribution({}).count == 0, "空样本");
+        if (argc == 2) {
+            std::atomic<bool> stop{false};
+            const auto path{std::filesystem::path(argv[1]) / "420.mov"};
+            rk3576::MjpegVideoReader plain{path.string(), stop};
+            timer.clear();
+            timing::Observation observation{&timer};
+            rk3576::MjpegVideoReader observed{path.string(), stop};
+            require(timer.active() && timer.duration(Stage::Decode).has_value(), "构造首帧未记录实际解码");
+            for (int i{0}; i < 3; ++i) {
+                if (i) {
+                    timer.clear();
+                }
+                auto actual{observed.next()};
+                timer.finish(true);
+                rk3576::VideoReadResult expected;
+                {
+                    timing::Observation disabled{nullptr};
+                    expected = plain.next();
+                }
+                require(cv::countNonZero(actual.sample.gray != expected.sample.gray) == 0, "观测改变生产亮度");
+                require(timer.valid() && timer.duration(Stage::Decode).has_value(), "缓存首帧或后续解码未关联");
+            }
+            timer.clear();
+            rk3576::MjpegVideoReader broken{(std::filesystem::path(argv[1]) / "bad.mov").string(), stop};
+            broken.next();
+            timer.finish(true);
+            timer.clear();
+            require(broken.next().status == rk3576::VideoReadStatus::DecodeError, "坏帧未失败");
+            timer.finish(false);
+            require(!timer.spans()[0].complete && !timer.spans()[1].complete, "坏帧区间未保留失败");
+        }
+        Config config;
+        config.output =
+            std::filesystem::temp_directory_path() / ("nanotrack-baseline-test-" + std::to_string(getpid()));
+        config.board = "controlled";
+        ResultWriter writer{config};
+        for (int i{0}; i < 2; ++i) {
+            timer.clear();
+            timing::Observation observation{&timer};
+            {
+                timing::Span decode{Stage::Decode};
+                time_ns += (i + 2) * 10000000;
+            }
+            timer.finish(true);
+            FrameRecord frame;
+            frame.repeat = 1;
+            frame.index = i + 1;
+            frame.status = "success";
+            frame.score = 0.01;
+            frame.pts = 9007199254740993LL;
+            frame.pts_valid = true;
+            frame.error = "逗号,引号\"换行\n内容";
+            writer.writeFrame(frame, timer);
+        }
+        require(writeReports(config.output, "complete", "eof") == 2, "离线有效帧计数");
+        const auto summary{readText(config.output / "summary.json")};
+        require(summary.find("\"decode_to_result_processing_fps\":40") != std::string::npos, "两帧处理速率");
+        std::ifstream csv(config.output / "frames.csv");
+        std::vector<std::string> row;
+        require(readCsvRecord(csv, row) && row.size() == 24, "表头");
+        require(readCsvRecord(csv, row) && row.at(6) == "9007199254740993", "64 位整数保真");
+        require(row.at(22) == "逗号,引号\"换行\n内容", "CSV 转义");
+        bool rejected{false};
+        try {
+            ResultWriter duplicate{config};
+        } catch (...) {
+            rejected = true;
+        }
+        require(rejected, "输出不覆盖");
+        std::filesystem::remove_all(config.output);
+        std::cout << "baseline controlled tests passed\n";
+    } catch (const std::exception &error) {
+        std::cerr << error.what() << '\n';
+        return 1;
+    }
+    return 0;
+}
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/tests/runner_test.cpp
+#include "benchmark_runner.h"
+#include "platform/rk3576/tests/rknn_test_support.h"
+#include "result_writer.h"
+#include <fcntl.h>
+#include <fstream>
+#include <iostream>
+#include <unistd.h>
+namespace {
+using namespace baseline;
+using namespace rknn_test;
+void write(const std::filesystem::path &path, const std::string &text) { std::ofstream(path) << text; }
+Sdk models() {
+    Model z, x, head;
+    z.inputs = {attribute(0, {1, 3, 127, 127})};
+    z.outputs = {attribute(0, {1, 96, 8, 8})};
+    x.inputs = {attribute(0, {1, 3, 255, 255})};
+    x.outputs = {attribute(0, {1, 96, 16, 16})};
+    head.inputs = {attribute(0, {1, 96, 8, 8}), attribute(1, {1, 96, 16, 16})};
+    head.outputs = {attribute(0, {1, 2, 15, 15}), attribute(1, {1, 4, 15, 15})};
+    head.value = [](std::size_t output, std::size_t index) {
+        return output == 1 ? 10.0f : (index >= 225 ? -10.0f : 0.0f);
+    };
+    return {{z, x, head}};
+}
+} // namespace
+int main(int argc, char **argv) {
+    try {
+        require(argc == 2, "素材目录缺失");
+        const auto root{std::filesystem::temp_directory_path() / ("baseline-runner-" + std::to_string(getpid()))};
+        std::filesystem::create_directory(root);
+        Config config;
+        config.source = root / "config.yaml";
+        write(config.source, "%YAML:1.0\n---\nschema_version: 1\n");
+        config.board = "受控模拟，非实机";
+        config.video = std::filesystem::path(argv[1]) / "420.mov";
+        config.bbox = {4, 5, 20, 20};
+        config.warmup_updates = 1;
+        config.repeats = 3;
+        config.evidence = root / "models.yaml";
+        const std::array<std::string, 3> roles{"template_backbone", "search_backbone", "head"};
+        std::string evidence{"%YAML:1.0\n---\nschema_version: 1\nmodels:\n"};
+        for (std::size_t i{0}; i < 3; ++i) {
+            config.models[i] = root / (roles[i] + ".rknn");
+            write(config.models[i], "controlled fake model");
+            const auto source{root / (roles[i] + "-source.txt")};
+            write(source, "controlled fake export FP16");
+            const auto record{root / (roles[i] + ".yaml")};
+            write(record, "%YAML:1.0\n---\nrole: " + jsonString(roles[i]) +
+                              "\nmodel_sha256: " + jsonString(sha256(config.models[i])) +
+                              "\nprecision: FP16\nstatus: success\nsource_record: " + jsonString(source.string()) +
+                              "\nsource_record_sha256: " + jsonString(sha256(source)) + "\n");
+            evidence += "  - { role: " + jsonString(roles[i]) + ", sha256: " + jsonString(sha256(config.models[i])) +
+                        ", precision: FP16, export_record: " + jsonString(record.string()) +
+                        ", export_record_sha256: " + jsonString(sha256(record)) + " }\n";
+        }
+        write(config.evidence, evidence);
+        for (const std::string mode : {"success", "warmup", "empty", "bad", "model", "precision", "missing_evidence",
+                                       "mixed", "interrupt", "disk", "output"}) {
+            auto fake{models()};
+            sdk = &fake;
+            auto scenario{config};
+            scenario.output = root / mode;
+            interrupted = 0;
+            if (mode == "warmup") {
+                scenario.warmup_updates = 3;
+            }
+            if (mode == "empty") {
+                scenario.video = std::filesystem::path(argv[1]) / "bad-artist.mov";
+                scenario.warmup_updates = 0;
+            }
+            if (mode == "bad") {
+                scenario.video = std::filesystem::path(argv[1]) / "bad.mov";
+                scenario.warmup_updates = 0;
+            }
+            if (mode == "model") {
+                fake.models[1].get_status = -1;
+            }
+            if (mode == "missing_evidence") {
+                scenario.evidence = root / "missing.yaml";
+            }
+            if (mode == "mixed") {
+                fake.models[0].inputs[0] = attribute(0, {1, 3, 127, 127}, RKNN_TENSOR_INT8);
+            }
+            if (mode == "precision") {
+                write(config.evidence, "%YAML:1.0\n---\nschema_version: 1\nmodels: []\n");
+            }
+            if (mode == "interrupt") {
+                interrupted = 1;
+            }
+            if (mode == "output") {
+                std::filesystem::create_directory(scenario.output);
+            }
+            const int code{runBenchmark(scenario, [&](const Config &c) {
+                if (mode == "disk") {
+                    const int full{open("/dev/full", O_WRONLY)};
+                    require(full >= 0, "无法注入写盘故障");
+                    for (const auto &entry : std::filesystem::directory_iterator("/proc/self/fd")) {
+                        std::error_code error;
+                        const auto target{std::filesystem::read_symlink(entry.path(), error)};
+                        if (!error && target == scenario.output / "frames.csv") {
+                            require(dup2(full, std::stoi(entry.path().filename().string())) >= 0, "写盘故障注入失败");
+                        }
+                    }
+                    close(full);
+                }
+                auto loaded{
+                    rk3576::loadNanoTrack(c.models[0].string(), c.models[1].string(), c.models[2].string(), api())};
+                if (loaded) {
+                    loaded.value.description = "controlled runtime=2.3.2 driver=0.9.8";
+                }
+                return loaded;
+            })};
+            require(code == (mode == "success" ? 0 : mode == "interrupt" ? 130 : 1), "运行器退出码错误");
+            if (mode != "output" && mode != "disk") {
+                const auto summary{readText(scenario.output / "summary.json")};
+                if (mode == "success") {
+                    require(summary.find("\"valid_updates\":6") != std::string::npos, "低分更新或重复轮次丢失");
+                    require(fake.models[0].runs == 4 && fake.models[1].runs == 7 && fake.models[2].runs == 7,
+                            "预热或正式轮次模型次数错误");
+                }
+                if (mode == "warmup") {
+                    require(readText(scenario.output / "manifest.json").find("warmup_insufficient") !=
+                                std::string::npos,
+                            "预热不足未标识");
+                }
+                if (mode == "empty") {
+                    require(summary.find("\"valid_updates\":0") != std::string::npos, "空更新误成功");
+                }
+            }
+            write(config.evidence, evidence);
+        }
+        interrupted = 0;
+        const std::string valid_config{
+            "%YAML:1.0\n---\nschema_version: 1\nboard: test\nvideo: " +
+            jsonString(std::filesystem::absolute(config.video).string()) +
+            "\ntemplate_model: template_backbone.rknn\nsearch_model: search_backbone.rknn\nhead_model: head.rknn"
+            "\nprecision_evidence: models.yaml\noutput: new-output\nbbox: [1., 2., 3., 4.]\n"};
+        write(config.source, valid_config);
+        const auto loaded{loadConfig(config.source)};
+        require(loaded.models == config.models && loaded.warmup_updates == 30 && loaded.repeats == 3,
+                "相对路径或默认值错误");
+        for (const std::string invalid : {"warmup_updates: -1", "repeats: 0", "max_updates: 1.5",
+                                          "environment_interval_ms: 0", "detailed_observation: 2"}) {
+            write(config.source, valid_config + invalid + "\n");
+            bool rejected{false};
+            try {
+                loadConfig(config.source);
+            } catch (...) {
+                rejected = true;
+            }
+            require(rejected, "非法配置未拒绝");
+        }
+        write(config.source, valid_config);
+        std::filesystem::create_directory(root / "new-output");
+        bool rejected{false};
+        try {
+            loadConfig(config.source);
+        } catch (...) {
+            rejected = true;
+        }
+        require(rejected, "既有输出目录未拒绝");
+        std::filesystem::remove_all(root);
+        std::cout << "基准成功、低分、重复、预热、空数据、坏帧、模型、证据、中断、输出测试通过\n";
+    } catch (const std::exception &error) {
+        std::cerr << error.what() << '\n';
+        return 1;
+    }
+}
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/tests/verify_records.cpp
+#include "statistics.h"
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <numeric>
+#include <stdexcept>
+namespace {
+using namespace baseline;
+using Samples = std::map<std::string, std::map<std::string, std::vector<std::int64_t>>>;
+void check(bool ok, const std::string &message) {
+    if (!ok) {
+        throw std::runtime_error(message);
+    }
+}
+std::vector<CsvRow> rows(const std::filesystem::path &path) {
+    std::ifstream input(path);
+    check(bool(input), "无法打开 " + path.string());
+    std::vector<std::string> header, cells;
+    check(readCsvRecord(input, header), "表头缺失");
+    std::vector<CsvRow> result;
+    while (readCsvRecord(input, cells)) {
+        check(cells.size() == header.size(), "列数错误");
+        CsvRow row;
+        for (std::size_t i{0}; i < cells.size(); ++i) {
+            row.emplace(header[i], cells[i]);
+        }
+        result.push_back(std::move(row));
+    }
+    return result;
+}
+std::string key(const CsvRow &row) { return row.at("repeat_id") + "/" + row.at("phase") + "/" + row.at("frame_index"); }
+} // namespace
+int main(int argc, char **argv) {
+    try {
+        check(argc == 2 || argc == 3, "用法：baseline_verify_records RUN_DIRECTORY [REFERENCE_DIRECTORY]");
+        const std::filesystem::path root{argv[1]};
+        const auto frames{rows(root / "frames.csv")};
+        const auto spans{rows(root / "spans.csv")};
+        // OpenCV 4.5 的 JSON 读取器不接受标准 null；仅在内存解析副本中替换该字面量。
+        const auto raw_json{readText(root / "summary.json")};
+        std::string parse_json;
+        bool quoted{false}, escaped{false};
+        for (std::size_t i{0}; i < raw_json.size(); ++i) {
+            const char c{raw_json[i]};
+            if (!quoted && raw_json.compare(i, 4, "null") == 0) {
+                parse_json += "\"__null__\"";
+                i += 3;
+                continue;
+            }
+            parse_json += c;
+            if (c == '\\' && quoted && !escaped) {
+                escaped = true;
+                continue;
+            }
+            if (c == '\"' && !escaped) {
+                quoted = !quoted;
+            }
+            escaped = false;
+        }
+        cv::FileStorage summary(parse_json,
+                                cv::FileStorage::READ | cv::FileStorage::MEMORY | cv::FileStorage::FORMAT_JSON);
+        check(summary.isOpened(), "JSON 汇总无法打开");
+        Samples samples;
+        std::map<std::string, const CsvRow *> frame_index;
+        std::map<std::string, const CsvRow *> span_index;
+        std::map<std::string, std::vector<const CsvRow *>> child_index;
+        std::map<std::string, std::map<std::string, int>> calls;
+        std::size_t valid{}, failed{}, warmup{}, init{};
+        for (const auto &frame : frames) {
+            check(frame_index.emplace(key(frame), &frame).second, "重复帧身份");
+            if (frame.at("phase") != "measure") {
+                ++warmup;
+                continue;
+            }
+            const std::string kind{frame.at("status") == "success" ? frame.at("operation") : "failed"};
+            if (kind == "track") {
+                ++valid;
+            } else if (kind == "init") {
+                ++init;
+            } else {
+                ++failed;
+            }
+            for (const auto &field : frame) {
+                if (field.first.size() < 3 || field.first.substr(field.first.size() - 3) != "_ns") {
+                    continue;
+                }
+                for (const auto &group : {frame.at("repeat_id") + "/" + kind, "all/" + kind}) {
+                    auto &values{samples[group][field.first]};
+                    if (!field.second.empty()) {
+                        values.push_back(std::stoll(field.second));
+                    }
+                }
+            }
+            if (!frame.at("decode_to_result_ns").empty()) {
+                std::int64_t sum{};
+                for (const auto &field :
+                     {"decode_ns", "frame_copy_ns", "preprocess_ns", "inference_ns", "postprocess_ns", "other_ns"}) {
+                    if (!frame.at(field).empty()) {
+                        sum += std::stoll(frame.at(field));
+                    }
+                }
+                check(sum == std::stoll(frame.at("decode_to_result_ns")), "顶层阶段与总计时不相等");
+            }
+            if (kind == "init") {
+                check(frame.at("score").empty() && frame.at("postprocess_ns").empty(), "初始化伪造分数或后处理");
+            }
+        }
+        for (const auto &span : spans) {
+            check(span_index.emplace(span.at("span_id"), &span).second, "重复区间 ID");
+            child_index[span.at("parent_id")].push_back(&span);
+        }
+        for (const auto &span : spans) {
+            const auto start{std::stoll(span.at("start_ns"))}, end{std::stoll(span.at("end_ns"))};
+            check(end >= start, "负计时");
+            const auto parent{span.at("parent_id")};
+            if (!parent.empty()) {
+                check(span_index.count(parent) == 1, "父区间缺失");
+                const auto &p{*span_index.at(parent)};
+                check(key(p) == key(span) && std::stoll(p.at("start_ns")) <= start && std::stoll(p.at("end_ns")) >= end,
+                      "区间不属于父帧或超出父区间");
+            }
+            std::int64_t children{};
+            std::int64_t previous_end{start};
+            for (const auto *child_pointer : child_index[span.at("span_id")]) {
+                const auto &child{*child_pointer};
+                {
+                    check(std::stoll(child.at("start_ns")) >= previous_end, "同层区间重叠");
+                    previous_end = std::stoll(child.at("end_ns"));
+                    children += previous_end - std::stoll(child.at("start_ns"));
+                }
+            }
+            check(end - start - children == std::stoll(span.at("residual_ns")), "residual 不一致");
+            const auto &frame{*frame_index.at(key(span))};
+            if (span.at("stage") == "template_backbone" || span.at("stage") == "search_backbone" ||
+                span.at("stage") == "head") {
+                ++calls[key(span)][span.at("stage")];
+                check(span.at("model_role") == span.at("stage"), "模型角色错误");
+            }
+            if (frame.at("phase") != "measure") {
+                continue;
+            }
+            const std::string kind{frame.at("status") == "success" ? frame.at("operation") : "failed"};
+            const auto metric{"span/" + span.at("model_role") + "/" + span.at("stage")};
+            for (const auto &group : {frame.at("repeat_id") + "/" + kind, "all/" + kind}) {
+                samples[group][metric].push_back(end - start);
+                samples[group][metric + "/residual"].push_back(end - start - children);
+            }
+        }
+        if (!calls.empty()) {
+            for (const auto &frame : frames) {
+                if (frame.at("status") != "success") {
+                    continue;
+                }
+                const auto &c{calls[key(frame)]};
+                const auto count{[&](const char *name) {
+                    const auto it{c.find(name)};
+                    return it == c.end() ? 0 : it->second;
+                }};
+                const bool initialization{frame.at("operation") == "init"};
+                check(count("template_backbone") == (initialization ? 1 : 0) &&
+                          count("search_backbone") == (initialization ? 0 : 1) &&
+                          count("head") == (initialization ? 0 : 1),
+                      "模型调用次数不符");
+            }
+        }
+        check(int(summary["valid_updates"]) == static_cast<int>(valid) &&
+                  int(summary["failed_frames"]) == static_cast<int>(failed) &&
+                  int(summary["initializations"]) == static_cast<int>(init) &&
+                  int(summary["warmup_frames"]) == static_cast<int>(warmup),
+              "汇总帧数不一致");
+        std::size_t metrics{};
+        for (const auto &group : summary["groups"]) {
+            const auto name{group.name()};
+            for (const auto &metric : group["metrics"]) {
+                auto values{samples[name][metric.name()]};
+                std::sort(values.begin(), values.end());
+                check(int(metric["count"]) == static_cast<int>(values.size()), "统计样本数不同");
+                if (values.empty()) {
+                    continue;
+                }
+                const long double sum{std::accumulate(values.begin(), values.end(), 0.0L)};
+                const long double mean{sum / values.size()};
+                long double variance{};
+                for (const auto value : values) {
+                    variance += (value - mean) * (value - mean);
+                }
+                const auto compare{[&](const char *field, long double expected) {
+                    const long double actual{std::stold(metric[field].string())};
+                    check(std::abs(actual - expected) <= std::max(0.001L, std::abs(expected) * 1e-12L),
+                          "统计重算不符: " + name + "/" + metric.name() + "/" + field);
+                }};
+                compare("mean", mean);
+                compare("standard_deviation", std::sqrt(variance / values.size()));
+                compare("minimum", values.front());
+                compare("maximum", values.back());
+                for (const auto &p : std::array<std::pair<const char *, int>, 4>{
+                         {{"p50", 50}, {"p90", 90}, {"p95", 95}, {"p99", 99}}}) {
+                    compare(p.first, values[(values.size() * p.second + 99) / 100 - 1]);
+                }
+                ++metrics;
+            }
+            if (name.substr(name.find('/') + 1) == "track") {
+                const auto &v{samples[name]["decode_to_result_ns"]};
+                const long double total{std::accumulate(v.begin(), v.end(), 0.0L)};
+                if (total > 0) {
+                    check(std::abs(double(group["decode_to_result_processing_fps"]) - v.size() * 1e9L / total) < 1e-9,
+                          "速率重算不符");
+                }
+            }
+        }
+        double max_box{}, max_score{};
+        if (argc == 3) {
+            const auto reference{rows(std::filesystem::path(argv[2]) / "frames.csv")};
+            check(reference.size() == frames.size(), "对照帧数不同");
+            for (std::size_t i{0}; i < frames.size(); ++i) {
+                check(key(frames[i]) == key(reference[i]) && frames[i].at("status") == reference[i].at("status"),
+                      "对照身份不同");
+                for (const auto *field : {"x", "y", "width", "height", "score"}) {
+                    if (frames[i].at(field).empty()) {
+                        check(reference[i].at(field).empty(), "有效性不同");
+                        continue;
+                    }
+                    const double delta{std::abs(std::stod(frames[i].at(field)) - std::stod(reference[i].at(field)))};
+                    if (std::string(field) == "score") {
+                        max_score = std::max(max_score, delta);
+                    } else {
+                        max_box = std::max(max_box, delta);
+                    }
+                }
+            }
+            check(max_box <= 1e-4 && max_score <= 1e-6, "真实有无观测数值超过容差");
+        }
+        std::cout << "{\"status\":\"passed\",\"frames\":" << frames.size() << ",\"spans\":" << spans.size()
+                  << ",\"metrics_checked\":" << metrics << ",\"max_bbox_error\":" << number(max_box)
+                  << ",\"max_score_error\":" << number(max_score) << "}\n";
+    } catch (const std::exception &error) {
+        std::cerr << error.what() << '\n';
+        return 1;
+    }
+}
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/timing_recorder.cpp
+#include "timing_recorder.h"
+#include <chrono>
+#include <stdexcept>
+namespace baseline {
+namespace {
+const std::int64_t process_origin{TimingRecorder::steadyNow()};
+} // namespace
+std::int64_t TimingRecorder::steadyNow() noexcept {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
+TimingRecorder::TimingRecorder(bool detailed, Clock clock) noexcept
+    : detailed_{detailed}, clock_{clock}, origin_{clock == steadyNow ? process_origin : clock()} {}
+std::uint32_t TimingRecorder::begin(Stage stage) noexcept {
+    if (stage == Stage::Decode && size_ == 0) {
+        spans_[0] = {1, 0, Stage::DecodeToResult, now(), 0, false};
+        size_ = 1;
+        top_ = 1;
+    }
+    if (!detailed_) {
+        return 0;
+    }
+    if (!top_ || size_ == spans_.size()) {
+        error_ = true;
+        return 0;
+    }
+    const auto id{static_cast<std::uint32_t>(size_ + 1)};
+    spans_[size_++] = {id, top_, stage, now(), 0, false};
+    top_ = id;
+    return id;
+}
+void TimingRecorder::end(std::uint32_t id, bool complete) noexcept {
+    if (!id) {
+        return;
+    }
+    if (id != top_ || id > size_) {
+        error_ = true;
+        return;
+    }
+    auto &span{spans_[id - 1]};
+    span.end = now();
+    span.complete = complete;
+    if (span.end < span.start) {
+        error_ = true;
+    }
+    top_ = span.parent;
+}
+void TimingRecorder::finish(bool complete) noexcept {
+    if (!active()) {
+        return;
+    }
+    if (top_ != 1) {
+        error_ = true;
+    }
+    while (top_ > 1) {
+        end(top_, false);
+    }
+    end(1, complete && !error_);
+}
+void TimingRecorder::clear() noexcept {
+    size_ = 0;
+    top_ = 0;
+    error_ = false;
+}
+std::optional<std::int64_t> TimingRecorder::duration(Stage stage) const {
+    std::optional<std::int64_t> value;
+    for (std::size_t i{0}; i < size_; ++i) {
+        const auto &span{spans_[i]};
+        if (span.stage == stage) {
+            value = value.value_or(0) + span.end - span.start;
+        }
+    }
+    return value;
+}
+const char *stageName(Stage stage) {
+    constexpr std::array<const char *, 18> names{"decode_to_result",
+                                                 "decode",
+                                                 "frame_copy",
+                                                 "preprocess",
+                                                 "inference",
+                                                 "postprocess",
+                                                 "geometry",
+                                                 "image_prepare",
+                                                 "template_backbone",
+                                                 "search_backbone",
+                                                 "head",
+                                                 "input_prepare",
+                                                 "inputs_set",
+                                                 "run",
+                                                 "outputs_get",
+                                                 "output_copy",
+                                                 "outputs_release",
+                                                 "normalize"};
+    return names.at(static_cast<std::size_t>(stage));
+}
+const char *modelRole(const TimingRecorder &recorder, const SpanRecord &span) {
+    auto id{span.id};
+    while (id) {
+        const auto &parent{recorder.spans()[id - 1]};
+        if (parent.stage == Stage::TemplateBackbone || parent.stage == Stage::SearchBackbone ||
+            parent.stage == Stage::Head) {
+            return stageName(parent.stage);
+        }
+        id = parent.parent;
+    }
+    return "";
+}
+} // namespace baseline
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/baseline/timing_recorder.h
+#ifndef NANOTRACK_BASELINE_TIMING_RECORDER_H
+#define NANOTRACK_BASELINE_TIMING_RECORDER_H
+#include "timing_observer.h"
+#include <array>
+#include <cstdint>
+#include <optional>
+namespace baseline {
+using Stage = timing::Stage;
+struct SpanRecord {
+    std::uint32_t id{}, parent{};
+    Stage stage{};
+    std::int64_t start{}, end{};
+    bool complete{};
+};
+/** @brief 每帧固定容量记录器；满容量或区间错误导致本帧失败，不丢弃后继续测量。 */
+class TimingRecorder final : public timing::Observer {
+  public:
+    using Clock = std::int64_t (*)() noexcept;
+    explicit TimingRecorder(bool detailed = true, Clock clock = steadyNow) noexcept;
+    static std::int64_t steadyNow() noexcept;
+    std::uint32_t begin(Stage stage) noexcept override;
+    void end(std::uint32_t id, bool complete) noexcept override;
+    void finish(bool complete) noexcept;
+    void clear() noexcept;
+    void markFailed() noexcept {
+        if (size_) {
+            spans_[0].complete = false;
+        }
+    }
+    std::optional<std::int64_t> duration(Stage stage) const;
+    const auto &spans() const noexcept { return spans_; }
+    std::size_t size() const noexcept { return size_; }
+    bool valid() const noexcept { return !error_; }
+    bool active() const noexcept { return size_ != 0; }
+    std::int64_t now() const noexcept { return clock_() - origin_; }
+
+  private:
+    std::array<SpanRecord, 256> spans_{};
+    std::size_t size_{};
+    std::uint32_t top_{};
+    bool detailed_{}, error_{};
+    Clock clock_{};
+    std::int64_t origin_{};
+};
+const char *stageName(Stage stage);
+const char *modelRole(const TimingRecorder &recorder, const SpanRecord &span);
+} // namespace baseline
+#endif // NANOTRACK_BASELINE_TIMING_RECORDER_H
+

@@ -62,6 +62,9 @@ if(DRONE_TRACKER_PLATFORM STREQUAL "jetson")
 endif()
 add_subdirectory(src/hybrid_tracker)
 add_subdirectory(src/platform)
+if(DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
+    add_subdirectory(tests/nanotracev3_performance_benchmarks/baseline)
+endif()
 
 # Executable
 add_library(drone_tracker_ros STATIC src/drone_tracker_node.cpp)

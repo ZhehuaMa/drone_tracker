@@ -16,6 +16,7 @@ public:
     model::Result<model::NanoPrediction> search(const PreparedInputRef &input) override;
     void reset() noexcept override;
     std::string describe() const;
+    bool floatingInterfaces() const noexcept;
 
 private:
     bool ready() const noexcept;

@@ -1,4 +1,5 @@
 #include "mjpeg_video_reader.h"
+#include "timing_observer.h"
 
 #include <array>
 #include <csetjmp>
@@ -131,8 +132,10 @@ struct MjpegVideoReader::Impl {
             }
             VideoReadResult result{VideoReadStatus::Frame, {{}, packet->pts, packet->pts != AV_NOPTS_VALUE}, {}};
             try {
+                timing::Span decode{timing::Stage::Decode};
                 auto jpeg{std::make_unique<JpegState>()};
                 if (!decodeJpeg(jpeg.get(), packet->data, static_cast<unsigned long>(packet->size), result.sample.gray)) {
+                    decode.finish(false);
                     result.status = VideoReadStatus::DecodeError;
                     result.reason = jpeg->message.data();
                 } else if (width != 0 && (width != result.sample.gray.cols || height != result.sample.gray.rows)) {

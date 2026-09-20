@@ -1,4 +1,5 @@
 #include "rknn_session.h"
+#include "timing_observer.h"
 
 #include <cmath>
 #include <cstring>
@@ -194,6 +195,7 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
         return Result::failure({model::ModelError::ContractMismatch, path_, "inputs", std::to_string(inputs_.size()),
                                 std::to_string(inputs.size()), "Input count mismatch"});
     }
+    timing::Span input_prepare{timing::Stage::InputPrepare};
     std::vector<rknn_input> submissions(inputs.size());
     std::vector<bool> seen(inputs.size(), false);
     for (const auto &input : inputs) {
@@ -240,14 +242,19 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
     }
     // 在设备提交前完成可能分配内存的请求数组准备。
     std::vector<rknn_output> outputs(outputs_.size());
+    input_prepare.finish();
+    timing::Span inputs_set{timing::Stage::InputsSet};
     int status{api_.inputs_set(context_, static_cast<std::uint32_t>(submissions.size()), submissions.data())};
+    inputs_set.finish(status == RKNN_SUCC);
     if (status != RKNN_SUCC) {
         const auto error{failure("inputs_set", status)};
         invalidate(); // 本次尚未提交 run。
         return Result::failure(error);
     }
     running_ = true;
+    timing::Span run{timing::Stage::Run};
     status = api_.run(context_, nullptr);
+    run.finish(status == RKNN_SUCC);
     if (status != RKNN_SUCC) {
         const auto error{failure("run", status)};
         confirmStopped();
@@ -258,7 +265,9 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
         outputs[i].index = static_cast<std::uint32_t>(i);
         outputs[i].want_float = 1;
     }
+    timing::Span outputs_get{timing::Stage::OutputsGet};
     status = api_.outputs_get(context_, static_cast<std::uint32_t>(outputs.size()), outputs.data(), nullptr);
+    outputs_get.finish(status == RKNN_SUCC);
     if (status != RKNN_SUCC) {
         const auto error{failure("outputs_get", status)};
         confirmStopped();
@@ -268,6 +277,7 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
     }
     running_ = false; // 成功 get 的 API 契约明确等待推理结束。
     Result result;
+    timing::Span output_copy{timing::Stage::OutputCopy};
     try {
         for (std::size_t i{0}; i < outputs.size(); ++i) {
             if (!outputs[i].buf || outputs[i].size != descriptors_[i].bytes) {
@@ -283,7 +293,10 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
     } catch (const std::exception &error) {
         result = Result::failure({model::ModelError::ExecutionFailure, path_, "copy outputs", {}, {}, error.what()});
     }
+    output_copy.finish(static_cast<bool>(result));
+    timing::Span outputs_release{timing::Stage::OutputsRelease};
     status = api_.outputs_release(context_, static_cast<std::uint32_t>(outputs.size()), outputs.data());
+    outputs_release.finish(status == RKNN_SUCC);
     if (status != RKNN_SUCC) {
         result = Result::failure(failure("outputs_release", status));
     }

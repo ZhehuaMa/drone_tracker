@@ -1,0 +1,8 @@
+%YAML:1.0
+---
+role: "head"
+model_sha256: "f93e5c0e0b2a2a8bfe0425d9d43e6f0a6659a6464a9b09d94d35f21fa64f15bd"
+precision: "FP16"
+status: "success"
+source_record: "head-source.json"
+source_record_sha256: "2434db2835b4deb4f96b436f50c097911583e3bd34d2a5dd7f2d40d97af1ad8a"

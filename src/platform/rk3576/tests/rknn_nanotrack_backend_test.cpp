@@ -8,6 +8,8 @@
 #include "../nanotrack_preprocessor.h"
 #include "../yolo_preprocessor.h"
 #include "nano_tracker.h"
+#include "timing_observer.h"
+#include <array>
 #include "rknn_test_support.h"
 
 namespace {
@@ -225,11 +227,53 @@ void realTracker() {
     tracker.reset();
     tracker.reset();
 }
+class Counter final : public timing::Observer {
+public:
+    std::array<int, 18> counts{};
+    std::uint32_t begin(timing::Stage stage) noexcept override {
+        ++counts[static_cast<std::size_t>(stage)];
+        return 1;
+    }
+    void end(std::uint32_t, bool) noexcept override {}
+};
+void observationComparison() {
+    std::array<cv::Rect2f, 10> reference_boxes{};
+    std::array<float, 10> reference_scores{};
+    for (bool observed : {false, true}) {
+        auto fake{models(false, false, true, true)};
+        sdk = &fake;
+        auto backend{load()};
+        require(backend.value->floatingInterfaces(), "纯浮点接口未识别");
+        NanoTracker tracker{std::move(backend.value), std::make_unique<rk3576::NanoTrackPreprocessor>()};
+        Counter counter;
+        timing::Observation observation{observed ? &counter : nullptr};
+        const auto frame{rk3576::copyGrayFrame(cv::Mat(200, 200, CV_8UC1, cv::Scalar{73}))};
+        tracker.init(frame, {-3, 4, 20, 20});
+        require(tracker.isInitialized(), "边缘模板初始化失败");
+        for (std::size_t i{0}; i < reference_boxes.size(); ++i) {
+            cv::Rect2f box;
+            const float score{tracker.update(frame, box)};
+            if (observed) {
+                require(box == reference_boxes[i] && score == reference_scores[i], "观测改变框或分数");
+            } else { reference_boxes[i] = box; reference_scores[i] = score; }
+        }
+        require(fake.models[0].runs == 1 && fake.models[1].runs == 10 && fake.models[2].runs == 10,
+                "观测改变模型调用次数");
+        if (observed) {
+            require(counter.counts[static_cast<int>(timing::Stage::TemplateBackbone)] == 1
+                && counter.counts[static_cast<int>(timing::Stage::SearchBackbone)] == 10
+                && counter.counts[static_cast<int>(timing::Stage::Head)] == 10
+                && counter.counts[static_cast<int>(timing::Stage::OutputsGet)] == 21,
+                "模型角色或结果获取区间缺失");
+        }
+    }
+}
 } // namespace
 int main() {
     checkCombinations();
     failures();
     floatingAffineMetadata();
     realTracker();
+    observationComparison();
     std::cout << "NanoTrack 四精度组合、角色重排、失败状态与真实跟踪链通过\n";
 }

@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "../host_frame.h"
+#include "timing_observer.h"
 
 namespace {
 void require(bool ok, const char *message) {
@@ -108,8 +109,29 @@ void numeric(int crop, cv::Point2f center, int left, int top) {
         require(fractional, "缩放结果被量化回 uint8");
     }
 }
+void observationPixels() {
+    class Observer final : public timing::Observer {
+    public:
+        int calls{};
+        std::uint32_t begin(timing::Stage) noexcept override { ++calls; return 1; }
+        void end(std::uint32_t, bool) noexcept override {}
+    } observer;
+    std::vector<float> expected;
+    for (bool enabled : {false, true}) {
+        auto trace{std::make_shared<Trace>()};
+        auto frame{std::make_shared<TestFrame>(trace)};
+        rk3576::NanoTrackPreprocessor preprocessor;
+        timing::Observation observation{enabled ? &observer : nullptr};
+        auto prepared{preprocessor.prepareTemplate(frame, {0, 0}, 9, ModelInputContract{{1, 3, 127, 127}})};
+        require(static_cast<bool>(prepared), "非连续行边缘裁剪失败");
+        const auto values{std::dynamic_pointer_cast<const rk3576::FloatInput>(prepared.value)->values()};
+        if (enabled) { require(*values == expected && observer.calls == 1, "观测改变非连续行像素"); }
+        else { expected = *values; }
+    }
+}
 } // namespace
 int main() {
+    observationPixels();
     numeric(5, {2, 1}, -1, -2);
     numeric(6, {2, 1}, -1, -2);
     numeric(4, {4, 3}, 2, 1);

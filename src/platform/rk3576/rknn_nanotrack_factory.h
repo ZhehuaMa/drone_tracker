@@ -9,6 +9,7 @@ struct NanoTrackComponents {
     std::unique_ptr<model::NanoTrackBackend> backend{};
     std::unique_ptr<::NanoTrackPreprocessor> preprocessor{};
     std::string description{};
+    bool floating_interfaces{};
 };
 model::Result<NanoTrackComponents> loadNanoTrack(const std::string &template_path, const std::string &search_path,
                                                  const std::string &head_path);

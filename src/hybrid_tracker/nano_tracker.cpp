@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include "model/validation.h"
+#include "timing_observer.h"
 
 NanoTracker::NanoTracker(std::unique_ptr<model::NanoTrackBackend> model,
                          std::unique_ptr<NanoTrackPreprocessor> preprocessor)
@@ -53,6 +54,8 @@ static cv::Mat change(const cv::Mat& r) {
 };
 
 void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
+    timing::Span preprocessing{timing::Stage::Preprocess};
+    timing::Span geometry{timing::Stage::Geometry};
     m_initialized = false;
 
     preprocessor_->reset();
@@ -81,13 +84,18 @@ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
     float s_z = sz(size.x, size.y);
 
     const auto contract{model_->templateContract()};
+    geometry.finish();
     auto prepared{preprocessor_->prepareTemplate(frame, center_pos, static_cast<int>(round(s_z)), contract)};
     if (!prepared || !prepared.value) {
+        preprocessing.finish(false);
         std::cerr << "NanoTrack template failed: " << prepared.message << std::endl;
         return;
     }
+    preprocessing.finish();
     try {
+        timing::Span inference{timing::Stage::Inference};
         const auto initialized{model_->setTemplate(prepared.value)};
+        inference.finish(static_cast<bool>(initialized));
         if (!initialized) {
             preprocessor_->reset();
             model_->reset();
@@ -107,20 +115,27 @@ float NanoTracker::update(const FrameRef& frame, cv::Rect2f& output_bbox) {
         return 0.0f; // 未初始化：与 Python 端 (False, None) 对齐
     }
     if (!frame) { return -1.0f; }
+    timing::Span preprocessing{timing::Stage::Preprocess};
+    timing::Span geometry{timing::Stage::Geometry};
     float s_z = sz(size.x, size.y);
     float scale_z = static_cast<float>(template_size) / s_z;
     float s_x = s_z * (static_cast<float>(instance_size) / template_size);
     
     const cv::Size img_size{frame->width(), frame->height()};
     const auto contract{model_->searchContract()};
+    geometry.finish();
     auto prepared{preprocessor_->prepareSearch(frame, center_pos, static_cast<int>(round(s_x)), contract)};
     if (!prepared || !prepared.value) {
+        preprocessing.finish(false);
         std::cerr << "NanoTrack search failed: " << prepared.message << std::endl;
         return -1.0f;
     }
+    preprocessing.finish();
     model::Result<model::NanoPrediction> outputs;
     try {
+        timing::Span inference{timing::Stage::Inference};
         outputs = model_->search(prepared.value);
+        inference.finish(static_cast<bool>(outputs));
     } catch (const std::exception &error) {
         std::cerr << "NanoTrack search inference failed: " << error.what() << std::endl;
         return -1.0f;
@@ -129,10 +144,12 @@ float NanoTracker::update(const FrameRef& frame, cv::Rect2f& output_bbox) {
         std::cerr << model::describe(outputs.error) << std::endl;
         return -1.0f;
     }
+    timing::Span postprocessing{timing::Stage::Postprocess};
     const auto &classification{outputs.value.classification};
     const auto &location{outputs.value.location};
     if (model::validateTensor(classification, {"classification", 0, {1, 2, 15, 15}}, "NanoTracker")
         || model::validateTensor(location, {"location", 1, {1, 4, 15, 15}}, "NanoTracker")) {
+        postprocessing.finish(false);
         return -1.0f;
     }
     const auto cls_view{classification.read()};

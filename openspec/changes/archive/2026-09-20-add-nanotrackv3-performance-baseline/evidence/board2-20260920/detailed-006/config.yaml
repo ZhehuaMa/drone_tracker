@@ -1,0 +1,16 @@
+%YAML:1.0
+---
+schema_version: 1
+board: "开发板 2"
+video: "input.mov"
+bbox: [124.92928, 22.944768, 75.84896, 39.202816]
+template_model: "/home/firefly/benchmarks/results/nanotrackv3-template-fp16-search-int8-run/models/components/v2/029c71348a2da69af8cdf9a87165c6a86cadb4d765363477084c6e8fa0323cbe/template_backbone.rknn"
+search_model: "/home/firefly/benchmarks/nanotrack-zero-copy-check-20260917/search_fp16/model.rknn"
+head_model: "/home/firefly/benchmarks/results/nanotrackv3-template-fp16-search-int8-run/models/components/v2/720fcd4bf867c9d25c7164d19280b2285cbc6ba13707b7cdfd91646b18bfc79b/head.rknn"
+precision_evidence: "evidence/models.yaml"
+warmup_updates: 30
+max_updates: 300
+repeats: 3
+environment_interval_ms: 1000
+detailed_observation: 1
+output: "detailed-006"

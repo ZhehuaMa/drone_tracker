@@ -1,0 +1,57 @@
+{
+  "original_video": "/home/firefly/NanoTrack_RK3588_python/data/V_DRONE_001/V_DRONE_001.mp4",
+  "original_sha256": "9db5a800377c01db8369dfba808d400ca52cd393e0a32850e1d20a4861eaecbe",
+  "mjpeg_sha256": "bc0f21ed1cbdf0ab8b7399d295fbea8bbb0587c9ec74bf192067f8efdf67cc3b",
+  "conversion_command": [
+    "ffmpeg",
+    "-nostdin",
+    "-v",
+    "error",
+    "-i",
+    "/home/firefly/NanoTrack_RK3588_python/data/V_DRONE_001/V_DRONE_001.mp4",
+    "-map",
+    "0:v:0",
+    "-an",
+    "-c:v",
+    "mjpeg",
+    "-q:v",
+    "2",
+    "-pix_fmt",
+    "yuvj420p",
+    "/home/firefly/benchmarks/nanotrack-baseline-20260920/input.mov"
+  ],
+  "bbox_source": "/home/firefly/NanoTrack_RK3588_python/data/V_DRONE_001/init_rect_frame_000001.txt",
+  "bbox_source_sha256": "a7f16f71ad91f195366aae11f3bf5d50ead04984deb87e5b7d1540c4c9eda091",
+  "bbox": [
+    124.92928,
+    22.944768,
+    75.84896,
+    39.202816
+  ],
+  "models": [
+    {
+      "role": "template_backbone",
+      "sha256": "c0002d937a7a414a7ef829b206f1674e0aff3311bf7bd5514baaa0106c2e7059",
+      "precision": "FP16",
+      "export_record": "template_backbone.yaml",
+      "export_record_sha256": "12806979f8591b3aa061e9292dcb8b043efdba841152b16ffb55178e1c6b6d9e",
+      "model_path": "/home/firefly/benchmarks/results/nanotrackv3-template-fp16-search-int8-run/models/components/v2/029c71348a2da69af8cdf9a87165c6a86cadb4d765363477084c6e8fa0323cbe/template_backbone.rknn"
+    },
+    {
+      "role": "search_backbone",
+      "sha256": "8985bc1f825dac3ac28bd1805abfee2cc81112acf8f3945cd495c9d325b4c754",
+      "precision": "FP16",
+      "export_record": "search_backbone.yaml",
+      "export_record_sha256": "df58c25c65a39e3aa67260d8c084a885953d000f46e0edd85aa45b96117ce121",
+      "model_path": "/home/firefly/benchmarks/nanotrack-zero-copy-check-20260917/search_fp16/model.rknn"
+    },
+    {
+      "role": "head",
+      "sha256": "f93e5c0e0b2a2a8bfe0425d9d43e6f0a6659a6464a9b09d94d35f21fa64f15bd",
+      "precision": "FP16",
+      "export_record": "head.yaml",
+      "export_record_sha256": "425aa55a97f23d6f1a8ad4f9dab6d80862e9e889ab4ef2aedece04f04f44fa2e",
+      "model_path": "/home/firefly/benchmarks/results/nanotrackv3-template-fp16-search-int8-run/models/components/v2/720fcd4bf867c9d25c7164d19280b2285cbc6ba13707b7cdfd91646b18bfc79b/head.rknn"
+    }
+  ]
+}
