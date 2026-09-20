@@ -1,0 +1,60 @@
+{
+  "baseline_commit": "40d6a43548f62398bf99376f07a88398716bde61",
+  "buffers": [
+    {
+      "file": "input.u8",
+      "bytes": 1228800,
+      "identical": true,
+      "sha256": "f23faa3e7c5d1386ca12c7b202a59316c9f509f78d303f727f9c54b6d2e80341"
+    },
+    {
+      "file": "output0.f32",
+      "bytes": 1638400,
+      "identical": true,
+      "sha256": "8718ffc47fe0dcb32397971b9f5b62d2f8be76bef5d5c000a6953ffd44a5d664"
+    },
+    {
+      "file": "output1.f32",
+      "bytes": 102400,
+      "identical": true,
+      "sha256": "9a80a0c383605e5a2b68ffe8f6a3c71f6a1a91ff3b8af9eb111d9f42f6ae70d6"
+    },
+    {
+      "file": "output2.f32",
+      "bytes": 409600,
+      "identical": true,
+      "sha256": "76148585b84f74dc0caa5ae2252d3df13a194d1da4c78e1c42fadf23d6ee6141"
+    },
+    {
+      "file": "output3.f32",
+      "bytes": 25600,
+      "identical": true,
+      "sha256": "50afaebcbdf2aafe98a2f1a95ca44f27fb033c8793a9a99c8c6fd8d69fe46f22"
+    },
+    {
+      "file": "output4.f32",
+      "bytes": 102400,
+      "identical": true,
+      "sha256": "2b3255285dcf1f9a669fe4c5a2ce923540bb26dbb5e49cd4d96098daa6611806"
+    },
+    {
+      "file": "output5.f32",
+      "bytes": 6400,
+      "identical": true,
+      "sha256": "893bfad8e172a121627622b50a33a2eb1d3b5f5272a243ee7594ef7c3c5451b9"
+    },
+    {
+      "file": "prediction.f32",
+      "bytes": 268800,
+      "identical": true,
+      "sha256": "d12555ecd965bf8fced2dc61f6f3025a751d6644e21f6725b205c73ce77cfa74"
+    }
+  ],
+  "old_detection": [
+    "frame=1 hit=1 class=2 score=0.512029 box=[228.69 x 146.117 from (-0.448724, -29.4625)]"
+  ],
+  "new_detection": [
+    "frame=1 hit=1 class=2 score=0.512029 box=[228.69 x 146.117 from (-0.448724, -29.4625)]"
+  ],
+  "passed": true
+}

@@ -7,6 +7,12 @@ model::Result<std::unique_ptr<RknnRuntime>> RknnRuntime::load(const std::string 
     using Result = model::Result<std::unique_ptr<RknnRuntime>>;
     auto session{RknnSession::load(path, api)};
     if (!session) {
+        if (session.error.code == model::ModelError::ContractMismatch) {
+            session.error.expected +=
+                "; YOLO input: NHWC [1,640,640,3], INT8 AFFINE zp=-128 scale=1/255 or FP16 NONE/AFFINE; "
+                "submit UINT8 NHWC pass_through=0; compatibility requires mean=0/std=255 "
+                "(not verified by attribute query)";
+        }
         return Result::failure(session.error);
     }
     const auto classes{validateYoloSession(*session.value)};
@@ -24,5 +30,10 @@ model::ExecutionResult RknnRuntime::execute(const std::vector<std::uint8_t> &inp
                                storage->size(),
                                storage}});
 }
-std::string RknnRuntime::describe() const { return session_->describe() + "C=" + std::to_string(classes_) + "\n"; }
+std::string RknnRuntime::describe() const {
+    return session_->describe() + "C=" + std::to_string(classes_) +
+        "\nsubmission: UINT8 NHWC [1,640,640,3], 1228800 bytes, pass_through=0; "
+        "Runtime performs input conversion\ncompatibility requires mean=0/std=255 "
+        "(not verified by attribute query)\n";
+}
 } // namespace rk3576

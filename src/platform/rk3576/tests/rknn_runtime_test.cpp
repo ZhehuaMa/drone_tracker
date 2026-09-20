@@ -23,6 +23,9 @@ void require(bool ok, const char *message) {
 }
 struct Fake {
     int classes{4};
+    rknn_tensor_type input_type{RKNN_TENSOR_INT8};
+    bool input_none{false};
+    bool inspect_pixels{false};
     int init_status{0};
     int query_failure{-1};
     int set_status{0};
@@ -70,11 +73,18 @@ int query(rknn_context, rknn_query_cmd cmd, void *ptr, std::uint32_t) {
         a.dims[2] = size;
         a.dims[3] = input ? 3 : size;
         a.fmt = input ? RKNN_TENSOR_NHWC : RKNN_TENSOR_NCHW;
-        a.type = input || a.index % 2 == 0 ? RKNN_TENSOR_INT8 : RKNN_TENSOR_FLOAT16;
+        a.type = input ? state->input_type : (a.index % 2 == 0 ? RKNN_TENSOR_INT8 : RKNN_TENSOR_FLOAT16);
         if (!input && state->float_output) { a.type = RKNN_TENSOR_FLOAT32; }
         a.qnt_type = RKNN_TENSOR_QNT_AFFINE_ASYMMETRIC;
         a.zp = input ? -128 : 43;
         a.scale = input ? 1.0f / 255.0f : (0.1f + 0.1f * a.index);
+        if (input && state->input_type == RKNN_TENSOR_FLOAT16) {
+            a.zp = 0;
+            a.scale = 1;
+        }
+        if (input && state->input_none) {
+            a.qnt_type = RKNN_TENSOR_QNT_NONE;
+        }
         std::strcpy(a.name, "arbitrary_node");
         if (state->bad_attr == 2 && input) {
             a.scale = 1;
@@ -91,8 +101,13 @@ int query(rknn_context, rknn_query_cmd cmd, void *ptr, std::uint32_t) {
         if (state->bad_attr == 6 && !input) {
             a.dims[1] = UINT32_MAX;
         }
+        if (input && state->bad_attr == 8) { a.zp = 0; }
+        if (input && state->bad_attr == 9) { a.dims[1] = 320; }
+        if (input && state->bad_attr == 10) { a.fmt = RKNN_TENSOR_NCHW; }
+        if (!input && state->bad_attr == 11) { a.fmt = RKNN_TENSOR_NHWC; }
+        if (!input && state->bad_attr == 12 && a.index == 0) { a.dims[1] = 63; }
         a.n_elems = a.dims[0] * a.dims[1] * a.dims[2] * a.dims[3];
-        a.size = a.n_elems * (a.type == RKNN_TENSOR_INT8 ? 1 : a.type == RKNN_TENSOR_FLOAT16 ? 2 : 4);
+        a.size = a.n_elems * ((a.type == RKNN_TENSOR_INT8 || a.type == RKNN_TENSOR_UINT8) ? 1 : a.type == RKNN_TENSOR_FLOAT16 ? 2 : 4);
     }
     return 0;
 }
@@ -100,6 +115,13 @@ int inputs(rknn_context, std::uint32_t count, rknn_input *input) {
     require(count == 1 && input->type == RKNN_TENSOR_UINT8 && input->fmt == RKNN_TENSOR_NHWC &&
                 input->pass_through == 0 && input->size == 1228800,
             "提交格式错误");
+    if (state->inspect_pixels) {
+        const auto *pixels{static_cast<const std::uint8_t *>(input->buf)};
+        const std::array<std::uint8_t, 4> values{0, 114, 150, 255};
+        for (std::size_t i{0}; i < input->size; ++i) {
+            require(pixels[i] == values[(i / 3) % values.size()], "输入像素被归一化或重新编码");
+        }
+    }
     return state->set_status;
 }
 int run(rknn_context, rknn_run_extend *) {
@@ -188,7 +210,45 @@ int main() {
         require(fake.destroys == 1 && fake.releases == 2 && survivor.read().data()[0] == 0.125f,
                 "销毁破坏自有输出或重复释放");
     }
-    for (int mode{0}; mode < 9; ++mode) {
+    for (int variant{0}; variant < 3; ++variant) {
+        Fake fake{};
+        state = &fake;
+        fake.input_type = variant == 0 ? RKNN_TENSOR_INT8 : RKNN_TENSOR_FLOAT16;
+        fake.input_none = variant == 1;
+        fake.inspect_pixels = true;
+        std::vector<std::uint8_t> pixels(1228800);
+        const std::array<std::uint8_t, 4> values{0, 114, 150, 255};
+        for (std::size_t i{0}; i < pixels.size(); ++i) { pixels[i] = values[(i / 3) % values.size()]; }
+        auto loaded{rk3576::RknnRuntime::load("compatible-input", api())};
+        require(static_cast<bool>(loaded), "合法 INT8/FP16 输入被拒绝");
+        const auto description{loaded.value->describe()};
+        require(description.find("submission: UINT8 NHWC") != std::string::npos &&
+                description.find("pass_through=0") != std::string::npos &&
+                description.find("not verified by attribute query") != std::string::npos, "输入责任诊断缺失");
+        auto first{loaded.value->execute(pixels)};
+        auto second{loaded.value->execute(pixels)};
+        loaded.value.reset();
+        require(first && second && first.value[0].read().data()[0] == 0.125f &&
+                second.value[0].read().data()[0] == 0.25f && fake.destroys == 1 && fake.releases == 2,
+                "不同输入类型的输出所有权错误");
+    }
+    for (auto type : {RKNN_TENSOR_FLOAT32, RKNN_TENSOR_UINT8}) {
+        Fake fake{};
+        state = &fake;
+        fake.input_type = type;
+        auto loaded{rk3576::RknnRuntime::load("unsupported-input", api())};
+        require(!loaded && fake.destroys == 1 &&
+                loaded.error.expected.find("INT8") != std::string::npos &&
+                loaded.error.expected.find("FP16") != std::string::npos, "未支持类型或分支诊断错误");
+    }
+    {
+        Fake fake{};
+        state = &fake;
+        fake.input_none = true;
+        auto loaded{rk3576::RknnRuntime::load("non-affine-int8", api())};
+        require(!loaded && fake.destroys == 1, "INT8 NONE 未拒绝");
+    }
+    for (int mode{0}; mode < 14; ++mode) {
         Fake fake;
         state = &fake;
         if (mode == 0) {

@@ -1,0 +1,63 @@
+[INFO] [1789554653.432738956] [drone_tracker_node]: Opening camera device: /dev/video0
+[INFO] [1789554653.507739856] [drone_tracker_node]: Camera Intrinsics: fx=1000.00, fy=1000.00, px=960.00, py=600.00
+[INFO] [1789554653.508133679] [drone_tracker_node]: Camera FOV: horizontal=87.66 deg, vertical=61.93 deg
+Package share directory: /home/firefly/ros-camera-final-20260915/drone_tracker/share/drone_tracker
+yolo
+model=/home/firefly/Desktop/models/balloon_best_zoo6_fp16.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 images [1,640,640,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=1228800 bytes=2457600 w_stride=640 h_stride=0 size_with_stride=2457600 pass_through=0 fl=0
+output #0 /model.22/cv2.0/cv2.0.2/Conv_output_0 [1,64,80,80,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=409600 bytes=819200 w_stride=0 h_stride=0 size_with_stride=819200 pass_through=0 fl=0
+output #1 /model.22/cv3.0/cv3.0.2/Conv_output_0 [1,1,80,80,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6400 bytes=12800 w_stride=0 h_stride=0 size_with_stride=102400 pass_through=0 fl=0
+output #2 /model.22/cv2.1/cv2.1.2/Conv_output_0 [1,64,40,40,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=102400 bytes=204800 w_stride=0 h_stride=0 size_with_stride=204800 pass_through=0 fl=0
+output #3 /model.22/cv3.1/cv3.1.2/Conv_output_0 [1,1,40,40,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=1600 bytes=3200 w_stride=0 h_stride=0 size_with_stride=25600 pass_through=0 fl=0
+output #4 /model.22/cv2.2/cv2.2.2/Conv_output_0 [1,64,20,20,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=25600 bytes=51200 w_stride=0 h_stride=0 size_with_stride=61440 pass_through=0 fl=0
+output #5 /model.22/cv3.2/cv3.2.2/Conv_output_0 [1,1,20,20,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=400 bytes=800 w_stride=0 h_stride=0 size_with_stride=7680 pass_through=0 fl=0
+C=1
+submission: UINT8 NHWC [1,640,640,3], 1228800 bytes, pass_through=0; Runtime performs input conversion
+compatibility requires mean=0/std=255 (not verified by attribute query)
+template Backbone
+model=/home/firefly/ros-camera-final-20260915/models/fp16/template_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,127,127,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=48387 bytes=96774 w_stride=128 h_stride=0 size_with_stride=97536 pass_through=0 fl=0
+output #0 output [1,96,8,8,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=0 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+search Backbone
+model=/home/firefly/ros-camera-final-20260915/models/fp16/search_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,255,255,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=195075 bytes=390150 w_stride=256 h_stride=0 size_with_stride=391680 pass_through=0 fl=0
+output #0 output [1,96,16,16,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=0 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+Head
+model=/home/firefly/ros-camera-final-20260915/models/fp16/head.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input1 [1,8,8,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=8 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+input #1 input2 [1,16,16,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=16 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+output #0 output1 [1,2,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=450 bytes=900 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+output #1 output2 [1,4,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=900 bytes=1800 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+roles: template_input=0 search_input=1 classification_output=0 location_output=1
+submission: Float32, pass_through=0, native logical layout; outputs: want_float=1
+YOLO worker thread started.
+[INFO] [1789554655.747758159] [drone_tracker_node]: Round starting
+Tracker initialized at [584.194, 99.4061, 428.431, 352.085] and caught up 4 frames
+[INFO] [1789554656.756615408] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=19.997 commands=18 command_errors=0 skipped=0 read=17 enqueued=17 queue_dropped=0 sequence_gaps=0 consumed=15 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554657.790336269] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=19.999 commands=39 command_errors=0 skipped=0 read=38 enqueued=38 queue_dropped=0 sequence_gaps=0 consumed=36 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554658.844381322] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=19.999 commands=60 command_errors=0 skipped=0 read=59 enqueued=59 queue_dropped=0 sequence_gaps=0 consumed=57 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554659.847993567] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=19.999 commands=80 command_errors=0 skipped=0 read=79 enqueued=79 queue_dropped=0 sequence_gaps=0 consumed=77 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554660.889931286] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=20.000 commands=101 command_errors=0 skipped=0 read=100 enqueued=100 queue_dropped=0 sequence_gaps=0 consumed=98 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554661.956732863] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=20.000 commands=122 command_errors=0 skipped=0 read=122 enqueued=122 queue_dropped=0 sequence_gaps=0 consumed=119 time=driver_monotonic unattributed_command_frame_difference=0 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554662.997448626] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=20.000 commands=143 command_errors=0 skipped=0 read=142 enqueued=142 queue_dropped=0 sequence_gaps=0 consumed=140 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=-1 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554664.047307390] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=20.000 commands=164 command_errors=0 skipped=0 read=163 enqueued=163 queue_dropped=0 sequence_gaps=0 consumed=161 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=2 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554665.090054490] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=20.000 commands=185 command_errors=0 skipped=0 read=184 enqueued=184 queue_dropped=0 sequence_gaps=0 consumed=182 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=-1 stop_us=0 restored=0 state=2 reason=
+Average tracking time per frame: 36.91 ms
+[INFO] [1789554665.990541408] [drone_tracker_node]: Round ended: stop requested
+[INFO] [1789554666.534542054] [drone_tracker_node]: Camera final mode=software_trigger requested_hz=20.000 actual_hz=20.000 commands=203 command_errors=0 skipped=0 read=202 enqueued=202 queue_dropped=0 sequence_gaps=0 consumed=200 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=0 stop_us=542809 restored=1 state=3 reason=Stopped by caller
+[INFO] [1789554666.535002707] [drone_tracker_node]: Round cleanup including model wait_us=543298
+[INFO] [1789554666.535621049] [drone_tracker_node]: Node OFF total_us=550037
+[INFO] [1789554668.987787459] [drone_tracker_node]: Round starting
+Tracker initialized at [432.01, 227.74, 416.99, 354.08] and caught up 3 frames
+[INFO] [1789554670.050387733] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=19.996 commands=19 command_errors=0 skipped=0 read=19 enqueued=19 queue_dropped=0 sequence_gaps=0 consumed=15 time=driver_monotonic unattributed_command_frame_difference=0 clock_offset_delta_us=1 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554671.082023226] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=19.999 commands=40 command_errors=0 skipped=0 read=39 enqueued=39 queue_dropped=0 sequence_gaps=0 consumed=36 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554672.123645063] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=19.999 commands=61 command_errors=0 skipped=0 read=60 enqueued=60 queue_dropped=0 sequence_gaps=0 consumed=57 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554673.169031172] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=20.000 commands=82 command_errors=0 skipped=0 read=81 enqueued=81 queue_dropped=0 sequence_gaps=0 consumed=78 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1789554674.176762350] [drone_tracker_node]: Camera running mode=software_trigger requested_hz=20.000 actual_hz=19.999 commands=102 command_errors=0 skipped=0 read=101 enqueued=101 queue_dropped=0 sequence_gaps=0 consumed=98 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+Average tracking time per frame: 38.46 ms
+[INFO] [1789554674.225146006] [drone_tracker_node]: Round ended: stop requested
+[INFO] [1789554674.758574864] [drone_tracker_node]: Camera final mode=software_trigger requested_hz=20.000 actual_hz=19.999 commands=103 command_errors=0 skipped=0 read=102 enqueued=102 queue_dropped=0 sequence_gaps=0 consumed=99 time=driver_monotonic unattributed_command_frame_difference=1 clock_offset_delta_us=1 stop_us=533307 restored=1 state=3 reason=Stopped by caller
+[INFO] [1789554674.759003098] [drone_tracker_node]: Round cleanup including model wait_us=533764
+[INFO] [1789554674.759614191] [drone_tracker_node]: Node OFF total_us=540089
+[INFO] [1789554676.184249652] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [1789554676.185943754] [drone_tracker_node]: Node OFF total_us=11

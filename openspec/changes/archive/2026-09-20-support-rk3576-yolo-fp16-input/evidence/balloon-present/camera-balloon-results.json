@@ -1,0 +1,301 @@
+{
+  "initial": {
+    "monotonic": 85638.492733254,
+    "rss_kb": 107732,
+    "threads": 13,
+    "fds": 33
+  },
+  "topics": {
+    "/fpv/gimbal": [
+      "sensor_msgs/msg/Imu"
+    ],
+    "/fpv/odom": [
+      "nav_msgs/msg/Odometry"
+    ],
+    "/fpv/tracker_trigger": [
+      "std_msgs/msg/Header"
+    ],
+    "/fpv/target_bbox": [
+      "vision_msgs/msg/Detection2D"
+    ],
+    "/fpv/tracker_image": [
+      "sensor_msgs/msg/Image"
+    ],
+    "/fpv/tracker_state": [
+      "std_msgs/msg/Int8"
+    ]
+  },
+  "rounds": [
+    {
+      "off_observed_seconds": 1.872708793001948,
+      "final": {
+        "mode": "software_trigger",
+        "requested_hz": "20.000",
+        "actual_hz": "20.000",
+        "commands": "203",
+        "command_errors": "0",
+        "skipped": "0",
+        "read": "202",
+        "enqueued": "202",
+        "queue_dropped": "0",
+        "sequence_gaps": "0",
+        "consumed": "200",
+        "time": "driver_monotonic",
+        "unattributed_command_frame_difference": "1",
+        "clock_offset_delta_us": "0",
+        "stop_us": "542809",
+        "restored": "1",
+        "state": "3",
+        "reason": "Stopped"
+      },
+      "idle": {
+        "monotonic": 85651.638505102,
+        "rss_kb": 232108,
+        "threads": 20,
+        "fds": 48
+      },
+      "boxes": 200,
+      "valid_boxes": 196,
+      "images": 200,
+      "states": [
+        0,
+        1,
+        2
+      ],
+      "first_image": [
+        1789554655887953000,
+        1920,
+        1200,
+        "bgr8",
+        5760,
+        6912000
+      ],
+      "last_image": [
+        1789554665936675000,
+        1920,
+        1200,
+        "bgr8",
+        5760,
+        6912000
+      ],
+      "events": [
+        [
+          85640.042475912,
+          "Drone Tracker Started"
+        ],
+        [
+          85640.472943026,
+          "Detecting..."
+        ],
+        [
+          85640.987791169,
+          "Target Found"
+        ],
+        [
+          85641.473107127,
+          "Tracking..."
+        ],
+        [
+          85650.319190169,
+          "Drone Tracker Stopped"
+        ]
+      ]
+    },
+    {
+      "off_observed_seconds": 1.9314263940032106,
+      "final": {
+        "mode": "software_trigger",
+        "requested_hz": "20.000",
+        "actual_hz": "19.999",
+        "commands": "103",
+        "command_errors": "0",
+        "skipped": "0",
+        "read": "102",
+        "enqueued": "102",
+        "queue_dropped": "0",
+        "sequence_gaps": "0",
+        "consumed": "99",
+        "time": "driver_monotonic",
+        "unattributed_command_frame_difference": "1",
+        "clock_offset_delta_us": "1",
+        "stop_us": "533307",
+        "restored": "1",
+        "state": "3",
+        "reason": "Stopped"
+      },
+      "idle": {
+        "monotonic": 85659.931834325,
+        "rss_kb": 249124,
+        "threads": 20,
+        "fds": 48
+      },
+      "boxes": 99,
+      "valid_boxes": 96,
+      "images": 99,
+      "states": [
+        0,
+        1,
+        2
+      ],
+      "first_image": [
+        1789554669121654000,
+        1920,
+        1200,
+        "bgr8",
+        5760,
+        6912000
+      ],
+      "last_image": [
+        1789554674172651000,
+        1920,
+        1200,
+        "bgr8",
+        5760,
+        6912000
+      ],
+      "events": [
+        [
+          85652.979162359,
+          "Drone Tracker Started"
+        ],
+        [
+          85653.473332925,
+          "Detecting..."
+        ],
+        [
+          85653.975287132,
+          "Target Found"
+        ],
+        [
+          85654.474033898,
+          "Tracking..."
+        ],
+        [
+          85658.547441863,
+          "Drone Tracker Stopped"
+        ]
+      ]
+    }
+  ],
+  "exit": {
+    "exit_code": 0,
+    "pid": 23416,
+    "process_exists": false,
+    "models": 4,
+    "worker_starts": 1
+  },
+  "tracking_seen": true,
+  "valid_box_count": 292,
+  "first_valid_boxes": [
+    {
+      "header": {
+        "stamp": {
+          "sec": 1789554656,
+          "nanosec": 107468000
+        },
+        "frame_id": "camera_frame"
+      },
+      "results": [],
+      "bbox": {
+        "center": {
+          "position": {
+            "x": 805.0,
+            "y": 291.0
+          },
+          "theta": 0.0
+        },
+        "size_x": 397.0,
+        "size_y": 361.0
+      },
+      "id": ""
+    },
+    {
+      "header": {
+        "stamp": {
+          "sec": 1789554656,
+          "nanosec": 277698000
+        },
+        "frame_id": "camera_frame"
+      },
+      "results": [],
+      "bbox": {
+        "center": {
+          "position": {
+            "x": 734.0,
+            "y": 311.0
+          },
+          "theta": 0.0
+        },
+        "size_x": 390.0,
+        "size_y": 360.0
+      },
+      "id": ""
+    },
+    {
+      "header": {
+        "stamp": {
+          "sec": 1789554656,
+          "nanosec": 309005000
+        },
+        "frame_id": "camera_frame"
+      },
+      "results": [],
+      "bbox": {
+        "center": {
+          "position": {
+            "x": 695.0,
+            "y": 323.0
+          },
+          "theta": 0.0
+        },
+        "size_x": 385.0,
+        "size_y": 356.0
+      },
+      "id": ""
+    },
+    {
+      "header": {
+        "stamp": {
+          "sec": 1789554656,
+          "nanosec": 356619000
+        },
+        "frame_id": "camera_frame"
+      },
+      "results": [],
+      "bbox": {
+        "center": {
+          "position": {
+            "x": 795.0,
+            "y": 320.0
+          },
+          "theta": 0.0
+        },
+        "size_x": 382.0,
+        "size_y": 348.0
+      },
+      "id": ""
+    },
+    {
+      "header": {
+        "stamp": {
+          "sec": 1789554656,
+          "nanosec": 407492000
+        },
+        "frame_id": "camera_frame"
+      },
+      "results": [],
+      "bbox": {
+        "center": {
+          "position": {
+            "x": 770.0,
+            "y": 316.0
+          },
+          "theta": 0.0
+        },
+        "size_x": 381.0,
+        "size_y": 344.0
+      },
+      "id": ""
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+# 1920×1200 实拍相机集成测试；内参为用户确认的模拟值，不是镜头标定。
+drone_tracker_node:
+  ros__parameters:
+    need_save: false
+    save_path: /tmp/drone-recordings
+    visualized_result: true
+    use_history_timestamp: false
+    use_sim_time: false
+    camera:
+      fx: 1000.0
+      fy: 1000.0
+      cx: 960.0
+      cy: 600.0
+    tracker:
+      yolo_engine: /home/firefly/ros-camera-final-20260915/models/yolo.rknn
+      nano_backbone: ''
+      nano_template_backbone: /home/firefly/ros-camera-final-20260915/models/fp16/template_backbone.rknn
+      nano_search_backbone: /home/firefly/ros-camera-final-20260915/models/fp16/search_backbone.rknn
+      nano_head: /home/firefly/ros-camera-final-20260915/models/fp16/head.rknn
+      yolo_target_class_id: 2
+      yolo_conf_threshold: 0.5
+      yolo_nms_threshold: 0.45
+      yolo_interval: 4
+      yolo_recall_relax_ratio: 1.0
+      iou_reset_threshold: 0.4
+      iou_calibrate_threshold: 0.8
+      max_position_jump: 150.0
+      max_size_jump_ratio: 2.0
+      max_box_area_ratio: 0.8
+      tracking_roi_scale_factor: 2.0
+      lost_max_count: 5
+      frame_buffer_size: 30
+      jump_tolerance: 3
+      enable_dcf: true
+      dcf_fixed_template: true
+      dcf_learning_rate: 0.01
+      dcf_lambda: 0.0001
+      dcf_psr_thresh: 5.0
+      dcf_max_div_factor: 0.5
+      kf_r_pos: 4.0
+      kf_r_size: 4.0
+      kf_q_a: 50000.0
+      kf_q_size: 1000.0
+    mv_camera:
+      capture_mode: software_trigger
+      trigger_rate_hz: 20.0
+      media_device: /dev/media0
+      sensor_entity: m00_b_mvcam 4-003b
+      buffer_count: 4
+      width_px: 1920
+      height_px: 1200
+      fps: 60
+      output_width_px: 0
+      output_height_px: 0
+      flip: false
+      mirror: false
+      pixel_size_um: 3.45
+      focal_length_mm: 12.0
+    video_source: /dev/video0

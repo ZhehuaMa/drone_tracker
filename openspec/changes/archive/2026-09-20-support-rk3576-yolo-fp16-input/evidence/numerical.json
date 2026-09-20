@@ -1,0 +1,104 @@
+{
+  "onnx_sha256": "4c6c487c6c7d45d6c9c08b01040511ed299607d015c6ee3828a70b290d9258c9",
+  "input_sha256": "f23faa3e7c5d1386ca12c7b202a59316c9f509f78d303f727f9c54b6d2e80341",
+  "input_min": 11,
+  "input_max": 226,
+  "input_unique": 61,
+  "atol": 0.5,
+  "rtol": 0.02,
+  "mean_abs_limit": 0.1,
+  "relative_denominator_floor": 0.001,
+  "outputs": [
+    {
+      "index": 0,
+      "name": "/model.22/cv2.0/cv2.0.2/Conv_output_0",
+      "shape": [
+        1,
+        64,
+        80,
+        80
+      ],
+      "max_abs": 0.14926910400390625,
+      "mean_abs": 0.012951246646593972,
+      "max_relative": 37.528274660984046,
+      "mean_relative": 0.01374573496379377,
+      "passed": true
+    },
+    {
+      "index": 1,
+      "name": "/model.22/cv3.0/cv3.0.2/Conv_output_0",
+      "shape": [
+        1,
+        1,
+        80,
+        80
+      ],
+      "max_abs": 0.05489635467529297,
+      "mean_abs": 0.010583519786596298,
+      "max_relative": 0.004859338514387864,
+      "mean_relative": 0.0007277903639456296,
+      "passed": true
+    },
+    {
+      "index": 2,
+      "name": "/model.22/cv2.1/cv2.1.2/Conv_output_0",
+      "shape": [
+        1,
+        64,
+        40,
+        40
+      ],
+      "max_abs": 0.4647064208984375,
+      "mean_abs": 0.0429040689842077,
+      "max_relative": 73.26268801801177,
+      "mean_relative": 0.019500376620321967,
+      "passed": true
+    },
+    {
+      "index": 3,
+      "name": "/model.22/cv3.1/cv3.1.2/Conv_output_0",
+      "shape": [
+        1,
+        1,
+        40,
+        40
+      ],
+      "max_abs": 0.1268901824951172,
+      "mean_abs": 0.02380827099084854,
+      "max_relative": 0.0070585580660926725,
+      "mean_relative": 0.0015948251240298678,
+      "passed": true
+    },
+    {
+      "index": 4,
+      "name": "/model.22/cv2.2/cv2.2.2/Conv_output_0",
+      "shape": [
+        1,
+        64,
+        20,
+        20
+      ],
+      "max_abs": 0.34796714782714844,
+      "mean_abs": 0.025759228481038007,
+      "max_relative": 86.08725102273489,
+      "mean_relative": 0.03058029002138482,
+      "passed": true
+    },
+    {
+      "index": 5,
+      "name": "/model.22/cv3.2/cv3.2.2/Conv_output_0",
+      "shape": [
+        1,
+        1,
+        20,
+        20
+      ],
+      "max_abs": 0.10348129272460938,
+      "mean_abs": 0.016921685934066774,
+      "max_relative": 0.00879963071848675,
+      "mean_relative": 0.0016569042100476542,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

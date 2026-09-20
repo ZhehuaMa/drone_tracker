@@ -6,11 +6,16 @@
 #include <iostream>
 namespace {
 using namespace rknn_test;
-Sdk fixtures() {
+Sdk fixtures(bool fp16 = false) {
     Model y{};
     y.inputs = {attribute(0, {1, 640, 640, 3}, RKNN_TENSOR_INT8, RKNN_TENSOR_NHWC)};
     y.inputs[0].scale = 1.0f / 255.0f;
     y.inputs[0].zp = -128;
+    if (fp16) {
+        y.inputs[0] = attribute(0, {1, 640, 640, 3}, RKNN_TENSOR_FLOAT16, RKNN_TENSOR_NHWC);
+        y.inputs[0].qnt_type = RKNN_TENSOR_QNT_AFFINE_ASYMMETRIC;
+        y.inputs[0].scale = 1;
+    }
     for (std::uint32_t side : {80U, 40U, 20U}) {
         y.outputs.push_back(attribute(static_cast<std::uint32_t>(y.outputs.size()), {1, 64, side, side}));
         y.outputs.push_back(attribute(static_cast<std::uint32_t>(y.outputs.size()), {1, 4, side, side}));
@@ -45,12 +50,12 @@ void paths() {
         require(!validateModelPaths(missing, "rk3576").reason.empty(), "缺少角色未拒绝");
     }
 }
-void failures() {
+void failures(bool fp16) {
     const ModelPaths paths{"y", "", "h", "z", "x"};
     const std::array<std::string, 4> roles{"yolo", "template_backbone", "search_backbone", "head"};
     const std::array<std::string, 4> files{"y", "z", "x", "h"};
     for (int failure{0}; failure < 4; ++failure) {
-        auto state{fixtures()};
+        auto state{fixtures(fp16)};
         sdk = &state;
         state.models[failure].query_status = -7;
         auto result{rk3576::assembleTracker(paths, rk3576::productionDependencies(api()))};
@@ -61,7 +66,7 @@ void failures() {
             require(state.models[i].runs == 0, "装配期间启动推断");
         }
     }
-    auto state{fixtures()};
+    auto state{fixtures(fp16)};
     sdk = &state;
     auto result{rk3576::assembleTracker(paths, rk3576::productionDependencies(api()))};
     require(result && result.value.complete() && !result.value.description.empty(), "完整装配或属性缺失");
@@ -78,13 +83,34 @@ void failures() {
         require(m.destroys == 1, "越界未释放会话");
     }
 }
+void compatibleFp16() {
+    auto state{fixtures(true)};
+    sdk = &state;
+    const ModelPaths paths{"y", "", "h", "z", "x"};
+    auto result{rk3576::assembleTracker(paths, rk3576::productionDependencies(api()))};
+    require(result && result.value.complete(), "FP16 YOLO 与 NanoTrack 装配失败");
+    TrackerSettings settings{};
+    settings.target_class_id = 0;
+    int starts{};
+    auto tracker{HybridTracker::CreateInstance(settings, std::move(result.value), [&](std::function<void()> work) {
+        ++starts;
+        return launchDetectionThread(std::move(work));
+    })};
+    require(tracker->init() && starts == 1, "合法 FP16 组合未启动检测线程");
+    tracker.reset();
+    for (const auto &m : state.models) {
+        require(m.destroys == 1, "合法 FP16 组合未释放会话");
+    }
+}
 void frames() {
     auto production{CreatePlatformFactory()};
     FrameSourceConfig camera{};
     camera.path = "/dev/camera-must-not-be-opened";
+    camera.camera_media_device.clear();
     auto rejected{production->createFrameSource(camera)};
-    require(!rejected && rejected.error.reason == "Camera frame source unsupported",
-            "正式 ROS 工厂意外开放相机或尝试访问设备");
+    require(!rejected && rejected.error.component == "camera" && rejected.error.path == camera.path &&
+            rejected.error.reason.find("Camera requires") != std::string::npos,
+            "正式相机工厂未在访问设备前拒绝不完整配置");
     std::unique_ptr<FrameReadView> view{};
     {
         auto factory{rk3576::createFactory({})};
@@ -137,7 +163,9 @@ void frames() {
 int main() {
     try {
         paths();
-        failures();
+        failures(false);
+        failures(true);
+        compatibleFp16();
         frames();
         std::cout << "rk3576 assembly passed\n";
         return 0;

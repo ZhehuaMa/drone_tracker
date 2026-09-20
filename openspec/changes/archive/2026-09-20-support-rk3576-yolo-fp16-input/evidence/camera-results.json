@@ -1,0 +1,148 @@
+{
+  "initial": {
+    "monotonic": 85345.665177584,
+    "rss_kb": 107708,
+    "threads": 13,
+    "fds": 33
+  },
+  "rounds": [
+    {
+      "off_observed_seconds": 1.8832199749886058,
+      "final": {
+        "mode": "software_trigger",
+        "requested_hz": "20.000",
+        "actual_hz": "20.000",
+        "commands": "162",
+        "command_errors": "0",
+        "skipped": "0",
+        "read": "162",
+        "enqueued": "162",
+        "queue_dropped": "0",
+        "sequence_gaps": "0",
+        "consumed": "162",
+        "time": "driver_monotonic",
+        "unattributed_command_frame_difference": "0",
+        "clock_offset_delta_us": "-1",
+        "stop_us": "513911",
+        "restored": "1",
+        "state": "3",
+        "reason": "Stopped"
+      },
+      "idle": {
+        "monotonic": 85356.796246563,
+        "rss_kb": 225688,
+        "threads": 20,
+        "fds": 40
+      },
+      "boxes": 144,
+      "valid_boxes": 0,
+      "images": 143,
+      "states": [
+        0
+      ],
+      "first_image": [
+        1789554363047709000,
+        1920,
+        1200,
+        "bgr8",
+        5760,
+        6912000
+      ],
+      "last_image": [
+        1789554371109976000,
+        1920,
+        1200,
+        "bgr8",
+        5760,
+        6912000
+      ],
+      "events": [
+        [
+          85348.343743946,
+          "Drone Tracker Started"
+        ],
+        [
+          85348.374248796,
+          "Detecting..."
+        ],
+        [
+          85355.454991016,
+          "Drone Tracker Stopped"
+        ]
+      ]
+    },
+    {
+      "off_observed_seconds": 2.159516491010436,
+      "final": {
+        "mode": "software_trigger",
+        "requested_hz": "20.000",
+        "actual_hz": "19.999",
+        "commands": "63",
+        "command_errors": "0",
+        "skipped": "0",
+        "read": "62",
+        "enqueued": "62",
+        "queue_dropped": "0",
+        "sequence_gaps": "0",
+        "consumed": "62",
+        "time": "driver_monotonic",
+        "unattributed_command_frame_difference": "1",
+        "clock_offset_delta_us": "1",
+        "stop_us": "44164",
+        "restored": "1",
+        "state": "3",
+        "reason": "Stopped"
+      },
+      "idle": {
+        "monotonic": 85363.234492853,
+        "rss_kb": 268944,
+        "threads": 20,
+        "fds": 40
+      },
+      "boxes": 62,
+      "valid_boxes": 0,
+      "images": 62,
+      "states": [
+        0
+      ],
+      "first_image": [
+        1789554374222230000,
+        1920,
+        1200,
+        "bgr8",
+        5760,
+        6912000
+      ],
+      "last_image": [
+        1789554377272251000,
+        1920,
+        1200,
+        "bgr8",
+        5760,
+        6912000
+      ],
+      "events": [
+        [
+          85358.150122075,
+          "Drone Tracker Started"
+        ],
+        [
+          85358.644024311,
+          "Detecting..."
+        ],
+        [
+          85361.840535872,
+          "Drone Tracker Stopped"
+        ]
+      ]
+    }
+  ],
+  "exit": {
+    "exit_code": 0,
+    "pid": 22561,
+    "process_exists": false,
+    "models": 4,
+    "worker_starts": 1
+  },
+  "tracking_seen": false
+}
