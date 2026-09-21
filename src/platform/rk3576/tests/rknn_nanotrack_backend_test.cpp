@@ -229,7 +229,7 @@ void realTracker() {
 }
 class Counter final : public timing::Observer {
 public:
-    std::array<int, 18> counts{};
+    std::array<int, timing::stageCount> counts{};
     std::uint32_t begin(timing::Stage stage) noexcept override {
         ++counts[static_cast<std::size_t>(stage)];
         return 1;

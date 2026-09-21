@@ -1,0 +1,59 @@
+{
+  "status": "passed",
+  "termination": "user_authorized_SIGINT",
+  "benchmark_status": "interrupted",
+  "exit_code": 130,
+  "monitor_elapsed_seconds": 1842.070390862,
+  "frame_span_seconds": 1831.707602422,
+  "frames_compared": 87597,
+  "valid_updates": 87275,
+  "measured_initializations": 291,
+  "complete_measured_repeats": 290,
+  "max_bbox_error": 0.0,
+  "max_score_error": 0.0,
+  "prior_cycles_rechecked": 20,
+  "resource_samples": 184,
+  "active_resource_samples": 182,
+  "active_resource_ranges": {
+    "open_fds": [
+      25,
+      25
+    ],
+    "vmrss_kb": [
+      63460,
+      63460
+    ],
+    "vmhwm_kb": [
+      76920,
+      76920
+    ],
+    "threads": [
+      1,
+      1
+    ],
+    "cpu_temp_millic": [
+      43461,
+      49923
+    ]
+  },
+  "first_resource_sample": {
+    "unix_seconds": "1789955948.8891368",
+    "elapsed_seconds": "0.002644101999976556",
+    "open_fds": "4",
+    "vmrss_kb": "588 kB",
+    "vmhwm_kb": "588 kB",
+    "threads": "1",
+    "cpu_temp_millic": "42538"
+  },
+  "last_resource_sample": {
+    "unix_seconds": "1789957780.9449332",
+    "elapsed_seconds": "1832.0584408789998",
+    "open_fds": "9",
+    "vmrss_kb": "56388 kB",
+    "vmhwm_kb": "76920 kB",
+    "threads": "1",
+    "cpu_temp_millic": "49923"
+  },
+  "device_memory_gap": "/sys/kernel/debug/rknpu/mm: Permission denied",
+  "records_sha256": "f8cc0d324dd014265dc481deb8108e3fdc847eafa22abc90804c4543f99b2b45"
+}

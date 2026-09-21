@@ -1,6 +1,7 @@
 #ifndef DRONE_TRACKER_TIMING_OBSERVER_H
 #define DRONE_TRACKER_TIMING_OBSERVER_H
 
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 
@@ -23,8 +24,12 @@ enum class Stage : std::uint8_t {
     OutputsGet,
     OutputCopy,
     OutputsRelease,
-    Normalize
+    Normalize,
+    /** @brief rknn_set_io_mem 重新绑定设备内存的耗时；只有共享内存路径会记录。 */
+    IoMemBind
 };
+/** @brief 阶段总数；按 Stage 建立定长数组时使用，避免新增阶段后越界。 */
+inline constexpr std::size_t stageCount{static_cast<std::size_t>(Stage::IoMemBind) + 1};
 /** @brief 同一线程的借用观察器；回调不得抛异常、分配内存或执行文件 I/O。 */
 class Observer {
   public:

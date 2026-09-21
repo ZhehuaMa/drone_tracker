@@ -21,7 +21,7 @@ identity_git(BASELINE_SOURCE_SNAPSHOT diff --no-ext-diff --no-textconv HEAD --)
 identity_git(BASELINE_UNTRACKED -c core.quotepath=false ls-files --others --exclude-standard)
 string(REPLACE "\n" ";" BASELINE_UNTRACKED "${BASELINE_UNTRACKED}")
 foreach(path IN LISTS BASELINE_UNTRACKED)
-    if(path MATCHES "^(src/|tests/nanotracev3_performance_benchmarks/baseline/)"
+    if(path MATCHES "^(src/|tests/nanotracev3_performance_benchmarks/(baseline|search_direct)/)"
        AND path MATCHES "[.](cpp|h|yaml|txt|in|cmake)$")
         file(READ "${REPOSITORY_ROOT}/${path}" content)
         string(APPEND BASELINE_SOURCE_SNAPSHOT "\n新增文件 ${path}\n${content}\n")

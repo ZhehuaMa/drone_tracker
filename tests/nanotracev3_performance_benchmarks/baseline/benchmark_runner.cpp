@@ -30,7 +30,7 @@ bool finiteBox(const cv::Rect2f &box) {
            box.width > 0 && box.height > 0;
 }
 } // namespace
-int runBenchmark(const Config &config, const ModelLoader &loader) {
+int runBenchmark(const Config &config, const ModelLoader &loader, const RunnerExtensions &extensions) {
     std::unique_ptr<ResultWriter> writer;
     std::string status{"failed"}, reason{"preparation_error"};
     int exit_code{1};
@@ -78,6 +78,12 @@ int runBenchmark(const Config &config, const ModelLoader &loader) {
         }
         writer->identity["model_attributes_runtime_driver"] = components.value.description;
         writer->diagnostic(components.value.description);
+        if (!extensions.variant.empty()) {
+            writer->identity["benchmark_variant"] = extensions.variant;
+        }
+        if (extensions.identity) {
+            extensions.identity(writer->identity);
+        }
         reason = "precision_unverified";
         verifyPrecision(config, *writer, components.value.floating_interfaces);
         reason = "runtime_version_mismatch";
@@ -224,7 +230,7 @@ int runBenchmark(const Config &config, const ModelLoader &loader) {
     if (writer) {
         try {
             writer->environment(recorder.now(), true);
-            const auto counted{writeReports(config.output, status, reason)};
+            const auto counted{writeReports(config.output, status, reason, extensions.variant, writer->identity)};
             if (status == "complete" && counted != valid) {
                 throw std::runtime_error("落盘有效帧数不一致");
             }

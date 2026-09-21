@@ -36,35 +36,20 @@ int main(int argc, char **argv) {
         const std::filesystem::path root{argv[1]};
         const auto frames{rows(root / "frames.csv")};
         const auto spans{rows(root / "spans.csv")};
-        // OpenCV 4.5 的 JSON 读取器不接受标准 null；仅在内存解析副本中替换该字面量。
-        const auto raw_json{readText(root / "summary.json")};
-        std::string parse_json;
-        bool quoted{false}, escaped{false};
-        for (std::size_t i{0}; i < raw_json.size(); ++i) {
-            const char c{raw_json[i]};
-            if (!quoted && raw_json.compare(i, 4, "null") == 0) {
-                parse_json += "\"__null__\"";
-                i += 3;
-                continue;
-            }
-            parse_json += c;
-            if (c == '\\' && quoted && !escaped) {
-                escaped = true;
-                continue;
-            }
-            if (c == '\"' && !escaped) {
-                quoted = !quoted;
-            }
-            escaped = false;
-        }
-        cv::FileStorage summary(parse_json,
+        cv::FileStorage summary(jsonForOpenCv(readText(root / "summary.json")),
                                 cv::FileStorage::READ | cv::FileStorage::MEMORY | cv::FileStorage::FORMAT_JSON);
         check(summary.isOpened(), "JSON 汇总无法打开");
+        // 旧 baseline 记录没有变体字段；缺失时按普通 Float32 特征交接读取。
+        const std::string variant{summary["benchmark_variant"].isString() ? summary["benchmark_variant"].string()
+                                                                          : std::string{}};
+        check(variant.empty() || variant == "search_direct", "未知的执行路径变体: " + variant);
+        const bool direct{variant == "search_direct"};
         Samples samples;
         std::map<std::string, const CsvRow *> frame_index;
         std::map<std::string, const CsvRow *> span_index;
         std::map<std::string, std::vector<const CsvRow *>> child_index;
         std::map<std::string, std::map<std::string, int>> calls;
+        std::map<std::string, std::map<std::string, std::map<std::string, int>>> stage_sets;
         std::size_t valid{}, failed{}, warmup{}, init{};
         for (const auto &frame : frames) {
             check(frame_index.emplace(key(frame), &frame).second, "重复帧身份");
@@ -135,6 +120,8 @@ int main(int argc, char **argv) {
                 span.at("stage") == "head") {
                 ++calls[key(span)][span.at("stage")];
                 check(span.at("model_role") == span.at("stage"), "模型角色错误");
+            } else if (!span.at("model_role").empty()) {
+                ++stage_sets[key(span)][span.at("model_role")][span.at("stage")];
             }
             if (frame.at("phase") != "measure") {
                 continue;
@@ -161,6 +148,25 @@ int main(int argc, char **argv) {
                           count("search_backbone") == (initialization ? 0 : 1) &&
                           count("head") == (initialization ? 0 : 1),
                       "模型调用次数不符");
+                // 两条交接路径各有固定的合法阶段集合：普通路径每个模型都取回输出并整理；
+                // 搜索直连路径只允许搜索模型省去取回，并且必须记录重新绑定。
+                const auto &roles{stage_sets[key(frame)]};
+                for (const auto &role : roles) {
+                    const auto stage{[&](const char *name) {
+                        const auto it{role.second.find(name)};
+                        return it == role.second.end() ? 0 : it->second;
+                    }};
+                    const std::string where{key(frame) + "/" + role.first};
+                    check(stage("inputs_set") == 1 && stage("run") == 1, "已执行模型缺少提交或运行区间: " + where);
+                    check(stage("output_copy") == stage("outputs_get") &&
+                              stage("outputs_release") == stage("outputs_get") &&
+                              stage("normalize") == stage("outputs_get"),
+                          "输出取回、复制、释放与整理区间不成组: " + where);
+                    const bool shared{direct && role.first == "search_backbone"};
+                    check(stage("outputs_get") == (shared ? 0 : 1), "输出取回阶段与交接路径不符: " + where);
+                    const bool binds{direct && role.first != "template_backbone"};
+                    check((stage("io_mem_bind") > 0) == binds, "共享内存绑定阶段与交接路径不符: " + where);
+                }
             }
         }
         check(int(summary["valid_updates"]) == static_cast<int>(valid) &&
@@ -230,7 +236,8 @@ int main(int argc, char **argv) {
             }
             check(max_box <= 1e-4 && max_score <= 1e-6, "真实有无观测数值超过容差");
         }
-        std::cout << "{\"status\":\"passed\",\"frames\":" << frames.size() << ",\"spans\":" << spans.size()
+        std::cout << "{\"status\":\"passed\",\"benchmark_variant\":\"" << (variant.empty() ? "baseline" : variant)
+                  << "\",\"frames\":" << frames.size() << ",\"spans\":" << spans.size()
                   << ",\"metrics_checked\":" << metrics << ",\"max_bbox_error\":" << number(max_box)
                   << ",\"max_score_error\":" << number(max_score) << "}\n";
     } catch (const std::exception &error) {

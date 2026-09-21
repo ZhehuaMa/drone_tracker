@@ -1,8 +1,10 @@
 #include "statistics.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <functional>
 #include <numeric>
+#include <sstream>
 #include <stdexcept>
 namespace baseline {
 bool readCsvRecord(std::istream &input, std::vector<std::string> &row) {
@@ -88,7 +90,50 @@ std::string frameKey(const CsvRow &row) {
     return row.at("repeat_id") + "/" + row.at("phase") + "/" + row.at("frame_index");
 }
 } // namespace
-std::size_t writeReports(const std::filesystem::path &directory, const std::string &status, const std::string &reason) {
+std::string jsonForOpenCv(const std::string &raw) {
+    static const std::array<std::pair<const char *, const char *>, 3> literals{
+        {{"null", "\"__null__\""}, {"true", "1"}, {"false", "0"}}};
+    std::string result;
+    bool quoted{false}, escaped{false};
+    for (std::size_t i{0}; i < raw.size(); ++i) {
+        const char c{raw[i]};
+        if (!quoted) {
+            bool replaced{false};
+            for (const auto &literal : literals) {
+                const std::size_t length{std::strlen(literal.first)};
+                if (raw.compare(i, length, literal.first) == 0) {
+                    result += literal.second;
+                    i += length - 1;
+                    replaced = true;
+                    break;
+                }
+            }
+            if (replaced) {
+                continue;
+            }
+        } else if (!escaped && c == '\\' && i + 5 < raw.size() && raw[i + 1] == 'u') {
+            // OpenCV 不支持 \uXXXX 转义。控制字符改写成可见的 <u+XXXX>，
+            // 保留差异但不再是控制字符；这些字段只用于展示和一致性比较。
+            result += "<u+";
+            result.append(raw, i + 2, 4);
+            result += '>';
+            i += 5;
+            continue;
+        }
+        result += c;
+        if (c == '\\' && quoted && !escaped) {
+            escaped = true;
+            continue;
+        }
+        if (c == '"' && !escaped) {
+            quoted = !quoted;
+        }
+        escaped = false;
+    }
+    return result;
+}
+std::size_t writeReports(const std::filesystem::path &directory, const std::string &status, const std::string &reason,
+                         const std::string &variant, const std::map<std::string, std::string> &identity) {
     Groups groups;
     std::map<std::string, std::string> frame_groups;
     std::map<std::string, std::size_t> counts;
@@ -154,11 +199,60 @@ std::size_t writeReports(const std::filesystem::path &directory, const std::stri
     markdown.exceptions(std::ios::badbit | std::ios::failbit);
     json.open(directory / "summary.json");
     markdown.open(directory / "report.md");
-    json << "{\"schema_version\":1,\"status\":" << jsonString(status) << ",\"reason\":" << jsonString(reason)
-         << ",\"valid_updates\":" << valid << ",\"failed_frames\":" << failed
+    json << "{\"schema_version\":1,\"status\":" << jsonString(status) << ",\"reason\":" << jsonString(reason);
+    if (!variant.empty()) {
+        json << ",\"benchmark_variant\":" << jsonString(variant);
+    }
+    if (!variant.empty()) {
+        for (const char *key : {"search_handoff", "bind_policy", "model_attributes_runtime_driver",
+                               "search_native_output", "head_native_search_input", "shared_feature_bytes"}) {
+            const auto found{identity.find(key)};
+            if (found != identity.end()) {
+                json << ',' << jsonString(found->first) << ':';
+                if (found->first == "model_attributes_runtime_driver") {
+                    // 按行保存完整描述，避免旧 OpenCV 记录核对器的单字符串长度上限。
+                    json << '[';
+                    std::istringstream lines{found->second};
+                    std::string line;
+                    bool first{true};
+                    while (std::getline(lines, line)) {
+                        if (!first) {
+                            json << ',';
+                        }
+                        first = false;
+                        json << jsonString(line);
+                    }
+                    json << ']';
+                } else {
+                    json << jsonString(found->second);
+                }
+            }
+        }
+    }
+    json << ",\"valid_updates\":" << valid << ",\"failed_frames\":" << failed
          << ",\"initializations\":" << initializations << ",\"warmup_frames\":" << warmup << ",\"groups\":{";
-    markdown << "# NanoTrackV3 性能基线\n\n状态：" << status << "；原因：" << reason << "。\n\n有效正式更新 " << valid
-             << "，正式初始化 " << initializations << "，正式失败 " << failed << "，预热记录 " << warmup
+    markdown << "# NanoTrackV3 性能基线\n\n";
+    if (!variant.empty()) {
+        markdown << "执行路径变体：`benchmark_variant=" << variant << "`。该变体只改变模型之间的特征交接方式，"
+                 << "其余解码、前处理、模型次数和统计口径与基线一致。\n\n";
+        markdown << "## 执行路径身份\n\n";
+        for (const char *key : {"search_handoff", "bind_policy", "model_attributes_runtime_driver",
+                               "search_native_output", "head_native_search_input", "shared_feature_bytes"}) {
+            const auto found{identity.find(key)};
+            if (found != identity.end()) {
+                markdown << "### " << key << "\n\n";
+                // 缩进代码块保留属性换行，并避免模型名称中的 Markdown 标记改变报告结构。
+                std::istringstream lines{found->second};
+                std::string line;
+                while (std::getline(lines, line)) {
+                    markdown << "    " << line << '\n';
+                }
+                markdown << '\n';
+            }
+        }
+    }
+    markdown << "状态：" << status << "；原因：" << reason << "。\n\n有效正式更新 " << valid << "，正式初始化 "
+             << initializations << "，正式失败 " << failed << "，预热记录 " << warmup
              << "。低分有效结果保留。\n\n"
                 "唯一端到端延迟为 `decode_to_result`（从开始解码到结果可读）。表中时长单位为纳秒。"
                 "父区间与子区间不能相加；residual 表示父区间扣除直接子区间的剩余耗时。"

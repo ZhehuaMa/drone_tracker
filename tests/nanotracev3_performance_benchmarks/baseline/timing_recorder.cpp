@@ -73,7 +73,7 @@ std::optional<std::int64_t> TimingRecorder::duration(Stage stage) const {
     return value;
 }
 const char *stageName(Stage stage) {
-    constexpr std::array<const char *, 18> names{"decode_to_result",
+    constexpr std::array<const char *, timing::stageCount> names{"decode_to_result",
                                                  "decode",
                                                  "frame_copy",
                                                  "preprocess",
@@ -90,7 +90,8 @@ const char *stageName(Stage stage) {
                                                  "outputs_get",
                                                  "output_copy",
                                                  "outputs_release",
-                                                 "normalize"};
+                                                 "normalize",
+                                                 "io_mem_bind"};
     return names.at(static_cast<std::size_t>(stage));
 }
 const char *modelRole(const TimingRecorder &recorder, const SpanRecord &span) {
