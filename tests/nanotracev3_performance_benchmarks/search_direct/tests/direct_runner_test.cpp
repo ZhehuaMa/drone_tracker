@@ -180,8 +180,9 @@ void checkIdentityReports(const std::filesystem::path &directory,
 int runConventional(const Config &config, FakeDevice &fake) {
     device = &fake;
     const int code{runBenchmark(config, [](const Config &c) {
-        return rk3576::loadNanoTrack(c.models[0].string(), c.models[1].string(), c.models[2].string(),
-                                     fakeApi().core);
+        const auto api{fakeApi()};
+        return rk3576::loadNanoTrackCpuReference(c.models[0].string(), c.models[1].string(), c.models[2].string(),
+                                                 api.core);
     })};
     device = nullptr;
     return code;

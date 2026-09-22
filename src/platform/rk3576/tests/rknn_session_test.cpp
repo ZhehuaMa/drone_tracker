@@ -27,6 +27,10 @@ int main() {
     auto loaded{rk3576::RknnSession::load("arbitrary.rknn", api())};
     require(loaded && loaded.value->inputs().size() == 2 && loaded.value->outputs().size() == 2,
             "双输入/输出属性查询失败");
+    require(loaded.value->nativeInputs().size() == loaded.value->inputs().size() &&
+                loaded.value->nativeOutputs().size() == loaded.value->outputs().size() &&
+                loaded.value->nativeOutputs()[0].n_elems == loaded.value->outputs()[0].n_elems,
+            "原生属性查询未保留张量数量与元素契约");
     require(loaded.value->describe().find("runtime=2.3.0 driver=0.9.8") != std::string::npos, "缺少版本描述");
     for (int fault{0}; fault < 11; ++fault) {
         std::vector<rk3576::SessionInput> values{input(0), input(1)};
@@ -140,4 +144,49 @@ int main() {
                 "停止与释放边界错误");
     }
     std::cout << "通用会话多输入、溢出、浮点输出、所有权与失败测试通过\n";
+
+    Sdk shared_fake{{twoInputs()}};
+    shared_fake.models[0].allow_partial = true;
+    shared_fake.models[0].native_outputs = shared_fake.models[0].outputs;
+    sdk = &shared_fake;
+    auto shared_session{rk3576::RknnSession::load("shared", api(), sharedApi())};
+    require(static_cast<bool>(shared_session), "共享内存会话加载失败");
+    auto memory{shared_session.value->allocateShared(64)};
+    require(memory && shared_fake.models[0].mem_creates == 1, "共享内存分配失败");
+    auto imported{shared_session.value->importShared(*memory.value)};
+    require(imported && imported.value->virt_addr == memory.value->virt_addr, "共享内存导入未复用存储");
+    auto undersized{shared_session.value->allocateShared(8)};
+    require(static_cast<bool>(undersized), "容量边界测试内存分配失败");
+    auto bounded_attribute{shared_session.value->nativeOutputs()[0]};
+    bounded_attribute.size_with_stride = bounded_attribute.size;
+    undersized.value->size = bounded_attribute.size_with_stride - 1;
+    require(!shared_session.value->bind(bounded_attribute, undersized.value) &&
+                shared_fake.models[0].binds == 0,
+            "容量不足的绑定未被拒绝");
+    require(static_cast<bool>(shared_session.value->submit({input(0)})), "部分输入提交失败");
+    auto attr{shared_session.value->nativeOutputs()[0]};
+    require(static_cast<bool>(shared_session.value->bind(attr, memory.value)), "显式输出绑定失败");
+    require(static_cast<bool>(shared_session.value->run()), "绑定执行失败");
+    shared_session.value->confirmCompleted();
+    require(shared_fake.models[0].releases == 0, "确认完成错误触发普通输出取回");
+    require(static_cast<bool>(shared_session.value->submit({input(0)})), "第二次部分输入提交失败");
+    require(shared_fake.models[0].binds == 1, "新提交错误复用了旧绑定");
+    require(static_cast<bool>(shared_session.value->bind(attr, memory.value)) &&
+                static_cast<bool>(shared_session.value->run()),
+            "重新绑定后执行失败");
+    shared_session.value->confirmCompleted();
+    require(shared_session.value->syncFromDevice(memory.value) && shared_fake.models[0].mem_syncs == 1,
+            "共享内存同步失败");
+    require(static_cast<bool>(shared_session.value->releaseShared(imported.value)), "导入句柄释放失败");
+    require(static_cast<bool>(shared_session.value->releaseShared(memory.value)), "原始句柄释放失败");
+    require(shared_fake.models[0].mem_destroys == 2, "共享内存句柄未完整释放");
+
+    Sdk no_extension{{twoInputs()}};
+    sdk = &no_extension;
+    auto ordinary{rk3576::RknnSession::load("ordinary", api())};
+    require(ordinary && ordinary.value->execute({input(0), input(1)}), "无扩展时普通执行路径回归");
+    require(!ordinary.value->allocateShared(64) &&
+                ordinary.value->allocateShared(64).error.code == model::ModelError::NotReady,
+            "缺少共享扩展未返回能力缺失诊断");
+    std::cout << "原子提交、共享内存生命周期与扩展缺失兼容测试通过\n";
 }

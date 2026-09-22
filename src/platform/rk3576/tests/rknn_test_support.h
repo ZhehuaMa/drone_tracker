@@ -40,6 +40,8 @@ inline rknn_tensor_attr attribute(std::uint32_t index, std::vector<std::uint32_t
 struct Model {
     std::vector<rknn_tensor_attr> inputs{};
     std::vector<rknn_tensor_attr> outputs{};
+    std::vector<rknn_tensor_attr> native_inputs{};
+    std::vector<rknn_tensor_attr> native_outputs{};
     std::vector<std::vector<float>> data{};
     int runs{};
     int sets{};
@@ -50,8 +52,21 @@ struct Model {
     int query_status{};
     int set_status{};
     int run_status{};
+    int wait_status{};
     int get_status{};
     int release_status{};
+    int mem_create_status{};
+    int mem_import_status{};
+    int mem_destroy_status{};
+    int mem_bind_status{};
+    int mem_sync_status{};
+    int binds{};
+    int mem_creates{};
+    int mem_imports{};
+    int mem_destroys{};
+    int mem_syncs{};
+    bool allow_partial{false};
+    std::vector<rknn_tensor_mem *> bound_memories{};
     bool bad_size{false};
     std::function<void(std::uint32_t, rknn_input *)> inspect{};
     std::function<float(std::size_t, std::size_t)> value{};
@@ -84,6 +99,14 @@ inline int query(rknn_context context, rknn_query_cmd command, void *ptr, std::u
         auto &v{*static_cast<rknn_sdk_version *>(ptr)};
         std::strcpy(v.api_version, "2.3.0");
         std::strcpy(v.drv_version, "0.9.8");
+    } else if (command == RKNN_QUERY_NATIVE_INPUT_ATTR || command == RKNN_QUERY_NATIVE_OUTPUT_ATTR) {
+        auto &a{*static_cast<rknn_tensor_attr *>(ptr)};
+        const auto &attributes{command == RKNN_QUERY_NATIVE_INPUT_ATTR ? m.native_inputs : m.native_outputs};
+        if (!attributes.empty()) {
+            a = attributes.at(a.index);
+        } else {
+            a = (command == RKNN_QUERY_NATIVE_INPUT_ATTR ? m.inputs : m.outputs).at(a.index);
+        }
     } else {
         auto &a{*static_cast<rknn_tensor_attr *>(ptr)};
         a = (command == RKNN_QUERY_INPUT_ATTR ? m.inputs : m.outputs).at(a.index);
@@ -93,11 +116,12 @@ inline int query(rknn_context context, rknn_query_cmd command, void *ptr, std::u
 inline int inputs(rknn_context context, std::uint32_t count, rknn_input *values) {
     auto &m{model(context)};
     ++m.sets;
-    require(count == m.inputs.size(), "输入数量错误");
+    require(m.allow_partial ? count > 0 && count <= m.inputs.size() : count == m.inputs.size(), "输入数量错误");
     for (std::uint32_t i{0}; i < count; ++i) {
-        require(values[i].index == i && values[i].pass_through == 0 && values[i].buf, "索引或提交方式错误");
-        require(values[i].type == RKNN_TENSOR_FLOAT32 && values[i].size == m.inputs[i].n_elems * sizeof(float) &&
-                    values[i].fmt == m.inputs[i].fmt,
+        require(values[i].pass_through == 0 && values[i].buf, "索引或提交方式错误");
+        const auto &a{m.inputs.at(values[i].index)};
+        require(values[i].type == RKNN_TENSOR_FLOAT32 && values[i].size == a.n_elems * sizeof(float) &&
+                    values[i].fmt == a.fmt,
                 "浮点转换提交契约错误");
     }
     if (m.inspect) {
@@ -105,13 +129,55 @@ inline int inputs(rknn_context context, std::uint32_t count, rknn_input *values)
     }
     return m.set_status;
 }
+inline rknn_tensor_mem *create_mem(rknn_context context, std::uint32_t size) {
+    auto &m{model(context)};
+    ++m.mem_creates;
+    if (m.mem_create_status) return nullptr;
+    auto *memory{new rknn_tensor_mem{}};
+    memory->fd = 100 + m.mem_creates;
+    memory->size = size;
+    memory->offset = 0;
+    memory->virt_addr = new std::uint8_t[size];
+    return memory;
+}
+inline rknn_tensor_mem *create_mem_from_fd(rknn_context context, int fd, void *virt_addr,
+                                            std::uint32_t size, std::int32_t offset) {
+    auto &m{model(context)};
+    ++m.mem_imports;
+    if (m.mem_import_status) return nullptr;
+    auto *memory{new rknn_tensor_mem{}};
+    memory->fd = fd;
+    memory->size = size;
+    memory->offset = offset;
+    memory->virt_addr = virt_addr;
+    return memory;
+}
+inline int destroy_mem(rknn_context context, rknn_tensor_mem *memory) {
+    auto &m{model(context)};
+    ++m.mem_destroys;
+    if (m.mem_destroy_status) return m.mem_destroy_status;
+    delete memory;
+    return 0;
+}
+inline int set_io_mem(rknn_context context, rknn_tensor_mem *memory, rknn_tensor_attr *) {
+    auto &m{model(context)};
+    ++m.binds;
+    m.bound_memories.push_back(memory);
+    return m.mem_bind_status;
+}
+inline int mem_sync(rknn_context context, rknn_tensor_mem *, rknn_mem_sync_mode) {
+    auto &m{model(context)};
+    ++m.mem_syncs;
+    return m.mem_sync_status;
+}
 inline int run(rknn_context context, rknn_run_extend *) {
     ++model(context).runs;
     return model(context).run_status;
 }
 inline int wait(rknn_context context, rknn_run_extend *) {
-    ++model(context).waits;
-    return 0;
+    auto &m{model(context)};
+    ++m.waits;
+    return m.wait_status;
 }
 inline int get(rknn_context context, std::uint32_t count, rknn_output *outputs, rknn_output_extend *) {
     auto &m{model(context)};
@@ -145,5 +211,8 @@ inline int destroy(rknn_context context) {
     return 0;
 }
 inline rk3576::RknnApi api() { return {init, query, inputs, run, wait, get, release, destroy}; }
+inline rk3576::RknnSharedMemoryApi sharedApi() {
+    return {create_mem, create_mem_from_fd, destroy_mem, set_io_mem, mem_sync};
+}
 } // namespace rknn_test
 #endif // RK3576_RKNN_TEST_SUPPORT_H

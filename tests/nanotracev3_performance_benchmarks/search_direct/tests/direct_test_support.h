@@ -456,6 +456,10 @@ inline search_direct::SharedMemoryApi fakeApi() {
     return api;
 }
 
+inline rk3576::RknnSharedMemoryApi productionSharedMemoryApi(const search_direct::SharedMemoryApi &api) {
+    return {api.create_mem, api.create_mem_from_fd, api.destroy_mem, api.set_io_mem, api.mem_sync};
+}
+
 /** @brief 构造与 baseline 相同形状的三模型 NanoTrackV3 组合，搜索边为原生 FP16 共享。 */
 inline FakeDevice nanoTrackModels() {
     FakeDevice fake;

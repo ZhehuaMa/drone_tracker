@@ -1,17 +1,18 @@
 #include "rknn_nanotrack_factory.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 
 #include "host_frame.h"
+#include "mjpeg_video_reader.h"
 #include "nano_tracker.h"
-
-#include <opencv2/imgproc.hpp>
-#include <opencv2/videoio.hpp>
+#include "rknn_api.h"
 
 namespace {
 struct Options {
@@ -66,24 +67,12 @@ Options parse(int argc, char **argv) {
     }
     return options;
 }
-FrameRef grayFrame(const cv::Mat &image) {
-    cv::Mat gray;
-    if (image.type() == CV_8UC3) {
-        cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-    } else if (image.type() == CV_8UC4) {
-        cv::cvtColor(image, gray, cv::COLOR_BGRA2GRAY);
-    } else if (image.type() == CV_8UC1) {
-        gray = image;
-    } else {
-        throw std::runtime_error("Video must decode to Gray8/BGR8/BGRA8");
-    }
-    return rk3576::copyGrayFrame(gray);
-}
 } // namespace
 int main(int argc, char **argv) {
     try {
         const auto options{parse(argc, argv)};
-        auto components{rk3576::loadNanoTrack(options.template_path, options.search_path, options.head_path)};
+        auto components{rk3576::loadNanoTrack(options.template_path, options.search_path, options.head_path,
+                                               rk3576::nativeRknnApi(), rk3576::nativeRknnSharedMemoryApi())};
         if (!components) {
             std::cerr << model::describe(components.error) << '\n';
             return 1;
@@ -92,15 +81,18 @@ int main(int argc, char **argv) {
             std::cout << components.value.description;
             return 0;
         }
-        std::cerr << components.value.description << "replay input: explicit BGR/BGRA -> Gray8, Float32 0..255 crops\n";
-        cv::VideoCapture video{options.video};
-        cv::Mat image;
-        if (!video.isOpened() || !video.read(image) || image.empty()) {
-            throw std::runtime_error("Cannot read first video frame: " + options.video);
+        std::cerr << components.value.description
+                  << "replay input: MjpegVideoReader Gray8, Float32 0..255 crops\n";
+        std::atomic<bool> stop{false};
+        rk3576::MjpegVideoReader video{options.video, stop};
+        const auto first{video.next()};
+        if (first.status != rk3576::VideoReadStatus::Frame || first.sample.gray.empty()) {
+            throw std::runtime_error("Cannot read first video frame: " + options.video + ": " + first.reason);
         }
         NanoTracker tracker{std::move(components.value.backend), std::move(components.value.preprocessor)};
+        std::cout << std::setprecision(9);
         auto begin{std::chrono::steady_clock::now()};
-        tracker.init(grayFrame(image), options.bbox);
+        tracker.init(rk3576::copyGrayFrame(first.sample.gray, 0), options.bbox);
         if (!tracker.isInitialized()) {
             throw std::runtime_error("NanoTracker initialization failed");
         }
@@ -110,10 +102,17 @@ int main(int argc, char **argv) {
                   << std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - begin).count()
                   << '\n';
         std::size_t index{1};
-        while (video.read(image) && !image.empty()) {
+        while (true) {
+            const auto decoded{video.next()};
+            if (decoded.status == rk3576::VideoReadStatus::Eof) {
+                break;
+            }
+            if (decoded.status != rk3576::VideoReadStatus::Frame || decoded.sample.gray.empty()) {
+                throw std::runtime_error("Cannot read video frame " + std::to_string(index) + ": " + decoded.reason);
+            }
             begin = std::chrono::steady_clock::now();
             cv::Rect2f box;
-            const float confidence{tracker.update(grayFrame(image), box)};
+            const float confidence{tracker.update(rk3576::copyGrayFrame(decoded.sample.gray, 0), box)};
             const double elapsed{
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - begin).count()};
             const bool success{std::isfinite(confidence) && confidence >= 0 && std::isfinite(box.x) &&

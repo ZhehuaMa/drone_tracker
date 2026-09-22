@@ -1,6 +1,7 @@
 #include "rknn_session.h"
 #include "timing_observer.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -57,13 +58,17 @@ model::Diagnostic RknnSession::failure(const std::string &operation, int status)
         model::ModelError::ExecutionFailure, path_, operation, "RKNN_SUCC", std::to_string(status), "RKNN call failed"};
 }
 model::Result<std::unique_ptr<RknnSession>> RknnSession::load(const std::string &path, RknnApi api) {
+    return load(path, api, {});
+}
+model::Result<std::unique_ptr<RknnSession>> RknnSession::load(const std::string &path, RknnApi api,
+                                                              RknnSharedMemoryApi shared_api) {
     using Result = model::Result<std::unique_ptr<RknnSession>>;
     if (!api.init || !api.query || !api.inputs_set || !api.run || !api.wait || !api.outputs_get ||
         !api.outputs_release || !api.destroy) {
         return Result::failure(
             {model::ModelError::LoadFailure, path, "API", "complete SDK boundary", {}, "Missing API"});
     }
-    auto runtime{std::make_unique<RknnSession>(path, api)};
+    auto runtime{std::make_unique<RknnSession>(path, api, shared_api)};
     try {
         if (const auto error{runtime->initialize()}) {
             return Result::failure(error);
@@ -72,6 +77,22 @@ model::Result<std::unique_ptr<RknnSession>> RknnSession::load(const std::string 
     } catch (const std::exception &error) {
         return Result::failure({model::ModelError::LoadFailure, path, {}, {}, {}, error.what()});
     }
+}
+model::Diagnostic RknnSession::queryNative(std::vector<rknn_tensor_attr> &target, bool input) {
+    for (std::size_t i{}; i < target.size(); ++i) {
+        auto &attribute{target[i]};
+        attribute = {};
+        attribute.index = static_cast<std::uint32_t>(i);
+        const int status{api_.query(context_, input ? RKNN_QUERY_NATIVE_INPUT_ATTR : RKNN_QUERY_NATIVE_OUTPUT_ATTR,
+                                    &attribute, sizeof(attribute))};
+        if (status != RKNN_SUCC) {
+            return failure(std::string("query native ") + (input ? "input#" : "output#") + std::to_string(i), status);
+        }
+        if (attribute.index != i) {
+            return attributeMismatch(path_, attribute, input, "queried native tensor index " + std::to_string(i));
+        }
+    }
+    return {};
 }
 model::Diagnostic RknnSession::checkAttribute(const rknn_tensor_attr &a, bool input) {
     if (a.n_dims == 0 || a.n_dims > RKNN_MAX_DIMS) {
@@ -160,6 +181,14 @@ model::Diagnostic RknnSession::initialize() {
             }
         }
     }
+    native_inputs_.resize(inputs_.size());
+    native_outputs_.resize(outputs_.size());
+    if (const auto error{queryNative(native_inputs_, true)}) {
+        return error;
+    }
+    if (const auto error{queryNative(native_outputs_, false)}) {
+        return error;
+    }
     ready_ = true;
     return {};
 }
@@ -177,6 +206,13 @@ void RknnSession::invalidate() noexcept {
     if (running_) {
         model::terminateDeviceFailure(path_.c_str(), "Destroy attempted before confirmed completion");
     }
+    while (!memories_.empty()) {
+        auto *memory{memories_.back()};
+        memories_.pop_back();
+        if (context_ == 0 || !shared_api_.destroy_mem || shared_api_.destroy_mem(context_, memory) != RKNN_SUCC) {
+            model::terminateDeviceFailure(path_.c_str(), "Shared device memory release failed during teardown");
+        }
+    }
     if (context_ != 0) {
         const auto context{context_};
         context_ = 0;
@@ -185,20 +221,24 @@ void RknnSession::invalidate() noexcept {
         }
     }
 }
+
 RknnSession::~RknnSession() noexcept { invalidate(); }
-model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inputs) {
-    using Result = model::ExecutionResult;
+model::Status RknnSession::submit(const std::vector<SessionInput> &inputs, bool allow_partial) {
+    using Result = model::Status;
     if (!ready_) {
         return Result::failure({model::ModelError::NotReady, path_, {}, {}, {}, "Runtime is invalid"});
     }
-    if (inputs.size() != inputs_.size()) {
-        return Result::failure({model::ModelError::ContractMismatch, path_, "inputs", std::to_string(inputs_.size()),
+    if (inputs.empty() || inputs.size() > inputs_.size() || (!allow_partial && inputs.size() != inputs_.size())) {
+        return Result::failure({model::ModelError::ContractMismatch, path_, "inputs",
+                                allow_partial ? "1.." + std::to_string(inputs_.size())
+                                              : std::to_string(inputs_.size()),
                                 std::to_string(inputs.size()), "Input count mismatch"});
     }
     timing::Span input_prepare{timing::Stage::InputPrepare};
     std::vector<rknn_input> submissions(inputs.size());
-    std::vector<bool> seen(inputs.size(), false);
-    for (const auto &input : inputs) {
+    std::vector<bool> seen(inputs_.size(), false);
+    for (std::size_t position{}; position < inputs.size(); ++position) {
+        const auto &input{inputs[position]};
         const auto name{"input#" + std::to_string(input.index)};
         if (input.index >= inputs_.size() || seen[input.index]) {
             return Result::failure({model::ModelError::ContractMismatch, path_, name, "unique valid index",
@@ -208,7 +248,7 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
         const auto &a{inputs_[input.index]};
         const auto &d{input.descriptor};
         TensorShape expected;
-        for (std::size_t axis{0}; axis < a.n_dims; ++axis) {
+        for (std::size_t axis{}; axis < a.n_dims; ++axis) {
             expected.push_back(static_cast<std::int32_t>(a.dims[axis]));
         }
         const auto layout{a.fmt == RKNN_TENSOR_NCHW ? TensorLayout::Nchw : TensorLayout::Nhwc};
@@ -233,53 +273,95 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
             return Result::failure({model::ModelError::PlatformTypeMismatch, path_, name, "owned, aligned host storage",
                                     "missing or misaligned storage", "Invalid storage"});
         }
-        auto &submission{submissions[input.index]};
+        auto &submission{submissions[inputs.size() == inputs_.size() ? input.index : position]};
         submission.index = input.index;
         submission.buf = const_cast<void *>(input.data);
         submission.size = static_cast<std::uint32_t>(input.bytes);
+        submission.pass_through = 0;
         submission.type = d.type == TensorElementType::Float32 ? RKNN_TENSOR_FLOAT32 : RKNN_TENSOR_UINT8;
         submission.fmt = a.fmt;
     }
-    // 在设备提交前完成可能分配内存的请求数组准备。
-    std::vector<rknn_output> outputs(outputs_.size());
     input_prepare.finish();
     timing::Span inputs_set{timing::Stage::InputsSet};
-    int status{api_.inputs_set(context_, static_cast<std::uint32_t>(submissions.size()), submissions.data())};
+    const int status{api_.inputs_set(context_, static_cast<std::uint32_t>(submissions.size()), submissions.data())};
     inputs_set.finish(status == RKNN_SUCC);
     if (status != RKNN_SUCC) {
         const auto error{failure("inputs_set", status)};
-        invalidate(); // 本次尚未提交 run。
+        invalidate();
         return Result::failure(error);
     }
+    return {true};
+}
+model::Status RknnSession::bind(const rknn_tensor_attr &attribute, rknn_tensor_mem *memory) {
+    using Result = model::Status;
+    if (!ready_ || !shared_api_.complete()) {
+        return Result::failure({model::ModelError::NotReady, path_, "set_io_mem", "shared memory extension",
+                                "not provided", "Shared memory capability unavailable"});
+    }
+    if (!memory || !memory->virt_addr || memory->offset < 0 ||
+        static_cast<std::uint32_t>(memory->offset) > memory->size ||
+        memory->size - static_cast<std::uint32_t>(memory->offset) < attribute.size_with_stride) {
+        return Result::failure({model::ModelError::ContractMismatch, path_,
+                                "io_mem#" + std::to_string(attribute.index),
+                                "device memory covering " + std::to_string(attribute.size_with_stride) +
+                                    " bytes after its offset",
+                                memory ? std::to_string(memory->size) : "null", "Shared memory too small"});
+    }
+    timing::Span io_mem_bind{timing::Stage::IoMemBind};
+    rknn_tensor_attr request{attribute};
+    const int status{shared_api_.set_io_mem(context_, memory, &request)};
+    io_mem_bind.finish(status == RKNN_SUCC);
+    if (status != RKNN_SUCC) {
+        const auto error{failure("set_io_mem#" + std::to_string(attribute.index), status)};
+        ready_ = false;
+        return Result::failure(error);
+    }
+    return {true};
+}
+model::Status RknnSession::run() {
+    using Result = model::Status;
+    if (!ready_) {
+        return Result::failure({model::ModelError::NotReady, path_, {}, {}, {}, "Runtime is invalid"});
+    }
     running_ = true;
-    timing::Span run{timing::Stage::Run};
-    status = api_.run(context_, nullptr);
-    run.finish(status == RKNN_SUCC);
+    timing::Span run_span{timing::Stage::Run};
+    const int status{api_.run(context_, nullptr)};
+    run_span.finish(status == RKNN_SUCC);
     if (status != RKNN_SUCC) {
         const auto error{failure("run", status)};
         confirmStopped();
         invalidate();
         return Result::failure(error);
     }
-    for (std::size_t i{0}; i < outputs.size(); ++i) {
+    return {true};
+}
+void RknnSession::confirmCompleted() {
+    confirmStopped();
+}
+model::ExecutionResult RknnSession::fetch() {
+    using Result = model::ExecutionResult;
+    if (!ready_) {
+        return Result::failure({model::ModelError::NotReady, path_, {}, {}, {}, "Runtime is invalid"});
+    }
+    std::vector<rknn_output> outputs(outputs_.size());
+    for (std::size_t i{}; i < outputs.size(); ++i) {
         outputs[i].index = static_cast<std::uint32_t>(i);
         outputs[i].want_float = 1;
     }
     timing::Span outputs_get{timing::Stage::OutputsGet};
-    status = api_.outputs_get(context_, static_cast<std::uint32_t>(outputs.size()), outputs.data(), nullptr);
+    int status{api_.outputs_get(context_, static_cast<std::uint32_t>(outputs.size()), outputs.data(), nullptr)};
     outputs_get.finish(status == RKNN_SUCC);
     if (status != RKNN_SUCC) {
         const auto error{failure("outputs_get", status)};
         confirmStopped();
-        // get 失败未转移输出所有权；不 release 不确定/部分 SDK 指针，销毁 context 回收。
         invalidate();
         return Result::failure(error);
     }
-    running_ = false; // 成功 get 的 API 契约明确等待推理结束。
+    running_ = false;
     Result result;
     timing::Span output_copy{timing::Stage::OutputCopy};
     try {
-        for (std::size_t i{0}; i < outputs.size(); ++i) {
+        for (std::size_t i{}; i < outputs.size(); ++i) {
             if (!outputs[i].buf || outputs[i].size != descriptors_[i].bytes) {
                 result = Result::failure({model::ModelError::ContractMismatch, path_, "output#" + std::to_string(i),
                                           std::to_string(descriptors_[i].bytes) + " Float32 bytes",
@@ -304,6 +386,81 @@ model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inp
         invalidate();
     }
     return result;
+}
+model::ExecutionResult RknnSession::execute(const std::vector<SessionInput> &inputs) {
+    if (inputs.size() != inputs_.size()) {
+        return model::ExecutionResult::failure({model::ModelError::ContractMismatch, path_, "inputs",
+                                                std::to_string(inputs_.size()), std::to_string(inputs.size()),
+                                                "Input count mismatch"});
+    }
+    if (const auto submitted{submit(inputs, false)}; !submitted) {
+        return model::ExecutionResult::failure(submitted.error);
+    }
+    if (const auto executed{run()}; !executed) {
+        return model::ExecutionResult::failure(executed.error);
+    }
+    return fetch();
+}
+model::Result<rknn_tensor_mem *> RknnSession::allocateShared(std::uint32_t bytes) {
+    using Result = model::Result<rknn_tensor_mem *>;
+    if (!ready_ || !shared_api_.complete() || bytes == 0) {
+        return Result::failure({model::ModelError::NotReady, path_, "create_mem", "shared memory capability and size",
+                                "unavailable", "Shared memory capability unavailable"});
+    }
+    auto *memory{shared_api_.create_mem(context_, bytes)};
+    if (!memory || !memory->virt_addr || memory->size < bytes || memory->fd < 0 || memory->offset < 0) {
+        if (memory) {
+            shared_api_.destroy_mem(context_, memory);
+        }
+        return Result::failure({model::ModelError::ExecutionFailure, path_, "create_mem",
+                                std::to_string(bytes), "incomplete memory handle", "Shared allocation failed"});
+    }
+    memories_.push_back(memory);
+    return {memory};
+}
+model::Result<rknn_tensor_mem *> RknnSession::importShared(const rknn_tensor_mem &source) {
+    using Result = model::Result<rknn_tensor_mem *>;
+    if (!ready_ || !shared_api_.complete() || source.fd < 0 || !source.virt_addr || source.size == 0) {
+        return Result::failure({model::ModelError::NotReady, path_, "create_mem_from_fd", "valid shared memory",
+                                "invalid source", "Cannot import shared device memory"});
+    }
+    auto *memory{shared_api_.create_mem_from_fd(context_, source.fd, source.virt_addr, source.size, source.offset)};
+    if (!memory || memory->virt_addr != source.virt_addr || memory->fd != source.fd || memory->size < source.size) {
+        if (memory) {
+            shared_api_.destroy_mem(context_, memory);
+        }
+        return Result::failure({model::ModelError::ExecutionFailure, path_, "create_mem_from_fd",
+                                "same shared storage", "different storage", "Shared import failed"});
+    }
+    memories_.push_back(memory);
+    return {memory};
+}
+model::Status RknnSession::releaseShared(rknn_tensor_mem *memory) {
+    if (!memory) {
+        return {true};
+    }
+    const auto position{std::find(memories_.begin(), memories_.end(), memory)};
+    if (position == memories_.end()) {
+        return {true};
+    }
+    memories_.erase(position);
+    if (!shared_api_.complete() || context_ == 0 ||
+        shared_api_.destroy_mem(context_, memory) != RKNN_SUCC) {
+        model::terminateDeviceFailure(path_.c_str(), "Shared device memory release failed");
+    }
+    return {true};
+}
+model::Status RknnSession::syncFromDevice(rknn_tensor_mem *memory) {
+    using Result = model::Status;
+    if (!memory || !shared_api_.complete() || context_ == 0) {
+        return Result::failure({model::ModelError::NotReady, path_, "mem_sync", "shared memory capability",
+                                "unavailable", "Cannot synchronise shared memory"});
+    }
+    const int status{shared_api_.mem_sync(context_, memory, RKNN_MEMORY_SYNC_FROM_DEVICE)};
+    if (status != RKNN_SUCC) {
+        return Result::failure(failure("mem_sync", status));
+    }
+    return {true};
 }
 std::string RknnSession::describe() const {
     std::ostringstream out;

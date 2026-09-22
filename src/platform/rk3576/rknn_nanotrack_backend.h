@@ -9,9 +9,15 @@ namespace rk3576 {
 class RknnNanoTrackBackend final : public model::NanoTrackBackend {
 public:
     static model::Result<std::unique_ptr<RknnNanoTrackBackend>>
-    load(const std::string &template_path, const std::string &search_path, const std::string &head_path, RknnApi api);
+    load(const std::string &template_path, const std::string &search_path, const std::string &head_path, RknnApi api,
+         RknnSharedMemoryApi shared_api);
+    static model::Result<std::unique_ptr<RknnNanoTrackBackend>>
+    loadCpuReference(const std::string &template_path, const std::string &search_path, const std::string &head_path,
+                     RknnApi api);
+    ~RknnNanoTrackBackend() noexcept override;
     RknnNanoTrackBackend(std::unique_ptr<RknnSession> z, std::unique_ptr<RknnSession> x,
-                         std::unique_ptr<RknnSession> head, NanoTrackRoles roles);
+                         std::unique_ptr<RknnSession> head, NanoTrackRoles roles,
+                         SharedFeatureContract contract = {});
     model::Status setTemplate(const PreparedInputRef &input) override;
     model::Result<model::NanoPrediction> search(const PreparedInputRef &input) override;
     void reset() noexcept override;
@@ -20,11 +26,16 @@ public:
 
 private:
     bool ready() const noexcept;
+    void releaseShared() noexcept;
     model::Result<model::Tensor> backbone(RknnSession &session, const PreparedInputRef &input, int size);
     std::unique_ptr<RknnSession> template_session_;
     std::unique_ptr<RknnSession> search_session_;
     std::unique_ptr<RknnSession> head_session_;
     NanoTrackRoles roles_{};
+    SharedFeatureContract contract_{};
+    bool direct_{true};
+    rknn_tensor_mem *shared_{};
+    rknn_tensor_mem *imported_{};
     model::Tensor template_feature_{};
 };
 } // namespace rk3576

@@ -235,7 +235,9 @@ int main(int argc, char **argv) {
         ProbeOrderRunner probe{options, api};
         // 参照使用完全独立的三个普通会话，不共享被测缓冲区，也不读取其数据。
         auto reference{rk3576::RknnNanoTrackBackend::load(options.template_model, options.search_model,
-                                                          options.head_model, api.core)};
+                                                          options.head_model, api.core,
+                                                          {api.create_mem, api.create_mem_from_fd, api.destroy_mem,
+                                                           api.set_io_mem, api.mem_sync})};
         check(static_cast<bool>(reference), "独立普通参照加载失败: " + model::describe(reference.error));
 
         // 固定种子：两个模板、三个搜索输入，搜索按 A/B/A/C 交替，每四次切换模板。

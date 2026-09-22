@@ -223,7 +223,8 @@ int main(int argc, char **argv) {
                     close(full);
                 }
                 auto loaded{
-                    rk3576::loadNanoTrack(c.models[0].string(), c.models[1].string(), c.models[2].string(), api())};
+                    rk3576::loadNanoTrackCpuReference(c.models[0].string(), c.models[1].string(),
+                                                      c.models[2].string(), api())};
                 if (loaded) {
                     loaded.value.description = "controlled runtime=2.3.2 driver=0.9.8";
                 }

@@ -10,6 +10,8 @@
 #include "nano_tracker.h"
 #include "timing_observer.h"
 #include <array>
+#include <sys/wait.h>
+#include <unistd.h>
 #include "rknn_test_support.h"
 
 namespace {
@@ -44,13 +46,15 @@ Sdk models(bool int_backbone, bool int_head, bool nhwc, bool swapped) {
     h.inputs[0].scale = 0.2f;
     h.inputs[1].scale = 0.3f;
     h.outputs = {attr(0, swapped ? 4 : 2, 15, ht, !nhwc), attr(1, swapped ? 2 : 4, 15, ht, nhwc)};
-    h.inspect = [nhwc, swapped](std::uint32_t, rknn_input *inputs) {
-        for (std::size_t i{0}; i < 2; ++i) {
-            const int side{(i == 0) == swapped ? 16 : 8};
-            const bool layout{i == 0 ? nhwc : !nhwc};
-            const auto *data{static_cast<const float *>(inputs[i].buf)};
-            for (std::size_t j{0}; j < inputs[i].size / sizeof(float); ++j) {
-                require(std::abs(data[j] - featureValue(j, side, layout)) < 1e-6f, "Head 特征索引/轴重排/量化实数错误");
+    h.inspect = [nhwc, swapped](std::uint32_t count, rknn_input *inputs) {
+        for (std::size_t position{0}; position < count; ++position) {
+            const auto index{inputs[position].index};
+            const int side{(index == 0) == swapped ? 16 : 8};
+            const bool layout{index == 0 ? nhwc : !nhwc};
+            const auto *data{static_cast<const float *>(inputs[position].buf)};
+            for (std::size_t j{0}; j < inputs[position].size / sizeof(float); ++j) {
+                require(std::abs(data[j] - featureValue(j, side, layout)) < 1e-6f,
+                        "Head 特征索引/轴重排/量化实数错误");
             }
         }
     };
@@ -68,7 +72,23 @@ PreparedInputRef image(int side) {
     auto data{std::make_shared<std::vector<float>>(3 * side * side, 128.25f)};
     return std::make_shared<rk3576::FloatInput>(data, ModelInputContract{{1, 3, side, side}});
 }
-auto load() { return rk3576::RknnNanoTrackBackend::load("new-template", "new-search", "new-head", api()); }
+auto directLoad(Sdk &fake) {
+    auto nativeFeature = [](std::uint32_t index, std::uint32_t side) {
+        auto result{attribute(index, {1, 12, side, side, 8}, RKNN_TENSOR_FLOAT16, RKNN_TENSOR_NC1HWC2)};
+        result.size_with_stride = result.n_elems * 2U;
+        return result;
+    };
+    fake.models[1].native_outputs = {nativeFeature(0, 16)};
+    fake.models[2].native_inputs = {
+        nativeFeature(0, static_cast<std::uint32_t>(rk3576::nchwShape(fake.models[2].inputs[0])[2])),
+        nativeFeature(1, static_cast<std::uint32_t>(rk3576::nchwShape(fake.models[2].inputs[1])[2]))};
+    fake.models[2].allow_partial = true;
+    return rk3576::RknnNanoTrackBackend::load("new-template", "new-search", "new-head", api(), sharedApi());
+}
+auto load(Sdk &fake) {
+    sdk = &fake;
+    return directLoad(fake);
+}
 void checkCombinations() {
     for (bool ib : {false, true}) {
         for (bool ih : {false, true}) {
@@ -76,7 +96,7 @@ void checkCombinations() {
                 for (bool swapped : {false, true}) {
                     auto fake{models(ib, ih, layout, swapped)};
                     sdk = &fake;
-                    auto backend{load()};
+                    auto backend{load(fake)};
                     require(static_cast<bool>(backend), "兼容模型装配失败");
                     require(!backend.value->search(image(255)) && fake.models[1].runs == 0, "无模板仍执行搜索");
                     require(static_cast<bool>(backend.value->setTemplate(image(127))), "模板失败");
@@ -95,7 +115,8 @@ void checkCombinations() {
                     }
                     auto wrong{
                         std::make_shared<rk3576::ByteInput>(std::make_shared<const std::vector<std::uint8_t>>(10))};
-                    require(backend.value->search(wrong).error.code == model::ModelError::PlatformTypeMismatch,
+                    const auto wrong_result{backend.value->search(wrong)};
+                    require(wrong_result.error.code == model::ModelError::PlatformTypeMismatch,
                             "外来存储未拒绝");
                     require(static_cast<bool>(backend.value->search(image(255))), "输入错误破坏有效模板");
                     require(fake.models[0].runs == 1, "搜索覆盖或重新建立了模板");
@@ -143,7 +164,7 @@ void failures() {
         if (fault == 9) {
             fake.models[0].inputs[0].qnt_type = RKNN_TENSOR_QNT_DFP;
         }
-        auto result{load()};
+        auto result{load(fake)};
         require(!result && !result.value && !result.error.model.empty(), "非法模型返回可用后端");
         for (std::size_t i{0}; i < fake.next; ++i) {
             require(fake.models[i].destroys == 1, "部分装配失败未回收已加载会话");
@@ -152,9 +173,13 @@ void failures() {
     for (int session : {0, 1, 2}) {
         auto fake{models(true, false, true, true)};
         sdk = &fake;
-        auto backend{load()};
+        auto backend{load(fake)};
         require(static_cast<bool>(backend.value->setTemplate(image(127))), "建立初始模板失败");
-        fake.models[session].get_status = -1;
+        if (session == 1 || session == 2) {
+            fake.models[session].mem_bind_status = -1;
+        } else {
+            fake.models[session].get_status = -1;
+        }
         if (session == 0) {
             require(!backend.value->setTemplate(image(127)), "模板失败未传播");
         } else {
@@ -162,10 +187,12 @@ void failures() {
             require(!result && !result.value.classification.storage && !result.value.location.storage,
                     "搜索失败返回部分结果");
         }
-        const auto runs{fake.models[1].runs};
-        require(backend.value->search(image(255)).error.code == model::ModelError::NotReady &&
-                    fake.models[1].runs == runs,
-                "SDK 失效后仍运行");
+        if (session != 2) {
+            const auto runs{fake.models[1].runs};
+            require(backend.value->search(image(255)).error.code == model::ModelError::NotReady &&
+                        fake.models[1].runs == runs,
+                    "SDK 失效后仍运行");
+        }
     }
 }
 void floatingAffineMetadata() {
@@ -184,7 +211,7 @@ void floatingAffineMetadata() {
                     }
                 }
             }
-            auto backend{load()};
+            auto backend{load(fake)};
             require(static_cast<bool>(backend), "浮点 AFFINE 元数据导致误拒绝");
             require(static_cast<bool>(backend.value->setTemplate(image(127))), "浮点 AFFINE 模板失败");
             auto prediction{backend.value->search(image(255))};
@@ -206,7 +233,7 @@ void realTracker() {
         const auto pixel{j / 2};
         return channel == 1 && pixel == 112 ? std::log(9.0f) : 0.0f;
     };
-    auto backend{load()};
+    auto backend{load(fake)};
     NanoTracker tracker{std::move(backend.value), std::make_unique<rk3576::NanoTrackPreprocessor>()};
     const auto frame{rk3576::copyGrayFrame(cv::Mat(200, 200, CV_8UC1, cv::Scalar{114}))};
     tracker.init(frame, {50, 60, 20, 20});
@@ -242,7 +269,7 @@ void observationComparison() {
     for (bool observed : {false, true}) {
         auto fake{models(false, false, true, true)};
         sdk = &fake;
-        auto backend{load()};
+        auto backend{load(fake)};
         require(backend.value->floatingInterfaces(), "纯浮点接口未识别");
         NanoTracker tracker{std::move(backend.value), std::make_unique<rk3576::NanoTrackPreprocessor>()};
         Counter counter;
@@ -261,12 +288,60 @@ void observationComparison() {
                 "观测改变模型调用次数");
         if (observed) {
             require(counter.counts[static_cast<int>(timing::Stage::TemplateBackbone)] == 1
-                && counter.counts[static_cast<int>(timing::Stage::SearchBackbone)] == 10
+            && counter.counts[static_cast<int>(timing::Stage::SearchBackbone)] == 0
                 && counter.counts[static_cast<int>(timing::Stage::Head)] == 10
-                && counter.counts[static_cast<int>(timing::Stage::OutputsGet)] == 21,
+            && counter.counts[static_cast<int>(timing::Stage::OutputsGet)] == 11,
                 "模型角色或结果获取区间缺失");
         }
     }
+}
+void directHandoff() {
+    auto fake{models(false, false, true, true)};
+    sdk = &fake;
+    auto backend{directLoad(fake)};
+    require(static_cast<bool>(backend), "共享内存直连后端装配失败");
+    require(fake.models[1].mem_creates == 1 && fake.models[2].mem_imports == 1, "共享内存未一次性装配");
+    require(static_cast<bool>(backend.value->setTemplate(image(127))), "直连模板初始化失败");
+    const auto allocations{fake.models[1].mem_creates};
+    auto first{backend.value->search(image(255))};
+    require(static_cast<bool>(first), "直连首次搜索失败");
+    require(static_cast<bool>(backend.value->search(image(255))), "直连连续搜索失败");
+    require(fake.models[1].binds == 2 && fake.models[2].binds == 2, "连续帧未重新绑定");
+    backend.value->reset();
+    require(fake.models[1].mem_creates == allocations, "reset 重新分配共享内存");
+
+    auto bind_failure{models(false, false, true, true)};
+    sdk = &bind_failure;
+    auto failed_backend{directLoad(bind_failure)};
+    require(failed_backend && failed_backend.value->setTemplate(image(127)), "绑定失败测试初始化失败");
+    bind_failure.models[1].mem_bind_status = -1;
+    require(!failed_backend.value->search(image(255)), "绑定拒绝未返回单帧失败");
+
+    auto fatalRun = [](bool release_failure) {
+        const auto pid{fork()};
+        require(pid >= 0, "无法创建失败路径子进程");
+        if (pid == 0) {
+            auto child{models(false, false, true, true)};
+            sdk = &child;
+            auto loaded{directLoad(child)};
+            if (!loaded || !loaded.value->setTemplate(image(127))) _exit(2);
+            if (release_failure) {
+                child.models[1].mem_destroy_status = -1;
+                loaded.value.reset();
+                _exit(0);
+            }
+            child.models[1].run_status = -1;
+            child.models[1].wait_status = -1;
+            (void)loaded.value->search(image(255));
+            _exit(0);
+        }
+        int status{};
+        require(waitpid(pid, &status, 0) == pid, "等待失败路径子进程失败");
+        require(WIFSIGNALED(status) || (WIFEXITED(status) && WEXITSTATUS(status) != 0),
+                "致命设备失败未终止子进程");
+    };
+    fatalRun(false);
+    fatalRun(true);
 }
 } // namespace
 int main() {
@@ -275,5 +350,6 @@ int main() {
     floatingAffineMetadata();
     realTracker();
     observationComparison();
+    directHandoff();
     std::cout << "NanoTrack 四精度组合、角色重排、失败状态与真实跟踪链通过\n";
 }

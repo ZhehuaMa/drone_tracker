@@ -15,6 +15,17 @@ struct RknnApi {
     decltype(&rknn_outputs_release) outputs_release{};
     decltype(&rknn_destroy) destroy{};
 };
+struct RknnSharedMemoryApi {
+    decltype(&rknn_create_mem) create_mem{};
+    decltype(&rknn_create_mem_from_fd) create_mem_from_fd{};
+    decltype(&rknn_destroy_mem) destroy_mem{};
+    decltype(&rknn_set_io_mem) set_io_mem{};
+    decltype(&rknn_mem_sync) mem_sync{};
+    bool complete() const noexcept {
+        return create_mem && create_mem_from_fd && destroy_mem && set_io_mem && mem_sync;
+    }
+};
 RknnApi nativeRknnApi();
+RknnSharedMemoryApi nativeRknnSharedMemoryApi();
 } // namespace rk3576
 #endif // RK3576_RKNN_API_H

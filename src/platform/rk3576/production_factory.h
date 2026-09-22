@@ -4,6 +4,7 @@
 #include "rknn_api.h"
 namespace rk3576 {
 /** @brief 复用正式模型工厂；仅替换 SDK 调用表以注入加载失败。 */
-AssemblyDependencies productionDependencies(RknnApi api, std::function<void(const std::string &)> describe = {});
+AssemblyDependencies productionDependencies(RknnApi api, std::function<void(const std::string &)> describe = {},
+                                             RknnSharedMemoryApi shared_api = {});
 } // namespace rk3576
 #endif // RK3576_PRODUCTION_FACTORY_H

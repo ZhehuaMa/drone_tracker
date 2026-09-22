@@ -174,7 +174,9 @@ std::vector<std::vector<float>> conventionalReference(const std::vector<std::pai
     device = &fake;
     std::vector<std::vector<float>> results;
     {
-        auto backend{rk3576::RknnNanoTrackBackend::load("z", "x", "head", fakeApi().core)};
+        const auto api{fakeApi()};
+        auto backend{rk3576::RknnNanoTrackBackend::load(
+            "z", "x", "head", api.core, productionSharedMemoryApi(api))};
         require(static_cast<bool>(backend), "参照后端加载失败");
         float current_template{std::numeric_limits<float>::quiet_NaN()};
         for (const auto &step : sequence) {
