@@ -15,7 +15,7 @@ void initializationFailures() {
              "queue", "clock", "stream_on"}) {
         auto system{std::make_shared<System>()};
         system->failure = failure;
-        CameraDevice device{config(), system};
+        Ar0234CameraDevice device{config(), system};
         rejects([&] { device.prepare(); device.start(); }, failure == "configure" || failure == "entity"
             ? "tool failure" : "");
         device.finish();
@@ -25,7 +25,7 @@ void initializationFailures() {
         auto system{std::make_shared<System>()};
         system->failure = failure;
         system->occurrence = 3;
-        CameraDevice device{config(), system};
+        Ar0234CameraDevice device{config(), system};
         device.prepare();
         rejects([&] { device.start(); }, "");
         require(system->counts["unmap"] == (failure == "queue" ? 3 : 2), "Partial mapping cleanup count");
@@ -40,7 +40,7 @@ void initializationFailures() {
         system->bad_query = kind == 4;
         system->format_changes_after_buffers = kind == 5;
         if (kind == 6) { system->buffer_count = 1; }
-        CameraDevice device{config(), system};
+        Ar0234CameraDevice device{config(), system};
         rejects([&] { device.prepare(); device.start(); }, "");
         system->clean();
     }
@@ -48,7 +48,7 @@ void initializationFailures() {
 void frameAndCleanupFailures() {
     for (const std::string failure : {"poll", "dequeue", "return", "stream_off", "release", "unmap", "close"}) {
         auto system{std::make_shared<System>()};
-        CameraDevice device{config(), system};
+        Ar0234CameraDevice device{config(), system};
         device.prepare();
         device.start();
         system->failure = failure;
@@ -72,7 +72,7 @@ void pixelsAndMetadata() {
     std::unique_ptr<FrameReadView> view{};
     auto system{std::make_shared<System>()};
     {
-        CameraDevice device{config(), system};
+        Ar0234CameraDevice device{config(), system};
         device.prepare();
         require(system->counts["allocate"] == 0 && system->counts["stream_on"] == 0, "Probe starts capture");
         device.start();
@@ -114,7 +114,7 @@ void pixelsAndMetadata() {
             case 7: value.timestamp.tv_usec = 1000000; break;
             }
         };
-        CameraDevice device{config(), broken};
+        Ar0234CameraDevice device{config(), broken};
         device.prepare(); device.start();
         rejects([&] { device.next(1); }, kind == 7 ? "timeval" : "Invalid dequeued buffer");
         require(broken->counts["return"] == 0, "Invalid metadata released as success");
@@ -130,14 +130,14 @@ void controlLifecycle() {
         const auto original{system->controls};
         system->failure = "control_set";
         system->occurrence = failure_at;
-        CameraDevice device{settings, system};
+        Ar0234CameraDevice device{settings, system};
         rejects([&] { device.prepare(); }, "set ");
         require(system->controls == original, "Partial configuration not restored");
         system->clean();
     }
     auto system{std::make_shared<System>()};
     const auto original{system->controls};
-    CameraDevice device{settings, system};
+    Ar0234CameraDevice device{settings, system};
     device.prepare();
     require(system->trigger_calls == 0 && !system->streaming, "Prepare triggered acquisition");
     device.start();
@@ -158,7 +158,7 @@ void controlLifecycle() {
     require(system->counts["close"] == closed, "Repeated finish closed twice");
     auto unreadable{std::make_shared<System>()};
     unreadable->failure = "control_get"; unreadable->occurrence = 2;
-    CameraDevice blocked{settings, unreadable};
+    Ar0234CameraDevice blocked{settings, unreadable};
     rejects([&] { blocked.prepare(); }, "read");
     require(unreadable->counts["control_set"] == 0 && unreadable->counts["configure"] == 0,
             "Modified controls before all snapshots available");
@@ -207,7 +207,7 @@ void controlReadbackDeadline() {
     for (const std::int64_t delay : {0, 20000, 100000}) {
         auto system{std::make_shared<DelayedControlSystem>()};
         system->delay_us = delay;
-        CameraDevice device{settings, system};
+        Ar0234CameraDevice device{settings, system};
         device.prepare();
         require(system->controls.at(0x00981902) == 0 && system->now == delay,
                 "Configuration did not wait for requested control value");
@@ -217,7 +217,7 @@ void controlReadbackDeadline() {
         system->clean();
     }
     auto system{std::make_shared<DelayedControlSystem>()};
-    CameraDevice device{settings, system};
+    Ar0234CameraDevice device{settings, system};
     device.prepare();
     system->delay_us = 200000;
     const auto before{system->now};
@@ -235,14 +235,14 @@ void controlReadbackDeadline() {
 
     auto slow{std::make_shared<DelayedControlSystem>()};
     slow->delay_us = 200000;
-    CameraDevice failed{settings, slow};
+    Ar0234CameraDevice failed{settings, slow};
     rejects([&] { failed.prepare(); }, "set trigger_src readback timeout expected=0 actual=1");
     require(slow->now == 100000 && slow->controls.at(0x00981901) == 0
             && slow->controls.at(0x00981902) == 1, "Configuration timeout did not roll back");
     slow->clean();
 
     auto unreadable{std::make_shared<DelayedControlSystem>()};
-    CameraDevice read_error{settings, unreadable};
+    Ar0234CameraDevice read_error{settings, unreadable};
     read_error.prepare();
     unreadable->failure = "control_get";
     unreadable->occurrence = unreadable->counts["control_get"] + 1;

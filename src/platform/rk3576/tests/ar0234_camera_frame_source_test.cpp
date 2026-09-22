@@ -14,7 +14,7 @@ void queueAndRestart() {
     system->width = 8; system->height = 3; system->stride = 16;
     system->sequence_step = 2;
     auto settings{config()}; settings.width = 8; settings.height = 3;
-    Rk3576CameraFrameSource source{settings, dependencies(system)};
+    Ar0234CameraFrameSource source{settings, dependencies(system)};
     system->clean();
     require(source.status().state == FrameSourceState::Ready, "Factory probe state");
     source.configureRecording(false, "", "");
@@ -52,7 +52,7 @@ void failureAndRetry() {
     for (const std::string failure : {"stream_on", "dequeue", "return", "stream_off"}) {
         auto system{std::make_shared<System>()};
         system->frame_limit = 1;
-        Rk3576CameraFrameSource source{config(), dependencies(system)};
+        Ar0234CameraFrameSource source{config(), dependencies(system)};
         system->failure = failure;
         const bool started{source.start()};
         if (failure == "stream_on") { require(!started, "STREAMON failure accepted"); }
@@ -75,7 +75,7 @@ void failureAndRetry() {
         if (++calls == 1) { throw std::runtime_error("injected launch failure"); }
         return std::thread{std::move(work)};
     };
-    Rk3576CameraFrameSource source{config(), injected};
+    Ar0234CameraFrameSource source{config(), injected};
     require(!source.start() && source.status().reason.find("launch failure") != std::string::npos,
             "Thread launch failure hidden");
     system->clean();
@@ -85,12 +85,12 @@ void failureAndRetry() {
     require(source.stop() && source.diagnostic().stop_us < 250000, "Blocked device stop failed");
     system->clean();
     injected.launch = [](std::function<void()>) { return std::thread{}; };
-    Rk3576CameraFrameSource empty_worker{config(), injected};
+    Ar0234CameraFrameSource empty_worker{config(), injected};
     require(!empty_worker.start(), "Empty launcher accepted");
     system->clean();
 }
 void softwareLifecycle() {
-    CameraTriggerPlan plan{0, 50000, 1};
+    Ar0234TriggerPlan plan{0, 50000, 1};
     require(plan.skipLate(120000) == 2 && plan.due() == 150000, "Late periods were not skipped");
     require(plan.skipLate(150001) == 0, "Ordinary wake jitter skipped a period");
     auto settings{config()}; settings.trigger_mode = true; settings.camera_trigger_rate_hz = 20;
@@ -101,11 +101,11 @@ void softwareLifecycle() {
     injected.trigger_wait = [&](std::condition_variable &, std::unique_lock<std::mutex> &,
                                 std::int64_t due, const std::function<bool()> &) { clock.store(due); };
     injected.trigger_limit = 3;
-    injected.observe_trigger = [&](const CameraTriggerEvent &event) {
+    injected.observe_trigger = [&](const Ar0234TriggerEvent &event) {
         require(event.success && event.after_us >= event.before_us, "Bad trigger event");
         if (clock == 0) { clock = 120000; }
     };
-    Rk3576CameraFrameSource source{settings, injected};
+    Ar0234CameraFrameSource source{settings, injected};
     for (int round{0}; round < 2; ++round) {
         clock = 0;
         require(source.start(), "Software start failed");
@@ -125,7 +125,7 @@ void softwareLifecycle() {
         if (++calls == 2) { throw std::runtime_error("second launch failed"); }
         return std::thread{std::move(work)};
     };
-    Rk3576CameraFrameSource rollback{settings, launch};
+    Ar0234CameraFrameSource rollback{settings, launch};
     require(!rollback.start(), "Second thread failure accepted");
     require(rollback.status().reason.find("second launch") != std::string::npos, "Lost launch failure");
     require(!rollback.stop(), "Failure lost after stop");
@@ -146,7 +146,7 @@ void softwareLifecycle() {
     concurrent->trigger_hook = [&] { entered.set_value(); permit.wait(); };
     auto overlap{dependencies(concurrent)};
     overlap.trigger_limit = 1;
-    Rk3576CameraFrameSource active{settings, overlap};
+    Ar0234CameraFrameSource active{settings, overlap};
     require(active.start(), "In-flight source start");
     entered.get_future().wait();
     concurrent->fail_poll = true;
@@ -159,7 +159,7 @@ void softwareLifecycle() {
 
     auto command_error{std::make_shared<System>()}; command_error->frame_limit = 0;
     command_error->failure = "trigger";
-    Rk3576CameraFrameSource broken{settings, dependencies(command_error)};
+    Ar0234CameraFrameSource broken{settings, dependencies(command_error)};
     require(broken.start(), "Command error start");
     await([&] { return broken.status().state == FrameSourceState::Failed; });
     require(!broken.stop() && broken.status().trigger_errors == 1, "Command failure hidden");
@@ -168,7 +168,7 @@ void softwareLifecycle() {
 void timeoutAndFactory() {
     auto system{std::make_shared<System>()};
     system->frame_limit = 0; system->auto_timeout = true;
-    Rk3576CameraFrameSource source{config(), dependencies(system)};
+    Ar0234CameraFrameSource source{config(), dependencies(system)};
     require(source.start(), "Timeout source start");
     await([&] { return source.status().state == FrameSourceState::Failed; });
     source.stop();

@@ -12,7 +12,7 @@
 #include <set>
 #include <stdexcept>
 
-#include "../camera_frame_source.h"
+#include "../ar0234_camera_frame_source.h"
 
 namespace camera_test {
 inline void require(bool value, const std::string &reason) {
@@ -37,7 +37,7 @@ inline FrameSourceConfig config() {
     value.trigger_mode = false;
     return value;
 }
-/** @brief 替身执行真实 CameraDevice 的调用流程；不打开任何相机设备。 */
+/** @brief 替身执行真实 Ar0234CameraDevice 的调用流程；不打开任何相机设备。 */
 class System : public rk3576::CameraSystem {
 public:
     std::recursive_mutex api_mutex{};
@@ -259,8 +259,8 @@ public:
         require(descriptors.empty() && mapped.empty() && !streaming, "Resource leak");
     }
 };
-inline rk3576::CameraDependencies dependencies(const std::shared_ptr<System> &system) {
-    rk3576::CameraDependencies result{};
+inline rk3576::Ar0234CameraDependencies dependencies(const std::shared_ptr<System> &system) {
+    rk3576::Ar0234CameraDependencies result{};
     result.system = system;
     return result;
 }

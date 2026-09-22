@@ -391,7 +391,7 @@ ctest --test-dir build/camera-only --output-on-failure
 
 该入口需要 C++17、线程库、OpenCV，以及 JPEG、libavformat、libavcodec、libavutil 开发库。保留视频依赖是为了复用同一个公共平台工厂及其视频功能。该入口不查找 RKNN、ROS、RGA、DRM 或 Jetson SDK。运行相机时还需要 `media-ctl` 配置工具、可用驱动，以及对显式配置设备的访问权限。构建完整 RK3576 后端仍使用原入口，不添加 `DRONE_TRACKER_CAMERA_ONLY`。
 
-本机按 `AGENTS.local.md` 使用临时 ARM64 容器。测试不访问真实相机。构建所得 `camera_source_driver` 是 Linux ARM64 程序，不能直接在 macOS 上执行。
+本机按 `AGENTS.local.md` 使用临时 ARM64 容器。测试不访问真实相机。构建所得 `ar0234_camera_source_driver` 是 Linux ARM64 程序，不能直接在 macOS 上执行。
 
 ### 独立工具与实机验收命令
 
@@ -410,7 +410,7 @@ fuser "$VIDEO_DEVICE"
 短采集示例使用原尺寸连续灰度配置，保存三张无损 PGM 快照。PGM 是可直接保存原始八位灰度的图像格式。`--compare-pixels` 在同一个驱动缓冲仍由本进程持有时，逐行比较输出副本和原始有效像素；不比较两次独立采集的动态画面。
 
 ```bash
-./camera_source_driver \
+./ar0234_camera_source_driver \
   --video-device "$VIDEO_DEVICE" --media-device "$MEDIA_DEVICE" \
   --sensor-entity "$SENSOR_ENTITY" --width 1920 --height 1200 --fps 60 \
   --buffers 4 --frames 300 --snapshots 3 --compare-pixels \
@@ -438,7 +438,7 @@ fuser "$VIDEO_DEVICE"
 - `resources.csv`：创建前、运行中约每秒、停止后和销毁后的主机内存、线程与文件描述符数量。文件描述符是进程打开资源的句柄；统计包含报告文件和查询本身，不包含 NPU 设备内存。
 - `frame-*.pgm`：每轮开头的少量无损灰度快照，数量由 `--snapshots` 决定。
 
-`CameraDependencies::observe` 在生产线程同步接收逐帧报告，回调抛异常会使本轮失败。报告与快照写入会影响测得吞吐量，评估时应保留对应配置。`diagnostic()` 只读快照另外提供停止及清理耗时；`status()` 提供公共状态和队列统计，不消费帧。
+`Ar0234CameraDependencies::observe` 在生产线程同步接收逐帧报告，回调抛异常会使本轮失败。报告与快照写入会影响测得吞吐量，评估时应保留对应配置。`diagnostic()` 只读快照另外提供停止及清理耗时；`status()` 提供公共状态和队列统计，不消费帧。
 
 无设备测试、构建及已完成的开发板 2 实机验收见 [相机帧源验证记录](../../openspec/changes/implement-rk3576-camera-frame-source/validation.md)。这些结果不代表 ROS 相机、模型质量、曝光同步、Jetson 等价性或部署性能达标。实拍画面偏暗、模糊，仍需另行检查图像质量。
 
@@ -479,10 +479,10 @@ ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: OFF}'
 
 ### 独立有限触发工具
 
-在上文的独立 ARM64 构建完成后，使用 `camera_source_driver`，无需加载模型。下面的命令只作为后续实机步骤，本次未执行：
+在上文的独立 ARM64 构建完成后，使用 `ar0234_camera_source_driver`，无需加载模型。下面的命令只作为后续实机步骤，本次未执行：
 
 ```bash
-./camera_source_driver \
+./ar0234_camera_source_driver \
   --video-device /dev/video0 --media-device /dev/media0 \
   --sensor-entity 'm00_b_mvcam 4-003b' --width 1920 --height 1200 --fps 60 \
   --mode software_trigger --trigger-hz 20 --commands 60 --tail-ms 500 \

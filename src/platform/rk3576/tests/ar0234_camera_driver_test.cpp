@@ -1,4 +1,4 @@
-#include "camera_driver_support.h"
+#include "ar0234_camera_driver_support.h"
 #include "camera_test_support.h"
 
 #include <filesystem>
@@ -21,11 +21,11 @@ void reports(const fs::path &root) {
     auto system{std::make_shared<System>()};
     system->width = 8; system->height = 3; system->stride = 16;
     system->frame_limit = 20;
-    camera_driver::Options options{};
+    ar0234_camera_driver::Options options{};
     options.config = config(); options.config.width = 8; options.config.height = 3;
     options.output = root / "normal";
     options.frames = 5; options.rounds = 2; options.instances = 2; options.compare = true;
-    camera_driver::run(options, dependencies(system));
+    ar0234_camera_driver::run(options, dependencies(system));
     system->clean();
     const auto frames{read(options.output / "frames.csv")};
     require(frames.find("driver_monotonic") != std::string::npos && frames.find("dequeue_us") != std::string::npos,
@@ -48,16 +48,16 @@ void reports(const fs::path &root) {
             }
         }
     }
-    rejects([&] { camera_driver::run(options, dependencies(system)); }, "already exists");
+    rejects([&] { ar0234_camera_driver::run(options, dependencies(system)); }, "already exists");
     require(read(options.output / "frames.csv") == frames, "Existing output overwritten");
     // /dev/full 可靠地让写入返回 ENOSPC，不要求真实相机或填满磁盘。
     std::ofstream full{"/dev/full"};
     auto injected{dependencies(system)};
-    injected.observe = [&](const CameraSample &, const CameraDiagnostic &) {
+    injected.observe = [&](const CameraSample &, const Ar0234CameraDiagnostic &) {
         full << "frame"; full.flush();
         if (!full) { throw std::runtime_error("injected output write failed"); }
     };
-    Rk3576CameraFrameSource failing{options.config, injected};
+    Ar0234CameraFrameSource failing{options.config, injected};
     require(failing.start(), "Output failure source start");
     await([&] { return failing.status().state == FrameSourceState::Failed; });
     failing.stop(); system->clean();
@@ -68,7 +68,7 @@ void finiteReports(const fs::path &root) {
         auto system{std::make_shared<System>()};
         system->width = 8; system->height = 3; system->stride = 16;
         system->frame_limit = commands == 120 ? 60 : commands;
-        camera_driver::Options options{};
+        ar0234_camera_driver::Options options{};
         options.config = config(); options.config.width = 8; options.config.height = 3;
         options.config.trigger_mode = true; options.config.camera_trigger_rate_hz = 20;
         options.finite_commands = true; options.commands = commands; options.tail_ms = 10; options.snapshots = 0;
@@ -78,7 +78,7 @@ void finiteReports(const fs::path &root) {
         injected.trigger_now = [&] { return clock.load(); };
         injected.trigger_wait = [&](std::condition_variable &, std::unique_lock<std::mutex> &,
                                     std::int64_t due, const std::function<bool()> &) { clock = due; };
-        camera_driver::run(options, injected);
+        ar0234_camera_driver::run(options, injected);
         system->clean();
         require(system->trigger_calls == static_cast<unsigned>(commands), "Finite command limit ignored");
         const auto rounds{read(options.output / "rounds.csv")};
@@ -93,12 +93,12 @@ void finiteReports(const fs::path &root) {
     }
     auto system{std::make_shared<System>()};
     system->width = 8; system->height = 3; system->stride = 16;
-    camera_driver::Options options{};
+    ar0234_camera_driver::Options options{};
     options.config = config(); options.config.width = 8; options.config.height = 3;
     options.config.trigger_mode = true; options.config.camera_trigger_rate_hz = 1;
     options.finite_commands = true; options.commands = 120; options.seconds = 1; options.snapshots = 0;
     options.output = root / "finite-timeout";
-    rejects([&] { camera_driver::run(options, dependencies(system)); }, "tool timeout");
+    rejects([&] { ar0234_camera_driver::run(options, dependencies(system)); }, "tool timeout");
     system->clean();
     require(read(options.output / "rounds.csv").find(",1,1,\"\"") != std::string::npos,
             "Timeout/restore result not saved");

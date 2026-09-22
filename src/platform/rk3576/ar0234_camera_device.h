@@ -1,5 +1,7 @@
-#ifndef RK3576_CAMERA_DEVICE_H
-#define RK3576_CAMERA_DEVICE_H
+#ifndef RK3576_AR0234_CAMERA_DEVICE_H
+#define RK3576_AR0234_CAMERA_DEVICE_H
+
+// `CameraSample`/`CameraFormat` 为跨相机通用结构体，其余以 `Ar0234` 开头的类型为本文件专属。
 
 #include <poll.h>
 #include <ctime>
@@ -52,12 +54,12 @@ struct CameraSample {
 /** @brief 校验不支持的选项，任何设备操作前调用。 */
 void validateCameraConfig(const FrameSourceConfig &config);
 /** @brief 单采集线程读取；控制调用串行，生命周期所有者回收两线程后清理。 */
-class CameraDevice final {
+class Ar0234CameraDevice final {
 public:
-    CameraDevice(FrameSourceConfig config, std::shared_ptr<CameraSystem> system);
-    ~CameraDevice();
-    CameraDevice(const CameraDevice &) = delete;
-    CameraDevice &operator=(const CameraDevice &) = delete;
+    Ar0234CameraDevice(FrameSourceConfig config, std::shared_ptr<CameraSystem> system);
+    ~Ar0234CameraDevice();
+    Ar0234CameraDevice(const Ar0234CameraDevice &) = delete;
+    Ar0234CameraDevice &operator=(const Ar0234CameraDevice &) = delete;
     /** @brief 只设置/查询格式，不申请缓冲或开流。 */
     void prepare();
     void start();
@@ -99,4 +101,4 @@ private:
     std::vector<Mapping> mappings_{};
 };
 } // namespace rk3576
-#endif // RK3576_CAMERA_DEVICE_H
+#endif // RK3576_AR0234_CAMERA_DEVICE_H

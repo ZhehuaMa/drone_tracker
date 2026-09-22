@@ -1,4 +1,4 @@
-#include "camera_frame_source.h"
+#include "ar0234_camera_frame_source.h"
 
 #include <atomic>
 #include <cmath>
@@ -7,21 +7,21 @@
 #include "mv_camera/readerwriterqueue.h"
 
 namespace rk3576 {
-std::int64_t CameraTriggerPlan::due() const {
+std::int64_t Ar0234TriggerPlan::due() const {
     return origin_us + static_cast<std::int64_t>(std::llround(index * period_us));
 }
-std::uint64_t CameraTriggerPlan::skipLate(std::int64_t now) {
+std::uint64_t Ar0234TriggerPlan::skipLate(std::int64_t now) {
     if (now - due() < period_us) { return 0; }
     const auto next{static_cast<std::uint64_t>(std::floor((now - origin_us) / period_us)) + 1};
     const auto skipped{next - index};
     index = next;
     return skipped;
 }
-struct Rk3576CameraFrameSource::Impl {
+struct Ar0234CameraFrameSource::Impl {
     using Queue = moodycamel::BlockingReaderWriterQueue<FrameRef>;
     FrameSourceConfig config{};
-    CameraDependencies dependencies{};
-    std::unique_ptr<CameraDevice> device{};
+    Ar0234CameraDependencies dependencies{};
+    std::unique_ptr<Ar0234CameraDevice> device{};
     std::unique_ptr<Queue> queue{std::make_unique<Queue>(30)};
     std::thread worker{};
     std::thread trigger_worker{};
@@ -32,9 +32,9 @@ struct Rk3576CameraFrameSource::Impl {
     std::int64_t stream_started_us{};
     std::atomic<bool> stopped{false};
     mutable std::mutex mutex{};
-    CameraDiagnostic record{};
+    Ar0234CameraDiagnostic record{};
 
-    Impl(FrameSourceConfig input, CameraDependencies injected)
+    Impl(FrameSourceConfig input, Ar0234CameraDependencies injected)
         : config{std::move(input)}, dependencies{std::move(injected)} {
         if (!dependencies.system) { dependencies.system = std::make_shared<CameraSystem>(); }
         if (!dependencies.launch) {
@@ -50,7 +50,7 @@ struct Rk3576CameraFrameSource::Impl {
                     due - dependencies.trigger_now())}, stop);
             };
         }
-        device = std::make_unique<CameraDevice>(config, dependencies.system);
+        device = std::make_unique<Ar0234CameraDevice>(config, dependencies.system);
         device->prepare();
         record.format = device->format();
         const auto error{device->finish()};
@@ -91,7 +91,7 @@ struct Rk3576CameraFrameSource::Impl {
     }
     void triggerRun() noexcept {
         try {
-            CameraTriggerPlan plan{dependencies.trigger_now(), 1000000.0 / config.camera_trigger_rate_hz, 0};
+            Ar0234TriggerPlan plan{dependencies.trigger_now(), 1000000.0 / config.camera_trigger_rate_hz, 0};
             std::uint64_t sent{};
             while (!stopped.load() && !triggers_stopped.load() && sent < dependencies.trigger_limit) {
                 const auto now{dependencies.trigger_now()};
@@ -108,7 +108,7 @@ struct Rk3576CameraFrameSource::Impl {
                     continue;
                 }
                 if (stopped.load() || triggers_stopped.load()) { break; }
-                CameraTriggerEvent event{};
+                Ar0234TriggerEvent event{};
                 event.before_us = dependencies.trigger_now();
                 try { device->trigger(); event.success = true; }
                 catch (const std::exception &error) { event.error = error.what(); }
@@ -169,7 +169,7 @@ struct Rk3576CameraFrameSource::Impl {
                 previous_sequence = sample.sequence;
                 have_sequence = true;
                 const bool enqueued{queue->try_enqueue(sample.frame)};
-                CameraDiagnostic snapshot{};
+                Ar0234CameraDiagnostic snapshot{};
                 {
                     std::lock_guard<std::mutex> lock{mutex};
                     ++record.source.read;
@@ -191,10 +191,10 @@ struct Rk3576CameraFrameSource::Impl {
         requestStop();
     }
 };
-Rk3576CameraFrameSource::Rk3576CameraFrameSource(FrameSourceConfig config, CameraDependencies dependencies)
+Ar0234CameraFrameSource::Ar0234CameraFrameSource(FrameSourceConfig config, Ar0234CameraDependencies dependencies)
     : impl_{std::make_unique<Impl>(std::move(config), std::move(dependencies))} {}
-Rk3576CameraFrameSource::~Rk3576CameraFrameSource() { stop(); }
-bool Rk3576CameraFrameSource::start() {
+Ar0234CameraFrameSource::~Ar0234CameraFrameSource() { stop(); }
+bool Ar0234CameraFrameSource::start() {
     if (isRunning()) { return false; }
     if (impl_->worker.joinable() || impl_->trigger_worker.joinable()) { stop(); }
     if (!impl_->device->unrestoredControls().empty()) {
@@ -213,7 +213,7 @@ bool Rk3576CameraFrameSource::start() {
             impl_->record.source.requested_trigger_hz = impl_->config.camera_trigger_rate_hz;
         }
         impl_->queue = std::make_unique<Impl::Queue>(30);
-        impl_->device = std::make_unique<CameraDevice>(impl_->config, impl_->dependencies.system);
+        impl_->device = std::make_unique<Ar0234CameraDevice>(impl_->config, impl_->dependencies.system);
         impl_->device->prepare();
         impl_->device->start();
         impl_->stream_started_us = impl_->dependencies.system->clockUs(CLOCK_MONOTONIC);
@@ -242,7 +242,7 @@ bool Rk3576CameraFrameSource::start() {
     stop();
     return false;
 }
-bool Rk3576CameraFrameSource::stop() {
+bool Ar0234CameraFrameSource::stop() {
     const auto before{std::chrono::steady_clock::now()};
     impl_->requestStop();
     if (impl_->trigger_worker.joinable()) { impl_->trigger_worker.join(); }
@@ -255,7 +255,7 @@ bool Rk3576CameraFrameSource::stop() {
     impl_->record.source.stop_us = elapsed;
     return impl_->record.source.state != FrameSourceState::Failed;
 }
-void Rk3576CameraFrameSource::stopTriggers() {
+void Ar0234CameraFrameSource::stopTriggers() {
     {
         std::lock_guard<std::mutex> lock{impl_->wait_mutex};
         impl_->triggers_stopped.store(true);
@@ -263,26 +263,26 @@ void Rk3576CameraFrameSource::stopTriggers() {
     impl_->changed.notify_all();
     if (impl_->trigger_worker.joinable()) { impl_->trigger_worker.join(); }
 }
-bool Rk3576CameraFrameSource::isRunning() const { return status().state == FrameSourceState::Running; }
-FrameSourceStatus Rk3576CameraFrameSource::status() const { return diagnostic().source; }
-CameraDiagnostic Rk3576CameraFrameSource::diagnostic() const {
+bool Ar0234CameraFrameSource::isRunning() const { return status().state == FrameSourceState::Running; }
+FrameSourceStatus Ar0234CameraFrameSource::status() const { return diagnostic().source; }
+Ar0234CameraDiagnostic Ar0234CameraFrameSource::diagnostic() const {
     std::lock_guard<std::mutex> lock{impl_->mutex};
     return impl_->record;
 }
-bool Rk3576CameraFrameSource::getImageSize(int &width, int &height) const {
+bool Ar0234CameraFrameSource::getImageSize(int &width, int &height) const {
     width = impl_->config.width;
     height = impl_->config.height;
     return true;
 }
-bool Rk3576CameraFrameSource::waitFrame(FrameRef &frame, std::chrono::microseconds timeout) {
+bool Ar0234CameraFrameSource::waitFrame(FrameRef &frame, std::chrono::microseconds timeout) {
     frame.reset();
     return impl_->queue->wait_dequeue_timed(frame, timeout);
 }
-bool Rk3576CameraFrameSource::tryFrame(FrameRef &frame) {
+bool Ar0234CameraFrameSource::tryFrame(FrameRef &frame) {
     frame.reset();
     return impl_->queue->try_dequeue(frame);
 }
-void Rk3576CameraFrameSource::configureRecording(bool enabled, const std::string &, const std::string &) {
+void Ar0234CameraFrameSource::configureRecording(bool enabled, const std::string &, const std::string &) {
     if (enabled) { throw std::invalid_argument("RK3576 camera recording unsupported"); }
 }
 } // namespace rk3576

@@ -1,4 +1,4 @@
-#include "camera_device.h"
+#include "ar0234_camera_device.h"
 
 #include <fcntl.h>
 #include <linux/media-bus-format.h>
@@ -225,19 +225,19 @@ void validateCameraConfig(const FrameSourceConfig &config) {
         throw std::invalid_argument("Camera scaling unsupported: output must be native size or zero");
     }
 }
-CameraDevice::CameraDevice(FrameSourceConfig config, std::shared_ptr<CameraSystem> system)
+Ar0234CameraDevice::Ar0234CameraDevice(FrameSourceConfig config, std::shared_ptr<CameraSystem> system)
     : config_{std::move(config)}, system_{std::move(system)} {
     validateCameraConfig(config_);
     if (!system_) { throw std::invalid_argument("CameraSystem is required"); }
 }
-CameraDevice::~CameraDevice() {
+Ar0234CameraDevice::~Ar0234CameraDevice() {
     try { finish(); } catch (...) {}
     if (sensor_fd_ >= 0) { system_->close(sensor_fd_); }
 }
-void CameraDevice::check(int result, const std::string &operation) {
+void Ar0234CameraDevice::check(int result, const std::string &operation) {
     if (result < 0) { throw std::runtime_error(systemError(config_.path + " " + operation)); }
 }
-void CameraDevice::configureSensor() {
+void Ar0234CameraDevice::configureSensor() {
     auto subdev{system_->execute({"media-ctl", "-d", config_.camera_media_device,
                                  "-e", config_.camera_sensor_entity}, 3000)};
     while (!subdev.empty() && (subdev.back() == '\n' || subdev.back() == '\r')) { subdev.pop_back(); }
@@ -277,7 +277,7 @@ void CameraDevice::configureSensor() {
         }
     }
 }
-void CameraDevice::snapshotControls() {
+void Ar0234CameraDevice::snapshotControls() {
     controls_.clear();
     for (const auto &entry : std::vector<SavedControl>{{TRIGGER_MODE, 0, "trigger_mode", false},
              {TRIGGER_SOURCE, 0, "trigger_src", false}, {FRAME_RATE, 0, "frame_rate", false}}) {
@@ -309,11 +309,11 @@ void CameraDevice::snapshotControls() {
     // media-ctl 设置帧间隔也可能修改 frame_rate；必须在它运行前保存并标记恢复责任。
     for (auto &entry : controls_) { entry.changed = true; }
 }
-void CameraDevice::setControl(std::uint32_t id, int value, const std::string &name) {
+void Ar0234CameraDevice::setControl(std::uint32_t id, int value, const std::string &name) {
     std::lock_guard<std::mutex> lock{control_mutex_};
     writeAndVerifyControl(id, value, sensor_path_ + " set " + name);
 }
-void CameraDevice::writeAndVerifyControl(std::uint32_t id, int value, const std::string &operation) {
+void Ar0234CameraDevice::writeAndVerifyControl(std::uint32_t id, int value, const std::string &operation) {
     v4l2_control control{};
     control.id = id;
     control.value = value;
@@ -331,7 +331,7 @@ void CameraDevice::writeAndVerifyControl(std::uint32_t id, int value, const std:
         system_->sleepUs(std::min(CONTROL_VERIFY_INTERVAL_US, CONTROL_VERIFY_TIMEOUT_US - elapsed));
     }
 }
-void CameraDevice::trigger() {
+void Ar0234CameraDevice::trigger() {
     std::lock_guard<std::mutex> lock{control_mutex_};
     if (!streaming_ || !config_.trigger_mode || sensor_fd_ < 0) {
         throw std::logic_error(config_.path + " software trigger requires streaming software mode");
@@ -341,7 +341,7 @@ void CameraDevice::trigger() {
     control.value = 1;
     check(system_->ioctl(sensor_fd_, VIDIOC_S_CTRL, &control), sensor_path_ + " soft_trgone");
 }
-std::string CameraDevice::restoreControls() {
+std::string Ar0234CameraDevice::restoreControls() {
     std::lock_guard<std::mutex> lock{control_mutex_};
     std::string errors{};
     for (auto it{controls_.rbegin()}; it != controls_.rend(); ++it) {
@@ -355,7 +355,7 @@ std::string CameraDevice::restoreControls() {
     }
     return errors;
 }
-std::vector<std::string> CameraDevice::unrestoredControls() const {
+std::vector<std::string> Ar0234CameraDevice::unrestoredControls() const {
     std::lock_guard<std::mutex> lock{control_mutex_};
     std::vector<std::string> result{};
     for (const auto &entry : controls_) {
@@ -364,7 +364,7 @@ std::vector<std::string> CameraDevice::unrestoredControls() const {
     return result;
 }
 
-void CameraDevice::checkFormat() {
+void Ar0234CameraDevice::checkFormat() {
     v4l2_format value{};
     value.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     check(system_->ioctl(fd_, VIDIOC_G_FMT, &value), "G_FMT");
@@ -380,7 +380,7 @@ void CameraDevice::checkFormat() {
             + " stride=" + std::to_string(format_.stride) + " sizeimage=" + std::to_string(format_.sizeimage));
     }
 }
-void CameraDevice::prepare() {
+void Ar0234CameraDevice::prepare() {
     if (fd_ >= 0 || sensor_fd_ >= 0 || !unrestoredControls().empty()) {
         throw std::logic_error("Camera already prepared or controls still require restoration");
     }
@@ -410,7 +410,7 @@ void CameraDevice::prepare() {
         throw std::runtime_error(config_.path + ": " + reason + cleanup);
     }
 }
-void CameraDevice::start() {
+void Ar0234CameraDevice::start() {
     try {
         if (fd_ < 0 || allocated_) { throw std::logic_error("Camera start requires fresh prepared device"); }
         {
@@ -454,7 +454,7 @@ void CameraDevice::start() {
         throw std::runtime_error(reason + finish());
     }
 }
-CameraSample CameraDevice::next(int timeout_ms, bool compare_pixels) {
+CameraSample Ar0234CameraDevice::next(int timeout_ms, bool compare_pixels) {
     std::array<pollfd, 2> fds{{{fd_, POLLIN, 0}, {wake_fd_, POLLIN, 0}}};
     const int ready{system_->poll(fds.data(), fds.size(), timeout_ms)};
     if (ready < 0 && errno == EINTR) { return {}; }
@@ -520,12 +520,12 @@ CameraSample CameraDevice::next(int timeout_ms, bool compare_pixels) {
     check(system_->ioctl(fd_, VIDIOC_QBUF, &returned.buffer), "return QBUF" + metadata(dequeued));
     return sample;
 }
-std::string CameraDevice::wake() {
+std::string Ar0234CameraDevice::wake() {
     std::lock_guard<std::mutex> lock{wake_mutex_};
     if (wake_fd_ >= 0 && system_->signal(wake_fd_) < 0) { return systemError("eventfd signal"); }
     return {};
 }
-std::string CameraDevice::finish() {
+std::string Ar0234CameraDevice::finish() {
     std::string errors{};
     auto record{[&](int result, const char *operation) {
         if (result < 0) { errors += "; cleanup " + systemError(operation); }

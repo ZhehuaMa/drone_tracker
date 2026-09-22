@@ -1,4 +1,4 @@
-#include "camera_driver_support.h"
+#include "ar0234_camera_driver_support.h"
 #include <linux/videodev2.h>
 
 #include <unistd.h>
@@ -11,7 +11,7 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace rk3576::camera_driver {
+namespace rk3576::ar0234_camera_driver {
 namespace fs = std::filesystem;
 using namespace rk3576;
 volatile std::sig_atomic_t interrupted{};
@@ -115,7 +115,7 @@ void snapshot(const fs::path &path, const FrameRef &frame) {
     out.close();
     if (!out) { throw std::runtime_error("Snapshot close failed"); }
 }
-void run(const Options &options, CameraDependencies injected) {
+void run(const Options &options, Ar0234CameraDependencies injected) {
     interrupted = 0;
     validateCameraConfig(options.config);
     std::signal(SIGINT, interrupt);
@@ -165,12 +165,12 @@ void run(const Options &options, CameraDependencies injected) {
         factory_options.camera = injected;
         factory_options.camera.compare_pixels = options.compare;
         if (options.finite_commands) { factory_options.camera.trigger_limit = options.commands; }
-        factory_options.camera.observe_trigger = [&](const CameraTriggerEvent &event) {
+        factory_options.camera.observe_trigger = [&](const Ar0234TriggerEvent &event) {
             triggers << instance << ',' << active_round << ',' << event.before_us << ',' << event.after_us
                 << ',' << event.success << ',' << quote(event.error) << '\n';
             checked(triggers);
         };
-        factory_options.camera.observe = [&](const CameraSample &sample, const CameraDiagnostic &status) {
+        factory_options.camera.observe = [&](const CameraSample &sample, const Ar0234CameraDiagnostic &status) {
             const auto &format{status.format};
             frames << instance << ',' << active_round << ',' << sample.sequence << ',' << sample.seconds << ','
                 << sample.microseconds << ',' << sample.flags << ','
@@ -192,7 +192,7 @@ void run(const Options &options, CameraDependencies injected) {
         auto result{factory->createFrameSource(options.config)};
         if (!result) { throw std::runtime_error(result.error.describe()); }
         auto &source{*result.value};
-        auto *camera{dynamic_cast<Rk3576CameraFrameSource *>(&source)};
+        auto *camera{dynamic_cast<Ar0234CameraFrameSource *>(&source)};
         if (!camera) { throw std::runtime_error("Factory returned unexpected source"); }
         resources(resource, instance, 0, "created");
         for (active_round = 0; active_round < options.rounds && !interrupted; ++active_round) {
@@ -304,4 +304,4 @@ void run(const Options &options, CameraDependencies injected) {
     }
     if (interrupted) { throw std::runtime_error("Interrupted by signal; stopped and released camera"); }
 }
-} // namespace rk3576::camera_driver
+} // namespace rk3576::ar0234_camera_driver

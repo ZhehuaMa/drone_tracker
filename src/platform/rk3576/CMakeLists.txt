@@ -10,7 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(DRONE_TRACKER_CAMERA_ONLY "Build Linux camera tools without RKNN/ROS/RGA/DRM SDKs" OFF)
 if(DRONE_TRACKER_CAMERA_ONLY)
-    include(camera_standalone.cmake)
+    include(ar0234_camera_standalone.cmake)
     return()
 endif()
 
@@ -21,7 +21,7 @@ option(DRONE_TRACKER_BUILD_TESTS "Build common and RKNN fault injection tests" O
 enable_testing()
 add_subdirectory(../../hybrid_tracker common)
 include(backend.cmake)
-include(camera_tests.cmake)
+include(ar0234_camera_tests.cmake)
 add_executable(rk3576_yolo_probe rk3576_yolo_probe.cpp)
 target_include_directories(rk3576_yolo_probe PRIVATE "${RKNN_INCLUDE_DIR}")
 target_link_libraries(rk3576_yolo_probe PRIVATE rk3576_yolo_sdk)

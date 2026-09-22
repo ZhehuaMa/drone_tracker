@@ -30,7 +30,7 @@ public:
         }
         if (options_.enable_camera) {
             try {
-                return {std::make_unique<Rk3576CameraFrameSource>(config, options_.camera)};
+                return {std::make_unique<Ar0234CameraFrameSource>(config, options_.camera)};
             } catch (const std::exception &error) {
                 return PlatformResult<std::unique_ptr<FrameSource>>::failure(
                     {"rk3576", "camera", config.path, error.what()});
