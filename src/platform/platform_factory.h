@@ -28,6 +28,7 @@ template <typename T> struct PlatformResult {
 };
 
 enum class FrameSourceType { Camera, Video };
+enum class CameraSensorModel { Ar0234, Sc233hgs };
 /** @brief 公共采集配置；尺寸和帧率沿用节点参数的像素、帧/秒单位。 */
 struct FrameSourceConfig {
     FrameSourceType type{FrameSourceType::Camera};
@@ -46,6 +47,7 @@ struct FrameSourceConfig {
     int camera_buffer_count{4};
     /** @brief 软件触发命令频率（Hz），独立于设备 fps；连续模式为零。 */
     double camera_trigger_rate_hz{};
+    CameraSensorModel camera_sensor_model{CameraSensorModel::Ar0234};
 };
 
 enum class FrameSourceState { Unknown, Ready, Running, Stopped, Eof, Failed };

@@ -62,6 +62,7 @@ public:
     int produced{};
     int frame_limit{100};
     bool bad_sensor{};
+    bool nv12{};
     bool bad_interval{};
     bool bad_format{};
     bool bad_caps{};
@@ -200,7 +201,7 @@ public:
             value.width = width;
             value.height = height;
             value.pixelformat = bad_format || (allocated && format_changes_after_buffers)
-                ? V4L2_PIX_FMT_YUYV : V4L2_PIX_FMT_GREY;
+                ? V4L2_PIX_FMT_YUYV : (nv12 ? V4L2_PIX_FMT_NV12 : V4L2_PIX_FMT_GREY);
             value.num_planes = 1;
             value.field = V4L2_FIELD_NONE;
             value.plane_fmt[0].bytesperline = stride;

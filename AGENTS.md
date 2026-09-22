@@ -39,6 +39,16 @@
 - 需要测试目标时增加 `-DDRONE_TRACKER_BUILD_TESTS=ON`。`hybrid_tracker_tests` 覆盖算法级逻辑；`vpi_race_repro` 依赖 VPI/CUDA；`hybrid_tracker_stress` 和 `replay_harness` 需要真实模型，回放测试还需要录制视频。
 - 不要用非目标主机上的编译结果代替实机验证。交付时说明使用的平台、模型和输入数据，并明确列出因缺少 RK3576/Jetson 硬件、SDK、模型或录像而未运行的检查。
 
+## RK3576 生产开发板
+
+- 所有生产环境正式开发板均为 `HZ-RK3576_WuKong Board`，运行 Ubuntu 22.04.5 LTS ARM64 和 `6.1.141-rt36` 内核。硬件为 RK3576、4×Cortex-A72 加 4×Cortex-A53、3.8 GiB 系统可见内存和 58.2 GiB eMMC。
+- NPU 使用 RKNPU 驱动 `0.9.8`，RKNN Runtime 为 `2.3.2`。系统库固定为 `/usr/lib/librknnrt.so`，`/lib/librknnrt.so` 指向同一文件；库文件 SHA-256 为 `d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8`。部署程序必须使用系统库，不要用容器内的 Runtime 覆盖它。
+- NPU 渲染节点为 `/dev/dri/renderD128` 和 `/dev/dri/renderD129`。`rknn_server` 会启动前台常驻服务；查询 Runtime 信息时不要直接运行它。
+- 板端提供 ROS 2 Humble、`rclcpp`、`sensor_msgs` 和 `mavros_msgs`。每个非交互 SSH 命令先执行 `source /opt/ros/humble/setup.bash`。
+- 工具链为 GCC/G++ 11.4.0、CMake 3.22.1 和 Python 3.10.12。目标板构建或部署验证必须在匹配的生产板环境完成，不能以开发容器或其他开发板的结果替代。
+- 相机链路提供 Rockchip `rkcif` 和 `rkisp` V4L2 节点，设备访问需要 `video` 组权限。开始采集前执行 `v4l2-ctl --list-devices` 和 `media-ctl -p`，复核当前接入设备的节点映射和格式。
+- 生产板是独立的验收目标。每份部署、相机或负载测试记录必须标明具体板卡，不能以开发板 1 或开发板 2 的结果替代。
+
 ## 兼容性与评审重点
 
 - 默认保持 `/fpv/gimbal`、`/fpv/odom`、`/fpv/tracker_trigger` 输入，以及 `/fpv/target_bbox`、`/fpv/tracker_image`、`/fpv/tracker_state` 输出的名称、消息类型和时序语义。

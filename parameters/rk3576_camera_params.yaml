@@ -54,11 +54,22 @@ drone_tracker_node:
       kf_q_size: 1000.0
     mv_camera:
       # 以下设备拓扑和尺寸须在部署时复核，不是自动发现结果。
+      # sensor_model 可选 ar0234（默认）或 sc233hgs。SC233HGS 仅支持 continuous。
+      sensor_model: ar0234
       capture_mode: software_trigger
-      trigger_rate_hz: 20.0  # 开发板 2 已通过重复及持续负载验收；不代表硬件最高频率。
-      # 连续采集示例：capture_mode: continuous，同时 trigger_rate_hz: 0.0。
+      trigger_rate_hz: 20.0  # 软件触发频率与设备 fps 独立；连续模式必须为 0。
       media_device: /dev/media0
       sensor_entity: "m00_b_mvcam 4-003b"  # 必须替换为 media-ctl -p 显示的实体名称。
+      # SC233HGS 示例：path 使用已由 ISP/3A 准备好的 rkisp_mainpath 节点，
+      # media_device 和 sensor_entity 仅作诊断标识，不会驱动 media-ctl 配置。
+      # 生产板（2026-09-22 已核实）：video_source=/dev/video22，
+      # media_device=/dev/media0，sensor_entity="m00_b_sc233hgs 0-0030"。
+      # /dev/video22 实际为 1920x1200、NV12、单平面，Y 行跨度为 1920 字节。
+      # sensor_model: sc233hgs
+      # capture_mode: continuous
+      # trigger_rate_hz: 0.0
+      # media_device: /dev/media0
+      # sensor_entity: "m00_b_sc233hgs 0-0030"
       buffer_count: 4
       width_px: 1920
       height_px: 1200

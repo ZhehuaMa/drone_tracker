@@ -35,6 +35,11 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
         result.successful = true;
         for (const auto &parameter : parameters) {
             const auto &name{parameter.get_name()};
+            if (name == "mv_camera.sensor_model") {
+                result.successful = false;
+                result.reason = "mv_camera.sensor_model cannot change at runtime; restart the node to apply it";
+                break;
+            }
             if (name == "use_sim_time" || name == "use_history_timestamp" || name == "video_source"
                 || name == "need_save" || name == "save_path" || name == "visualized_result"
                 || name.rfind("tracker.", 0) == 0 || name.rfind("camera.", 0) == 0
@@ -181,6 +186,19 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
             throw std::invalid_argument("mv_camera.capture_mode requires continuous or software_trigger");
         }
         source_config.trigger_mode = mode == "software_trigger";
+        const auto sensor_model{get_parameter("mv_camera.sensor_model").as_string()};
+        if (sensor_model == "ar0234") {
+            source_config.camera_sensor_model = CameraSensorModel::Ar0234;
+        } else if (sensor_model == "sc233hgs") {
+            source_config.camera_sensor_model = CameraSensorModel::Sc233hgs;
+            if (source_config.trigger_mode) {
+                throw std::invalid_argument(
+                    "mv_camera.sensor_model=sc233hgs does not support software trigger; use continuous");
+            }
+        } else {
+            throw std::invalid_argument(
+                "mv_camera.sensor_model must be ar0234 or sc233hgs; requested: " + sensor_model);
+        }
         source_config.camera_trigger_rate_hz = get_parameter("mv_camera.trigger_rate_hz").as_double();
         source_config.camera_media_device = get_parameter("mv_camera.media_device").as_string();
         source_config.camera_sensor_entity = get_parameter("mv_camera.sensor_entity").as_string();

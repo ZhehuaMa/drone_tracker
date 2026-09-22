@@ -4,6 +4,7 @@
 #include <functional>
 #include <condition_variable>
 #include <limits>
+#include <memory>
 #include <thread>
 
 #include "ar0234_camera_device.h"
@@ -35,6 +36,10 @@ struct Ar0234CameraDiagnostic {
 /** @brief 系统调用及线程启动注入点；observe 在生产线程同步执行，异常使本轮失败。 */
 struct Ar0234CameraDependencies {
     std::shared_ptr<CameraSystem> system{};
+    /** @brief 采集设备工厂；默认构造 Ar0234CameraDevice。SC233HGS 帧源封装会注入构造
+     *  Sc233hgsCameraDevice 的工厂，从而在不引入反向库依赖的前提下复用本类的队列/触发实现。 */
+    std::function<std::unique_ptr<Rk3576CameraCaptureBase>(
+        const FrameSourceConfig &, std::shared_ptr<CameraSystem>)> make_device{};
     std::function<std::thread(std::function<void()>)> launch{};
     std::function<void(const CameraSample &, const Ar0234CameraDiagnostic &)> observe{};
     bool compare_pixels{};
@@ -60,6 +65,8 @@ public:
     bool getImageSize(int &width, int &height) const override;
     bool waitFrame(FrameRef &frame, std::chrono::microseconds timeout) override;
     bool tryFrame(FrameRef &frame) override;
+    /** @brief 丢弃当前轮次剩余帧，供需要严格轮次隔离的封装源使用。 */
+    void discardFrames();
     /** @brief 启用录像抛出 std::invalid_argument；禁用为无操作。 */
     void configureRecording(bool enabled, const std::string &, const std::string &) override;
 private:

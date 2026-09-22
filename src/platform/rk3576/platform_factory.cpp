@@ -30,7 +30,18 @@ public:
         }
         if (options_.enable_camera) {
             try {
-                return {std::make_unique<Ar0234CameraFrameSource>(config, options_.camera)};
+                switch (config.camera_sensor_model) {
+                case CameraSensorModel::Ar0234:
+                    return {std::make_unique<Ar0234CameraFrameSource>(config, options_.camera)};
+                case CameraSensorModel::Sc233hgs:
+                    return {std::make_unique<Sc233hgsCameraFrameSource>(config, options_.camera)};
+                default:
+                    return PlatformResult<std::unique_ptr<FrameSource>>::failure(
+                        {"rk3576", "camera", config.path,
+                         "Unsupported camera sensor model; requested enum value="
+                             + std::to_string(static_cast<int>(config.camera_sensor_model))
+                             + "; supported values: ar0234, sc233hgs"});
+                }
             } catch (const std::exception &error) {
                 return PlatformResult<std::unique_ptr<FrameSource>>::failure(
                     {"rk3576", "camera", config.path, error.what()});

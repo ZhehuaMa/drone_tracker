@@ -397,6 +397,43 @@ void cameraContracts() {
         }
         require(rejected, "Camera recording was not rejected at initialization");
     }
+    {
+        auto params{options({{"video_source", "/dev/video10"},
+            {"mv_camera.sensor_model", "sc233hgs"}, {"mv_camera.capture_mode", "continuous"},
+            {"mv_camera.trigger_rate_hz", 0.0}, {"mv_camera.media_device", "/dev/media0"},
+            {"mv_camera.sensor_entity", "sc233hgs 4-0030"}, {"mv_camera.buffer_count", 4},
+            {"mv_camera.fps", 60}, {"mv_camera.width_px", 100}, {"mv_camera.height_px", 80},
+            {"mv_camera.output_width_px", 0}, {"mv_camera.output_height_px", 0}})};
+        Harness h{params};
+        require(h.source->config.camera_sensor_model == CameraSensorModel::Sc233hgs
+            && !h.source->config.trigger_mode && h.source->config.camera_trigger_rate_hz == 0.0,
+            "SC233HGS continuous parameter mapping failed");
+        require(!h.node->set_parameter({"mv_camera.sensor_model", "ar0234"}).successful
+            && h.node->set_parameter({"mv_camera.sensor_model", "sc233hgs"}).successful == false,
+            "Sensor model runtime change was accepted");
+    }
+    {
+        auto params{options({{"video_source", "/dev/video10"},
+            {"mv_camera.sensor_model", "sc233hgs"}, {"mv_camera.capture_mode", "software_trigger"},
+            {"mv_camera.trigger_rate_hz", 20.0}, {"mv_camera.media_device", "/dev/media0"},
+            {"mv_camera.sensor_entity", "sc233hgs 4-0030"}})};
+        bool rejected{};
+        try { Harness invalid{params}; } catch (const std::invalid_argument &error) {
+            rejected = std::string{error.what()}.find("does not support software trigger") != std::string::npos;
+        }
+        require(rejected, "SC233HGS software trigger was accepted by node");
+    }
+    {
+        auto params{options({{"video_source", "/dev/video10"},
+            {"mv_camera.sensor_model", "unknown"}, {"mv_camera.capture_mode", "continuous"},
+            {"mv_camera.trigger_rate_hz", 0.0}, {"mv_camera.media_device", "/dev/media0"},
+            {"mv_camera.sensor_entity", "test sensor"}})};
+        bool rejected{};
+        try { Harness invalid{params}; } catch (const std::invalid_argument &error) {
+            rejected = std::string{error.what()}.find("ar0234 or sc233hgs") != std::string::npos;
+        }
+        require(rejected, "Unknown sensor model was accepted by node");
+    }
 }
 void realVideo() {
     Harness h{options(), {}, {}, std::string{ROS_VIDEO_FIXTURES} + "/long.mov"};

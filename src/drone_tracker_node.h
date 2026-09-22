@@ -107,6 +107,7 @@ private:
 
 #ifdef DRONE_TRACKER_RK3576
         this->declare_parameter<std::string>("mv_camera.capture_mode", "");
+        this->declare_parameter<std::string>("mv_camera.sensor_model", "ar0234");
         this->declare_parameter<double>("mv_camera.trigger_rate_hz", std::numeric_limits<double>::quiet_NaN());
         this->declare_parameter<std::string>("mv_camera.media_device", "");
         this->declare_parameter<std::string>("mv_camera.sensor_entity", "");

@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cmath>
+#include <memory>
 #include <stdexcept>
 
 #include "mv_camera/readerwriterqueue.h"
@@ -21,7 +22,7 @@ struct Ar0234CameraFrameSource::Impl {
     using Queue = moodycamel::BlockingReaderWriterQueue<FrameRef>;
     FrameSourceConfig config{};
     Ar0234CameraDependencies dependencies{};
-    std::unique_ptr<Ar0234CameraDevice> device{};
+    std::unique_ptr<Rk3576CameraCaptureBase> device{};
     std::unique_ptr<Queue> queue{std::make_unique<Queue>(30)};
     std::thread worker{};
     std::thread trigger_worker{};
@@ -43,6 +44,13 @@ struct Ar0234CameraFrameSource::Impl {
         if (!dependencies.trigger_now) {
             dependencies.trigger_now = [this] { return dependencies.system->clockUs(CLOCK_MONOTONIC); };
         }
+        if (!dependencies.make_device) {
+            // 默认工厂构造 AR0234 设备；SC233HGS 帧源封装会注入构造 Sc233hgsCameraDevice 的工厂。
+            dependencies.make_device = [](const FrameSourceConfig &device_config,
+                                          std::shared_ptr<CameraSystem> device_system) {
+                return std::make_unique<Ar0234CameraDevice>(device_config, std::move(device_system));
+            };
+        }
         if (!dependencies.trigger_wait) {
             dependencies.trigger_wait = [this](std::condition_variable &cv, std::unique_lock<std::mutex> &lock,
                                                std::int64_t due, const std::function<bool()> &stop) {
@@ -50,7 +58,7 @@ struct Ar0234CameraFrameSource::Impl {
                     due - dependencies.trigger_now())}, stop);
             };
         }
-        device = std::make_unique<Ar0234CameraDevice>(config, dependencies.system);
+        device = dependencies.make_device(config, dependencies.system);
         device->prepare();
         record.format = device->format();
         const auto error{device->finish()};
@@ -213,7 +221,7 @@ bool Ar0234CameraFrameSource::start() {
             impl_->record.source.requested_trigger_hz = impl_->config.camera_trigger_rate_hz;
         }
         impl_->queue = std::make_unique<Impl::Queue>(30);
-        impl_->device = std::make_unique<Ar0234CameraDevice>(impl_->config, impl_->dependencies.system);
+        impl_->device = impl_->dependencies.make_device(impl_->config, impl_->dependencies.system);
         impl_->device->prepare();
         impl_->device->start();
         impl_->stream_started_us = impl_->dependencies.system->clockUs(CLOCK_MONOTONIC);
@@ -281,6 +289,10 @@ bool Ar0234CameraFrameSource::waitFrame(FrameRef &frame, std::chrono::microsecon
 bool Ar0234CameraFrameSource::tryFrame(FrameRef &frame) {
     frame.reset();
     return impl_->queue->try_dequeue(frame);
+}
+void Ar0234CameraFrameSource::discardFrames() {
+    FrameRef frame{};
+    while (impl_->queue->try_dequeue(frame)) {}
 }
 void Ar0234CameraFrameSource::configureRecording(bool enabled, const std::string &, const std::string &) {
     if (enabled) { throw std::invalid_argument("RK3576 camera recording unsupported"); }
