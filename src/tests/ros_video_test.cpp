@@ -30,6 +30,7 @@ struct SourceTrace {
     std::atomic<int> starts{}, stops{}, delivered{};
     std::atomic_bool active{}, eof{}, fail_start{}, fail_input{}, tail_race{}, long_gap{};
     std::atomic<int> limit{10000};
+    std::atomic_bool warming_up{};
     std::mutex mutex{};
     std::vector<std::uint64_t> timestamps{};
     std::vector<FrameRef> frames{};
@@ -54,7 +55,7 @@ public:
     bool waitFrame(FrameRef &frame, std::chrono::microseconds timeout) override {
         frame.reset();
         std::this_thread::sleep_for(std::min(timeout, std::chrono::microseconds{10000}));
-        if (!trace_->active || trace_->fail_input) { return false; }
+        if (!trace_->active || trace_->fail_input || trace_->warming_up) { return false; }
         if (trace_->long_gap && trace_->delivered > 0) { return false; }
         if (trace_->delivered >= trace_->limit) { trace_->eof = true; return false; }
         if (trace_->tail_race) { trace_->eof = true; return false; }
@@ -493,6 +494,25 @@ void cameraContracts() {
         require(!h.node->set_parameter({"mv_camera.sensor_model", "ar0234"}).successful
             && h.node->set_parameter({"mv_camera.sensor_model", "sc233hgs"}).successful == false,
             "Sensor model runtime change was accepted");
+        h.source->warming_up = true;
+        h.node->run();
+        h.pump(80ms);
+        require(h.detections.empty() && h.images.empty() && h.source->delivered == 0,
+                "Warmup published observations");
+        h.node->stop();
+        h.pump(30ms);
+        require(h.detections.empty() && h.images.empty(), "Warmup OFF published frames");
+        h.node->run();
+        h.source->fail_input = true;
+        h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "Warmup failure did not clean up");
+        require(std::find(h.states.begin(), h.states.end(), 3) == h.states.end(), "Warmup fabricated TargetLost");
+        h.source->fail_input = false;
+        h.source->warming_up = false;
+        h.node->run();
+        h.until([&] { return !h.detections.empty(); }, "Warmup failure recovery produced no frames");
+        h.source->fail_input = true;
+        h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "Streaming failure did not clean up");
+        require(h.trace->assemblies == 1, "Warmup recovery reloaded models");
     }
     {
         auto params{options({{"video_source", "/dev/video10"},

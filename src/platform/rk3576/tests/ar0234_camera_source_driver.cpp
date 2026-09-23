@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
     } catch (const std::exception &error) {
         std::cerr << error.what() << "\n用法：ar0234_camera_source_driver --video-device PATH --media-device PATH"
             " --sensor-entity NAME --width W --height H --fps N --output NEW_DIR"
+            " [--sensor-model ar0234|sc233hgs]"
             " (--frames N | --seconds N | --commands N) [--buffers 4] [--rounds 1] [--instances 1]"
             " [--mode continuous|software_trigger] [--trigger-hz HZ] [--tail-ms 500] [--slow-ms 0] [--snapshots 1] [--compare-pixels]\n";
         return 2;

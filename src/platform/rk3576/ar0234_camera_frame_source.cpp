@@ -90,6 +90,7 @@ struct Ar0234CameraFrameSource::Impl {
         if (!error.empty()) { fail(error); }
         std::lock_guard<std::mutex> lock{mutex};
         record.cleanup_us = elapsed;
+        record.source.camera = device->captureStatus();
         record.unrestored_controls = device->unrestoredControls();
         record.source.controls_restored = record.unrestored_controls.empty();
         if (record.source.state != FrameSourceState::Failed) {
@@ -151,12 +152,13 @@ struct Ar0234CameraFrameSource::Impl {
             }
             changed.notify_all();
             auto last_dequeue{stream_started_us};
-            bool have_sequence{false};
-            std::uint32_t previous_sequence{};
             while (!stopped.load()) {
                 auto sample{device->next(100, dependencies.compare_pixels)};
-                if (stopped.load() && !sample.frame) { break; }
-                if (!sample.frame) {
+                if (stopped.load()) {
+                    if (sample.result == CameraSampleResult::FrameReady) { device->discardReadyFrame(); }
+                    break;
+                }
+                if (sample.result == CameraSampleResult::NoSample) {
                     const auto now{dependencies.system->clockUs(CLOCK_MONOTONIC)};
                     if (now < last_dequeue || now - last_dequeue >= 2000000) {
                         throw std::runtime_error("Camera capture timeout: no successful dequeue for 2 seconds");
@@ -164,26 +166,23 @@ struct Ar0234CameraFrameSource::Impl {
                     continue;
                 }
                 last_dequeue = sample.dequeue_us;
-                std::uint64_t missing{};
-                if (have_sequence) {
-                    // 无符号减法允许 sequence 在 2^32 处自然回绕；倒退/重复不是丢帧。
-                    const std::uint32_t delta{sample.sequence - previous_sequence};
-                    if (delta == 0 || delta > 0x7fffffffU) {
-                        throw std::runtime_error("Camera sequence repeated/backwards: "
-                            + std::to_string(sample.sequence));
-                    }
-                    missing = delta - 1;
+                if (sample.result == CameraSampleResult::WarmupDiscarded) {
+                    std::lock_guard<std::mutex> lock{mutex};
+                    record.source.camera = device->captureStatus();
+                    record.source.sequence_gaps = device->sequenceGaps();
+                    record.driver_dropped = device->sequenceGaps();
+                    record.source.time_source = sample.strategy;
+                    continue;
                 }
-                previous_sequence = sample.sequence;
-                have_sequence = true;
                 const bool enqueued{queue->try_enqueue(sample.frame)};
                 Ar0234CameraDiagnostic snapshot{};
                 {
                     std::lock_guard<std::mutex> lock{mutex};
                     ++record.source.read;
                     record.source.frame_index = sample.sequence;
-                    record.driver_dropped += missing;
-                    record.source.sequence_gaps += missing;
+                    record.driver_dropped = device->sequenceGaps();
+                    record.source.sequence_gaps = device->sequenceGaps();
+                    record.source.camera = device->captureStatus();
                     record.source.time_source = sample.strategy;
                     record.source.clock_offset_delta_us = sample.clock_offset_delta_us;
                     if (enqueued) { ++record.source.enqueued; } else { ++record.source.dropped; }
@@ -195,6 +194,12 @@ struct Ar0234CameraFrameSource::Impl {
             fail(error.what());
         } catch (...) {
             fail("Unknown camera worker failure");
+        }
+        {
+            std::lock_guard<std::mutex> lock{mutex};
+            record.source.camera = device->captureStatus();
+            record.source.sequence_gaps = device->sequenceGaps();
+            record.driver_dropped = device->sequenceGaps();
         }
         requestStop();
     }

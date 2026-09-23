@@ -151,6 +151,7 @@ private:
     bool camera_input_{};
     std::uint64_t consumed_frames_{};
     std::chrono::steady_clock::time_point last_acquisition_report_{};
+    std::string last_camera_phase_{};
     void openRecording(const builtin_interfaces::msg::Time &stamp);
     void closeRecording() noexcept;
     template<typename Message> void record(const Message &message, const std::string &topic,

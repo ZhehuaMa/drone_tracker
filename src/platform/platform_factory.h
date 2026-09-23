@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "frame/frame.h"
 #include "hybrid_tracker/model/model_backend.h"
@@ -51,6 +52,33 @@ struct FrameSourceConfig {
 };
 
 enum class FrameSourceState { Unknown, Ready, Running, Stopped, Eof, Failed };
+/** @brief 有界预热证据，只保留驱动元数据，不持有图像。 */
+struct CameraWarmupEvidence {
+    std::int64_t seconds{};
+    std::int64_t microseconds{};
+    std::int64_t dequeue_us{};
+    std::uint32_t flags{};
+    std::uint32_t sequence{};
+    unsigned streak{};
+    std::string decision{};
+};
+struct CameraCaptureStatus {
+    std::uint64_t dequeued_total{};
+    std::uint64_t warmup_discarded{};
+    std::uint64_t terminal_discarded{};
+    unsigned warmup_examined{};
+    unsigned warmup_repeats{};
+    unsigned warmup_streak{};
+    std::string phase{"disabled"};
+    std::string reason{};
+    std::int64_t warmup_us{};
+    bool first_frame_known{};
+    std::uint32_t first_sequence{};
+    std::int64_t first_timestamp_us{};
+    std::int64_t first_latency_us{};
+    bool resources_reclaimed{};
+    std::vector<CameraWarmupEvidence> evidence{};
+};
 /** @brief 只读状态快照；计数只属于当前轮次，查询不会消费帧。 */
 struct FrameSourceStatus {
     FrameSourceState state{FrameSourceState::Unknown};
@@ -73,6 +101,7 @@ struct FrameSourceStatus {
     std::int64_t first_trigger_us{};
     std::int64_t last_trigger_us{};
     std::int64_t clock_offset_delta_us{};
+    CameraCaptureStatus camera{};
 };
 
 /** @brief 单消费者帧源；实现直接使用原采集队列，不增加中转线程。 */

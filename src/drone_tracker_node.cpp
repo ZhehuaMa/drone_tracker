@@ -89,6 +89,7 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
         last_tracker_state = -1;
         consumed_frames_ = 0;
         last_acquisition_report_ = std::chrono::steady_clock::now();
+        last_camera_phase_.clear();
         running = true;
         if (osd_presenter_) {
             osd_round_ = osd_presenter_->beginRound();
@@ -462,9 +463,11 @@ void DroneTrackerNode::reportAcquisition(bool final) {
 #ifdef DRONE_TRACKER_RK3576
     if (!camera_input_) { return; }
     const auto now{std::chrono::steady_clock::now()};
-    if (!final && now - last_acquisition_report_ < 1s) { return; }
-    last_acquisition_report_ = now;
     const auto state{mv_camera_->status()};
+    const bool transition{state.camera.phase != last_camera_phase_};
+    if (!final && !transition && now - last_acquisition_report_ < 1s) { return; }
+    last_camera_phase_ = state.camera.phase;
+    last_acquisition_report_ = now;
     RCLCPP_INFO(get_logger(),
         "Camera %s mode=%s requested_hz=%.3f actual_hz=%.3f commands=%lu command_errors=%lu skipped=%lu "
         "read=%lu enqueued=%lu queue_dropped=%lu sequence_gaps=%lu consumed=%lu time=%s "
@@ -477,6 +480,22 @@ void DroneTrackerNode::reportAcquisition(bool final) {
         static_cast<unsigned long>(consumed_frames_), state.time_source.c_str(),
         static_cast<long>(state.trigger_success) - static_cast<long>(state.read),
         static_cast<long>(state.clock_offset_delta_us), static_cast<long>(state.stop_us), state.controls_restored, static_cast<int>(state.state), state.reason.c_str());
+    const auto &camera{state.camera};
+    if (camera.phase != "disabled") {
+        const std::string first{camera.first_frame_known
+            ? std::to_string(camera.first_sequence) + ":" + std::to_string(camera.first_timestamp_us)
+                + " latency_us=" + std::to_string(camera.first_latency_us)
+            : "unknown"};
+        RCLCPP_INFO(get_logger(),
+            "Camera warmup phase=%s limits=2000000us/120frames/8consecutive elapsed_us=%ld "
+            "dequeued_total=%lu examined=%u discarded=%lu repeats=%u streak=%u terminal_discarded=%lu "
+            "first=%s reclaimed=%d reason=%s",
+            camera.phase.c_str(), static_cast<long>(camera.warmup_us),
+            static_cast<unsigned long>(camera.dequeued_total), camera.warmup_examined,
+            static_cast<unsigned long>(camera.warmup_discarded), camera.warmup_repeats, camera.warmup_streak,
+            static_cast<unsigned long>(camera.terminal_discarded), first.c_str(), camera.resources_reclaimed,
+            camera.reason.c_str());
+    }
 #else
     (void)final;
 #endif

@@ -6,6 +6,7 @@
 // 分别定义在各自的头文件中。
 
 #include <poll.h>
+#include <atomic>
 #include <ctime>
 #include <cstdint>
 #include <memory>
@@ -42,7 +43,9 @@ struct CameraFormat {
     std::uint32_t sizeimage{};
     std::uint32_t buffers{};
 };
+enum class CameraSampleResult { NoSample, WarmupDiscarded, FrameReady };
 struct CameraSample {
+    CameraSampleResult result{CameraSampleResult::NoSample};
     FrameRef frame{};
     std::int64_t seconds{};
     std::int64_t microseconds{};
@@ -84,7 +87,7 @@ public:
     virtual void trigger();
     /** @brief 默认没有待恢复控制项；持有传感器控制项的实现覆写。 */
     virtual std::vector<std::string> unrestoredControls() const;
-    /** @brief 无帧/停止返回空帧；设备错误抛异常。每次等待至多 timeout_ms。 */
+    /** @brief 根据 result 区分无出队、已归还观察帧和合格帧；错误抛异常，等待可被停止唤醒。 */
     CameraSample next(int timeout_ms, bool compare_pixels = false);
     /** @brief 唤醒 poll，不关闭采集句柄；空字符串表示成功。 */
     std::string wake();
@@ -92,8 +95,14 @@ public:
     std::string finish();
     CameraFormat format() const { return format_; }
     CameraClockPair clockPair() const { return pair_; }
+    /** @brief 仅采集线程或 join 后读取；公共帧源另用互斥锁发布快照。 */
+    CameraCaptureStatus captureStatus() const { return capture_status_; }
+    std::uint64_t sequenceGaps() const { return sequence_gaps_; }
+    /** @brief 已复制但未交付队列时调用；仅采集线程可调用。 */
+    void discardReadyFrame();
 
 protected:
+    virtual bool needsTimestampWarmup() const { return false; }
     // ---- 传感器专属扩展点：由 AR0234/SC233HGS 各自实现 ----
     /** @brief 打开采集节点前的传感器配置（例如 media-ctl 设置格式、读写触发控制项）；不需要时留空实现。 */
     virtual void configureSensor() = 0;
@@ -126,6 +135,14 @@ private:
     CameraFormat format_{};
     CameraClockPair pair_{};
     std::unique_ptr<CameraTiming> timing_{};
+    std::unique_ptr<CameraWarmup> warmup_{};
+    CameraCaptureStatus capture_status_{};
+    std::atomic<bool> stop_requested_{false};
+    std::int64_t stream_started_us_{};
+    bool have_sequence_{};
+    std::uint32_t previous_sequence_{};
+    std::uint64_t sequence_gaps_{};
+    bool cleanup_failed_{};
     std::vector<Mapping> mappings_{};
 };
 } // namespace rk3576

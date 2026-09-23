@@ -56,7 +56,8 @@ int CameraSystem::open(const std::string &path, int flags) { return ::open(path.
 int CameraSystem::close(int fd) { return ::close(fd); }
 int CameraSystem::ioctl(int fd, unsigned long request, void *argument) {
     int result{};
-    do { result = ::ioctl(fd, request, argument); } while (result < 0 && errno == EINTR);
+    do { result = ::ioctl(fd, request, argument); }
+    while (result < 0 && errno == EINTR && request != VIDIOC_DQBUF);
     return result;
 }
 void *CameraSystem::map(int fd, std::size_t length, std::uint64_t offset) {
@@ -287,6 +288,12 @@ void Rk3576CameraCaptureBase::prepare() {
 void Rk3576CameraCaptureBase::start() {
     try {
         if (fd_ < 0 || allocated_) { throw std::logic_error("Camera start requires fresh prepared device"); }
+        stop_requested_.store(false);
+        capture_status_ = {};
+        have_sequence_ = false;
+        sequence_gaps_ = 0;
+        cleanup_failed_ = false;
+        warmup_.reset();
         {
             std::lock_guard<std::mutex> lock{wake_mutex_};
             wake_fd_ = system_->event();
@@ -323,79 +330,190 @@ void Rk3576CameraCaptureBase::start() {
         auto type{V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE};
         check(system_->ioctl(fd_, VIDIOC_STREAMON, &type), "STREAMON");
         streaming_ = true;
+        stream_started_us_ = system_->clockUs(CLOCK_MONOTONIC);
+        if (needsTimestampWarmup()) {
+            warmup_ = std::make_unique<CameraWarmup>(pair_, stream_started_us_);
+            capture_status_.phase = "warming_up";
+            capture_status_.evidence.reserve(CameraWarmup::MAX_SAMPLES);
+        }
     } catch (const std::exception &error) {
         const std::string reason{error.what()};
         throw std::runtime_error(reason + finish());
     }
 }
 CameraSample Rk3576CameraCaptureBase::next(int timeout_ms, bool compare_pixels) {
-    std::array<pollfd, 2> fds{{{fd_, POLLIN, 0}, {wake_fd_, POLLIN, 0}}};
-    const int ready{system_->poll(fds.data(), fds.size(), timeout_ms)};
-    if (ready < 0 && errno == EINTR) { return {}; }
-    check(ready, "poll");
-    if (fds[1].revents & POLLIN) { return {}; }
-    if ((fds[0].revents | fds[1].revents) & (POLLERR | POLLHUP | POLLNVAL)) {
-        throw std::runtime_error("Camera poll device disconnected/error");
-    }
-    if (!ready || !(fds[0].revents & POLLIN)) { return {}; }
-    PlaneBuffer dequeued{};
-    const int result{system_->ioctl(fd_, VIDIOC_DQBUF, &dequeued.buffer)};
-    if (result < 0 && errno == EAGAIN) { return {}; }
-    check(result, "DQBUF");
-    CameraSample sample{};
-    sample.dequeue_us = system_->clockUs(CLOCK_MONOTONIC);
-    // 仅保留当前时钟偏移与轮次固定偏移的差，不用它重标帧时间。
-    const auto realtime{system_->clockUs(CLOCK_REALTIME)};
-    const auto offset_delta{static_cast<__int128>(realtime) - sample.dequeue_us - pair_.offset_us};
-    if (offset_delta < std::numeric_limits<std::int64_t>::min()
-        || offset_delta > std::numeric_limits<std::int64_t>::max()) {
-        throw std::runtime_error("Camera clock offset diagnostic overflow");
-    }
-    sample.clock_offset_delta_us = static_cast<std::int64_t>(offset_delta);
-    const auto &plane{dequeued.plane};
-    const auto &buffer{dequeued.buffer};
-    if (buffer.index >= mappings_.size() || buffer.length != 1 || (buffer.flags & V4L2_BUF_FLAG_ERROR)
-        || plane.data_offset > plane.bytesused || plane.bytesused > plane.length
-        || plane.length > mappings_[buffer.index].length
-        || static_cast<std::uint64_t>(plane.bytesused - plane.data_offset) < requiredBytes(format_)) {
-        throw std::runtime_error("Invalid dequeued buffer" + metadata(dequeued));
-    }
-    sample.seconds = buffer.timestamp.tv_sec;
-    sample.microseconds = buffer.timestamp.tv_usec;
-    sample.flags = buffer.flags;
-    sample.sequence = buffer.sequence;
-    std::int64_t timestamp{};
+    if (stop_requested_.load()) { return {}; }
+    const bool observing{warmup_ && !warmup_->ready()};
+    auto checkDeadline{[&] {
+        if (observing && !stop_requested_.load()) {
+            const auto now{system_->clockUs(CLOCK_MONOTONIC)};
+            if (stop_requested_.load()) { return; }
+            capture_status_.warmup_us = now - stream_started_us_;
+            warmup_->checkDeadline(now);
+            if (warmup_->exhausted()) { throw std::runtime_error("Camera warmup sample limit"); }
+        }
+    }};
     try {
-        timestamp = timing_->map(sample.seconds, sample.microseconds, sample.flags, sample.dequeue_us);
-    } catch (const std::exception &error) {
-        throw std::runtime_error(std::string{error.what()} + metadata(dequeued));
-    }
-    sample.strategy = timing_->strategy();
-    const auto *pixels{static_cast<const unsigned char *>(mappings_[buffer.index].address) + plane.data_offset};
-    // OpenCV 只借用映射图像头；copyGrayFrame 深拷贝有效像素后不再依赖设备，两种传感器共用同一份提取/复制逻辑：
-    // 无论驱动协商的是 GREY 还是 NV12，取出的都只是紧邻缓冲区起始的 Y（亮度）平面字节。
-    const cv::Mat gray{config_.height, config_.width, CV_8UC1, const_cast<unsigned char *>(pixels), format_.stride};
-    const auto before{system_->clockUs(CLOCK_MONOTONIC)};
-    sample.frame = copyGrayFrame(gray, static_cast<std::uint64_t>(timestamp));
-    sample.copy_us = system_->clockUs(CLOCK_MONOTONIC) - before;
-    if (sample.copy_us < 0) { throw std::runtime_error("Copy clock moved backwards"); }
-    if (compare_pixels) {
-        const auto view{sample.frame->mapRead()};
-        sample.pixels_checked = true;
-        sample.pixels_equal = true;
-        for (int row{0}; row < config_.height; ++row) {
-            if (std::memcmp(view->mat().ptr(row), gray.ptr(row), config_.width) != 0) {
-                sample.pixels_equal = false;
-                break;
+        checkDeadline();
+        if (observing) {
+            const auto remaining{warmup_->remainingUs(system_->clockUs(CLOCK_MONOTONIC))};
+            timeout_ms = std::min(timeout_ms, static_cast<int>((remaining + 999) / 1000));
+        }
+        std::array<pollfd, 2> fds{{{fd_, POLLIN, 0}, {wake_fd_, POLLIN, 0}}};
+        const int ready{system_->poll(fds.data(), fds.size(), timeout_ms)};
+        if (ready < 0 && errno == EINTR) { checkDeadline(); return {}; }
+        check(ready, "poll");
+        if (stop_requested_.load() || (fds[1].revents & POLLIN)) { return {}; }
+        if ((fds[0].revents | fds[1].revents) & (POLLERR | POLLHUP | POLLNVAL)) {
+            throw std::runtime_error("Camera poll device disconnected/error");
+        }
+        if (!ready || !(fds[0].revents & POLLIN)) { checkDeadline(); return {}; }
+        PlaneBuffer dequeued{};
+        const int result{system_->ioctl(fd_, VIDIOC_DQBUF, &dequeued.buffer)};
+        if (result < 0 && (errno == EAGAIN || errno == EINTR)) { checkDeadline(); return {}; }
+        check(result, "DQBUF");
+        ++capture_status_.dequeued_total;
+        // 先记终止处置，只有成功归还并分类后才转到其他互斥类别。
+        ++capture_status_.terminal_discarded;
+        CameraSample sample{};
+        sample.seconds = dequeued.buffer.timestamp.tv_sec;
+        sample.microseconds = dequeued.buffer.timestamp.tv_usec;
+        sample.flags = dequeued.buffer.flags;
+        sample.sequence = dequeued.buffer.sequence;
+        if (observing) {
+            ++capture_status_.warmup_examined;
+            capture_status_.evidence.push_back({sample.seconds, sample.microseconds, 0, sample.flags,
+                                                sample.sequence, warmup_->streak(), "terminal"});
+        }
+        sample.dequeue_us = system_->clockUs(CLOCK_MONOTONIC);
+        if (observing) {
+            capture_status_.evidence.back().dequeue_us = sample.dequeue_us;
+            capture_status_.warmup_us = sample.dequeue_us - stream_started_us_;
+        }
+        if (stop_requested_.load()) { return {}; }
+        // 仅保留当前时钟偏移与轮次固定偏移的差，不用它重标帧时间。
+        const auto realtime{system_->clockUs(CLOCK_REALTIME)};
+        const auto offset_delta{static_cast<__int128>(realtime) - sample.dequeue_us - pair_.offset_us};
+        if (offset_delta < std::numeric_limits<std::int64_t>::min()
+            || offset_delta > std::numeric_limits<std::int64_t>::max()) {
+            throw std::runtime_error("Camera clock offset diagnostic overflow");
+        }
+        sample.clock_offset_delta_us = static_cast<std::int64_t>(offset_delta);
+        const auto &plane{dequeued.plane};
+        const auto &buffer{dequeued.buffer};
+        if (buffer.index >= mappings_.size() || buffer.length != 1 || (buffer.flags & V4L2_BUF_FLAG_ERROR)
+            || plane.data_offset > plane.bytesused || plane.bytesused > plane.length
+            || plane.length > mappings_[buffer.index].length
+            || static_cast<std::uint64_t>(plane.bytesused - plane.data_offset) < requiredBytes(format_)) {
+            throw std::runtime_error("Invalid dequeued buffer" + metadata(dequeued));
+        }
+        sample.seconds = buffer.timestamp.tv_sec;
+        sample.microseconds = buffer.timestamp.tv_usec;
+        sample.flags = buffer.flags;
+        sample.sequence = buffer.sequence;
+        if (have_sequence_) {
+            const std::uint32_t delta{sample.sequence - previous_sequence_};
+            if (delta == 0 || delta > 0x7fffffffU) {
+                throw std::runtime_error("Camera sequence repeated/backwards: " + std::to_string(sample.sequence));
+            }
+            sequence_gaps_ += delta - 1;
+        }
+        previous_sequence_ = sample.sequence;
+        have_sequence_ = true;
+        if (observing) {
+            const auto now{system_->clockUs(CLOCK_MONOTONIC)};
+            if (stop_requested_.load()) { return {}; }
+            capture_status_.warmup_us = now - stream_started_us_;
+            const bool accepted{warmup_->observe(sample.seconds, sample.microseconds, sample.flags,
+                                                sample.dequeue_us, now)};
+            capture_status_.warmup_streak = warmup_->streak();
+            capture_status_.warmup_repeats = warmup_->repeats();
+            auto &evidence{capture_status_.evidence.back()};
+            evidence.streak = warmup_->streak();
+            sample.strategy = warmup_->strategy();
+            if (stop_requested_.load()) { evidence.decision = "cancelled"; return {}; }
+            if (!accepted) {
+                PlaneBuffer returned{buffer.index};
+                check(system_->ioctl(fd_, VIDIOC_QBUF, &returned.buffer), "return QBUF" + metadata(dequeued));
+                --capture_status_.terminal_discarded;
+                ++capture_status_.warmup_discarded;
+                evidence.decision = "discarded";
+                if (warmup_->exhausted()) { throw std::runtime_error("Camera warmup sample limit"); }
+                sample.result = CameraSampleResult::WarmupDiscarded;
+                return sample;
+            }
+            evidence.decision = "ready";
+        }
+        std::int64_t timestamp{};
+        try {
+            timestamp = timing_->map(sample.seconds, sample.microseconds, sample.flags, sample.dequeue_us);
+        } catch (const std::exception &error) {
+            throw std::runtime_error(std::string{error.what()} + metadata(dequeued));
+        }
+        sample.strategy = timing_->strategy();
+        const auto *pixels{static_cast<const unsigned char *>(mappings_[buffer.index].address) + plane.data_offset};
+        // OpenCV 只借用映射图像头；copyGrayFrame 深拷贝有效像素后不再依赖设备，两种传感器共用同一份提取/复制逻辑：
+        // 无论驱动协商的是 GREY 还是 NV12，取出的都只是紧邻缓冲区起始的 Y（亮度）平面字节。
+        const cv::Mat gray{config_.height, config_.width, CV_8UC1, const_cast<unsigned char *>(pixels), format_.stride};
+        const auto before{system_->clockUs(CLOCK_MONOTONIC)};
+        sample.frame = copyGrayFrame(gray, static_cast<std::uint64_t>(timestamp));
+        sample.copy_us = system_->clockUs(CLOCK_MONOTONIC) - before;
+        if (sample.copy_us < 0) { throw std::runtime_error("Copy clock moved backwards"); }
+        if (compare_pixels) {
+            const auto view{sample.frame->mapRead()};
+            sample.pixels_checked = true;
+            sample.pixels_equal = true;
+            for (int row{0}; row < config_.height; ++row) {
+                if (std::memcmp(view->mat().ptr(row), gray.ptr(row), config_.width) != 0) {
+                    sample.pixels_equal = false;
+                    break;
+                }
+            }
+            if (!sample.pixels_equal) { throw std::runtime_error("Same-frame driver pixel comparison failed"); }
+        }
+        PlaneBuffer returned{buffer.index};
+        check(system_->ioctl(fd_, VIDIOC_QBUF, &returned.buffer), "return QBUF" + metadata(dequeued));
+        if (stop_requested_.load()) { sample.frame.reset(); return {}; }
+        // 复制或归还耗时也不能让期限外样本成为预热首帧。
+        if (observing) {
+            capture_status_.warmup_us = system_->clockUs(CLOCK_MONOTONIC) - stream_started_us_;
+            if (stop_requested_.load()) { sample.frame.reset(); return {}; }
+            if (capture_status_.warmup_us >= CameraWarmup::DURATION_US) {
+                throw std::runtime_error("Camera warmup time limit: timestamps not stable");
             }
         }
-        if (!sample.pixels_equal) { throw std::runtime_error("Same-frame driver pixel comparison failed"); }
+        if (!capture_status_.first_frame_known) {
+            const auto latency{system_->clockUs(CLOCK_MONOTONIC) - stream_started_us_};
+            capture_status_.first_frame_known = true;
+            capture_status_.first_sequence = sample.sequence;
+            capture_status_.first_timestamp_us = timestamp;
+            capture_status_.first_latency_us = latency;
+            if (warmup_) {
+                capture_status_.phase = "streaming";
+                capture_status_.warmup_us = capture_status_.first_latency_us;
+            }
+        }
+        --capture_status_.terminal_discarded;
+        sample.result = CameraSampleResult::FrameReady;
+        return sample;
+    } catch (const std::exception &error) {
+        capture_status_.reason = error.what();
+        if (warmup_) { capture_status_.phase = "failed"; }
+        if (observing) {
+            capture_status_.phase = "failed";
+            if (!capture_status_.evidence.empty()) { capture_status_.evidence.back().decision += ": " + capture_status_.reason; }
+        }
+        throw;
     }
-    PlaneBuffer returned{buffer.index};
-    check(system_->ioctl(fd_, VIDIOC_QBUF, &returned.buffer), "return QBUF" + metadata(dequeued));
-    return sample;
+}
+void Rk3576CameraCaptureBase::discardReadyFrame() {
+    ++capture_status_.terminal_discarded;
+    if (capture_status_.dequeued_total == capture_status_.warmup_discarded + capture_status_.terminal_discarded) {
+        capture_status_.first_frame_known = false;
+    }
 }
 std::string Rk3576CameraCaptureBase::wake() {
+    stop_requested_.store(true);
     std::lock_guard<std::mutex> lock{wake_mutex_};
     if (wake_fd_ >= 0 && system_->signal(wake_fd_) < 0) { return systemError("eventfd signal"); }
     return {};
@@ -434,6 +552,9 @@ std::string Rk3576CameraCaptureBase::finish() {
     }
     errors += finishSensor();
     timing_.reset();
+    if (capture_status_.phase == "warming_up") { capture_status_.phase = "cancelled"; }
+    cleanup_failed_ = cleanup_failed_ || !errors.empty();
+    capture_status_.resources_reclaimed = !cleanup_failed_;
     return errors;
 }
 } // namespace rk3576

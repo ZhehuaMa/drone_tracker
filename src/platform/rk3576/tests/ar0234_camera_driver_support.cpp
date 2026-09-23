@@ -1,4 +1,5 @@
 #include "ar0234_camera_driver_support.h"
+#include "../sc233hgs_camera_frame_source.h"
 #include <linux/videodev2.h>
 
 #include <unistd.h>
@@ -37,6 +38,11 @@ Options parse(int argc, char **argv) {
         if (key == "--video-device") { options.config.path = value; }
         else if (key == "--media-device") { options.config.camera_media_device = value; }
         else if (key == "--sensor-entity") { options.config.camera_sensor_entity = value; }
+        else if (key == "--sensor-model") {
+            if (value != "ar0234" && value != "sc233hgs") { throw std::invalid_argument("Invalid sensor model"); }
+            options.config.camera_sensor_model = value == "sc233hgs" ? CameraSensorModel::Sc233hgs
+                                                                     : CameraSensorModel::Ar0234;
+        }
         else if (key == "--width") { options.config.width = number(value); }
         else if (key == "--height") { options.config.height = number(value); }
         else if (key == "--fps") { options.config.fps = number(value); }
@@ -123,6 +129,8 @@ void run(const Options &options, Ar0234CameraDependencies injected) {
     if (!fs::create_directory(options.output)) { throw std::runtime_error("Output directory already exists"); }
     std::ofstream config_file{options.output / "config.txt"};
     config_file << "RK3576 独立相机采集；未运行模型或 ROS。\n"
+        << "sensor_model=" << (options.config.camera_sensor_model == CameraSensorModel::Sc233hgs
+            ? "sc233hgs" : "ar0234") << "\n"
         << "video_device=" << options.config.path << "\nmedia_device=" << options.config.camera_media_device
         << "\nsensor_entity=" << options.config.camera_sensor_entity << "\nwidth=" << options.config.width
         << "\nheight=" << options.config.height << "\nfps=" << options.config.fps
@@ -140,6 +148,11 @@ void run(const Options &options, Ar0234CameraDependencies injected) {
         << "\nresources.csv 的 rss_bytes 为驻留主机内存；fd_count 包括报告和资源查询自身句柄。"
         << "\nframes.csv 包含所有成功复制并归还的驱动帧，包括被队列丢弃的新帧。\n";
     checked(config_file);
+    std::ofstream warmup{options.output / "warmup.csv"};
+    warmup << "instance,round,seconds,microseconds,flags,sequence,dequeue_us,streak,decision\n";
+    std::ofstream capture{options.output / "capture.csv"};
+    capture << "instance,round,dequeued_total,warmup_examined,warmup_discarded,warmup_repeats,streak,"
+               "terminal_discarded,phase,warmup_us,first_sequence,first_timestamp_us,first_latency_us,reclaimed,reason\n";
     std::ofstream frames{options.output / "frames.csv"};
     std::ofstream rounds{options.output / "rounds.csv"};
     std::ofstream resource{options.output / "resources.csv"};
@@ -193,7 +206,8 @@ void run(const Options &options, Ar0234CameraDependencies injected) {
         if (!result) { throw std::runtime_error(result.error.describe()); }
         auto &source{*result.value};
         auto *camera{dynamic_cast<Ar0234CameraFrameSource *>(&source)};
-        if (!camera) { throw std::runtime_error("Factory returned unexpected source"); }
+        auto *sc233hgs{dynamic_cast<Sc233hgsCameraFrameSource *>(&source)};
+        if (!camera && !sc233hgs) { throw std::runtime_error("Factory returned unexpected source"); }
         resources(resource, instance, 0, "created");
         for (active_round = 0; active_round < options.rounds && !interrupted; ++active_round) {
             saved = 0;
@@ -212,7 +226,7 @@ void run(const Options &options, Ar0234CameraDependencies injected) {
             while (!interrupted) {
                 const auto snapshot{source.status()};
                 if (options.finite_commands && !sending_stopped && snapshot.trigger_success >= options.commands) {
-                    camera->stopTriggers();
+                    if (camera) { camera->stopTriggers(); }
                     sending_stopped = true;
                     send_stopped_at = std::chrono::steady_clock::now();
                     const auto stopped_snapshot{source.status()};
@@ -256,14 +270,32 @@ void run(const Options &options, Ar0234CameraDependencies injected) {
                 }
             }
             if (!sending_stopped) {
-                camera->stopTriggers();
+                if (camera) { camera->stopTriggers(); }
                 const auto stopped_snapshot{source.status()};
                 frames_at_send_stop = stopped_snapshot.read;
                 unconfirmed_at_send_stop = stopped_snapshot.trigger_success > stopped_snapshot.read
                     ? stopped_snapshot.trigger_success - stopped_snapshot.read : 0;
             }
             const bool stopped{source.stop()};
-            const auto status{camera->diagnostic()};
+            const auto status{camera ? camera->diagnostic() : sc233hgs->diagnostic()};
+            const auto &c{status.source.camera};
+            for (const auto &e : c.evidence) {
+                warmup << instance << ',' << active_round << ',' << e.seconds << ',' << e.microseconds << ','
+                    << e.flags << ',' << e.sequence << ',' << e.dequeue_us << ',' << e.streak << ','
+                    << quote(e.decision) << '\n';
+            }
+            capture << instance << ',' << active_round << ',' << c.dequeued_total << ',' << c.warmup_examined
+                << ',' << c.warmup_discarded << ',' << c.warmup_repeats << ',' << c.warmup_streak << ','
+                << c.terminal_discarded << ',' << c.phase << ',' << c.warmup_us << ',';
+            if (c.first_frame_known) {
+                capture << c.first_sequence << ',' << c.first_timestamp_us << ',' << c.first_latency_us;
+            } else { capture << "unknown,unknown,unknown"; }
+            capture << ',' << c.resources_reclaimed << ',' << quote(c.reason) << '\n';
+            checked(warmup); checked(capture);
+            if (c.dequeued_total != c.warmup_discarded + status.source.read + c.terminal_discarded
+                || status.source.read != status.source.enqueued + status.source.dropped) {
+                throw std::runtime_error("Camera accounting mismatch");
+            }
             const auto elapsed{std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - begin).count()};
             rounds << instance << ',' << active_round << ',' << consumed << ',' << status.source.read << ','
@@ -298,7 +330,7 @@ void run(const Options &options, Ar0234CameraDependencies injected) {
         resources(resource, instance, active_round, "destroyed");
     }
     checked(frames); checked(rounds); checked(resource);
-    for (auto *stream : {&config_file, &frames, &rounds, &resource, &triggers}) {
+    for (auto *stream : {&config_file, &frames, &rounds, &resource, &triggers, &warmup, &capture}) {
         stream->close();
         if (!*stream) { throw std::runtime_error("Report close failed"); }
     }

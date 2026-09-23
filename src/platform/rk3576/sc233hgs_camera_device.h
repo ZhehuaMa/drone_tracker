@@ -22,6 +22,7 @@ public:
     Sc233hgsCameraDevice &operator=(const Sc233hgsCameraDevice &) = delete;
 
 protected:
+    bool needsTimestampWarmup() const override { return true; }
     /** @brief SC233HGS 不需要 media-ctl 配置或控制项读写，直接使用已就绪的采集节点。 */
     void configureSensor() override;
     std::uint32_t pixelFormat() const override;

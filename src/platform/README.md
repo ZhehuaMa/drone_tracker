@@ -508,3 +508,39 @@ ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: OFF}'
 相机 `need_save=true` 在初始化时失败，不创建部分 ROS bag 或录像。视频及 Jetson 记录行为保持不变。图像使用原帧时间，预测框使用当前预测时间；六个原有输入输出话题及状态数值保持不变。
 
 本变更的构建、无设备测试及暂缓实机项目见 [ROS 相机实施记录](../../openspec/changes/integrate-rk3576-ros-camera/validation.md)。历史连续相机和 shell 触发记录不能替代新实现验收；模型质量、曝光同步、Jetson 等价性及前序回放 7.2、7.3 的结论保持不变。
+
+### SC233HGS 启动时间戳预热
+
+SC233HGS 每次成功开流后，先观察驱动时间，再交付图像。固定规则为：
+
+- 开流后的单调时钟期限为 2 秒，最多检查 120 个成功出队缓冲。
+- 连续 8 帧时间严格递增才开始输出。第 8 帧就是首个合格帧。
+- 预热时允许相等时间，但会将连续计数重置为 1。此前观察帧归还驱动，不复制灰度图像，也不进入跟踪队列。
+- 到期优先于就绪；第 120 帧若在期限内达到连续条件，允许成功。否则归还后失败，不读取第 121 个观察帧。
+- OFF 可唤醒等待；已观察到停止请求时优先停止。新轮重新计时和计数，模型跨轮复用。
+
+例如时间为 `100,100,117,117,134,151,168,185,202,219,236` 微秒时，前十帧被丢弃，第十一帧输出 `236 + 本轮固定偏移`。预热结束不重新采样偏移，不按帧率补时间，也不对重复时间人工加一。未知时钟域继续使用既有 `dequeue_fallback`：时间仅表示主机取得帧的时刻。AR0234 不启用此观察期。
+
+预热只判断时间连续递增，不证明曝光、亮度、对焦或驱动内部问题已经修复。正常输出阶段的重复，以及任意阶段的倒退、非法时间、溢出、时钟策略改变、序号重复或倒退，仍终止本轮。向前序号缺口单独计数，不重置连续计数。错误区分采集无帧超时、预热时间超限、预热检查量超限和致命元数据错误。
+
+节点每秒最多一次输出常规汇总，阶段转换和结束另行报告。`first=unknown` 表示尚未交付首帧。首帧延迟从成功开流后的单调时刻计量，不含模型初始化和开流前配置时间。`CameraCaptureStatus` 是普通 C++ 诊断快照，其中：
+
+- `dequeued_total` 是全部成功出队，`warmup_examined` 是预热检查量。
+- `warmup_discarded` 是已成功归还的观察帧，`terminal_discarded` 是因失败或取消未交付的出队帧。
+- `read` 是合格帧，`enqueued` 是成功入队，`dropped` 是队列满丢弃。序号缺口不属于出队量。
+- 清理后应满足 `dequeued_total = warmup_discarded + read + terminal_discarded`，以及 `read = enqueued + dropped`。
+- `resources_reclaimed=false` 表示清理尚未确认成功，不能只凭计数对账宣称设备已释放。
+
+独立工具保留原名称 `ar0234_camera_source_driver`，通过 `--sensor-model sc233hgs` 选择型号。它经公共帧源接口采集，不依赖模型或显示。新增 `warmup.csv` 保存每轮最多 120 条原始元数据，在轮次结束后统一导出；新增 `capture.csv` 保存预热汇总、首帧身份和资源回收状态。没有首帧时使用 `unknown`。原 `frames.csv` 仅保存合格帧，包含队列满丢弃帧。
+
+先按本地约定复核设备和占用，再使用实际节点运行。例如本次生产板确认的节点为 `/dev/video22`：
+
+```bash
+./ar0234_camera_source_driver --sensor-model sc233hgs \
+  --video-device /dev/video22 --media-device /dev/media2 \
+  --sensor-entity 'm00_b_sc233hgs 0-0030' \
+  --width 1920 --height 1200 --fps 60 \
+  --frames 60 --rounds 20 --output warmup-rounds
+```
+
+不要用启动短测替代 100 次新建销毁、20 分钟持续采集或正式模型 ROS 验收。此变更不实施录像；未来录像分流只能位于同一预热合格边界之后。部署与回滚范围是应用程序，系统 RKNN Runtime 保持不变；回滚旧程序仍会恢复其启动重复时间失败限制。
