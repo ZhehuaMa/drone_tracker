@@ -1,0 +1,649 @@
+OSD exclusive DRM ownership verified: device=/dev/dri/card0 pid=22108 owner_tid=22120 master=y clients=1 evidence=/sys/kernel/debug/dri/0/clients
+rga_api version 1.10.5_[9]
+OSD HDMI HDMI-A-1 720x480 refresh_hz=60
+[INFO] [1790152092.606971978] [drone_tracker_node]: Opening video file: /home/hzhy/drone-tracker-osd-final-20260923/boundary.mov
+rk3576 video [/home/hzhy/drone-tracker-osd-final-20260923/boundary.mov] state=0 frame=1 pts=0 read=0 enqueued=0 dropped=0 reason=
+[INFO] [1790152092.620531157] [drone_tracker_node]: Camera Intrinsics: fx=800.00, fy=810.00, px=320.00, py=240.00
+[INFO] [1790152092.620688635] [drone_tracker_node]: Camera FOV: horizontal=43.66 deg, vertical=32.94 deg
+Package share directory: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker
+yolo
+model=/home/hzhy/drone-tracker-osd-20260923/models/yolo.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 images [1,640,640,3,] rank=4 type=INT8 format=NHWC quant=AFFINE zp=-128 scale=0.00392157 elems=1228800 bytes=1228800 w_stride=640 h_stride=0 size_with_stride=1228800 pass_through=0 fl=0
+output #0 /model.22/cv2.0/cv2.0.2/Conv_output_0 [1,64,80,80,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=43 scale=0.525238 elems=409600 bytes=409600 w_stride=0 h_stride=0 size_with_stride=409600 pass_through=0 fl=0
+output #1 /model.22/cv3.0/cv3.0.2/Conv_output_0 [1,4,80,80,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=25600 bytes=51200 w_stride=0 h_stride=0 size_with_stride=102400 pass_through=0 fl=0
+output #2 /model.22/cv2.1/cv2.1.2/Conv_output_0 [1,64,40,40,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=91 scale=0.995673 elems=102400 bytes=102400 w_stride=0 h_stride=0 size_with_stride=122880 pass_through=0 fl=0
+output #3 /model.22/cv3.1/cv3.1.2/Conv_output_0 [1,4,40,40,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6400 bytes=12800 w_stride=0 h_stride=0 size_with_stride=25600 pass_through=0 fl=0
+output #4 /model.22/cv2.2/cv2.2.2/Conv_output_0 [1,64,20,20,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=-12 scale=0.368377 elems=25600 bytes=25600 w_stride=0 h_stride=0 size_with_stride=40960 pass_through=0 fl=0
+output #5 /model.22/cv3.2/cv3.2.2/Conv_output_0 [1,4,20,20,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=1600 bytes=3200 w_stride=0 h_stride=0 size_with_stride=7680 pass_through=0 fl=0
+C=4
+submission: UINT8 NHWC [1,640,640,3], 1228800 bytes, pass_through=0; Runtime performs input conversion
+compatibility requires mean=0/std=255 (not verified by attribute query)
+template Backbone
+model=/home/hzhy/drone-tracker-osd-20260923/models/fp16/template_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,127,127,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=48387 bytes=96774 w_stride=128 h_stride=0 size_with_stride=97536 pass_through=0 fl=0
+output #0 output [1,96,8,8,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=0 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+search Backbone
+model=/home/hzhy/drone-tracker-osd-20260923/models/fp16/search_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,255,255,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=195075 bytes=390150 w_stride=256 h_stride=0 size_with_stride=391680 pass_through=0 fl=0
+output #0 output [1,96,16,16,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=0 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+Head
+model=/home/hzhy/drone-tracker-osd-20260923/models/fp16/head.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input1 [1,8,8,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=8 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+input #1 input2 [1,16,16,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=16 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+output #0 output1 [1,2,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=450 bytes=900 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+output #1 output2 [1,4,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=900 bytes=1800 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+roles: template_input=0 search_input=1 classification_output=0 location_output=1
+submission: Float32, pass_through=0, native logical layout; outputs: want_float=1
+YOLO worker thread started.
+[INFO] [1790152092.719239194] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=2 rejected=0
+[INFO] [1790152093.753710216] [drone_tracker_node]: Round starting
+rk3576 video [/home/hzhy/drone-tracker-osd-final-20260923/boundary.mov] state=1 frame=1 pts=0 read=0 enqueued=0 dropped=0 reason=
+[INFO] [1790152093.807107225] [drone_tracker_node]: OSD submitted=2 replaced=0 displayed=0 commits=12 rejected=0
+[INFO] [1790152093.807294927] [drone_tracker_node]: OSD submit_calls=2 submit_mean_us=3.835 submit_max_us=4.308
+[INFO] [1790152094.807172756] [drone_tracker_node]: OSD submitted=32 replaced=0 displayed=31 commits=43 rejected=0
+[INFO] [1790152094.807484886] [drone_tracker_node]: OSD submit_calls=32 submit_mean_us=12.559 submit_max_us=23.196
+[INFO] [1790152095.907185996] [drone_tracker_node]: OSD submitted=65 replaced=0 displayed=64 commits=76 rejected=0
+[INFO] [1790152095.907468496] [drone_tracker_node]: OSD submit_calls=65 submit_mean_us=13.557 submit_max_us=23.196
+rk3576 video [/home/hzhy/drone-tracker-osd-final-20260923/boundary.mov] state=3 frame=90 pts=2966637 read=90 enqueued=90 dropped=0 reason=Demux EOF
+[INFO] [1790152096.753644122] [drone_tracker_node]: Input ended: EOF
+Average tracking time per frame: 0.03 ms
+[INFO] [1790152097.007103675] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=105 rejected=0
+[INFO] [1790152097.007336021] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152098.107038364] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=114 rejected=0
+[INFO] [1790152098.107240759] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152099.107078695] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=123 rejected=0
+[INFO] [1790152099.107284717] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152100.207033808] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=132 rejected=0
+[INFO] [1790152100.207239850] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152101.307111136] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=141 rejected=0
+[INFO] [1790152101.307386536] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152102.407018490] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=151 rejected=0
+[INFO] [1790152102.407220530] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152103.407051945] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=159 rejected=0
+[INFO] [1790152103.407277217] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152104.507010921] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=169 rejected=0
+[INFO] [1790152104.507210727] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152105.507037806] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=178 rejected=0
+[INFO] [1790152105.507255974] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152106.607000836] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=187 rejected=0
+[INFO] [1790152106.607199742] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152107.707019651] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=196 rejected=0
+[INFO] [1790152107.707262891] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152108.806990622] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=206 rejected=0
+[INFO] [1790152108.807188625] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152109.807112873] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=214 rejected=0
+[INFO] [1790152109.807374381] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152110.906980832] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=224 rejected=0
+[INFO] [1790152110.907193472] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152111.907011062] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=232 rejected=0
+[INFO] [1790152111.907206196] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152113.006968161] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=242 rejected=0
+[INFO] [1790152113.007165930] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152114.007006911] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=251 rejected=0
+[INFO] [1790152114.007206877] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152115.106962126] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=260 rejected=0
+[INFO] [1790152115.107160691] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152116.107008615] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=269 rejected=0
+[INFO] [1790152116.107219908] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152117.206962208] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=278 rejected=0
+[INFO] [1790152117.207170720] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152118.206978396] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=287 rejected=0
+[INFO] [1790152118.207174041] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152119.306939686] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=296 rejected=0
+[INFO] [1790152119.307135013] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152120.306982035] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=305 rejected=0
+[INFO] [1790152120.307177750] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152121.406933993] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=314 rejected=0
+[INFO] [1790152121.407170925] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152122.406941859] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=323 rejected=0
+[INFO] [1790152122.407154130] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152123.406976779] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=331 rejected=0
+[INFO] [1790152123.407163829] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152124.506935055] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=341 rejected=0
+[INFO] [1790152124.507132225] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152125.606912697] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=350 rejected=0
+[INFO] [1790152125.607108761] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152126.606914654] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=359 rejected=0
+[INFO] [1790152126.607151347] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152127.706908472] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=368 rejected=0
+[INFO] [1790152127.707137672] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152128.806847797] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=378 rejected=0
+[INFO] [1790152128.807033994] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152129.806900624] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=386 rejected=0
+[INFO] [1790152129.807106970] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152130.806966317] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=395 rejected=0
+[INFO] [1790152130.807182780] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152131.906886583] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=404 rejected=0
+[INFO] [1790152131.907096870] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152133.006887889] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=414 rejected=0
+[INFO] [1790152133.007097129] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152134.106880038] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=423 rejected=0
+[INFO] [1790152134.107086849] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152135.206918030] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=433 rejected=0
+[INFO] [1790152135.207119297] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152136.306847546] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=442 rejected=0
+[INFO] [1790152136.307045651] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152137.306896068] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=451 rejected=0
+[INFO] [1790152137.307101936] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152138.406857704] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=460 rejected=0
+[INFO] [1790152138.407055997] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152139.506905665] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=470 rejected=0
+[INFO] [1790152139.507116426] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152140.606846693] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=479 rejected=0
+[INFO] [1790152140.607046117] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152141.606877947] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=488 rejected=0
+[INFO] [1790152141.607078510] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152142.706841796] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=497 rejected=0
+[INFO] [1790152142.707046234] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152143.706865200] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=506 rejected=0
+[INFO] [1790152143.707065229] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152144.806825674] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=515 rejected=0
+[INFO] [1790152144.807021452] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152145.806863161] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=524 rejected=0
+[INFO] [1790152145.807068603] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152146.906821876] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=533 rejected=0
+[INFO] [1790152146.907019759] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152148.006884330] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=543 rejected=0
+[INFO] [1790152148.007087147] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152149.106810302] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=552 rejected=0
+[INFO] [1790152149.107006865] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152150.206877299] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=561 rejected=0
+[INFO] [1790152150.207116801] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152151.306806695] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=571 rejected=0
+[INFO] [1790152151.307014984] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152152.306866617] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=579 rejected=0
+[INFO] [1790152152.307117722] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152153.406790866] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=589 rejected=0
+[INFO] [1790152153.406989549] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152154.406823996] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=597 rejected=0
+[INFO] [1790152154.407017470] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152155.506786379] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=607 rejected=0
+[INFO] [1790152155.506981997] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152156.506826148] [drone_tracker_node]: OSD submitted=90 replaced=0 displayed=90 commits=616 rejected=0
+[INFO] [1790152156.507023000] [drone_tracker_node]: OSD submit_calls=90 submit_mean_us=14.143 submit_max_us=25.748
+[INFO] [1790152157.245982382] [drone_tracker_node]: Round starting
+rk3576 video [/home/hzhy/drone-tracker-osd-final-20260923/boundary.mov] state=1 frame=1 pts=0 read=0 enqueued=0 dropped=0 reason=
+[INFO] [1790152157.506834243] [drone_tracker_node]: OSD submitted=98 replaced=0 displayed=97 commits=630 rejected=0
+[INFO] [1790152157.507014957] [drone_tracker_node]: OSD submit_calls=98 submit_mean_us=13.832 submit_max_us=25.748
+[INFO] [1790152158.606899759] [drone_tracker_node]: OSD submitted=131 replaced=0 displayed=130 commits=663 rejected=0
+[INFO] [1790152158.607144243] [drone_tracker_node]: OSD submit_calls=131 submit_mean_us=13.595 submit_max_us=25.748
+[INFO] [1790152159.706832402] [drone_tracker_node]: OSD submitted=164 replaced=0 displayed=163 commits=696 rejected=0
+[INFO] [1790152159.707041068] [drone_tracker_node]: OSD submit_calls=164 submit_mean_us=13.596 submit_max_us=25.748
+rk3576 video [/home/hzhy/drone-tracker-osd-final-20260923/boundary.mov] state=3 frame=90 pts=2966637 read=90 enqueued=90 dropped=0 reason=Demux EOF
+[INFO] [1790152160.247008173] [drone_tracker_node]: Input ended: EOF
+Average tracking time per frame: 0.03 ms
+[INFO] [1790152160.806780134] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=718 rejected=0
+[INFO] [1790152160.806955300] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152161.906808442] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=728 rejected=0
+[INFO] [1790152161.907078870] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152163.006747028] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=737 rejected=0
+[INFO] [1790152163.006958070] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152164.106804446] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=747 rejected=0
+[INFO] [1790152164.107005786] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152165.206736805] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=756 rejected=0
+[INFO] [1790152165.206934686] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152166.206770131] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=765 rejected=0
+[INFO] [1790152166.206965932] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152167.306723967] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=774 rejected=0
+[INFO] [1790152167.306927406] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152168.306769783] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=783 rejected=0
+[INFO] [1790152168.306960706] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152169.406723223] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=792 rejected=0
+[INFO] [1790152169.406933824] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152170.506769563] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=801 rejected=0
+[INFO] [1790152170.506965143] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152171.606691756] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=811 rejected=0
+[INFO] [1790152171.606890577] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152172.606757517] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=820 rejected=0
+[INFO] [1790152172.606968741] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152173.706686225] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=829 rejected=0
+[INFO] [1790152173.706885944] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152174.706741798] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=838 rejected=0
+[INFO] [1790152174.706950853] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152175.806682101] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=847 rejected=0
+[INFO] [1790152175.806880830] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152176.806748551] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=856 rejected=0
+[INFO] [1790152176.806959432] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152177.806771392] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=864 rejected=0
+[INFO] [1790152177.806987023] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152178.906717709] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=874 rejected=0
+[INFO] [1790152178.906926589] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152180.006680268] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=883 rejected=0
+[INFO] [1790152180.006893565] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152181.106586197] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=892 rejected=0
+[INFO] [1790152181.106788084] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152182.106667037] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=901 rejected=0
+[INFO] [1790152182.106864701] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152183.106675645] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=910 rejected=0
+[INFO] [1790152183.106882831] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152184.206655763] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=919 rejected=0
+[INFO] [1790152184.206852620] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152185.306597862] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=929 rejected=0
+[INFO] [1790152185.306781394] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152186.306636573] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=937 rejected=0
+[INFO] [1790152186.306840626] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152187.306638045] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=946 rejected=0
+[INFO] [1790152187.306839844] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152188.306645447] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=954 rejected=0
+[INFO] [1790152188.306842136] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152189.406635800] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=964 rejected=0
+[INFO] [1790152189.406836213] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152190.406654006] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=972 rejected=0
+[INFO] [1790152190.406876065] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152191.506626329] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=982 rejected=0
+[INFO] [1790152191.506836304] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152192.506724261] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=990 rejected=0
+[INFO] [1790152192.506976509] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152193.606619187] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1000 rejected=0
+[INFO] [1790152193.606818079] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152194.606712872] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1008 rejected=0
+[INFO] [1790152194.606945630] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152195.706612510] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1018 rejected=0
+[INFO] [1790152195.706810252] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152196.706640306] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1026 rejected=0
+[INFO] [1790152196.706847337] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152197.806594388] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1036 rejected=0
+[INFO] [1790152197.806797812] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152198.806645964] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1045 rejected=0
+[INFO] [1790152198.806886221] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152199.906598525] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1054 rejected=0
+[INFO] [1790152199.906792584] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152200.906634383] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1063 rejected=0
+[INFO] [1790152200.906836893] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152202.006591096] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1072 rejected=0
+[INFO] [1790152202.006783761] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152203.006612605] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1081 rejected=0
+[INFO] [1790152203.006819791] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152204.106584876] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1090 rejected=0
+[INFO] [1790152204.106781673] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152205.106606105] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1099 rejected=0
+[INFO] [1790152205.106804707] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152206.206602999] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1108 rejected=0
+[INFO] [1790152206.206794875] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152207.306591918] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1118 rejected=0
+[INFO] [1790152207.306797912] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152208.406547340] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1127 rejected=0
+[INFO] [1790152208.406742331] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152209.406548647] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1136 rejected=0
+[INFO] [1790152209.406748360] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152210.506537001] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1145 rejected=0
+[INFO] [1790152210.506735478] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152211.506539746] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1154 rejected=0
+[INFO] [1790152211.506738729] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152212.606536969] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1163 rejected=0
+[INFO] [1790152212.606732576] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152213.706565145] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1172 rejected=0
+[INFO] [1790152213.706758171] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152214.806547262] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1182 rejected=0
+[INFO] [1790152214.806739496] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152215.806570531] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1191 rejected=0
+[INFO] [1790152215.806769714] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152216.906513812] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1200 rejected=0
+[INFO] [1790152216.906709554] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152217.906560280] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1209 rejected=0
+[INFO] [1790152217.906767643] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152219.006506571] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1218 rejected=0
+[INFO] [1790152219.006707681] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152220.006532611] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1227 rejected=0
+[INFO] [1790152220.006726576] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152220.765555715] [drone_tracker_node]: Round starting
+rk3576 video [/home/hzhy/drone-tracker-osd-final-20260923/boundary.mov] state=4 frame=0 pts=missing read=0 enqueued=0 dropped=0 reason=Input must be a local regular file
+[ERROR] [1790152220.768902796] [drone_tracker_node]: Round failed: Input start failed [/home/hzhy/drone-tracker-osd-final-20260923/boundary.mov]: Input must be a local regular file
+[INFO] [1790152221.106494149] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1236 rejected=0
+[INFO] [1790152221.106692182] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152222.106496813] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1245 rejected=0
+[INFO] [1790152222.106689440] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152223.206484074] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1254 rejected=0
+[INFO] [1790152223.206690035] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152224.206530998] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1263 rejected=0
+[INFO] [1790152224.206725616] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152225.306469611] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1272 rejected=0
+[INFO] [1790152225.306699126] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152226.406473955] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1282 rejected=0
+[INFO] [1790152226.406672733] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152227.506468761] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1291 rejected=0
+[INFO] [1790152227.506680055] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152228.606493642] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1301 rejected=0
+[INFO] [1790152228.606697382] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152229.706454147] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1310 rejected=0
+[INFO] [1790152229.706651706] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152230.706513047] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1319 rejected=0
+[INFO] [1790152230.706708441] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152231.806445515] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1328 rejected=0
+[INFO] [1790152231.806645710] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152232.906489659] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1338 rejected=0
+[INFO] [1790152232.906694565] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152234.006435533] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1347 rejected=0
+[INFO] [1790152234.006684439] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152235.006473910] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1356 rejected=0
+[INFO] [1790152235.006669189] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152236.106451151] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1365 rejected=0
+[INFO] [1790152236.106650575] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152237.106456946] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1374 rejected=0
+[INFO] [1790152237.106657833] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152238.206465803] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1383 rejected=0
+[INFO] [1790152238.206670816] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152239.306283298] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1392 rejected=0
+[INFO] [1790152239.306502672] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152240.306435138] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1401 rejected=0
+[INFO] [1790152240.306633771] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152241.406424273] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1411 rejected=0
+[INFO] [1790152241.406626602] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152242.506407924] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1420 rejected=0
+[INFO] [1790152242.506612123] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152243.606500461] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1429 rejected=0
+[INFO] [1790152243.606746352] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152244.706394856] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1439 rejected=0
+[INFO] [1790152244.706593059] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152245.706544160] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1447 rejected=0
+[INFO] [1790152245.706862891] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152246.806387565] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1457 rejected=0
+[INFO] [1790152246.806584876] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152247.806434183] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1465 rejected=0
+[INFO] [1790152247.806683227] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152248.906382426] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1475 rejected=0
+[INFO] [1790152248.906583978] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152249.906419622] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1484 rejected=0
+[INFO] [1790152249.906617410] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152251.006372145] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1493 rejected=0
+[INFO] [1790152251.006569598] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152252.006402892] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1502 rejected=0
+[INFO] [1790152252.006601351] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152253.106380521] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1511 rejected=0
+[INFO] [1790152253.106592033] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152254.106429704] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1520 rejected=0
+[INFO] [1790152254.106628737] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152255.206253282] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1529 rejected=0
+[INFO] [1790152255.206460401] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152256.206481590] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1538 rejected=0
+[INFO] [1790152256.206683165] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152257.306467664] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1547 rejected=0
+[INFO] [1790152257.306673906] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152258.306550026] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1556 rejected=0
+[INFO] [1790152258.306753226] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152259.406529047] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1565 rejected=0
+[INFO] [1790152259.406728039] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152260.506581345] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1575 rejected=0
+[INFO] [1790152260.506783405] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152261.606574539] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1584 rejected=0
+[INFO] [1790152261.606773273] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152262.606629825] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1593 rejected=0
+[INFO] [1790152262.606837937] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152263.706625121] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1602 rejected=0
+[INFO] [1790152263.706825494] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152264.706644809] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1611 rejected=0
+[INFO] [1790152264.706879790] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152265.706670749] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1619 rejected=0
+[INFO] [1790152265.706870165] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152266.706695880] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1628 rejected=0
+[INFO] [1790152266.706899259] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152267.706740472] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1636 rejected=0
+[INFO] [1790152267.706955651] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152268.806722136] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1646 rejected=0
+[INFO] [1790152268.806924030] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152269.806827414] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1654 rejected=0
+[INFO] [1790152269.807113613] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152270.906795697] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1664 rejected=0
+[INFO] [1790152270.907151190] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152271.906799349] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1672 rejected=0
+[INFO] [1790152271.907002085] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152272.906892933] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1681 rejected=0
+[INFO] [1790152272.907092767] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152273.906907001] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1690 rejected=0
+[INFO] [1790152273.907111621] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152275.006895942] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1699 rejected=0
+[INFO] [1790152275.007095335] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152276.006925299] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1708 rejected=0
+[INFO] [1790152276.007127508] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152277.006953613] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1716 rejected=0
+[INFO] [1790152277.007146273] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152278.006963324] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1725 rejected=0
+[INFO] [1790152278.007172186] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152279.007065531] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1733 rejected=0
+[INFO] [1790152279.007309162] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152280.107014063] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1743 rejected=0
+[INFO] [1790152280.107210954] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152281.107070937] [drone_tracker_node]: OSD submitted=180 replaced=0 displayed=180 commits=1751 rejected=0
+[INFO] [1790152281.107267571] [drone_tracker_node]: OSD submit_calls=180 submit_mean_us=13.704 submit_max_us=25.748
+[INFO] [1790152281.261102012] [drone_tracker_node]: Round starting
+rk3576 video [/home/hzhy/drone-tracker-osd-final-20260923/boundary.mov] state=1 frame=1 pts=0 read=0 enqueued=0 dropped=0 reason=
+[INFO] [1790152282.107161151] [drone_tracker_node]: OSD submitted=206 replaced=0 displayed=205 commits=1779 rejected=0
+[INFO] [1790152282.107428616] [drone_tracker_node]: OSD submit_calls=206 submit_mean_us=13.552 submit_max_us=25.748
+Average tracking time per frame: 0.03 ms
+[INFO] [1790152282.338860443] [drone_tracker_node]: Round ended: stop requested
+rk3576 video [/home/hzhy/drone-tracker-osd-final-20260923/boundary.mov] state=2 frame=33 pts=1066656 read=33 enqueued=33 dropped=0 reason=Stopped by caller
+[INFO] [1790152283.207096031] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1794 rejected=0
+[INFO] [1790152283.207288553] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152284.307120520] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1803 rejected=0
+[INFO] [1790152284.307330594] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152285.307148074] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1812 rejected=0
+[INFO] [1790152285.307347357] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152286.307237569] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1820 rejected=0
+[INFO] [1790152286.307490751] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152287.407195964] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1830 rejected=0
+[INFO] [1790152287.407439901] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152288.407254868] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1838 rejected=0
+[INFO] [1790152288.407472333] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152289.507242621] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1848 rejected=0
+[INFO] [1790152289.507459127] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152290.507327432] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1856 rejected=0
+[INFO] [1790152290.507533373] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152291.607292511] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1866 rejected=0
+[INFO] [1790152291.607497281] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152292.607370803] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1875 rejected=0
+[INFO] [1790152292.607613589] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152293.707357440] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1884 rejected=0
+[INFO] [1790152293.707557784] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152294.707410891] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1893 rejected=0
+[INFO] [1790152294.707614227] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152295.807410138] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1902 rejected=0
+[INFO] [1790152295.807609984] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152296.807426399] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1911 rejected=0
+[INFO] [1790152296.807625378] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152297.807449190] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1919 rejected=0
+[INFO] [1790152297.807681847] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152298.807486312] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1928 rejected=0
+[INFO] [1790152298.807679842] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152299.807507642] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1936 rejected=0
+[INFO] [1790152299.807731648] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152300.807523483] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1945 rejected=0
+[INFO] [1790152300.807726606] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152301.807582321] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1954 rejected=0
+[INFO] [1790152301.807779823] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152302.907565059] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1963 rejected=0
+[INFO] [1790152302.907807371] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152303.907625107] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1972 rejected=0
+[INFO] [1790152303.907829799] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152305.007614777] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1981 rejected=0
+[INFO] [1790152305.007862989] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152306.007639599] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1990 rejected=0
+[INFO] [1790152306.007840053] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152307.007665171] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=1998 rejected=0
+[INFO] [1790152307.007868095] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152308.007710035] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2007 rejected=0
+[INFO] [1790152308.007982115] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152309.007737996] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2015 rejected=0
+[INFO] [1790152309.007934378] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152310.007738042] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2024 rejected=0
+[INFO] [1790152310.007939093] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152311.007799408] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2033 rejected=0
+[INFO] [1790152311.008002836] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152312.007856539] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2041 rejected=0
+[INFO] [1790152312.008050280] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152313.107851199] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2051 rejected=0
+[INFO] [1790152313.108104546] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152314.207837632] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2060 rejected=0
+[INFO] [1790152314.208038804] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152315.207860705] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2069 rejected=0
+[INFO] [1790152315.208057593] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152316.207887272] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2077 rejected=0
+[INFO] [1790152316.208088269] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152317.207914851] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2086 rejected=0
+[INFO] [1790152317.208116065] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152318.207959582] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2094 rejected=0
+[INFO] [1790152318.208195613] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152319.307959964] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2104 rejected=0
+[INFO] [1790152319.308158890] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152320.307966141] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2112 rejected=0
+[INFO] [1790152320.308206385] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152321.308011918] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2121 rejected=0
+[INFO] [1790152321.308205005] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152322.308036428] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2130 rejected=0
+[INFO] [1790152322.308235690] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152323.308056978] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2138 rejected=0
+[INFO] [1790152323.308293194] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152324.308133601] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2147 rejected=0
+[INFO] [1790152324.308334911] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152325.408100628] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2156 rejected=0
+[INFO] [1790152325.408309156] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152326.408135933] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2165 rejected=0
+[INFO] [1790152326.408342851] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152327.408175618] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2173 rejected=0
+[INFO] [1790152327.408435599] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152328.408177548] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2182 rejected=0
+[INFO] [1790152328.408434527] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152329.408240781] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2191 rejected=0
+[INFO] [1790152329.408454248] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152330.508229625] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2200 rejected=0
+[INFO] [1790152330.508438713] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152331.508250121] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2209 rejected=0
+[INFO] [1790152331.508457428] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152332.508276881] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2217 rejected=0
+[INFO] [1790152332.508484286] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152333.508327646] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2226 rejected=0
+[INFO] [1790152333.508589832] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152334.508351730] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2234 rejected=0
+[INFO] [1790152334.508549527] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152335.508357913] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2243 rejected=0
+[INFO] [1790152335.508557731] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152336.508434756] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2252 rejected=0
+[INFO] [1790152336.508637113] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152337.608406819] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2261 rejected=0
+[INFO] [1790152337.608607520] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152338.608475373] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2270 rejected=0
+[INFO] [1790152338.608717202] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152339.708446927] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2279 rejected=0
+[INFO] [1790152339.708645961] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152340.708472106] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2288 rejected=0
+[INFO] [1790152340.708755892] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152341.708504790] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2296 rejected=0
+[INFO] [1790152341.708703795] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152342.708536074] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2305 rejected=0
+[INFO] [1790152342.708735599] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152343.708549376] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2313 rejected=0
+[INFO] [1790152343.708805770] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152344.708570679] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2322 rejected=0
+[INFO] [1790152344.708770973] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152345.708594788] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2331 rejected=0
+[INFO] [1790152345.708794534] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152346.708621904] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2339 rejected=0
+[INFO] [1790152346.708822807] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152347.708643734] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2348 rejected=0
+[INFO] [1790152347.708844140] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152348.708674406] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2356 rejected=0
+[INFO] [1790152348.708932320] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152349.708692684] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2365 rejected=0
+[INFO] [1790152349.708886671] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152350.708763005] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2374 rejected=0
+[INFO] [1790152350.708969827] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152351.808745064] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2383 rejected=0
+[INFO] [1790152351.808944284] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152352.808817936] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2392 rejected=0
+[INFO] [1790152352.809017753] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152353.908789907] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2401 rejected=0
+[INFO] [1790152353.909030027] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152354.908856919] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2410 rejected=0
+[INFO] [1790152354.909060187] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152356.008843133] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2419 rejected=0
+[INFO] [1790152356.009043233] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152357.008863814] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2428 rejected=0
+[INFO] [1790152357.009065909] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152358.008893951] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2436 rejected=0
+[INFO] [1790152358.009157343] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152359.008919359] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2445 rejected=0
+[INFO] [1790152359.009121267] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152360.008954534] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2453 rejected=0
+[INFO] [1790152360.009164474] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152361.008961264] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2462 rejected=0
+[INFO] [1790152361.009171666] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152362.008988567] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2471 rejected=0
+[INFO] [1790152362.009189016] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152363.009013382] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2479 rejected=0
+[INFO] [1790152363.009260532] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152364.009034088] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2488 rejected=0
+[INFO] [1790152364.009235486] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152365.009060424] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2496 rejected=0
+[INFO] [1790152365.009262534] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152366.109085238] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2506 rejected=0
+[INFO] [1790152366.109288693] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152367.109114402] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2514 rejected=0
+[INFO] [1790152367.109347303] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152368.109138811] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2523 rejected=0
+[INFO] [1790152368.109389583] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152369.109203395] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2532 rejected=0
+[INFO] [1790152369.109437796] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152370.209256958] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2541 rejected=0
+[INFO] [1790152370.209498485] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152371.209258320] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2550 rejected=0
+[INFO] [1790152371.209484367] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152372.309236442] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2559 rejected=0
+[INFO] [1790152372.309454933] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152373.309262799] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2568 rejected=0
+[INFO] [1790152373.309478920] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152374.309283840] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2576 rejected=0
+[INFO] [1790152374.309491454] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152375.309366482] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2585 rejected=0
+[INFO] [1790152375.309552800] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152376.409342605] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2594 rejected=0
+[INFO] [1790152376.409545593] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152377.409362060] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2603 rejected=0
+[INFO] [1790152377.409562825] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152378.409488026] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2611 rejected=0
+[INFO] [1790152378.409734737] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152379.509414237] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2621 rejected=0
+[INFO] [1790152379.509613633] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152380.509546681] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2629 rejected=0
+[INFO] [1790152380.509922269] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152381.609515367] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2639 rejected=0
+[INFO] [1790152381.609724962] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152382.609548870] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2647 rejected=0
+[INFO] [1790152382.609742965] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152383.709513078] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2657 rejected=0
+[INFO] [1790152383.709711844] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152384.709582442] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2666 rejected=0
+[INFO] [1790152384.709785300] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152385.709596356] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2674 rejected=0
+[INFO] [1790152385.709828232] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152386.809621216] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2684 rejected=0
+[INFO] [1790152386.809824572] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152387.909609561] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2693 rejected=0
+[INFO] [1790152387.909810796] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152388.909634162] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2702 rejected=0
+[INFO] [1790152388.909833835] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152389.909657411] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2710 rejected=0
+[INFO] [1790152389.909856748] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152390.909680676] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2719 rejected=0
+[INFO] [1790152390.909919800] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152391.909706502] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2727 rejected=0
+[INFO] [1790152391.909922456] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152392.909712572] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2736 rejected=0
+[INFO] [1790152392.909905743] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152393.909775696] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2745 rejected=0
+[INFO] [1790152393.910028849] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152394.909781882] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2753 rejected=0
+[INFO] [1790152394.909981367] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152395.909802739] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2762 rejected=0
+[INFO] [1790152395.910056669] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152396.909826523] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2770 rejected=0
+[INFO] [1790152396.910027058] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152397.909858244] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2779 rejected=0
+[INFO] [1790152397.910048656] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152399.009873654] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2788 rejected=0
+[INFO] [1790152399.010073197] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152400.009899008] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2797 rejected=0
+[INFO] [1790152400.010098055] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152401.009972772] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2806 rejected=0
+[INFO] [1790152401.010233169] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152402.109950525] [drone_tracker_node]: OSD submitted=212 replaced=0 displayed=212 commits=2815 rejected=0
+[INFO] [1790152402.110150670] [drone_tracker_node]: OSD submit_calls=212 submit_mean_us=13.544 submit_max_us=25.748
+[INFO] [1790152402.766046913] [rclcpp]: signal_handler(SIGINT/SIGTERM)

@@ -4,6 +4,18 @@ drone_tracker_node:
     need_save: false
     save_path: "/tmp/drone-recordings"
     visualized_result: true
+    # HDMI 显示独立于 ROS 调试图像；全部 osd 参数只在启动时生效。
+    osd:
+      enabled: false
+      drm_device: "/dev/dri/card0"
+      connector: "HDMI-A-1"
+      width: 720
+      height: 480
+      refresh_hz: 60.0
+      frame_stale_ms: 1000
+      telemetry_timeout_ms: 2000
+      craft_name: "FPV"
+      battery_cells: 0  # 0 表示未知，不根据电压猜测节数。
     use_history_timestamp: false
     use_sim_time: false
     # 2026-09-15 用户确认：1920×1200 图像暂用模拟内参，单位为像素。

@@ -1,0 +1,50 @@
+{
+  "mode": "load-off",
+  "input": "synthetic-640x480-20fps.avi",
+  "quality_evaluation": false,
+  "rounds": [
+    {
+      "index": 1,
+      "seconds": 40.075575462000415,
+      "messages": 800,
+      "valid_boxes": 50,
+      "stop_observed_seconds": 0.3825751479998871,
+      "begin": {
+        "t": 17973.939430628,
+        "rss_kb": 112568,
+        "threads": 18,
+        "fds": 38,
+        "cpu_seconds": 1.1,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18015.407348797,
+        "rss_kb": 126744,
+        "threads": 16,
+        "fds": 43,
+        "cpu_seconds": 41.81,
+        "boxes": 800
+      }
+    }
+  ],
+  "initial": {
+    "t": 17973.872061195,
+    "rss_kb": 103672,
+    "threads": 13,
+    "fds": 30,
+    "cpu_seconds": 1.03,
+    "boxes": 0
+  },
+  "pid": 14894,
+  "final": {
+    "t": 18015.408675829,
+    "rss_kb": 126744,
+    "threads": 16,
+    "fds": 43,
+    "cpu_seconds": 41.81,
+    "boxes": 800
+  },
+  "display_failure": false,
+  "exit_code": 0,
+  "exit_seconds": 0.31539327000064077
+}

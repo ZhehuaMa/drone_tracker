@@ -23,6 +23,8 @@
 #include "hybrid_tracker.h"
 #include "rotation_history.h"
 #include "platform/platform_factory.h"
+#include "osd/presenter.h"
+#include "osd/ros_telemetry.h"
 
 // 相机内参（仅用于从 mv_camera.* 参数推导焦距/主点填充跟踪器 KF；
 // 原 DroneEKF 已由跟踪器内置的旋转补偿 KF 取代并删除）
@@ -49,7 +51,8 @@ public:
     explicit DroneTrackerNode(const rclcpp::NodeOptions &options = rclcpp::NodeOptions{},
         std::unique_ptr<PlatformFactory> factory = {},
         std::function<std::thread(std::function<void()>)> launcher = {},
-        std::function<void(const char *)> recording_hook = {});
+        std::function<void(const char *)> recording_hook = {},
+        std::unique_ptr<osd::DisplayBackend> display_backend = {});
     ~DroneTrackerNode();
 
     void run();
@@ -64,6 +67,16 @@ private:
         this->declare_parameter<std::string>("save_path", ".");
         this->declare_parameter<bool>("visualized_result", false);
         this->declare_parameter<bool>("use_history_timestamp", false);
+        declare_parameter<bool>("osd.enabled", false);
+        declare_parameter<std::string>("osd.drm_device", "/dev/dri/card0");
+        declare_parameter<std::string>("osd.connector", "HDMI-A-1");
+        declare_parameter<int>("osd.width", 720);
+        declare_parameter<int>("osd.height", 480);
+        declare_parameter<double>("osd.refresh_hz", 60.0);
+        declare_parameter<int>("osd.frame_stale_ms", 1000);
+        declare_parameter<int>("osd.telemetry_timeout_ms", 2000);
+        declare_parameter<std::string>("osd.craft_name", "FPV");
+        declare_parameter<int>("osd.battery_cells", 0);
 
 #ifdef DRONE_TRACKER_RK3576
         this->declare_parameter<std::string>("tracker.yolo_engine", "");
@@ -125,6 +138,13 @@ private:
     }
 
     void setup(PlatformFactory &factory);
+    void setupDisplay(std::unique_ptr<osd::DisplayBackend> backend);
+    std::unique_ptr<osd::OsdPresenter> osd_presenter_{};
+    std::unique_ptr<osd::OsdTelemetryAdapter> osd_telemetry_{};
+    std::uint64_t osd_round_{}, osd_sequence_{};
+    bool osd_failure_reported_{};
+    osd::SteadyClock::time_point osd_last_report_{};
+    std::atomic<std::uint64_t> osd_submit_calls_{0}, osd_submit_ns_{0}, osd_submit_max_ns_{0};
     void worker();
     void processFrames();
     void reportAcquisition(bool final);

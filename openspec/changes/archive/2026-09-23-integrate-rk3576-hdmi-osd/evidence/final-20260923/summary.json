@@ -1,0 +1,218 @@
+{
+  "load-off": {
+    "pid": 20751,
+    "exit_code": 0,
+    "display_failure": false,
+    "rounds": 1,
+    "last_round_seconds": 60.05070790899845,
+    "messages": 1187,
+    "output_hz": 19.766627927164386,
+    "cpu_percent_one_core": 106.11533716577632,
+    "rss_range_kib": [
+      113884,
+      131992
+    ],
+    "threads_active": [
+      18
+    ],
+    "threads_idle": [
+      16
+    ],
+    "fds_idle": [
+      43
+    ],
+    "fd_transitions": [
+      {
+        "seconds": 0.22352758399938466,
+        "fds": 38
+      },
+      {
+        "seconds": 8.271883917001105,
+        "fds": 44
+      }
+    ],
+    "stop_seconds": [
+      0.46505860600154847
+    ],
+    "exit_seconds": 0.31548659699910786,
+    "unmeasured": [
+      "物理屏幕扫描频率",
+      "相机曝光到屏幕的端到端延迟",
+      "显示冻结像素出现的精确延迟",
+      "NPU 内部设备内存"
+    ]
+  },
+  "endurance": {
+    "pid": 20811,
+    "exit_code": 0,
+    "display_failure": false,
+    "rounds": 21,
+    "last_round_seconds": 610.2075396780019,
+    "messages": 12122,
+    "output_hz": 19.86537237215491,
+    "cpu_percent_one_core": 130.06294184007052,
+    "rss_range_kib": [
+      123984,
+      144188
+    ],
+    "threads_active": [
+      19
+    ],
+    "threads_idle": [
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17,
+      17
+    ],
+    "fds_idle": [
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      49,
+      55
+    ],
+    "fd_transitions": [
+      {
+        "seconds": 0.20396575500126346,
+        "fds": 50
+      },
+      {
+        "seconds": 56.18948137999905,
+        "fds": 56
+      }
+    ],
+    "stop_seconds": [
+      0.2547290719994635,
+      0.2553080059988133,
+      0.27475251799842226,
+      0.37207832500280347,
+      0.26806345200020587,
+      0.2556122640016838,
+      0.23878093600069406,
+      0.2537049359998491,
+      0.2584625679992314,
+      0.1943469850011752,
+      0.2611592620014562,
+      0.2578307889998541,
+      0.27513499300039257,
+      0.27394089099834673,
+      0.3937509690003935,
+      0.1998103620026086,
+      0.2558891600019706,
+      0.27336559100149316,
+      0.2749928590019408,
+      0.1955013910010166,
+      0.41081486199982464
+    ],
+    "exit_seconds": 0.5171247709986346,
+    "last_counters": {
+      "submitted": 13016,
+      "replaced": 0,
+      "displayed": 13000,
+      "commits": 13311,
+      "rejected": 0
+    },
+    "counter_window_seconds": 599.4132850170135,
+    "new_display_hz": 19.814375651789046,
+    "completed_commit_hz": 19.90613204320509,
+    "submit_calls": 13016.0,
+    "submit_mean_us": 14.538,
+    "submit_max_us": 86.606,
+    "unmeasured": [
+      "物理屏幕扫描频率",
+      "相机曝光到屏幕的端到端延迟",
+      "显示冻结像素出现的精确延迟",
+      "NPU 内部设备内存"
+    ]
+  },
+  "display-failure": {
+    "pid": 21274,
+    "exit_code": 0,
+    "display_failure": true,
+    "rounds": 1,
+    "last_round_seconds": 10.15199638500053,
+    "messages": 205,
+    "output_hz": 20.193072596330452,
+    "cpu_percent_one_core": 112.12974683326242,
+    "rss_range_kib": [
+      122680,
+      137012
+    ],
+    "threads_active": [
+      18,
+      19
+    ],
+    "threads_idle": [
+      16
+    ],
+    "fds_idle": [
+      39
+    ],
+    "fd_transitions": [
+      {
+        "seconds": 0.22436962900246726,
+        "fds": 50
+      },
+      {
+        "seconds": 4.523019934000331,
+        "fds": 40
+      }
+    ],
+    "stop_seconds": [
+      0.325192992000666
+    ],
+    "exit_seconds": 0.3655816890022834,
+    "last_counters": {
+      "submitted": 88,
+      "replaced": 0,
+      "displayed": 87,
+      "commits": 99,
+      "rejected": 117
+    },
+    "counter_window_seconds": 7.400211811065674,
+    "new_display_hz": 0.5405250690282575,
+    "completed_commit_hz": 0.5405250690282575,
+    "submit_calls": 205.0,
+    "submit_mean_us": 7.471,
+    "submit_max_us": 24.734,
+    "unmeasured": [
+      "物理屏幕扫描频率",
+      "相机曝光到屏幕的端到端延迟",
+      "显示冻结像素出现的精确延迟",
+      "NPU 内部设备内存"
+    ]
+  }
+}

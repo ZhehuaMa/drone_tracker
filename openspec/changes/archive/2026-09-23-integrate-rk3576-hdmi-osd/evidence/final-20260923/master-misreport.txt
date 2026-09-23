@@ -1,0 +1,6 @@
+drmIsMaster 1
+drmSetMaster 0 errno 0
+             command   pid dev master a   uid      magic
+                Xorg 19208   0   y    y     0          0
+             python3 19585   0   n    y     0          0
+

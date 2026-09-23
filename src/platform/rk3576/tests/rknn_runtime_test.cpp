@@ -174,7 +174,7 @@ void fatal(int kind) {
             fake.wait_status = -2;
         }
         if (kind == 1) {
-            fake.get_status = -1;
+            fake.run_status = -1;
             fake.wait_status = -1;
         }
         if (kind == 2) {
@@ -275,6 +275,7 @@ int main() {
         }
         if (mode == 2) {
             fake.get_status = -1;
+            fake.wait_status = -1;
         }
         if (mode == 3) {
             fake.release_status = -1;
@@ -287,7 +288,7 @@ int main() {
         require(loaded.value->execute(input).error.code == model::ModelError::NotReady, "失败后仍就绪");
         loaded.value.reset();
         require(fake.destroys == 1 && fake.releases == (mode >= 3 ? 1 : 0), "重复销毁/释放");
-        require(fake.waits == (mode == 1 || mode == 2 ? 1 : 0), "失败停止证据错误");
+        require(fake.waits == (mode == 1 ? 1 : 0), "失败停止证据错误");
     }
     for (int kind : {0, 1, 2}) {
         fatal(kind);

@@ -1,0 +1,70 @@
+OSD exclusive DRM ownership verified: device=/dev/dri/card0 pid=21274 owner_tid=21286 master=y clients=1 evidence=/sys/kernel/debug/dri/0/clients
+rga_api version 1.10.5_[9]
+OSD HDMI HDMI-A-1 720x480 refresh_hz=60
+[INFO] [1790150198.435965826] [drone_tracker_node]: Opening video file: /home/hzhy/drone-tracker-osd-20260923/synthetic-640x480-20fps.avi
+rk3576 video [/home/hzhy/drone-tracker-osd-20260923/synthetic-640x480-20fps.avi] state=0 frame=1 pts=0 read=0 enqueued=0 dropped=0 reason=
+[INFO] [1790150198.452380924] [drone_tracker_node]: Camera Intrinsics: fx=800.00, fy=810.00, px=320.00, py=240.00
+[INFO] [1790150198.452543578] [drone_tracker_node]: Camera FOV: horizontal=43.60 deg, vertical=33.01 deg
+Package share directory: /home/hzhy/drone-tracker-osd-20260923/install-on/share/drone_tracker
+yolo
+model=/home/hzhy/drone-tracker-osd-20260923/models/yolo.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 images [1,640,640,3,] rank=4 type=INT8 format=NHWC quant=AFFINE zp=-128 scale=0.00392157 elems=1228800 bytes=1228800 w_stride=640 h_stride=0 size_with_stride=1228800 pass_through=0 fl=0
+output #0 /model.22/cv2.0/cv2.0.2/Conv_output_0 [1,64,80,80,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=43 scale=0.525238 elems=409600 bytes=409600 w_stride=0 h_stride=0 size_with_stride=409600 pass_through=0 fl=0
+output #1 /model.22/cv3.0/cv3.0.2/Conv_output_0 [1,4,80,80,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=25600 bytes=51200 w_stride=0 h_stride=0 size_with_stride=102400 pass_through=0 fl=0
+output #2 /model.22/cv2.1/cv2.1.2/Conv_output_0 [1,64,40,40,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=91 scale=0.995673 elems=102400 bytes=102400 w_stride=0 h_stride=0 size_with_stride=122880 pass_through=0 fl=0
+output #3 /model.22/cv3.1/cv3.1.2/Conv_output_0 [1,4,40,40,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6400 bytes=12800 w_stride=0 h_stride=0 size_with_stride=25600 pass_through=0 fl=0
+output #4 /model.22/cv2.2/cv2.2.2/Conv_output_0 [1,64,20,20,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=-12 scale=0.368377 elems=25600 bytes=25600 w_stride=0 h_stride=0 size_with_stride=40960 pass_through=0 fl=0
+output #5 /model.22/cv3.2/cv3.2.2/Conv_output_0 [1,4,20,20,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=1600 bytes=3200 w_stride=0 h_stride=0 size_with_stride=7680 pass_through=0 fl=0
+C=4
+submission: UINT8 NHWC [1,640,640,3], 1228800 bytes, pass_through=0; Runtime performs input conversion
+compatibility requires mean=0/std=255 (not verified by attribute query)
+template Backbone
+model=/home/hzhy/drone-tracker-osd-20260923/models/fp16/template_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,127,127,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=48387 bytes=96774 w_stride=128 h_stride=0 size_with_stride=97536 pass_through=0 fl=0
+output #0 output [1,96,8,8,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=0 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+search Backbone
+model=/home/hzhy/drone-tracker-osd-20260923/models/fp16/search_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,255,255,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=195075 bytes=390150 w_stride=256 h_stride=0 size_with_stride=391680 pass_through=0 fl=0
+output #0 output [1,96,16,16,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=0 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+Head
+model=/home/hzhy/drone-tracker-osd-20260923/models/fp16/head.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input1 [1,8,8,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=8 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+input #1 input2 [1,16,16,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=16 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+output #0 output1 [1,2,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=450 bytes=900 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+output #1 output2 [1,4,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=900 bytes=1800 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+roles: template_input=0 search_input=1 classification_output=0 location_output=1
+submission: Float32, pass_through=0, native logical layout; outputs: want_float=1
+YOLO worker thread started.
+[INFO] [1790150198.550940664] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=2 rejected=0
+[INFO] [1790150199.576784641] [drone_tracker_node]: Round starting
+rk3576 video [/home/hzhy/drone-tracker-osd-20260923/synthetic-640x480-20fps.avi] state=1 frame=1 pts=0 read=0 enqueued=0 dropped=0 reason=
+[INFO] [1790150199.636100278] [drone_tracker_node]: OSD submitted=1 replaced=0 displayed=1 commits=13 rejected=0
+[INFO] [1790150199.636286858] [drone_tracker_node]: OSD submit_calls=1 submit_mean_us=3.773 submit_max_us=3.773
+[INFO] [1790150200.636172461] [drone_tracker_node]: OSD submitted=21 replaced=0 displayed=21 commits=33 rejected=0
+[INFO] [1790150200.636412395] [drone_tracker_node]: OSD submit_calls=21 submit_mean_us=13.414 submit_max_us=23.797
+[INFO] [1790150201.636188566] [drone_tracker_node]: OSD submitted=41 replaced=0 displayed=41 commits=53 rejected=0
+[INFO] [1790150201.636405423] [drone_tracker_node]: OSD submit_calls=41 submit_mean_us=13.744 submit_max_us=23.797
+[INFO] [1790150202.636352989] [drone_tracker_node]: OSD submitted=61 replaced=0 displayed=61 commits=73 rejected=0
+[INFO] [1790150202.636604577] [drone_tracker_node]: OSD submit_calls=61 submit_mean_us=13.958 submit_max_us=23.797
+[INFO] [1790150203.736234979] [drone_tracker_node]: OSD submitted=83 replaced=0 displayed=83 commits=95 rejected=0
+[INFO] [1790150203.736466064] [drone_tracker_node]: OSD submit_calls=83 submit_mean_us=14.028 submit_max_us=24.734
+OSD_TEST injected atomic EIO
+[ERROR] [1790150204.036252808] [drone_tracker_node]: OSD disabled after display failure: OSD paired plane commit: Input/output error; tracking continues
+[INFO] [1790150204.736246982] [drone_tracker_node]: OSD submitted=88 replaced=0 displayed=87 commits=99 rejected=15
+[INFO] [1790150204.736445083] [drone_tracker_node]: OSD submit_calls=103 submit_mean_us=12.396 submit_max_us=24.734
+[INFO] [1790150205.736276349] [drone_tracker_node]: OSD submitted=88 replaced=0 displayed=87 commits=99 rejected=35
+[INFO] [1790150205.736490966] [drone_tracker_node]: OSD submit_calls=123 submit_mean_us=10.746 submit_max_us=24.734
+[INFO] [1790150206.736307009] [drone_tracker_node]: OSD submitted=88 replaced=0 displayed=87 commits=99 rejected=55
+[INFO] [1790150206.736525171] [drone_tracker_node]: OSD submit_calls=143 submit_mean_us=9.666 submit_max_us=24.734
+[INFO] [1790150207.736379803] [drone_tracker_node]: OSD submitted=88 replaced=0 displayed=87 commits=99 rejected=75
+[INFO] [1790150207.736635123] [drone_tracker_node]: OSD submit_calls=163 submit_mean_us=8.770 submit_max_us=24.734
+[INFO] [1790150208.836377923] [drone_tracker_node]: OSD submitted=88 replaced=0 displayed=87 commits=99 rejected=97
+[INFO] [1790150208.836588882] [drone_tracker_node]: OSD submit_calls=185 submit_mean_us=8.010 submit_max_us=24.734
+Average tracking time per frame: 0.03 ms
+[INFO] [1790150209.813927501] [drone_tracker_node]: Round ended: stop requested
+rk3576 video [/home/hzhy/drone-tracker-osd-20260923/synthetic-640x480-20fps.avi] state=2 frame=206 pts=205 read=206 enqueued=205 dropped=0 reason=Stopped by caller
+[INFO] [1790150210.098030043] [drone_tracker_node]: OSD submitted=88 replaced=0 displayed=87 commits=99 rejected=117
+[INFO] [1790150210.098230497] [drone_tracker_node]: OSD submit_calls=205 submit_mean_us=7.471 submit_max_us=24.734
+[INFO] [1790150211.136446818] [drone_tracker_node]: OSD submitted=88 replaced=0 displayed=87 commits=99 rejected=117
+[INFO] [1790150211.136706131] [drone_tracker_node]: OSD submit_calls=205 submit_mean_us=7.471 submit_max_us=24.734
+[INFO] [1790150211.138560336] [rclcpp]: signal_handler(SIGINT/SIGTERM)

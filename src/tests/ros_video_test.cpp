@@ -146,9 +146,11 @@ struct Harness {
     rclcpp::Publisher<std_msgs::msg::Header>::SharedPtr trigger_pub{};
     Harness(const rclcpp::NodeOptions &config = options(),
             std::function<std::thread(std::function<void()>)> launch = {},
-            std::function<void(const char *)> hook = {}, const std::string &video = {}) {
+            std::function<void(const char *)> hook = {}, const std::string &video = {},
+            std::unique_ptr<osd::DisplayBackend> display = {}) {
         source->video = video;
-        node = std::make_shared<DroneTrackerNode>(config, std::make_unique<Factory>(trace, source, paths), launch, hook);
+        node = std::make_shared<DroneTrackerNode>(config, std::make_unique<Factory>(trace, source, paths),
+                                                launch, hook, std::move(display));
         detection = observer->create_subscription<vision_msgs::msg::Detection2D>("/fpv/target_bbox", 100,
             [this](vision_msgs::msg::Detection2D::SharedPtr msg) { detections.push_back(*msg); });
         image = observer->create_subscription<sensor_msgs::msg::Image>("/fpv/tracker_image", 100,
@@ -181,13 +183,92 @@ struct Harness {
         require(predicate(), message);
     }
 };
+struct DisplayTrace {
+    std::mutex mutex{};
+    std::vector<osd::PresentationState> states{};
+    std::atomic<int> initializes{}, shutdowns{};
+    std::atomic<bool> fail_init{}, fail_present{};
+    std::uint64_t prepared_time{};
+};
+class TestDisplay final : public osd::DisplayBackend {
+public:
+    explicit TestDisplay(std::shared_ptr<DisplayTrace> trace) : trace_{std::move(trace)} {}
+    void initialize() override {
+        ++trace_->initializes;
+        if (trace_->fail_init) { throw std::runtime_error("injected OSD init failure"); }
+    }
+    void prepareVideo(const Frame &frame) override {
+        auto view{frame.mapRead()};
+        require(view && cv::countNonZero(view->mat() != 42) == 0, "OSD source changed");
+        trace_->prepared_time = frame.timestampUs();
+    }
+    bool present(const osd::PresentationState &state, const std::function<bool()> &authorize) override {
+        if (!authorize()) { return false; }
+        if (trace_->fail_present) { throw std::runtime_error("injected OSD display failure"); }
+        if (state.new_video) { require(state.frame_time_us == trace_->prepared_time, "OSD frame pairing"); }
+        std::lock_guard<std::mutex> lock{trace_->mutex};
+        trace_->states.push_back(state);
+        return true;
+    }
+    void discardPrepared() noexcept override {}
+    void interrupt() noexcept override {}
+    void shutdown() noexcept override { ++trace_->shutdowns; }
+private:
+    std::shared_ptr<DisplayTrace> trace_;
+};
+void osdCompatibility() {
+    for (bool enabled : {false, true}) {
+        for (bool images : {false, true}) {
+            auto display{std::make_shared<DisplayTrace>()};
+            Harness h{options({{"osd.enabled", enabled}, {"visualized_result", images}}), {}, {}, {},
+                      std::make_unique<TestDisplay>(display)};
+            h.node->run();
+            h.until([&] { return h.detections.size() >= 5; }, "OSD blocked detections");
+            h.node->stop(); h.pump(120ms);
+            require(h.images.empty() == !images, "OSD changed image switch");
+            require(h.states.size() == 1 && h.states[0] == 0, "OSD changed state-only publication");
+            require(display->initializes == (enabled ? 1 : 0), "disabled OSD opened device");
+            if (enabled) {
+                std::lock_guard<std::mutex> lock{display->mutex};
+                require(!display->states.empty() && display->states.back().status == osd::DisplayStatus::Stopped,
+                        "node OFF did not freeze");
+                require(display->states.back().boxes.empty(), "node OFF retained boxes");
+                for (const auto &state : display->states) {
+                    if (!state.new_video) { continue; }
+                    require(std::find(h.source->timestamps.begin(), h.source->timestamps.end(), state.frame_time_us)
+                        != h.source->timestamps.end(), "OSD replaced capture time with prediction time");
+                }
+            }
+        }
+    }
+    auto display{std::make_shared<DisplayTrace>()};
+    Harness h{options({{"osd.enabled", true}}), {}, {}, {}, std::make_unique<TestDisplay>(display)};
+    h.node->run();
+    h.until([&] { return h.detections.size() > 3; }, "no detections before OSD failure");
+    const auto before{h.detections.size()};
+    display->fail_present = true;
+    h.until([&] { return display->shutdowns > 0 && h.detections.size() > before + 5; },
+            "display failure stopped business");
+    h.node->stop();
+    auto failed{std::make_shared<DisplayTrace>()}; failed->fail_init = true;
+    auto source{std::make_shared<SourceTrace>()};
+    bool rejected{false};
+    try {
+        auto node{std::make_shared<DroneTrackerNode>(options({{"osd.enabled", true}}),
+            std::make_unique<Factory>(std::make_shared<Trace>(), source, std::make_shared<ModelPaths>()),
+            std::function<std::thread(std::function<void()>)>{}, std::function<void(const char *)>{},
+            std::make_unique<TestDisplay>(failed))};
+    } catch (const std::exception &) { rejected = true; }
+    require(rejected && source->starts == 0 && failed->shutdowns == 1, "OSD init did not roll back");
+}
 void configuration() {
     for (const auto &parameter : std::vector<rclcpp::Parameter>{
         {"tracker.yolo_engine", ""}, {"tracker.nano_template_backbone", ""},
         {"tracker.nano_search_backbone", ""}, {"tracker.nano_head", ""}, {"tracker.nano_backbone", "mixed"},
         {"tracker.yolo_target_class_id", 1}, {"camera.fx", 0.0}, {"camera.fy", -1.0},
         {"camera.cy", std::numeric_limits<double>::quiet_NaN()}, {"use_sim_time", true},
-        {"use_history_timestamp", true}}) {
+        {"use_history_timestamp", true}, {"osd.width", 0}, {"osd.frame_stale_ms", 0},
+        {"osd.battery_cells", -1}, {"osd.refresh_hz", std::numeric_limits<double>::infinity()}}) {
         auto source{std::make_shared<SourceTrace>()};
         bool rejected{false};
         try {
@@ -203,7 +284,8 @@ void configuration() {
     require(h.paths->yolo == "/models/yolo.rknn", "absolute path prefixed");
     require(h.paths->head.find("/models/head.rknn") != std::string::npos, "relative path not resolved");
     for (const auto &parameter : std::vector<rclcpp::Parameter>{{"use_sim_time", true}, {"camera.fx", 200.0},
-        {"tracker.enable_dcf", true}, {"video_source", "other.mov"}, {"need_save", true}}) {
+        {"tracker.enable_dcf", true}, {"video_source", "other.mov"}, {"need_save", true},
+        {"osd.enabled", true}, {"osd.width", 1280}}) {
         require(!h.node->set_parameter(parameter).successful, "startup parameter changed");
     }
 }
@@ -529,6 +611,7 @@ int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
     try {
         configuration();
+        osdCompatibility();
         messagesAndRestart();
         cleanupAndFailures();
         recording();

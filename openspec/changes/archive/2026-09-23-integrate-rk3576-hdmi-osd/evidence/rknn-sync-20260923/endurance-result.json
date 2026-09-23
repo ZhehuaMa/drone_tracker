@@ -1,0 +1,510 @@
+{
+  "mode": "endurance",
+  "input": "synthetic-640x480-20fps.avi",
+  "quality_evaluation": false,
+  "rounds": [
+    {
+      "index": 1,
+      "seconds": 2.1478867440018803,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.30530819399791653,
+      "begin": {
+        "t": 18055.433804842,
+        "rss_kb": 122508,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 1.38,
+        "boxes": 2
+      },
+      "idle": {
+        "t": 18058.904116067,
+        "rss_kb": 127696,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 4.5,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 2,
+      "seconds": 2.1509046420032973,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.23758606199771748,
+      "begin": {
+        "t": 18058.970522147,
+        "rss_kb": 127664,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 4.59,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18062.375978434,
+        "rss_kb": 127764,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 7.65,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 3,
+      "seconds": 2.127939844998764,
+      "messages": 44,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.2678144390010857,
+      "begin": {
+        "t": 18062.442492101,
+        "rss_kb": 127524,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 7.74,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18065.855598825,
+        "rss_kb": 128016,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 10.79,
+        "boxes": 44
+      }
+    },
+    {
+      "index": 4,
+      "seconds": 2.1498836610007857,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.24173205699844402,
+      "begin": {
+        "t": 18065.923860007,
+        "rss_kb": 128392,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 10.89,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18069.331763987,
+        "rss_kb": 127776,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 13.94,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 5,
+      "seconds": 2.1499007669990533,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.2661025609995704,
+      "begin": {
+        "t": 18069.399498412,
+        "rss_kb": 125432,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 14.03,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18072.832621137,
+        "rss_kb": 129736,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 17.13,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 6,
+      "seconds": 2.1303575839992845,
+      "messages": 44,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.32876718699844787,
+      "begin": {
+        "t": 18072.900177454,
+        "rss_kb": 125336,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 17.22,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18076.376392084,
+        "rss_kb": 127508,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 20.29,
+        "boxes": 44
+      }
+    },
+    {
+      "index": 7,
+      "seconds": 2.15745062300266,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.25968973499766435,
+      "begin": {
+        "t": 18076.442406714,
+        "rss_kb": 125448,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 20.37,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18079.876178239,
+        "rss_kb": 127548,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 23.45,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 8,
+      "seconds": 2.130055251000158,
+      "messages": 44,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.2663954650015512,
+      "begin": {
+        "t": 18079.942390106,
+        "rss_kb": 127008,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 23.53,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18083.356408963,
+        "rss_kb": 127632,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 26.58,
+        "boxes": 44
+      }
+    },
+    {
+      "index": 9,
+      "seconds": 2.126356886001304,
+      "messages": 44,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.2648943820022396,
+      "begin": {
+        "t": 18083.424555226,
+        "rss_kb": 127708,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 26.68,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18086.832614724,
+        "rss_kb": 127760,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 29.73,
+        "boxes": 44
+      }
+    },
+    {
+      "index": 10,
+      "seconds": 2.1269137220006087,
+      "messages": 44,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.3316337230025965,
+      "begin": {
+        "t": 18086.90123891,
+        "rss_kb": 125416,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 29.82,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18090.37668647,
+        "rss_kb": 127672,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 32.89,
+        "boxes": 44
+      }
+    },
+    {
+      "index": 11,
+      "seconds": 2.1509320240002126,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.24334189299770514,
+      "begin": {
+        "t": 18090.443373729,
+        "rss_kb": 125328,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 32.97,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18093.855365196,
+        "rss_kb": 127952,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 36.03,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 12,
+      "seconds": 2.158649631001026,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.25737427200147067,
+      "begin": {
+        "t": 18093.921973869,
+        "rss_kb": 126512,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 36.12,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18097.355487078,
+        "rss_kb": 127832,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 39.19,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 13,
+      "seconds": 2.151353123001172,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.24322550599754322,
+      "begin": {
+        "t": 18097.421160822,
+        "rss_kb": 127292,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 39.27,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18100.833178085,
+        "rss_kb": 128016,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 42.33,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 14,
+      "seconds": 2.1292258860012225,
+      "messages": 44,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.331588869998086,
+      "begin": {
+        "t": 18100.898908093,
+        "rss_kb": 127776,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 42.41,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18104.376223733,
+        "rss_kb": 127528,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 45.49,
+        "boxes": 44
+      }
+    },
+    {
+      "index": 15,
+      "seconds": 2.1518301229989447,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.2440600390000327,
+      "begin": {
+        "t": 18104.441966093,
+        "rss_kb": 127588,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 45.56,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18107.854267537,
+        "rss_kb": 127896,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 48.63,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 16,
+      "seconds": 2.150890177999827,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.24467527700107894,
+      "begin": {
+        "t": 18107.920779667,
+        "rss_kb": 125552,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 48.72,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18111.333736993,
+        "rss_kb": 127596,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 51.77,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 17,
+      "seconds": 2.128330088999064,
+      "messages": 44,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.33105499999874155,
+      "begin": {
+        "t": 18111.400688821,
+        "rss_kb": 125552,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 51.86,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18114.876346282,
+        "rss_kb": 127640,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 54.92,
+        "boxes": 44
+      }
+    },
+    {
+      "index": 18,
+      "seconds": 2.15978131600059,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.2569379420019686,
+      "begin": {
+        "t": 18114.943804558,
+        "rss_kb": 125596,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 55.0,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18118.377276007,
+        "rss_kb": 127952,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 58.08,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 19,
+      "seconds": 2.156966149999789,
+      "messages": 45,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.2604831290009315,
+      "begin": {
+        "t": 18118.443164993,
+        "rss_kb": 127412,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 58.16,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18121.878223674,
+        "rss_kb": 127464,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 61.23,
+        "boxes": 45
+      }
+    },
+    {
+      "index": 20,
+      "seconds": 2.1307447030012554,
+      "messages": 44,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.26420417500048643,
+      "begin": {
+        "t": 18121.944756573,
+        "rss_kb": 127840,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 61.31,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18125.356452741,
+        "rss_kb": 127780,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 64.37,
+        "boxes": 44
+      }
+    },
+    {
+      "index": 21,
+      "seconds": 610.2007809989991,
+      "messages": 12165,
+      "valid_boxes": 511,
+      "stop_observed_seconds": 0.3056659280009626,
+      "begin": {
+        "t": 18125.424218584,
+        "rss_kb": 127840,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 64.46,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18736.961937431,
+        "rss_kb": 134692,
+        "threads": 17,
+        "fds": 55,
+        "cpu_seconds": 843.27,
+        "boxes": 12165
+      }
+    }
+  ],
+  "initial": {
+    "t": 18055.363486289,
+    "rss_kb": 111012,
+    "threads": 14,
+    "fds": 41,
+    "cpu_seconds": 1.27,
+    "boxes": 0
+  },
+  "pid": 14999,
+  "final": {
+    "t": 18736.963353715,
+    "rss_kb": 134692,
+    "threads": 17,
+    "fds": 55,
+    "cpu_seconds": 843.27,
+    "boxes": 12165
+  },
+  "display_failure": false,
+  "exit_code": 0,
+  "exit_seconds": 0.5165925279980002
+}

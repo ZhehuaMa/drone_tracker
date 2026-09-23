@@ -1,0 +1,1 @@
+drone_tracker initialization/execution failed: OSD /dev/dri/card0: exclusive DRM ownership not confirmed; client Xorg pid=20272 master=y; stop the desktop display service and confirm the device is released before retrying

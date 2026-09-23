@@ -1,0 +1,202 @@
+{
+  "0": {
+    "target": "pipe:[77879]",
+    "info": "pos:\t0\nflags:\t00\nmnt_id:\t11\nino:\t77879\n"
+  },
+  "1": {
+    "target": "/home/hzhy/drone-tracker-osd-final-20260923/endurance.log",
+    "info": "pos:\t22687\nflags:\t0400001\nmnt_id:\t21\nino:\t523418\n"
+  },
+  "2": {
+    "target": "/home/hzhy/drone-tracker-osd-final-20260923/endurance.log",
+    "info": "pos:\t22687\nflags:\t0400001\nmnt_id:\t21\nino:\t523418\n"
+  },
+  "3": {
+    "target": "/root/.ros/log/drone_tracker_node_20811_1790149511376.log",
+    "info": "pos:\t13259\nflags:\t0402001\nmnt_id:\t21\nino:\t424881\n"
+  },
+  "4": {
+    "target": "socket:[77987]",
+    "info": "pos:\t0\nflags:\t02\nmnt_id:\t8\nino:\t77987\n"
+  },
+  "5": {
+    "target": "socket:[77988]",
+    "info": "pos:\t0\nflags:\t02\nmnt_id:\t8\nino:\t77988\n"
+  },
+  "6": {
+    "target": "anon_inode:[eventfd]",
+    "info": "pos:\t0\nflags:\t02004002\nmnt_id:\t12\nino:\t182\neventfd-count:                1\neventfd-id: 7\n"
+  },
+  "7": {
+    "target": "anon_inode:[eventpoll]",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t12\nino:\t182\ntfd:        8 events:       19 data:       55b0bb903c  pos:0 ino:b6 sdev:b\ntfd:       10 events: 8000001b data:       55b0baea20  pos:0 ino:130ae sdev:7\ntfd:       11 events: 8000001b data:       55b0bb84b0  pos:0 ino:130af sdev:7\ntfd:       15 events: 8000001b data:       55b0bfdd10  pos:0 ino:130b8 sdev:7\ntfd:       13 events: 8000001b data:       55b0bb86c0  pos:0 ino:130b3 sdev:7\ntfd:       12 events: 8000001b data:       55b0bb7ac0  pos:0 ino:130b1 sdev:7\ntfd:        6 events: 80000019 data:       55b0bb9030  pos:0 ino:b6 sdev:b\n"
+  },
+  "8": {
+    "target": "anon_inode:[timerfd]",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t12\nino:\t182\nclockid: 1\nticks: 0\nsettime flags: 00\nit_value: (0, 0)\nit_interval: (0, 0)\n"
+  },
+  "9": {
+    "target": "/dev/shm/fastrtps_f0fd640faed0fb74_el",
+    "info": "pos:\t0\nflags:\t0400000\nmnt_id:\t26\nino:\t1877\nlock:\t1: FLOCK  ADVISORY  WRITE 20811 00:17:1877 0 EOF\n"
+  },
+  "10": {
+    "target": "socket:[77998]",
+    "info": "pos:\t0\nflags:\t02\nmnt_id:\t8\nino:\t77998\n"
+  },
+  "11": {
+    "target": "socket:[77999]",
+    "info": "pos:\t0\nflags:\t02\nmnt_id:\t8\nino:\t77999\n"
+  },
+  "12": {
+    "target": "socket:[78001]",
+    "info": "pos:\t0\nflags:\t02\nmnt_id:\t8\nino:\t78001\n"
+  },
+  "13": {
+    "target": "socket:[78003]",
+    "info": "pos:\t0\nflags:\t02\nmnt_id:\t8\nino:\t78003\n"
+  },
+  "14": {
+    "target": "/dev/shm/fastrtps_port55663_el",
+    "info": "pos:\t0\nflags:\t0400000\nmnt_id:\t26\nino:\t1885\nlock:\t1: FLOCK  ADVISORY  WRITE 20811 00:17:1885 0 EOF\n"
+  },
+  "15": {
+    "target": "socket:[78008]",
+    "info": "pos:\t0\nflags:\t02\nmnt_id:\t8\nino:\t78008\n"
+  },
+  "16": {
+    "target": "anon_inode:[eventfd]",
+    "info": "pos:\t0\nflags:\t02004002\nmnt_id:\t12\nino:\t182\neventfd-count:                0\neventfd-id: 11\n"
+  },
+  "17": {
+    "target": "/dev/dri/card0",
+    "info": "pos:\t0\nflags:\t02400002\nmnt_id:\t22\nino:\t215\n"
+  },
+  "18": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t946\nsize:\t1384448\ncount:\t4\nexp_name:\trockchipdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "19": {
+    "target": "/dev/rga",
+    "info": "pos:\t0\nflags:\t0400002\nmnt_id:\t22\nino:\t206\n"
+  },
+  "20": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t947\nsize:\t1384448\ncount:\t4\nexp_name:\trockchipdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "21": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t949\nsize:\t1384448\ncount:\t4\nexp_name:\trockchipdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "22": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t948\nsize:\t1384448\ncount:\t3\nexp_name:\tsystem\nname:\t20811-drone_tracker_n\n"
+  },
+  "23": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t950\nsize:\t1384448\ncount:\t4\nexp_name:\trockchipdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "24": {
+    "target": "/dev/dri/card1",
+    "info": "pos:\t0\nflags:\t0400002\nmnt_id:\t22\nino:\t225\n"
+  },
+  "25": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t951\nsize:\t1384448\ncount:\t3\nexp_name:\tsystem\nname:\t20811-drone_tracker_n\n"
+  },
+  "26": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t952\nsize:\t520192\ncount:\t3\nexp_name:\tsystem\nname:\t20811-drone_tracker_n\n"
+  },
+  "27": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t953\nsize:\t1384448\ncount:\t3\nexp_name:\tsystem\nname:\t20811-drone_tracker_n\n"
+  },
+  "28": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t955\nsize:\t36864\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "29": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t954\nsize:\t6135808\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "30": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t956\nsize:\t4505600\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "31": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t958\nsize:\t16384\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "32": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t957\nsize:\t1724416\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "33": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t959\nsize:\t360448\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "34": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t961\nsize:\t16384\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "35": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t960\nsize:\t1765376\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "36": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t962\nsize:\t1441792\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "37": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t964\nsize:\t16384\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "38": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t963\nsize:\t1114112\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "39": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t965\nsize:\t425984\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "40": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t966\nsize:\t49152\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "41": {
+    "target": "/home/hzhy/drone-tracker-osd-20260923/synthetic-640x480-20fps.avi",
+    "info": "pos:\t136826\nflags:\t02400000\nmnt_id:\t21\nino:\t522526\n"
+  },
+  "42": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t968\nsize:\t1228800\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "43": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t967\nsize:\t307200\ncount:\t3\nexp_name:\tsystem\nname:\t20811-drone_tracker_n\n"
+  },
+  "44": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t969\nsize:\t409600\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "45": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t970\nsize:\t204800\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "46": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t971\nsize:\t102400\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "47": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t972\nsize:\t53248\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "48": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t973\nsize:\t28672\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  },
+  "49": {
+    "target": "/dmabuf:20811-drone_tracker_n",
+    "info": "pos:\t0\nflags:\t02000002\nmnt_id:\t9\nino:\t974\nsize:\t16384\ncount:\t3\nexp_name:\tdrm\nname:\t20811-drone_tracker_n\n"
+  }
+}

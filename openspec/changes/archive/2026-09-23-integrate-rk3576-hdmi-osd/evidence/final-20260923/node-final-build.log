@@ -1,0 +1,34 @@
+[  7%] Built target preprocess_geometry
+[ 10%] Built target model_common
+[ 17%] Built target drone_osd_core
+[ 22%] Built target drone_osd_rk3576
+[ 32%] Built target hybrid_tracker
+[ 35%] Built target drone_osd_telemetry
+[ 42%] Built target rk3576_yolo_host
+[ 45%] Building CXX object CMakeFiles/drone_tracker_ros.dir/src/drone_tracker_node.cpp.o
+[ 72%] Built target rk3576_yolo_runtime
+[ 72%] Built target rk3576_ar0234_camera
+[ 72%] Built target rk3576_video
+[ 85%] Built target rk3576_yolo_sdk
+[ 85%] Built target rk3576_sc233hgs_camera
+[ 90%] Built target rk3576_tracker_assembly
+[ 95%] Built target platform_rk3576
+[ 97%] Linking CXX static library libdrone_tracker_ros.a
+[ 97%] Built target drone_tracker_ros
+[100%] Building CXX object CMakeFiles/drone_tracker_node.dir/src/drone_tracker_main.cpp.o
+[100%] Linking CXX executable drone_tracker_node
+[100%] Built target drone_tracker_node
+[  4%] Built target preprocess_geometry
+[ 17%] Built target model_common
+[ 30%] Built target drone_osd_core
+[ 39%] Built target drone_osd_rk3576
+[ 56%] Built target hybrid_tracker
+[ 60%] Built target drone_osd_telemetry
+Consolidate compiler generated dependencies of target drone_tracker_ros
+[ 73%] Built target rk3576_yolo_host
+[ 82%] Built target drone_tracker_ros
+[ 95%] Built target rk3576_video
+Consolidate compiler generated dependencies of target ros_video_tests
+[100%] Building CXX object CMakeFiles/ros_video_tests.dir/src/tests/ros_video_test.cpp.o
+[100%] Linking CXX executable ros_video_tests
+[100%] Built target ros_video_tests

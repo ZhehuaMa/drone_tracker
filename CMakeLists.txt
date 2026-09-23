@@ -6,6 +6,14 @@ set_property(CACHE DRONE_TRACKER_PLATFORM PROPERTY STRINGS jetson rk3576)
 if(NOT DRONE_TRACKER_PLATFORM MATCHES "^(jetson|rk3576)$")
     message(FATAL_ERROR "DRONE_TRACKER_PLATFORM='${DRONE_TRACKER_PLATFORM}' unsupported; supported: jetson/rk3576")
 endif()
+option(DRONE_TRACKER_BUILD_OSD "Build RK3576 HDMI OSD backend" OFF)
+option(DRONE_TRACKER_OSD_LOW_LEVEL_FEEDBACK "Build optional quadrotor telemetry adapter" OFF)
+if(DRONE_TRACKER_BUILD_OSD AND NOT DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
+    message(FATAL_ERROR "DRONE_TRACKER_BUILD_OSD requires rk3576")
+endif()
+if(DRONE_TRACKER_OSD_LOW_LEVEL_FEEDBACK AND NOT DRONE_TRACKER_BUILD_OSD)
+    message(FATAL_ERROR "DRONE_TRACKER_OSD_LOW_LEVEL_FEEDBACK requires DRONE_TRACKER_BUILD_OSD")
+endif()
 project(drone_tracker LANGUAGES CXX)
 if(DRONE_TRACKER_PLATFORM STREQUAL "jetson")
     set(CMAKE_CUDA_ARCHITECTURES 87)
@@ -62,6 +70,7 @@ if(DRONE_TRACKER_PLATFORM STREQUAL "jetson")
 endif()
 add_subdirectory(src/hybrid_tracker)
 add_subdirectory(src/platform)
+add_subdirectory(src/osd)
 if(DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
     add_subdirectory(tests/nanotracev3_performance_benchmarks/baseline)
     add_subdirectory(tests/nanotracev3_performance_benchmarks/search_direct)
@@ -90,11 +99,17 @@ set(DRONE_TRACKER_ROS_DEPENDENCIES
 
 ament_target_dependencies(drone_tracker_ros ${DRONE_TRACKER_ROS_DEPENDENCIES})
 target_link_libraries(drone_tracker_ros hybrid_tracker)
+target_link_libraries(drone_tracker_ros drone_osd_telemetry)
+if(DRONE_TRACKER_BUILD_OSD)
+    target_compile_definitions(drone_tracker_ros PRIVATE DRONE_TRACKER_HAS_OSD)
+    target_link_libraries(drone_tracker_ros drone_osd_rk3576)
+endif()
 
 install(TARGETS
   drone_tracker_node
   DESTINATION lib/${PROJECT_NAME}
 )
+install(FILES src/osd/FONT_LICENSE.txt DESTINATION share/${PROJECT_NAME}/licenses)
 
 install(DIRECTORY
   models
@@ -122,12 +137,14 @@ if(DRONE_TRACKER_BUILD_TESTS AND DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
     set_tests_properties(ros_video_generate_fixtures PROPERTIES FIXTURES_SETUP ros_video_files)
     add_test(NAME ros_video_tests COMMAND ros_video_tests)
     add_test(NAME ros_initialization_tests COMMAND ${CMAKE_COMMAND}
-        -DPROGRAM=$<TARGET_FILE:drone_tracker_node> -P ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/ros_initialization_test.cmake)
+        -DPROGRAM=$<TARGET_FILE:drone_tracker_node> -DOSD_BUILT=${DRONE_TRACKER_BUILD_OSD}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/ros_initialization_test.cmake)
     # 只编译公共 ROS 配置策略，不链接 Jetson SDK，也不声称实机验证。
     add_library(drone_tracker_jetson_config STATIC src/drone_tracker_node.cpp)
     target_include_directories(drone_tracker_jetson_config PUBLIC src)
     ament_target_dependencies(drone_tracker_jetson_config ${DRONE_TRACKER_ROS_DEPENDENCIES})
     target_link_libraries(drone_tracker_jetson_config hybrid_tracker)
+    target_link_libraries(drone_tracker_jetson_config drone_osd_telemetry)
     add_executable(jetson_config_tests src/tests/jetson_config_test.cpp)
     target_link_libraries(jetson_config_tests drone_tracker_jetson_config)
     add_test(NAME jetson_config_tests COMMAND jetson_config_tests)

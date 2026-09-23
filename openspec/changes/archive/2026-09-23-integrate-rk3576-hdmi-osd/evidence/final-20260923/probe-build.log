@@ -1,0 +1,5 @@
+[ 50%] Built target drone_osd_core
+[ 83%] Built target drone_osd_rk3576
+[ 83%] Building CXX object src/osd/rk3576_backend/CMakeFiles/osd_hdmi_probe.dir/hdmi_probe.cpp.o
+[100%] Linking CXX executable osd_hdmi_probe
+[100%] Built target osd_hdmi_probe

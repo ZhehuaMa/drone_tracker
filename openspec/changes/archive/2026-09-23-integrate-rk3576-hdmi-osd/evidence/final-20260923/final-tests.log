@@ -1,0 +1,22 @@
+Internal ctest changing into directory: /tmp/drone-osd-node-20260923/build-on
+Test project /tmp/drone-osd-node-20260923/build-on
+    Start  1: ros_video_generate_fixtures
+1/8 Test  #1: ros_video_generate_fixtures ......   Passed    0.43 sec
+    Start  2: ros_video_tests
+2/8 Test  #2: ros_video_tests ..................   Passed   10.03 sec
+    Start  3: ros_initialization_tests
+3/8 Test  #3: ros_initialization_tests .........   Passed    2.90 sec
+    Start 13: osd_presenter_tests
+4/8 Test #13: osd_presenter_tests ..............   Passed    0.11 sec
+    Start 14: osd_geometry_tests
+5/8 Test #14: osd_geometry_tests ...............   Passed    0.01 sec
+    Start 15: osd_layout_tests
+6/8 Test #15: osd_layout_tests .................   Passed    0.43 sec
+    Start 16: osd_telemetry_tests
+7/8 Test #16: osd_telemetry_tests ..............   Passed    0.02 sec
+    Start 17: ros_osd_telemetry_tests
+8/8 Test #17: ros_osd_telemetry_tests ..........   Passed    0.77 sec
+
+100% tests passed, 0 tests failed out of 8
+
+Total Test time (real) =  14.72 sec

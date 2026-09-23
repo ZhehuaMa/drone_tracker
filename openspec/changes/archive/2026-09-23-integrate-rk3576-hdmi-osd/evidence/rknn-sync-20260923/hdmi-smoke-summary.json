@@ -1,0 +1,30 @@
+{
+  "mode": "hdmi-smoke",
+  "pid": 14965,
+  "rounds": 1,
+  "last_seconds": 30.05305072700139,
+  "messages": 603,
+  "fps": 20.0645187564346,
+  "max_stop_s": 0.3240586039974005,
+  "exit": 0,
+  "exit_seconds": 0.5160866500009433,
+  "display_failure": false,
+  "idle_threads": [
+    17
+  ],
+  "idle_fds": [
+    49
+  ],
+  "rss_range_kib": [
+    122760,
+    137140
+  ],
+  "cpu_one_core_percent": 120.75007739347184,
+  "last_osd_counts": [
+    "603",
+    "0",
+    "602",
+    "624",
+    "0"
+  ]
+}

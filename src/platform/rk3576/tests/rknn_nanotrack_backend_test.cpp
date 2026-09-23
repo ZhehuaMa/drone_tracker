@@ -297,6 +297,7 @@ void observationComparison() {
 }
 void directHandoff() {
     auto fake{models(false, false, true, true)};
+    fake.models[1].wait_status = -1;
     sdk = &fake;
     auto backend{directLoad(fake)};
     require(static_cast<bool>(backend), "共享内存直连后端装配失败");
@@ -307,6 +308,7 @@ void directHandoff() {
     require(static_cast<bool>(first), "直连首次搜索失败");
     require(static_cast<bool>(backend.value->search(image(255))), "直连连续搜索失败");
     require(fake.models[1].binds == 2 && fake.models[2].binds == 2, "连续帧未重新绑定");
+    require(fake.models[1].waits == 0, "同步共享输出不应等待无效 fence");
     backend.value->reset();
     require(fake.models[1].mem_creates == allocations, "reset 重新分配共享内存");
 

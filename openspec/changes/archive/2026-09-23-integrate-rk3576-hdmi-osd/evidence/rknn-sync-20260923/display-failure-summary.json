@@ -1,0 +1,30 @@
+{
+  "mode": "display-failure",
+  "pid": 15431,
+  "rounds": 1,
+  "last_seconds": 10.12522090800121,
+  "messages": 204,
+  "fps": 20.14770856394787,
+  "max_stop_s": 0.3272898239993083,
+  "exit": 0,
+  "exit_seconds": 0.31546189800064894,
+  "display_failure": true,
+  "idle_threads": [
+    16
+  ],
+  "idle_fds": [
+    39
+  ],
+  "rss_range_kib": [
+    123048,
+    136336
+  ],
+  "cpu_one_core_percent": 101.45588851067515,
+  "last_osd_counts": [
+    "88",
+    "0",
+    "87",
+    "99",
+    "116"
+  ]
+}

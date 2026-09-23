@@ -1,0 +1,6 @@
+[ 50%] Built target drone_osd_core
+[ 66%] Built target drone_osd_telemetry
+Consolidate compiler generated dependencies of target ros_osd_telemetry_tests
+[ 83%] Building CXX object src/osd/CMakeFiles/ros_osd_telemetry_tests.dir/__/tests/ros_osd_telemetry_test.cpp.o
+[100%] Linking CXX executable ros_osd_telemetry_tests
+[100%] Built target ros_osd_telemetry_tests

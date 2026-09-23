@@ -194,7 +194,7 @@ model::Diagnostic RknnSession::initialize() {
 }
 void RknnSession::confirmStopped() {
     if (running_) {
-        // 负返回值本身不证明停止。仅成功 wait 构成完成证据。
+        // run 失败后仍不能排除设备访问；此时必须取得额外的完成证据。
         if (api_.wait(context_, nullptr) != RKNN_SUCC) {
             model::terminateDeviceFailure(path_.c_str(), "RKNN wait failed; device access cannot be excluded");
         }
@@ -333,6 +333,9 @@ model::Status RknnSession::run() {
         invalidate();
         return Result::failure(error);
     }
+    // init flags=0 且 run extend=nullptr：阻塞执行成功即已结束设备访问。
+    // Runtime 2.3.2 此路径不提供可供 rknn_wait 使用的 fence；不能再次等待。
+    running_ = false;
     return {true};
 }
 void RknnSession::confirmCompleted() {

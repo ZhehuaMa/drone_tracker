@@ -170,7 +170,8 @@ inline int mem_sync(rknn_context context, rknn_tensor_mem *, rknn_mem_sync_mode)
     ++m.mem_syncs;
     return m.mem_sync_status;
 }
-inline int run(rknn_context context, rknn_run_extend *) {
+inline int run(rknn_context context, rknn_run_extend *extend) {
+    require(extend == nullptr, "同步会话不应启用非阻塞扩展");
     ++model(context).runs;
     return model(context).run_status;
 }

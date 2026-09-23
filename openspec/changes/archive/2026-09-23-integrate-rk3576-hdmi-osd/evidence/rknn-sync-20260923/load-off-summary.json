@@ -1,0 +1,24 @@
+{
+  "mode": "load-off",
+  "pid": 14894,
+  "rounds": 1,
+  "last_seconds": 40.075575462000415,
+  "messages": 800,
+  "fps": 19.96228352999094,
+  "max_stop_s": 0.3825751479998871,
+  "exit": 0,
+  "exit_seconds": 0.31539327000064077,
+  "display_failure": false,
+  "idle_threads": [
+    16
+  ],
+  "idle_fds": [
+    43
+  ],
+  "rss_range_kib": [
+    116688,
+    131672
+  ],
+  "cpu_one_core_percent": 98.17227822744343,
+  "last_osd_counts": null
+}

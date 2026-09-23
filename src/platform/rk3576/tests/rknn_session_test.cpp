@@ -131,6 +131,7 @@ int main() {
         }
         if (fault == 2) {
             m.get_status = -1;
+            m.wait_status = -1; // 同步执行已成功，取回失败不应等待不存在的 fence。
         }
         if (fault == 3) {
             m.release_status = -1;
@@ -140,12 +141,13 @@ int main() {
         }
         auto result{session.value->execute({input(0), input(1)})};
         require(!result && result.value.empty() && !session.value->ready(), "失败返回部分输出或仍就绪");
-        require(m.destroys == 1 && m.waits == (fault == 1 || fault == 2 ? 1 : 0) && m.releases == (fault >= 3 ? 1 : 0),
+        require(m.destroys == 1 && m.waits == (fault == 1 ? 1 : 0) && m.releases == (fault >= 3 ? 1 : 0),
                 "停止与释放边界错误");
     }
     std::cout << "通用会话多输入、溢出、浮点输出、所有权与失败测试通过\n";
 
     Sdk shared_fake{{twoInputs()}};
+    shared_fake.models[0].wait_status = -1; // 真实同步成功路径没有有效 fence。
     shared_fake.models[0].allow_partial = true;
     shared_fake.models[0].native_outputs = shared_fake.models[0].outputs;
     sdk = &shared_fake;
@@ -168,6 +170,7 @@ int main() {
     require(static_cast<bool>(shared_session.value->bind(attr, memory.value)), "显式输出绑定失败");
     require(static_cast<bool>(shared_session.value->run()), "绑定执行失败");
     shared_session.value->confirmCompleted();
+    require(shared_fake.models[0].waits == 0, "同步成功错误等待了不存在的 fence");
     require(shared_fake.models[0].releases == 0, "确认完成错误触发普通输出取回");
     require(static_cast<bool>(shared_session.value->submit({input(0)})), "第二次部分输入提交失败");
     require(shared_fake.models[0].binds == 1, "新提交错误复用了旧绑定");
@@ -175,6 +178,7 @@ int main() {
                 static_cast<bool>(shared_session.value->run()),
             "重新绑定后执行失败");
     shared_session.value->confirmCompleted();
+    require(shared_fake.models[0].waits == 0, "连续同步成功错误调用 wait");
     require(shared_session.value->syncFromDevice(memory.value) && shared_fake.models[0].mem_syncs == 1,
             "共享内存同步失败");
     require(static_cast<bool>(shared_session.value->releaseShared(imported.value)), "导入句柄释放失败");

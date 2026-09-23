@@ -1,0 +1,48 @@
+[INFO] [1790149445.964670695] [drone_tracker_node]: Opening video file: /home/hzhy/drone-tracker-osd-20260923/synthetic-640x480-20fps.avi
+rk3576 video [/home/hzhy/drone-tracker-osd-20260923/synthetic-640x480-20fps.avi] state=0 frame=1 pts=0 read=0 enqueued=0 dropped=0 reason=
+[INFO] [1790149445.982041620] [drone_tracker_node]: Camera Intrinsics: fx=800.00, fy=810.00, px=320.00, py=240.00
+[INFO] [1790149445.982198177] [drone_tracker_node]: Camera FOV: horizontal=43.60 deg, vertical=33.01 deg
+Package share directory: /home/hzhy/drone-tracker-osd-20260923/install-on/share/drone_tracker
+yolo
+model=/home/hzhy/drone-tracker-osd-20260923/models/yolo.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 images [1,640,640,3,] rank=4 type=INT8 format=NHWC quant=AFFINE zp=-128 scale=0.00392157 elems=1228800 bytes=1228800 w_stride=640 h_stride=0 size_with_stride=1228800 pass_through=0 fl=0
+output #0 /model.22/cv2.0/cv2.0.2/Conv_output_0 [1,64,80,80,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=43 scale=0.525238 elems=409600 bytes=409600 w_stride=0 h_stride=0 size_with_stride=409600 pass_through=0 fl=0
+output #1 /model.22/cv3.0/cv3.0.2/Conv_output_0 [1,4,80,80,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=25600 bytes=51200 w_stride=0 h_stride=0 size_with_stride=102400 pass_through=0 fl=0
+output #2 /model.22/cv2.1/cv2.1.2/Conv_output_0 [1,64,40,40,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=91 scale=0.995673 elems=102400 bytes=102400 w_stride=0 h_stride=0 size_with_stride=122880 pass_through=0 fl=0
+output #3 /model.22/cv3.1/cv3.1.2/Conv_output_0 [1,4,40,40,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6400 bytes=12800 w_stride=0 h_stride=0 size_with_stride=25600 pass_through=0 fl=0
+output #4 /model.22/cv2.2/cv2.2.2/Conv_output_0 [1,64,20,20,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=-12 scale=0.368377 elems=25600 bytes=25600 w_stride=0 h_stride=0 size_with_stride=40960 pass_through=0 fl=0
+output #5 /model.22/cv3.2/cv3.2.2/Conv_output_0 [1,4,20,20,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=1600 bytes=3200 w_stride=0 h_stride=0 size_with_stride=7680 pass_through=0 fl=0
+C=4
+submission: UINT8 NHWC [1,640,640,3], 1228800 bytes, pass_through=0; Runtime performs input conversion
+compatibility requires mean=0/std=255 (not verified by attribute query)
+template Backbone
+model=/home/hzhy/drone-tracker-osd-20260923/models/fp16/template_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,127,127,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=48387 bytes=96774 w_stride=128 h_stride=0 size_with_stride=97536 pass_through=0 fl=0
+output #0 output [1,96,8,8,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=0 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+search Backbone
+model=/home/hzhy/drone-tracker-osd-20260923/models/fp16/search_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,255,255,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=195075 bytes=390150 w_stride=256 h_stride=0 size_with_stride=391680 pass_through=0 fl=0
+output #0 output [1,96,16,16,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=0 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+Head
+model=/home/hzhy/drone-tracker-osd-20260923/models/fp16/head.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input1 [1,8,8,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=8 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+input #1 input2 [1,16,16,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=16 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+output #0 output1 [1,2,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=450 bytes=900 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+output #1 output2 [1,4,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=900 bytes=1800 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+roles: template_input=0 search_input=1 classification_output=0 location_output=1
+submission: Float32, pass_through=0, native logical layout; outputs: want_float=1
+YOLO worker thread started.
+[INFO] [1790149447.163908793] [drone_tracker_node]: Round starting
+rk3576 video [/home/hzhy/drone-tracker-osd-20260923/synthetic-640x480-20fps.avi] state=1 frame=1 pts=0 read=0 enqueued=0 dropped=0 reason=
+Tracker initialized at [3.16294, 64.8202, 70.0386, 43.8772] and caught up 12 frames
+Target lost (unconfirmed streak 5). Re-initializing detection.
+Tracker initialized at [5.4297, 81.1921, 76.2914, 51.8179] and caught up 14 frames
+Target lost (unconfirmed streak 5). Re-initializing detection.
+Tracker initialized at [3.16355, 63.1042, 69.9905, 45.5934] and caught up 14 frames
+Target lost (unconfirmed streak 5). Re-initializing detection.
+Tracker initialized at [2.7286, 70.9196, 71.5806, 51.081] and caught up 14 frames
+Target lost (unconfirmed streak 5). Re-initializing detection.
+Average tracking time per frame: 4.46 ms
+[INFO] [1790149507.300866879] [drone_tracker_node]: Round ended: stop requested
+rk3576 video [/home/hzhy/drone-tracker-osd-20260923/synthetic-640x480-20fps.avi] state=2 frame=1204 pts=1203 read=1204 enqueued=1203 dropped=0 reason=Stopped by caller
+[INFO] [1790149508.774434688] [rclcpp]: signal_handler(SIGINT/SIGTERM)

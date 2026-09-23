@@ -1,0 +1,7 @@
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /usr/lib/librknnrt.so
+2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889  /home/hzhy/drone-tracker-osd-20260923/models/fp16/head.rknn
+9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44  /home/hzhy/drone-tracker-osd-20260923/models/fp16/search_backbone.rknn
+622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2  /home/hzhy/drone-tracker-osd-20260923/models/fp16/template_backbone.rknn
+4d8a22bc8da9fbbc43f190b7ea90c27d9980f77e3e27064ec32cf6566c2680f3  /home/hzhy/drone-tracker-osd-20260923/models/yolo.rknn
+0a25315b9ab1a81d403dc5431343fc780d1b92c75bf0ce42480d7e7a64464fde  /home/hzhy/drone-tracker-osd-20260923/synthetic.yaml
+3e344dd4afab97a1b0b3b9c43ad47f8e480c8f4d58ca8e0b7d39f9417de6c1f9  /home/hzhy/drone-tracker-osd-20260923/synthetic-640x480-20fps.avi

@@ -1,0 +1,33 @@
+-- Install configuration: "Release"
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/lib/drone_tracker/drone_tracker_node
+-- Set runtime path of "/home/hzhy/drone-tracker-osd-final-20260923/install-on/lib/drone_tracker/drone_tracker_node" to ""
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/licenses/FONT_LICENSE.txt
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//models
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//models/model_stub.md
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//launch
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//launch/balloon_tracker.launch.py
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//launch/rk3576_camera.launch.py
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//launch/drone_tracker.launch.py
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//launch/rk3576_video.launch.py
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//parameters
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//parameters/rk3576_camera_params.yaml
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//parameters/drone_tracker_params.yaml
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//parameters/replay_fp16.yaml
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//parameters/balloon_tracker_params.yaml
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//parameters/rk3576_video_params.yaml
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker//parameters/replay_int8.yaml
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/ament_index/resource_index/package_run_dependencies/drone_tracker
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/ament_index/resource_index/parent_prefix_path/drone_tracker
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/environment/ament_prefix_path.sh
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/environment/ament_prefix_path.dsv
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/environment/path.sh
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/environment/path.dsv
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/local_setup.bash
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/local_setup.sh
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/local_setup.zsh
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/local_setup.dsv
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/package.dsv
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/ament_index/resource_index/packages/drone_tracker
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/cmake/drone_trackerConfig.cmake
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/cmake/drone_trackerConfig-version.cmake
+-- Installing: /home/hzhy/drone-tracker-osd-final-20260923/install-on/share/drone_tracker/package.xml

@@ -1,0 +1,1 @@
+OSD /dev/dri/card0: cannot read exclusive ownership evidence /sys/kernel/debug/dri/0/clients; stop the desktop display service and confirm the device is released before retrying

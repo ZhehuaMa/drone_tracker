@@ -1,0 +1,2 @@
+ef70c275d72517412413f3d862eaca6fa1790e65f8ce7cbc5f716e505cc9899a  /tmp/osd-final-build-text
+ef70c275d72517412413f3d862eaca6fa1790e65f8ce7cbc5f716e505cc9899a  /tmp/osd-final-install-text

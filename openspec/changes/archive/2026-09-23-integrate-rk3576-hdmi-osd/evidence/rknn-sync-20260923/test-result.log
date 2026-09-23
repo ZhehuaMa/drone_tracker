@@ -1,0 +1,12 @@
+Internal ctest changing into directory: /home/hzhy/drone-tracker-rknn-sync-20260923/test-build
+Test project /home/hzhy/drone-tracker-rknn-sync-20260923/test-build
+    Start  8: rknn_session_tests
+1/3 Test  #8: rknn_session_tests ...............   Passed    0.01 sec
+    Start  9: rknn_nanotrack_backend_tests
+2/3 Test  #9: rknn_nanotrack_backend_tests .....   Passed    1.75 sec
+    Start 14: rknn_runtime_tests
+3/3 Test #14: rknn_runtime_tests ...............   Passed    1.05 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   2.83 sec

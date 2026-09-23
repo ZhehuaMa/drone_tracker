@@ -1,0 +1,41 @@
+{
+  "mode": "observed-recovery",
+  "events": [
+    {
+      "case": "missing input",
+      "resource": {
+        "t": 24263.593258265,
+        "rss_kb": 122280,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 14.75,
+        "boxes": 202
+      }
+    },
+    {
+      "case": "RECOVERY AFTER INPUT FAILURE",
+      "frames": 602,
+      "resource": {
+        "t": 24324.140087081,
+        "rss_kb": 128012,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 59.37,
+        "boxes": 602
+      }
+    },
+    {
+      "case": "NEW ROUND AFTER OFF",
+      "frames": 602,
+      "resource": {
+        "t": 24384.613742958,
+        "rss_kb": 127948,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 104.04,
+        "boxes": 602
+      }
+    }
+  ],
+  "exit_code": 0
+}

@@ -1,0 +1,64 @@
+{
+  "mode": "boundaries",
+  "events": [
+    {
+      "case": "EOF",
+      "frames": 90,
+      "resource": {
+        "t": 21098.645617144,
+        "rss_kb": 127712,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 6.82,
+        "boxes": 90
+      }
+    },
+    {
+      "case": "EOF",
+      "frames": 90,
+      "resource": {
+        "t": 21112.100127593,
+        "rss_kb": 128020,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 13.6,
+        "boxes": 90
+      }
+    },
+    {
+      "case": "missing input",
+      "resource": {
+        "t": 21122.602711277,
+        "rss_kb": 118756,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 15.39,
+        "boxes": 90
+      }
+    },
+    {
+      "case": "recovered new round",
+      "frames": 32,
+      "resource": {
+        "t": 21134.146086484,
+        "rss_kb": 127836,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 19.3,
+        "boxes": 32
+      }
+    },
+    {
+      "case": "telemetry visual phases completed",
+      "resource": {
+        "t": 21164.168079394,
+        "rss_kb": 127836,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 23.8,
+        "boxes": 32
+      }
+    }
+  ],
+  "exit_code": 0
+}

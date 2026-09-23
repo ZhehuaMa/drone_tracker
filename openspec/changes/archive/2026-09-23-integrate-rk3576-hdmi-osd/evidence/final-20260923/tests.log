@@ -1,0 +1,44 @@
+Internal ctest changing into directory: /tmp/drone-osd-node-20260923/build-on
+Test project /tmp/drone-osd-node-20260923/build-on
+    Start  1: ros_video_generate_fixtures
+1/8 Test  #1: ros_video_generate_fixtures ......   Passed    0.44 sec
+    Start  2: ros_video_tests
+2/8 Test  #2: ros_video_tests ..................   Passed   10.27 sec
+    Start  3: ros_initialization_tests
+3/8 Test  #3: ros_initialization_tests .........   Passed    3.16 sec
+    Start 13: osd_presenter_tests
+4/8 Test #13: osd_presenter_tests ..............   Passed    0.11 sec
+    Start 14: osd_geometry_tests
+5/8 Test #14: osd_geometry_tests ...............   Passed    0.01 sec
+    Start 15: osd_layout_tests
+6/8 Test #15: osd_layout_tests .................   Passed    0.43 sec
+    Start 16: osd_telemetry_tests
+7/8 Test #16: osd_telemetry_tests ..............   Passed    0.02 sec
+    Start 17: ros_osd_telemetry_tests
+8/8 Test #17: ros_osd_telemetry_tests ..........***Failed    0.22 sec
+
+>>> [rcutils|error_handling.c:108] rcutils_set_error_state()
+This error state is being overwritten:
+
+  'Type support not from this implementation. Got:
+    Handle's typesupport identifier (rosidl_typesupport_cpp) is not supported by this library, at ./src/type_support_dispatch.hpp:111
+    Could not load library libquadrotor_msgs__rosidl_typesupport_fastrtps_cpp.so: dlopen error: libquadrotor_msgs__rosidl_typesupport_fastrtps_cpp.so: cannot open shared object file: No such file or directory, at ./src/shared_library.c:99, at ./src/type_support_dispatch.hpp:76
+while fetching it, at ./src/subscription.cpp:116, at ./src/rcl/subscription.c:109'
+
+with this new error message:
+
+  'invalid allocator, at ./src/rcl/subscription.c:219'
+
+rcutils_reset_error() should be called after error handling to avoid this.
+<<<
+invalid allocator, at ./src/rcl/subscription.c:219
+could not create subscription: invalid allocator, at ./src/rcl/subscription.c:219
+
+
+88% tests passed, 1 tests failed out of 8
+
+Total Test time (real) =  14.68 sec
+
+The following tests FAILED:
+	 17 - ros_osd_telemetry_tests (Failed)
+Errors while running CTest

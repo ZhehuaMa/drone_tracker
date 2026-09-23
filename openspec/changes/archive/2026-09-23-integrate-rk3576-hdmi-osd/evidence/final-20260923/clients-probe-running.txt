@@ -1,0 +1,2 @@
+             command   pid dev master a   uid      magic
+      osd_hdmi_probe 17301   0   y    y     0          0

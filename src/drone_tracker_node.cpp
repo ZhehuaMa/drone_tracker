@@ -6,6 +6,10 @@
 #include <stdexcept>
 
 #include "platform/frame_source_ops.h"
+#include "osd/config.h"
+#ifdef DRONE_TRACKER_HAS_OSD
+#include "platform/rk3576/osd/hdmi_backend.h"
+#endif
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cv_bridge/cv_bridge.h>
@@ -21,20 +25,27 @@ static const std::string TOPIC_TRACKER_TRIGGER = "/fpv/tracker_trigger";
 
 DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
     std::unique_ptr<PlatformFactory> factory,
-    std::function<std::thread(std::function<void()>)> launcher, std::function<void(const char *)> recording_hook)
+    std::function<std::thread(std::function<void()>)> launcher, std::function<void(const char *)> recording_hook,
+    std::unique_ptr<osd::DisplayBackend> display_backend)
     : Node("drone_tracker_node", options), recording_hook_{std::move(recording_hook)}, launcher_{std::move(launcher)} {
     if (!factory) { factory = CreatePlatformFactory(); }
     if (!launcher_) {
         launcher_ = [](std::function<void()> work) { return std::thread{std::move(work)}; };
     }
     declare_parameters();
+    setupDisplay(std::move(display_backend));
     setup(*factory);
-#ifdef DRONE_TRACKER_RK3576
     parameter_guard_ = add_on_set_parameters_callback([](const std::vector<rclcpp::Parameter> &parameters) {
         rcl_interfaces::msg::SetParametersResult result{};
         result.successful = true;
         for (const auto &parameter : parameters) {
             const auto &name{parameter.get_name()};
+            if (name.rfind("osd.", 0) == 0) {
+                result.successful = false;
+                result.reason = "OSD startup parameters cannot change at runtime: " + name;
+                break;
+            }
+#ifdef DRONE_TRACKER_RK3576
             if (name == "mv_camera.sensor_model") {
                 result.successful = false;
                 result.reason = "mv_camera.sensor_model cannot change at runtime; restart the node to apply it";
@@ -48,14 +59,16 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
                 result.reason = "RK3576 startup configuration is fixed; system clock only: " + name;
                 break;
             }
+#endif
         }
         return result;
     });
-#endif
 }
 
 DroneTrackerNode::~DroneTrackerNode() {
     stop();
+    osd_telemetry_.reset();
+    if (osd_presenter_) { osd_presenter_->shutdown(); }
     if (mv_camera_) { mv_camera_->stop(); }
     tracker_.reset();
     closeRecording();
@@ -77,11 +90,16 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
         consumed_frames_ = 0;
         last_acquisition_report_ = std::chrono::steady_clock::now();
         running = true;
+        if (osd_presenter_) {
+            osd_round_ = osd_presenter_->beginRound();
+            osd_sequence_ = 0;
+        }
         openRecording(stamp);
         worker_thread_ = launcher_([this] { worker(); });
         if (!worker_thread_.joinable()) { throw std::runtime_error("Thread launcher returned no worker"); }
     } catch (const std::exception &error) {
         running = false;
+        if (osd_presenter_) { osd_presenter_->endRound(osd_round_, osd::DisplayStatus::InputFailure); }
         closeRecording();
         run_state_ = RunState::Idle;
         RCLCPP_ERROR(get_logger(), "Round start failed: %s", error.what());
@@ -91,6 +109,7 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
 void DroneTrackerNode::stop() {
     const auto before{std::chrono::steady_clock::now()};
     std::lock_guard<std::mutex> control{control_mutex_};
+    if (osd_presenter_) { osd_presenter_->endRound(osd_round_, osd::DisplayStatus::Stopped); }
     running = false;
     wait_cv_.notify_all();
     if (worker_thread_.joinable()) { worker_thread_.join(); }
@@ -125,6 +144,61 @@ void DroneTrackerNode::closeRecording() noexcept {
         RCLCPP_ERROR(get_logger(), "Recording close failed: %s", error.what());
     }
     rosbag_writer_.reset();
+}
+
+void DroneTrackerNode::setupDisplay(std::unique_ptr<osd::DisplayBackend> backend) {
+    osd::DisplayConfig config{};
+    config.drm_device = get_parameter("osd.drm_device").as_string();
+    config.connector = get_parameter("osd.connector").as_string();
+    config.refresh_hz = get_parameter("osd.refresh_hz").as_double();
+    config.craft_name = get_parameter("osd.craft_name").as_string();
+    const auto width{get_parameter("osd.width").as_int()}, height{get_parameter("osd.height").as_int()};
+    const auto stale{get_parameter("osd.frame_stale_ms").as_int()};
+    const auto timeout{get_parameter("osd.telemetry_timeout_ms").as_int()};
+    const auto cells{get_parameter("osd.battery_cells").as_int()};
+    if (width < 2 || height < 2 || width > 4096 || height > 4096 || width % 2 || height % 2
+        || !std::isfinite(config.refresh_hz) || config.refresh_hz < 1 || config.refresh_hz > 240
+        || stale <= 0 || stale > 3600000 || timeout <= 0 || timeout > 3600000 || cells < 0 || cells > 32
+        || config.drm_device.empty() || config.connector.empty() || config.craft_name.size() > 24
+        || !std::all_of(config.craft_name.begin(), config.craft_name.end(),
+                       [](unsigned char c) { return c >= 32 && c <= 126; })) {
+        throw std::invalid_argument("Invalid osd.* startup configuration");
+    }
+    if (!get_parameter("osd.enabled").as_bool()) { return; }
+    config.width = static_cast<int>(width); config.height = static_cast<int>(height);
+    if (!backend) {
+#ifdef DRONE_TRACKER_HAS_OSD
+        backend = rk3576::createHdmiBackend(config);
+#else
+        throw std::invalid_argument("osd.enabled requires DRONE_TRACKER_BUILD_OSD=ON");
+#endif
+    }
+    osd_presenter_ = std::make_unique<osd::OsdPresenter>(std::move(backend), std::chrono::milliseconds{stale});
+    osd_presenter_->start();
+    osd_telemetry_ = std::make_unique<osd::OsdTelemetryAdapter>(*this,
+        [this](osd::TelemetrySnapshot snapshot) {
+            osd_presenter_->updateTelemetry(std::move(snapshot));
+            const auto failure{osd_presenter_->failure()};
+            if (!failure.empty() && !osd_failure_reported_) {
+                osd_failure_reported_ = true;
+                RCLCPP_ERROR(get_logger(), "OSD disabled after display failure: %s; tracking continues", failure.c_str());
+            }
+            const auto now{osd::SteadyClock::now()};
+            if (now - osd_last_report_ >= std::chrono::seconds{1}) {
+                osd_last_report_ = now;
+                const auto counts{osd_presenter_->counters()};
+                RCLCPP_INFO(get_logger(), "OSD submitted=%lu replaced=%lu displayed=%lu commits=%lu rejected=%lu",
+                    static_cast<unsigned long>(counts.submitted), static_cast<unsigned long>(counts.replaced),
+                    static_cast<unsigned long>(counts.displayed), static_cast<unsigned long>(counts.refreshes),
+                    static_cast<unsigned long>(counts.rejected));
+                const auto calls{osd_submit_calls_.load()};
+                if (calls > 0) {
+                    RCLCPP_INFO(get_logger(), "OSD submit_calls=%lu submit_mean_us=%.3f submit_max_us=%.3f",
+                        static_cast<unsigned long>(calls), osd_submit_ns_.load() / (1000.0 * calls),
+                        osd_submit_max_ns_.load() / 1000.0);
+                }
+            }
+        }, std::chrono::milliseconds{timeout}, static_cast<int>(cells));
 }
 
 void DroneTrackerNode::setup(PlatformFactory &factory)
@@ -361,6 +435,7 @@ void DroneTrackerNode::worker() {
         }
     } catch (const std::exception &error) {
         RCLCPP_ERROR(get_logger(), "Round failed: %s", error.what());
+        if (osd_presenter_) { osd_presenter_->endRound(osd_round_, osd::DisplayStatus::InputFailure); }
     }
     run_state_ = RunState::Stopping;
     running = false;
@@ -375,6 +450,10 @@ void DroneTrackerNode::worker() {
     }
     closeRecording();
     if (recording_failed_) { RCLCPP_ERROR(get_logger(), "Round ended: recording failure"); }
+    if (osd_presenter_) {
+        osd_presenter_->endRound(osd_round_, recording_failed_ ? osd::DisplayStatus::InputFailure
+                                                             : osd::DisplayStatus::Stopped);
+    }
     status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1, "Drone Tracker Stopped", true);
     run_state_ = RunState::Idle;
 }
@@ -438,6 +517,10 @@ void DroneTrackerNode::processFrames() {
             // EOF 已在最后入队之后发布；再取一次避免超时和最后入队竞争。
             if (status.state != FrameSourceState::Eof || !mv_camera_->tryFrame(frame_buffer)) {
                 RCLCPP_INFO(get_logger(), "Input ended: %s", status.state == FrameSourceState::Eof ? "EOF" : "stopped/unknown");
+                if (osd_presenter_) {
+                    osd_presenter_->endRound(osd_round_, status.state == FrameSourceState::Eof
+                        ? osd::DisplayStatus::Eof : osd::DisplayStatus::InputFailure);
+                }
                 break;
             }
             FrameRef newer{};
@@ -467,6 +550,28 @@ void DroneTrackerNode::processFrames() {
         if (out.consumed)
         {
             ++consumed_frames_;
+            if (osd_presenter_) {
+                osd::PresentationPacket packet{frame_buffer, osd_round_, ++osd_sequence_,
+                    frame_buffer->timestampUs(), static_cast<std::int8_t>(out.state), {}};
+                const auto &box{out.display_box};
+                if (box.is_valid && box.width > 0 && box.height > 0) {
+                    const double left{std::max(0.0, box.cx - box.width / 2.0)};
+                    const double top{std::max(0.0, box.cy - box.height / 2.0)};
+                    const double right{std::min(static_cast<double>(frame_buffer->width()), box.cx + box.width / 2.0)};
+                    const double bottom{std::min(static_cast<double>(frame_buffer->height()), box.cy + box.height / 2.0)};
+                    if (right > left && bottom > top) {
+                        packet.boxes.push_back({left, top, right - left, bottom - top, {}});
+                    }
+                }
+                const auto submit_start{osd::SteadyClock::now()};
+                osd_presenter_->submit(std::move(packet));
+                const auto elapsed{static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    osd::SteadyClock::now() - submit_start).count())};
+                // 只测完整 submit 调用（含旧包释放）；不把此耗时当作屏幕显示延迟。
+                osd_submit_ns_.fetch_add(elapsed);
+                if (elapsed > osd_submit_max_ns_.load()) { osd_submit_max_ns_.store(elapsed); }
+                osd_submit_calls_.fetch_add(1);
+            }
             // 发布实时预测框（KF predict_only(now) 外推），空 frame_id 表示无效检测。
             // 时间戳用外推时刻（与外推框同 epoch，避免下游对已外推的测量二次外推）
             auto detection_msg = std::make_unique<vision_msgs::msg::Detection2D>();

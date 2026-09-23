@@ -1,0 +1,2 @@
+             command   pid dev master a   uid      magic
+     drone_tracker_n 22795   0   y    y     0          0

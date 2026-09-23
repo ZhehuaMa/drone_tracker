@@ -1,0 +1,1 @@
+OSD /dev/dri/card0: exclusive DRM ownership not confirmed; client osd_hdmi_probe pid=16584 master=y; stop the desktop display service and confirm the device is released before retrying

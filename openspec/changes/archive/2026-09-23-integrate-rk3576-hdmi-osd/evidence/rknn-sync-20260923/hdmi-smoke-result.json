@@ -1,0 +1,50 @@
+{
+  "mode": "hdmi-smoke",
+  "input": "synthetic-640x480-20fps.avi",
+  "quality_evaluation": false,
+  "rounds": [
+    {
+      "index": 1,
+      "seconds": 30.05305072700139,
+      "messages": 603,
+      "valid_boxes": 0,
+      "stop_observed_seconds": 0.3240586039974005,
+      "begin": {
+        "t": 18019.566459862,
+        "rss_kb": 120968,
+        "threads": 19,
+        "fds": 50,
+        "cpu_seconds": 1.37,
+        "boxes": 1
+      },
+      "idle": {
+        "t": 18050.961884874,
+        "rss_kb": 127528,
+        "threads": 17,
+        "fds": 49,
+        "cpu_seconds": 39.28,
+        "boxes": 603
+      }
+    }
+  ],
+  "initial": {
+    "t": 18019.497918918,
+    "rss_kb": 111052,
+    "threads": 14,
+    "fds": 41,
+    "cpu_seconds": 1.27,
+    "boxes": 0
+  },
+  "pid": 14965,
+  "final": {
+    "t": 18050.963344053,
+    "rss_kb": 127528,
+    "threads": 17,
+    "fds": 49,
+    "cpu_seconds": 39.28,
+    "boxes": 603
+  },
+  "display_failure": false,
+  "exit_code": 0,
+  "exit_seconds": 0.5160866500009433
+}

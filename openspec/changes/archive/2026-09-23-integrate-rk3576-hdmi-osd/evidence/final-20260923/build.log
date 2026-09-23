@@ -1,0 +1,25 @@
+[  7%] Built target preprocess_geometry
+[ 10%] Built target model_common
+[ 17%] Built target drone_osd_core
+[ 17%] Building CXX object src/osd/rk3576_backend/CMakeFiles/drone_osd_rk3576.dir/hdmi_backend.cpp.o
+[ 27%] Built target hybrid_tracker
+[ 30%] Built target drone_osd_telemetry
+[ 37%] Built target rk3576_yolo_host
+[ 55%] Built target rk3576_video
+[ 55%] Built target rk3576_ar0234_camera
+[ 65%] Built target rk3576_yolo_runtime
+[ 70%] Built target rk3576_sc233hgs_camera
+[ 77%] Built target rk3576_yolo_sdk
+[ 82%] Built target rk3576_tracker_assembly
+[ 87%] Built target platform_rk3576
+[ 90%] Linking CXX static library libdrone_osd_rk3576.a
+[ 92%] Built target drone_osd_rk3576
+[ 97%] Built target drone_tracker_ros
+[ 97%] Linking CXX executable drone_tracker_node
+[100%] Built target drone_tracker_node
+[ 50%] Built target drone_osd_core
+Consolidate compiler generated dependencies of target drone_osd_rk3576
+[ 83%] Built target drone_osd_rk3576
+Consolidate compiler generated dependencies of target osd_hdmi_probe
+[100%] Linking CXX executable osd_hdmi_probe
+[100%] Built target osd_hdmi_probe
