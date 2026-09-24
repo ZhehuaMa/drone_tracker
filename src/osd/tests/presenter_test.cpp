@@ -1,4 +1,6 @@
 #include "osd/presenter.h"
+#include "osd/layout.h"
+#include "platform/rk3576/osd/pipeline_state.h"
 
 #include <atomic>
 #include <iostream>
@@ -57,9 +59,11 @@ struct BackendState {
 };
 class FakeBackend final : public osd::DisplayBackend {
 public:
-    explicit FakeBackend(BackendState &state) : state_{state} {}
+    explicit FakeBackend(BackendState &state, bool cached) : state_{state}, cached_{cached} {}
     void initialize() override {}
     void prepareVideo(const Frame &frame) override {
+        osd::TimingSpan timing{timing_sample_, cached_ ? osd::TimingStage::SourcePrepare
+            : osd::TimingStage::SourceCopy, timing_now_};
         auto view{frame.mapRead()};
         prepared_ = view->mat().at<unsigned char>(0, 0);
         std::unique_lock<std::mutex> lock{state_.mutex};
@@ -69,9 +73,11 @@ public:
         state_.changed.wait(lock, [&] { return !state_.block_prepare || state_.interrupted; });
     }
     bool present(const osd::PresentationState &state, const std::function<bool()> &authorize) override {
-        if (!authorize()) {
-            return false;
-        }
+        osd::TimingSpan timing{timing_sample_, osd::TimingStage::Layout, timing_now_};
+        const auto pair{planes_.prepare(state.new_video)};
+        if (cached_) { layout_.draw(state, osd::fitVideo(7, 3, 720, 480), 720, 480, {}); }
+        timing.next(cached_ ? osd::TimingStage::OverlayUpload : osd::TimingStage::Compose);
+        if (!authorize()) { planes_.discard(); return false; }
         std::unique_lock<std::mutex> lock{state_.mutex};
         if (state.new_video) {
             state_.presenting = true;
@@ -84,12 +90,16 @@ public:
         if (state.new_video) {
             current_ = prepared_;
         }
+        const auto previous{planes_.displayed()};
+        planes_.submitted();
+        require(planes_.confirm(pair.generation), "test flip not confirmed");
+        if (!state.new_video) { require(planes_.displayed().primary == previous.primary, "frozen primary changed"); }
         state_.pixels.push_back(current_);
         state_.outputs.push_back(state);
         state_.changed.notify_all();
         return true;
     }
-    void discardPrepared() noexcept override { prepared_ = 0; }
+    void discardPrepared() noexcept override { prepared_ = 0; planes_.discard(); }
     void interrupt() noexcept override {
         std::lock_guard<std::mutex> lock{state_.mutex};
         state_.interrupted = true;
@@ -97,6 +107,9 @@ public:
     }
     void shutdown() noexcept override {}
 private:
+    bool cached_{};
+    osd::CachedOsdLayout layout_{};
+    rk3576::osd_backend::PlaneState planes_{};
     BackendState &state_;
     int prepared_{}, current_{};
 };
@@ -122,12 +135,12 @@ struct TimingCapture {
         return result;
     }
 };
-void pairingAndOwnership() {
+void pairingAndOwnership(bool cached) {
     Resources resources{};
     BackendState state{};
     state.block_prepare = true;
     TimingCapture timing{};
-    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state), 1000ms, osd::SteadyClock::now,
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms, osd::SteadyClock::now,
         [&](const osd::TimingWindow &window) { timing.record(window); }};
     presenter.start();
     const auto round{presenter.beginRound()};
@@ -168,12 +181,12 @@ void pairingAndOwnership() {
     require(timing.count(0, osd::TimingStage::PendingWait) == 2, "replaced packet was sampled");
     require(timing.count(0, osd::TimingStage::NewFrameInterval) == 1, "new interval missing");
 }
-void stopBeforeHandoff() {
+void stopBeforeHandoff(bool cached) {
     Resources resources{};
     BackendState state{};
     state.block_prepare = true;
     TimingCapture timing{};
-    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state), 1000ms, osd::SteadyClock::now,
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms, osd::SteadyClock::now,
         [&](const osd::TimingWindow &window) { timing.record(window); }};
     presenter.start();
     const auto round{presenter.beginRound()};
@@ -198,13 +211,13 @@ void stopBeforeHandoff() {
     require(timing.count(0, osd::TimingStage::SubmitToDisplay) == 0, "rejected display sampled as success");
     require(resources.frames == 0 && resources.views == 0, "stop resource leak");
 }
-void stopInFlightAndRestart() {
+void stopInFlightAndRestart(bool cached) {
     Resources resources{};
     BackendState state{};
     state.block_present = true;
     TimingCapture timing{};
     std::atomic<int> clock_ms{0};
-    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state), 50ms,
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 50ms,
         [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{clock_ms.load()}}; },
         [&](const osd::TimingWindow &window) { timing.record(window); }};
     presenter.start();
@@ -251,12 +264,12 @@ void stopInFlightAndRestart() {
     require(timing.count(0, osd::TimingStage::NewFrameInterval) == 0, "interval crossed stop/new round");
     require(resources.frames == 0, "restart leaked frames");
 }
-void timingIntervalsAndStale() {
+void timingIntervalsAndStale(bool cached) {
     Resources resources{};
     BackendState state{};
     TimingCapture timing{};
     std::atomic<int> clock_ms{0};
-    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state), 1000ms,
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms,
         [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{clock_ms.load()}}; },
         [&](const osd::TimingWindow &window) { timing.record(window); }};
     presenter.start();
@@ -288,11 +301,11 @@ void timingIntervalsAndStale() {
     require(interval_sum == 500000, "interval did not use injected monotonic clock");
     require(submitted == 3 && displayed == 3, "snapshot counter deltas lost or duplicated");
 }
-void failureAndExit() {
+void failureAndExit(bool cached) {
     Resources resources{};
     BackendState state{};
     TimingCapture timing{};
-    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state), 1000ms, osd::SteadyClock::now,
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms, osd::SteadyClock::now,
         [&](const osd::TimingWindow &window) { timing.record(window); }};
     presenter.start();
     const auto round{presenter.beginRound()};
@@ -321,11 +334,13 @@ void failureAndExit() {
 } // namespace
 int main() {
     try {
-        pairingAndOwnership();
-        stopBeforeHandoff();
-        stopInFlightAndRestart();
-        timingIntervalsAndStale();
-        failureAndExit();
+        for (bool cached : {false, true}) {
+            pairingAndOwnership(cached);
+            stopBeforeHandoff(cached);
+            stopInFlightAndRestart(cached);
+            timingIntervalsAndStale(cached);
+            failureAndExit(cached);
+        }
         std::cout << "OSD pairing, lifetime, stop and restart tests passed\n";
         return 0;
     } catch (const std::exception &error) {

@@ -1,0 +1,10 @@
+OSD exclusive DRM ownership verified: device=/dev/dri/card0 pid=4973 owner_tid=4973 master=y clients=1 evidence=/sys/kernel/debug/dri/0/clients
+rga_api version 1.10.5_[9]
+OSD HDMI HDMI-A-1 720x480 refresh_hz=60
+OSD_RGA_AUDIT operations=440 copies=0 blends=0 commits=340
+PASS source channels=1 byte_stride=1280 frames=60
+PASS source channels=1 byte_stride=1296 frames=60
+PASS source channels=3 byte_stride=3840 frames=60
+PASS source channels=3 byte_stride=3888 frames=60
+PASS source channels=3 byte_stride=4096 frames=60
+PASS 20 freeze/resume cycles; video_operations=440 repacked_frames=60

@@ -646,5 +646,54 @@ OSD timing round=1 window_id=3 window_us=1000123 submitted=35 replaced=33 displa
 均值和最大值使用原始微秒值。P95/P99 分别是覆盖 95%/99% 样本的近似耗时界限。
 直方图上界为 1、2、4、8…67108864 微秒；分位数取桶上界，可能接近真实值的两倍。
 超出末桶报告 `>67108864`。样本少时不能据此推断稳定的长尾分布。
+`buckets` 按上述顺序输出 28 个冒号分隔的计数，最后一项为溢出桶。
+跨窗口统计须先逐桶相加，再计算分位数；不要平均各窗口 P95。
 用实际 `window_us` 计算速率，不假定回调恰好每秒一次。
 RGA 阶段包含 CPU 调度和同步等待，不能称为纯硬件执行耗时。
+
+### 缓存式 HDMI 覆盖层与启动回退
+
+`osd.render_path` 选择显示实现，合法值只有 `cached-overlay` 和 `legacy`。
+这是启动参数，运行期修改会被拒绝。生产板规定验收已通过，
+参数声明与两个 RK3576 参数文件均默认使用 `cached-overlay`，保留 `legacy` 供回退。
+
+优化路径使用两个显示平面。主平面只保存视频，覆盖平面保存带透明度的文字和目标框。
+两者各有两个缓冲，只有对应的翻页事件确认后，后备缓冲才变为已显示缓冲。
+仅遥测更新或 OFF 冻结时复用当前主平面，只准备新的覆盖平面。
+超时意味着设备状态未知；后端停止显示并同步释放设备，不能继续覆盖可能仍在扫描的缓冲。
+
+布局使用持久画布和字形缓存。字段变化时恢复旧、新区域，再重画受影响字段；
+几何尺寸、跟踪轮次或主题变化时完整重建。兼容 BGR 输入以一次同步 RGA 操作写入主平面。
+灰度输入先写亮度，再从中性色度缓冲转换到主平面，共两次操作。
+RGA 的行步长以整数像素表示。例如 1280 像素 BGR 的 4096 字节步长不能直接表示，
+后端会把每行 3840 个有效字节重排到复用缓冲。兼容输入不会执行这次复制。
+源读视图始终保留到同步硬件处理完成，缓冲归还不早于硬件读取结束。
+
+启动前确认使用 HZ-RK3576_WuKong Board、系统 Runtime 2.3.2 和驱动 0.9.8，
+目标 HDMI 模式存在，且显示设备由本进程独占。先停止占用 DRM 的现有节点或桌面服务，
+不要同时启动两个显示进程。构建需启用 `DRONE_TRACKER_BUILD_OSD=ON`，并提供 libdrm、librga。
+
+先加载 ROS 与构建安装环境，再使用已经填写模型、内参和输入的配置启动。例如：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /path/to/install/setup.bash
+ros2 run drone_tracker drone_tracker_node --ros-args \
+  --params-file /path/to/validated-video.yaml \
+  -p osd.enabled:=true -p osd.render_path:=cached-overlay -p osd.timing_enabled:=true
+```
+
+节点等待原有 ON 控制。回退时先正常退出该节点，再执行相同命令，
+仅将 `osd.render_path:=cached-overlay` 改成 `osd.render_path:=legacy`。
+模型、话题、输入和系统调度设置保持原值。`osd.enabled:=false` 则完全不建立显示后端。
+
+优化路径报告 `source_prepare`（源校验、导入和必要重排）、`scale_convert`、`layout`、
+`overlay_upload`、`commit`、`flip_wait`、`render_total`、`pending_wait`、
+`submit_to_display`、`new_frame_interval`。旧路径保留 `source_copy` 和 `compose`。
+未执行的阶段不伪造样本；零复制的源准备仍是有效样本。关闭 `osd.timing_enabled` 后不采样。
+
+同板三轮性能门槛、20 轮冻结恢复、10 分钟完整跟踪负载和故障验证记录见
+[本变更验证记录](../../openspec/changes/optimize-rk3576-hdmi-osd-pipeline/validation.md)。
+`osd_pipeline_probe` 是需独占 HDMI 的板端验证工具，不注册为无设备 CTest。
+它检查翻页确认后的扫描缓冲、源内存复用、颜色与步长、覆盖配对及冻结索引；
+该结果不能替代带真实模型的性能和持续负载验收。

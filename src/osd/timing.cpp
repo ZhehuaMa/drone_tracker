@@ -54,9 +54,9 @@ void TimingWindow::add(const TimingSample &sample, bool new_video, TimingResult 
         if (sample.stages[i]) { group.stages[i].add(*sample.stages[i]); }
     }
 }
-std::string formatTiming(const TimingWindow &window) {
+std::string formatTiming(const TimingWindow &window, RenderPath path) {
     constexpr std::array<const char *, TIMING_STAGES> names{{"source_copy", "scale_convert", "layout", "compose",
-        "commit", "flip_wait", "render_total", "pending_wait", "submit_to_display", "new_frame_interval", "other"}};
+        "commit", "flip_wait", "render_total", "pending_wait", "submit_to_display", "new_frame_interval", "other", "source_prepare", "overlay_upload"}};
     constexpr std::array<const char *, 3> results{{"success", "rejected", "failure"}};
     std::ostringstream out{};
     out << "OSD timing round=" << window.round << " window_id=" << window.id << " window_us="
@@ -69,6 +69,11 @@ std::string formatTiming(const TimingWindow &window) {
             << " count=" << group.count << " first_frames=" << group.first_frames;
         if (!group.count) { out << " samples=none"; continue; }
         for (std::size_t s{0}; s < TIMING_STAGES; ++s) {
+            const auto stage{static_cast<TimingStage>(s)};
+            if (path == RenderPath::CachedOverlay
+                && (stage == TimingStage::SourceCopy || stage == TimingStage::Compose)) { continue; }
+            if (path == RenderPath::Legacy
+                && (stage == TimingStage::SourcePrepare || stage == TimingStage::OverlayUpload)) { continue; }
             const auto &h{group.stages[s]};
             out << ' ' << names[s] << "{count=" << h.count;
             if (h.count) {
@@ -76,6 +81,12 @@ std::string formatTiming(const TimingWindow &window) {
                 out << ",mean=" << static_cast<double>(h.total_us / h.count) << ",max=" << h.max_us
                     << ",p95_approx=" << (p95 ? std::to_string(*p95) : ">67108864")
                     << ",p99_approx=" << (p99 ? std::to_string(*p99) : ">67108864");
+                // 保存桶计数才能跨窗口合并百分位；窗口百分位本身不能直接平均。
+                out << ",buckets=";
+                for (std::size_t bucket{0}; bucket < h.buckets.size(); ++bucket) {
+                    if (bucket) { out << ':'; }
+                    out << h.buckets[bucket];
+                }
             }
             out << '}';
         }

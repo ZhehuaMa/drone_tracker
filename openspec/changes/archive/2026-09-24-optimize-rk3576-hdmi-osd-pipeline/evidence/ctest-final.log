@@ -1,0 +1,82 @@
+Internal ctest changing into directory: /work/ros2_ws/build/drone_tracker
+Test project /work/ros2_ws/build/drone_tracker
+      Start  1: ros_video_generate_fixtures
+ 1/38 Test  #1: ros_video_generate_fixtures .............   Passed    0.16 sec
+      Start  2: ros_video_tests
+ 2/38 Test  #2: ros_video_tests .........................   Passed   10.36 sec
+      Start  3: ros_initialization_tests
+ 3/38 Test  #3: ros_initialization_tests ................   Passed    0.54 sec
+      Start  4: jetson_config_tests
+ 4/38 Test  #4: jetson_config_tests .....................   Passed    0.15 sec
+      Start  5: yolo_output_adapter_tests
+ 5/38 Test  #5: yolo_output_adapter_tests ...............   Passed    1.62 sec
+      Start  6: model_contract_tests
+ 6/38 Test  #6: model_contract_tests ....................   Passed    0.00 sec
+      Start  7: preprocess_common_tests
+ 7/38 Test  #7: preprocess_common_tests .................   Passed    0.00 sec
+      Start  8: preprocess_contract_tests
+ 8/38 Test  #8: preprocess_contract_tests ...............   Passed    0.17 sec
+      Start  9: hybrid_tracker_tests
+ 9/38 Test  #9: hybrid_tracker_tests ....................   Passed    0.01 sec
+      Start 10: platform_contract_tests
+10/38 Test #10: platform_contract_tests .................   Passed    0.04 sec
+      Start 11: rknn_preprocess_tests
+11/38 Test #11: rknn_preprocess_tests ...................   Passed    0.01 sec
+      Start 12: platform_selection_tests
+12/38 Test #12: platform_selection_tests ................   Passed    0.23 sec
+      Start 13: osd_yaml_tests
+13/38 Test #13: osd_yaml_tests ..........................   Passed    0.02 sec
+      Start 14: osd_pipeline_state_tests
+14/38 Test #14: osd_pipeline_state_tests ................   Passed    0.00 sec
+      Start 15: osd_config_tests
+15/38 Test #15: osd_config_tests ........................   Passed    0.00 sec
+      Start 16: osd_timing_tests
+16/38 Test #16: osd_timing_tests ........................   Passed    0.00 sec
+      Start 17: osd_presenter_tests
+17/38 Test #17: osd_presenter_tests .....................   Passed    0.58 sec
+      Start 18: osd_geometry_tests
+18/38 Test #18: osd_geometry_tests ......................   Passed    0.00 sec
+      Start 19: osd_layout_tests
+19/38 Test #19: osd_layout_tests ........................   Passed    0.15 sec
+      Start 20: osd_telemetry_tests
+20/38 Test #20: osd_telemetry_tests .....................   Passed    0.00 sec
+      Start 21: ros_osd_telemetry_tests
+21/38 Test #21: ros_osd_telemetry_tests .................   Passed    0.65 sec
+      Start 22: nanotrack_baseline_tests
+22/38 Test #22: nanotrack_baseline_tests ................   Passed    0.03 sec
+      Start 23: nanotrack_baseline_help
+23/38 Test #23: nanotrack_baseline_help .................   Passed    0.02 sec
+      Start 24: baseline_rknn_session_tests
+24/38 Test #24: baseline_rknn_session_tests .............   Passed    0.00 sec
+      Start 25: baseline_rknn_nanotrack_backend_tests
+25/38 Test #25: baseline_rknn_nanotrack_backend_tests ...   Passed    0.02 sec
+      Start 26: baseline_nanotrack_preprocess_tests
+26/38 Test #26: baseline_nanotrack_preprocess_tests .....   Passed    0.00 sec
+      Start 27: baseline_video_fixtures
+27/38 Test #27: baseline_video_fixtures .................   Passed    0.15 sec
+      Start 28: baseline_video_observation
+28/38 Test #28: baseline_video_observation ..............   Passed    0.02 sec
+      Start 29: baseline_runner_tests
+29/38 Test #29: baseline_runner_tests ...................   Passed    0.17 sec
+      Start 30: baseline_code_identity_tests
+30/38 Test #30: baseline_code_identity_tests ............   Passed    2.69 sec
+      Start 31: search_direct_direct_backend_tests
+31/38 Test #31: search_direct_direct_backend_tests ......   Passed    0.01 sec
+      Start 32: search_direct_direct_failure_tests
+32/38 Test #32: search_direct_direct_failure_tests ......   Passed    0.01 sec
+      Start 33: search_direct_help
+33/38 Test #33: search_direct_help ......................   Passed    0.01 sec
+      Start 34: search_direct_probe_help
+34/38 Test #34: search_direct_probe_help ................   Passed    0.00 sec
+      Start 35: search_direct_probe_missing_models
+35/38 Test #35: search_direct_probe_missing_models ......   Passed    0.00 sec
+      Start 36: search_direct_missing_config
+36/38 Test #36: search_direct_missing_config ............   Passed    0.01 sec
+      Start 37: search_direct_video_fixtures
+37/38 Test #37: search_direct_video_fixtures ............   Passed    0.14 sec
+      Start 38: search_direct_runner_tests
+38/38 Test #38: search_direct_runner_tests ..............   Passed    0.13 sec
+
+100% tests passed, 0 tests failed out of 38
+
+Total Test time (real) =  18.24 sec

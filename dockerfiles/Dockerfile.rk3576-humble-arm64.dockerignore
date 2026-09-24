@@ -1,0 +1,6 @@
+*
+!checksums/
+!checksums/*.sha256
+!vendor/
+!vendor/firefly-jammy-arm64/
+!vendor/firefly-jammy-arm64/*.deb

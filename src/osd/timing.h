@@ -8,11 +8,13 @@
 #include <optional>
 #include <string>
 
+#include "osd/config.h"
+
 namespace osd {
 using TimingClock = std::chrono::steady_clock;
 enum class TimingStage : std::size_t {
     SourceCopy, ScaleConvert, Layout, Compose, Commit, FlipWait, RenderTotal,
-    PendingWait, SubmitToDisplay, NewFrameInterval, Other, Count
+    PendingWait, SubmitToDisplay, NewFrameInterval, Other, SourcePrepare, OverlayUpload, Count
 };
 enum class TimingResult : std::size_t { Success, Rejected, Failure, Count };
 constexpr std::size_t TIMING_STAGES{static_cast<std::size_t>(TimingStage::Count)};
@@ -55,6 +57,6 @@ struct TimingWindow {
     void add(const TimingSample &sample, bool new_video, TimingResult result, bool first);
 };
 /** @brief 只在快照锁外调用，返回固定规模日志。 */
-std::string formatTiming(const TimingWindow &window);
+std::string formatTiming(const TimingWindow &window, RenderPath path = RenderPath::Legacy);
 } // namespace osd
 #endif // OSD_TIMING_H

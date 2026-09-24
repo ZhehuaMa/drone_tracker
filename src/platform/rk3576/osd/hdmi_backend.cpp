@@ -22,6 +22,7 @@
 #include <sys/sysmacros.h>
 
 #include "dma_buffer.h"
+#include "pipeline_state.h"
 #include "osd/geometry.h"
 #include "osd/layout.h"
 
@@ -136,7 +137,9 @@ Properties properties(int fd, std::uint32_t object, std::uint32_t type) {
 }
 class HdmiBackend final : public osd::DisplayBackend {
 public:
-    explicit HdmiBackend(osd::DisplayConfig config) : config_{std::move(config)}, layout_{config_.craft_name} {
+    explicit HdmiBackend(osd::DisplayConfig config, HdmiInspector inspector = {})
+        : inspector_{std::move(inspector)}, config_{std::move(config)}, layout_{config_.craft_name},
+          cached_layout_{config_.craft_name} {
         wake_fd_ = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
         check(wake_fd_, "eventfd");
     }
@@ -144,7 +147,7 @@ public:
     void initialize() override;
     void prepareVideo(const Frame &frame) override;
     bool present(const osd::PresentationState &state, const std::function<bool()> &authorize) override;
-    void discardPrepared() noexcept override { prepared_ = false; }
+    void discardPrepared() noexcept override { prepared_ = false; planes_.discard(); }
     void interrupt() noexcept override {
         interrupted_ = true;
         const std::uint64_t value{1};
@@ -172,8 +175,20 @@ private:
         add(request, id, "CRTC_W", config_.width); add(request, id, "CRTC_H", config_.height);
     }
     void waitCompletion();
+    void prepareCachedVideo(const Frame &frame);
+    bool presentCached(const osd::PresentationState &state, const std::function<bool()> &authorize);
+    bool cached() const { return config_.render_path == osd::RenderPath::CachedOverlay; }
+    osd_backend::PlaneState planes_{};
+    struct FlipEvent { HdmiBackend *owner{}; std::uint64_t generation{}; } flip_event_{};
+    std::array<osd::Rectangle, 2> initialized_geometry_{};
+    bool scratch_initialized_{};
+    std::uint64_t background_initializations_{};
+    osd::Rectangle scratch_geometry_{};
+    HdmiInspector inspector_{};
+    std::uint64_t video_operations_{}, repacked_frames_{};
     osd::DisplayConfig config_;
     osd::OsdLayout layout_;
+    osd::CachedOsdLayout cached_layout_;
     int fd_{-1}, wake_fd_{-1};
     std::atomic<bool> interrupted_{false};
     std::uint32_t connector_{}, crtc_{}, primary_{}, overlay_{}, mode_blob_{}, old_mode_blob_{};
@@ -272,11 +287,13 @@ void HdmiBackend::initialize() {
     for (int i{0}; i < 2; ++i) {
         primary_buffers_[i].allocate(fd_, config_.width, config_.height, DRM_FORMAT_XRGB8888);
         overlay_buffers_[i].allocate(fd_, config_.width, config_.height, DRM_FORMAT_ARGB8888);
-        video_[i].allocate(rgba_size);
-        video_[i].sync(true); std::memset(video_[i].pixels(), 0, rgba_size); video_[i].sync(false);
+        if (!cached()) {
+            video_[i].allocate(rgba_size);
+            video_[i].sync(true); std::memset(video_[i].pixels(), 0, rgba_size); video_[i].sync(false);
+        }
     }
     scratch_.allocate(static_cast<std::size_t>(config_.width) * config_.height * 3 / 2);
-    hud_.allocate(rgba_size);
+    if (!cached()) { hud_.allocate(rgba_size); }
     live_geometry_ = osd::fitVideo(config_.width, config_.height, config_.width, config_.height);
     auto initial{request()};
     add(initial.get(), connector_, "CRTC_ID", crtc_);
@@ -296,6 +313,7 @@ void HdmiBackend::initialize() {
               << " refresh_hz=" << mode_.clock * 1000.0 / mode_.htotal / mode_.vtotal << '\n';
 }
 void HdmiBackend::prepareVideo(const Frame &frame) {
+    if (cached()) { prepareCachedVideo(frame); return; }
     osd::TimingSpan timing{timing_sample_, osd::TimingStage::SourceCopy, timing_now_};
     const int width{frame.width()}, height{frame.height()};
     if (width <= 0 || height <= 0 || width > 8192 || height > 8192) {
@@ -362,7 +380,10 @@ void HdmiBackend::waitCompletion() {
     const auto deadline{osd::SteadyClock::now() + std::chrono::milliseconds{250}};
     drmEventContext context{}; context.version = 2;
     context.page_flip_handler = [](int, unsigned int, unsigned int, unsigned int, void *data) {
-        static_cast<HdmiBackend *>(data)->flip_done_ = true;
+        auto &event{*static_cast<FlipEvent *>(data)};
+        if (!event.owner->cached() || event.owner->planes_.confirm(event.generation)) {
+            event.owner->flip_done_ = true;
+        }
     };
     while (!flip_done_) {
         const auto left{std::chrono::duration_cast<std::chrono::milliseconds>(deadline - osd::SteadyClock::now()).count()};
@@ -377,6 +398,7 @@ void HdmiBackend::waitCompletion() {
     }
 }
 bool HdmiBackend::present(const osd::PresentationState &state, const std::function<bool()> &authorize) {
+    if (cached()) { return presentCached(state, authorize); }
     if (state.new_video && !prepared_) { throw std::logic_error("OSD missing prepared video"); }
     const int next{1 - scanout_};
     const auto &geometry{state.new_video ? prepared_geometry_ : live_geometry_};
@@ -400,7 +422,8 @@ bool HdmiBackend::present(const osd::PresentationState &state, const std::functi
     add(update.get(), overlay_, "FB_ID", overlay_buffers_[next].framebuffer);
     if (interrupted_ || !authorize()) { return false; }
     flip_done_ = false;
-    check(drmModeAtomicCommit(fd_, update.get(), DRM_MODE_ATOMIC_NONBLOCK | DRM_MODE_PAGE_FLIP_EVENT, this),
+    flip_event_ = {this, 0};
+    check(drmModeAtomicCommit(fd_, update.get(), DRM_MODE_ATOMIC_NONBLOCK | DRM_MODE_PAGE_FLIP_EVENT, &flip_event_),
           "paired plane commit");
     timing.next(osd::TimingStage::FlipWait);
     waitCompletion();
@@ -411,6 +434,139 @@ bool HdmiBackend::present(const osd::PresentationState &state, const std::functi
         live_geometry_ = prepared_geometry_;
     }
     prepared_ = false;
+    return true;
+}
+void HdmiBackend::prepareCachedVideo(const Frame &frame) {
+    osd::TimingSpan timing{timing_sample_, osd::TimingStage::SourcePrepare, timing_now_};
+    auto view{frame.mapRead()};
+    const int width{frame.width()}, height{frame.height()};
+    const int channels{frame.pixelFormat() == FramePixelFormat::Gray8 ? 1 : 3};
+    if (!view || view->width() != width || view->height() != height
+        || view->pixelFormat() != frame.pixelFormat() || view->mat().step != view->rowStrideBytes()
+        || view->mat().type() != (channels == 1 ? CV_8UC1 : CV_8UC3) || view->mat().empty()
+        || view->mat().cols != width || view->mat().rows != height) {
+        throw std::runtime_error("OSD invalid cached source read view");
+    }
+    auto plan{osd_backend::sourceLayout(width, height, channels, view->rowStrideBytes())};
+    const auto &image{view->mat()};
+    // 子矩阵末行之后未必仍有完整填充；硬件导入要求整个跨度都位于借用的分配内。
+    if (!plan.repack && (!image.datalimit
+        || static_cast<std::size_t>(image.datalimit - image.data) < view->rowStrideBytes() * height)) {
+        plan.repack = true;
+        plan.stride_pixels = (width + 15) / 16 * 16;
+    }
+    struct Imported {
+        rga_buffer_handle_t handle{};
+        ~Imported() { if (handle) { releasebuffer_handle(handle); } }
+    } imported{}; // 在 view 之前析构，源内存始终活到所有同步操作及句柄释放之后。
+    rga_buffer_t source{};
+    const int format{plan.channels == 1 ? RK_FORMAT_YCbCr_400 : RK_FORMAT_BGR_888};
+    if (plan.repack) {
+        ++repacked_frames_;
+        const auto size{static_cast<std::size_t>(plan.stride_pixels) * height * plan.channels};
+        if (input_.size() != size) { input_.allocate(size); }
+        input_.sync(true);
+        for (int y{0}; y < height; ++y) {
+            auto *dst{input_.pixels() + static_cast<std::size_t>(y) * plan.stride_pixels * plan.channels};
+            const auto *src{view->mat().ptr(y)};
+            if (plan.expand_gray) {
+                for (int x{0}; x < width; ++x) { std::fill_n(dst + x * 3, 3, src[x]); }
+            } else { std::memcpy(dst, src, static_cast<std::size_t>(width) * channels); }
+        }
+        input_.sync(false);
+        source = input_.image(width, height, plan.stride_pixels, format);
+    } else {
+        const auto bytes{view->rowStrideBytes() * height};
+        imported.handle = importbuffer_virtualaddr(view->mat().data, bytes);
+        if (!imported.handle) { throw std::runtime_error("OSD RGA source virtual import failed"); }
+        source = wrapbuffer_handle_t(imported.handle, width, height, plan.stride_pixels, height, format);
+    }
+    timing.next(osd::TimingStage::ScaleConvert);
+    prepared_geometry_ = osd::fitVideo(width, height, config_.width, config_.height);
+    const auto &r{prepared_geometry_.destination};
+    const im_rect rectangle{r.x, r.y, r.width, r.height};
+    const int back{planes_.videoBack()};
+    auto &previous{initialized_geometry_[back]};
+    if (previous.x != r.x || previous.y != r.y || previous.width != r.width || previous.height != r.height) {
+        std::memset(primary_buffers_[back].pixels, 0, primary_buffers_[back].size);
+        ++background_initializations_;
+        previous = r;
+    }
+    if (inspector_) {
+        // 验证入口用非零颜色预填有效区域，防止漏写被初始黑色掩盖。
+        cv::Mat pixels{config_.height, config_.width, CV_8UC4,
+                       primary_buffers_[back].pixels, primary_buffers_[back].pitch};
+        pixels(cv::Rect{r.x, r.y, r.width, r.height}).setTo(cv::Scalar{231, 17, 199, 255});
+    }
+    auto output{primary_buffers_[back].image(config_.width, config_.height)};
+    if (plan.channels == 1) {
+        if (!scratch_initialized_) {
+            const auto luma_size{static_cast<std::size_t>(config_.width) * config_.height};
+            scratch_.sync(true);
+            std::memset(scratch_.pixels(), 0, luma_size);
+            std::memset(scratch_.pixels() + luma_size, 128, luma_size / 2);
+            background_initializations_ += 2;
+            scratch_.sync(false);
+            scratch_initialized_ = true;
+        }
+        // 几何变化仅清亮度黑边；色度平面在整个后端生命周期保持中性。
+        if (scratch_geometry_.x != r.x || scratch_geometry_.y != r.y
+            || scratch_geometry_.width != r.width || scratch_geometry_.height != r.height) {
+            scratch_.sync(true);
+            std::memset(scratch_.pixels(), 0, static_cast<std::size_t>(config_.width) * config_.height);
+            ++background_initializations_;
+            scratch_.sync(false); scratch_geometry_ = r;
+        }
+        auto luma{scratch_.image(config_.width, config_.height, config_.width, RK_FORMAT_YCbCr_400)};
+        requireRga(improcess(source, luma, {}, {}, rectangle, {}, -1, nullptr, nullptr, IM_SYNC), "cached gray scale");
+        auto yuv{scratch_.image(config_.width, config_.height, config_.width, RK_FORMAT_YCbCr_420_SP)};
+        imsetColorSpace(&yuv, static_cast<IM_COLOR_SPACE_MODE>(IM_YUV_BT601_FULL_RANGE));
+        requireRga(improcess(yuv, output, {}, {}, {}, {}, -1, nullptr, nullptr, IM_SYNC), "cached gray conversion");
+    } else {
+        requireRga(improcess(source, output, {}, {}, rectangle, {}, -1, nullptr, nullptr, IM_SYNC), "cached BGR scale");
+    }
+    video_operations_ += plan.channels == 1 ? 2 : 1;
+    prepared_ = true;
+}
+bool HdmiBackend::presentCached(const osd::PresentationState &state, const std::function<bool()> &authorize) {
+    if (state.new_video && !prepared_) { throw std::logic_error("OSD missing cached video"); }
+    const auto pair{planes_.prepare(state.new_video)};
+    const auto &geometry{state.new_video ? prepared_geometry_ : live_geometry_};
+    osd::TimingSpan timing{timing_sample_, osd::TimingStage::Layout, timing_now_};
+    const auto &canvas{cached_layout_.draw(state, geometry, config_.width, config_.height,
+                                          std::chrono::system_clock::now())};
+    timing.next(osd::TimingStage::OverlayUpload);
+    auto &buffer{overlay_buffers_[pair.overlay]};
+    for (int y{0}; y < config_.height; ++y) {
+        std::memcpy(static_cast<unsigned char *>(buffer.pixels) + static_cast<std::size_t>(y) * buffer.pitch,
+                    canvas.ptr(y), static_cast<std::size_t>(config_.width) * 4);
+    }
+    timing.next(osd::TimingStage::Commit);
+    auto update{request()};
+    add(update.get(), primary_, "FB_ID", primary_buffers_[pair.primary].framebuffer);
+    add(update.get(), overlay_, "FB_ID", overlay_buffers_[pair.overlay].framebuffer);
+    if (interrupted_ || !authorize()) { planes_.discard(); prepared_ = false; return false; }
+    flip_done_ = false; flip_event_ = {this, pair.generation};
+    try {
+        check(drmModeAtomicCommit(fd_, update.get(), DRM_MODE_ATOMIC_NONBLOCK | DRM_MODE_PAGE_FLIP_EVENT,
+                                  &flip_event_), "cached paired plane commit");
+        planes_.submitted();
+        timing.next(osd::TimingStage::FlipWait);
+        waitCompletion();
+    } catch (...) {
+        // 超时不代表硬件停止读取：禁止再次写入，交给同步 shutdown 禁用平面。
+        planes_.fail(); throw;
+    }
+    timing.finish();
+    if (state.new_video) { live_geometry_ = prepared_geometry_; }
+    prepared_ = false;
+    if (inspector_) {
+        const auto &primary{primary_buffers_[pair.primary]};
+        const auto &overlay{overlay_buffers_[pair.overlay]};
+        inspector_({cv::Mat{config_.height, config_.width, CV_8UC4, primary.pixels, primary.pitch},
+                    cv::Mat{config_.height, config_.width, CV_8UC4, overlay.pixels, overlay.pitch},
+                    pair.primary, pair.overlay, pair.generation, video_operations_, repacked_frames_, background_initializations_});
+    }
     return true;
 }
 void HdmiBackend::shutdown() noexcept {
@@ -453,5 +609,8 @@ void HdmiBackend::shutdown() noexcept {
 } // namespace
 std::unique_ptr<osd::DisplayBackend> createHdmiBackend(osd::DisplayConfig config) {
     return std::make_unique<HdmiBackend>(std::move(config));
+}
+std::unique_ptr<osd::DisplayBackend> createInspectedHdmiBackend(osd::DisplayConfig config, HdmiInspector inspector) {
+    return std::make_unique<HdmiBackend>(std::move(config), std::move(inspector));
 }
 } // namespace rk3576

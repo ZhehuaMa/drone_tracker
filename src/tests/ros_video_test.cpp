@@ -225,6 +225,16 @@ private:
     std::shared_ptr<DisplayTrace> trace_;
 };
 void osdCompatibility() {
+    for (const std::string path : {"legacy", "cached-overlay"}) {
+        auto display{std::make_shared<DisplayTrace>()};
+        Harness h{options({{"osd.enabled", true}, {"osd.render_path", path}}), {}, {}, {},
+                  std::make_unique<TestDisplay>(display)};
+        require(h.node->get_parameter("osd.render_path").as_string() == path, "render path override lost");
+        h.node->run();
+        h.until([&] { return h.detections.size() >= 5; }, "render path blocked shared consumer");
+        h.node->stop();
+        require(h.source->starts == 1 && display->initializes == 1, "render path created extra consumer");
+    }
     for (bool enabled : {false, true}) {
         for (bool images : {false, true}) {
             auto display{std::make_shared<DisplayTrace>()};
@@ -276,7 +286,7 @@ void configuration() {
         {"tracker.yolo_target_class_id", 1}, {"camera.fx", 0.0}, {"camera.fy", -1.0},
         {"camera.cy", std::numeric_limits<double>::quiet_NaN()}, {"use_sim_time", true},
         {"use_history_timestamp", true}, {"osd.width", 0}, {"osd.frame_stale_ms", 0},
-        {"osd.battery_cells", -1}, {"osd.refresh_hz", std::numeric_limits<double>::infinity()},
+        {"osd.render_path", "invalid"}, {"osd.battery_cells", -1}, {"osd.refresh_hz", std::numeric_limits<double>::infinity()},
         {"recording.enabled", true}}) {
         auto source{std::make_shared<SourceTrace>()};
         bool rejected{false};
@@ -292,9 +302,10 @@ void configuration() {
         && intrinsics.py == 40.0, "video intrinsics scaled");
     require(h.paths->yolo == "/models/yolo.rknn", "absolute path prefixed");
     require(h.paths->head.find("/models/head.rknn") != std::string::npos, "relative path not resolved");
+    require(h.node->get_parameter("osd.render_path").as_string() == "cached-overlay", "OSD default path changed");
     for (const auto &parameter : std::vector<rclcpp::Parameter>{{"use_sim_time", true}, {"camera.fx", 200.0},
         {"tracker.enable_dcf", true}, {"video_source", "other.mov"}, {"need_save", true},
-        {"osd.enabled", true}, {"osd.timing_enabled", true}, {"osd.width", 1280}, {"recording.enabled", true},
+        {"osd.enabled", true}, {"osd.timing_enabled", true}, {"osd.render_path", "cached-overlay"}, {"osd.width", 1280}, {"recording.enabled", true},
         {"recording.directory", "/var/lib/drone_tracker/other"}, {"recording.bitrate_bps", 8000000},
         {"recording.segment_seconds", 30}, {"recording.sync_interval_ms", 500},
         {"recording.max_total_bytes", 1000000}, {"recording.min_free_bytes", 1000000}}) {

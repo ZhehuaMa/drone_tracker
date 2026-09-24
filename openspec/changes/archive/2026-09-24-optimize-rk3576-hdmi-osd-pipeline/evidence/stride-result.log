@@ -1,0 +1,25 @@
+rga_api version 1.10.5_[9]
+MISMATCH row=0 col=0 channel=1 actual=135 expected=0
+MISMATCH row=0 col=63 channel=0 actual=0 expected=17
+MISMATCH row=0 col=63 channel=1 actual=134 expected=17
+MISMATCH row=0 col=63 channel=2 actual=0 expected=17
+RESULT channels=1 byte_stride=1280 rga_pixel_stride=1280 frames=60 failures=0 pixel_mismatches=3488
+MISMATCH row=0 col=0 channel=1 actual=135 expected=0
+MISMATCH row=0 col=63 channel=0 actual=0 expected=17
+MISMATCH row=0 col=63 channel=1 actual=134 expected=17
+MISMATCH row=0 col=63 channel=2 actual=0 expected=17
+RESULT channels=1 byte_stride=1296 rga_pixel_stride=1296 frames=60 failures=0 pixel_mismatches=3488
+RESULT channels=3 byte_stride=3840 rga_pixel_stride=1280 frames=60 failures=0 pixel_mismatches=0
+RESULT channels=3 byte_stride=3888 rga_pixel_stride=1296 frames=60 failures=0 pixel_mismatches=0
+RESULT channels=3 byte_stride=4096 rga_pixel_stride=1365 frames=1 failures=1 pixel_mismatches=0
+RESULT channels=3 byte_stride=4096 rga_pixel_stride=1366 frames=1 failures=1 pixel_mismatches=0
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /usr/lib/librknnrt.so
+RKNPU driver: v0.9.8
+PRETTY_NAME="Ubuntu 22.04.5 LTS"
+NAME="Ubuntu"
+VERSION_ID="22.04"
+VERSION="22.04.5 LTS (Jammy Jellyfish)"
+VERSION_CODENAME=jammy
+ID=ubuntu
+/sys/devices/system/cpu/cpufreq/policy0/scaling_governor: performance
+/sys/devices/system/cpu/cpufreq/policy4/scaling_governor: performance

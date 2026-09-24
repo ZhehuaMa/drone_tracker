@@ -1,0 +1,5 @@
+rga_api version 1.10.5_[9]
+Gray8 stride=1280 status=1 (Run successfully) center_BGRA=128,128,128,255 expected_RGB=128,128,128
+Gray8 stride=1296 status=1 (Run successfully) center_BGRA=128,128,128,255 expected_RGB=128,128,128
+Bgr8 stride=3840 status=1 (Run successfully) center_BGRA=128,128,128,255 expected_RGB=128,128,128
+Bgr8 stride=3888 status=1 (Run successfully) center_BGRA=128,128,128,255 expected_RGB=128,128,128

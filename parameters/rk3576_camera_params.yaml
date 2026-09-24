@@ -16,6 +16,7 @@ drone_tracker_node:
       min_free_bytes: 5368709120  # 5 GiB；达到保护线停止录像，不删除历史内容。
     # HDMI 显示独立于 ROS 调试图像；全部 osd 参数只在启动时生效。
     osd:
+      render_path: cached-overlay # 回退示例：render_path: legacy（修改后重启节点）。
       enabled: false
       timing_enabled: false  # 显示分段计时，仅启动时生效；关闭后重启可回退
       drm_device: "/dev/dri/card0"

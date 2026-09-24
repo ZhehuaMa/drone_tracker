@@ -1,0 +1,7 @@
+rga_api version 1.10.5_[9]
+RESULT channels=1 byte_stride=1280 rga_pixel_stride=1280 frames=60 failures=0 pixel_mismatches=0
+RESULT channels=1 byte_stride=1296 rga_pixel_stride=1296 frames=60 failures=0 pixel_mismatches=0
+RESULT channels=3 byte_stride=3840 rga_pixel_stride=1280 frames=60 failures=0 pixel_mismatches=0
+RESULT channels=3 byte_stride=3888 rga_pixel_stride=1296 frames=60 failures=0 pixel_mismatches=0
+RESULT channels=3 byte_stride=4096 rga_pixel_stride=1365 frames=1 failures=1 pixel_mismatches=0
+RESULT channels=3 byte_stride=4096 rga_pixel_stride=1366 frames=1 failures=1 pixel_mismatches=0

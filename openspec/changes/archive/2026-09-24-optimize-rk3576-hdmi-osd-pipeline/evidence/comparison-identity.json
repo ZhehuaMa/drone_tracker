@@ -1,0 +1,29 @@
+{
+  "kernel": "6.1.141-rt36",
+  "hostname": "hzhy",
+  "board": "HZ-RK3576_WuKong Board",
+  "sha256": {
+    "/home/hzhy/hdmi-osd-optimization-20260924/fixed-drone-1920x1200-650s-60fps.avi": "dae6fad1f234a94fea2280a48c590ec17c657cb7901b984d0fcb5edb52ed01e5",
+    "/usr/lib/librknnrt.so": "d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8",
+    "/opt/drone_tracker/models/yolo.rknn": "4d8a22bc8da9fbbc43f190b7ea90c27d9980f77e3e27064ec32cf6566c2680f3",
+    "/opt/drone_tracker/models/fp16/template_backbone.rknn": "622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2",
+    "/opt/drone_tracker/models/fp16/search_backbone.rknn": "9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44",
+    "/opt/drone_tracker/models/fp16/head.rknn": "2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889"
+  },
+  "before": {
+    "governors": {
+      "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": "performance",
+      "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": "performance"
+    },
+    "affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "nice": 0
+  },
+  "original_release": "/opt/drone_tracker/releases/bundle-20260923T181257Z-2945",
+  "service_active": true,
+  "source_note": "V_DRONE_051 remux copy; repeated and converted to 60fps MJPEG; original 640x512 -> 1500x1200 plus 210px horizontal margins; 1920x1200, simulated 1875/1875/960/600 intrinsics"
+}

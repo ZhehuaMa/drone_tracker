@@ -76,6 +76,7 @@ private:
         declare_parameter<std::int64_t>("recording.min_free_bytes", 5368709120LL);
         declare_parameter<bool>("osd.enabled", false);
         declare_parameter<bool>("osd.timing_enabled", false);
+        declare_parameter<std::string>("osd.render_path", "cached-overlay");
         declare_parameter<std::string>("osd.drm_device", "/dev/dri/card0");
         declare_parameter<std::string>("osd.connector", "HDMI-A-1");
         declare_parameter<int>("osd.width", 720);

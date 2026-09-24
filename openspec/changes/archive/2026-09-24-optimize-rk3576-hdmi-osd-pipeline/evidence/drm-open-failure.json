@@ -1,0 +1,12 @@
+{
+  "command": [
+    "/home/hzhy/hdmi-osd-optimization-20260924/install/lib/drone_tracker/drone_tracker_node",
+    "--ros-args",
+    "--params-file",
+    "/home/hzhy/hdmi-osd-optimization-20260924/evidence/comparison-2-cached-overlay.yaml",
+    "-p",
+    "osd.drm_device:=/dev/dri/osd-missing-device"
+  ],
+  "exit_code": 1,
+  "expected_startup_rejection": true
+}

@@ -211,6 +211,8 @@ void OsdPresenter::render() noexcept {
                 for (std::size_t i{0}; i < static_cast<std::size_t>(TimingStage::RenderTotal); ++i) {
                     children += sample.stages[i].value_or(0);
                 }
+                children += sample.stages[static_cast<std::size_t>(TimingStage::SourcePrepare)].value_or(0);
+                children += sample.stages[static_cast<std::size_t>(TimingStage::OverlayUpload)].value_or(0);
                 const auto total{sample.stages[static_cast<std::size_t>(TimingStage::RenderTotal)].value()};
                 sample.stages[static_cast<std::size_t>(TimingStage::Other)] = total > children ? total - children : 0;
                 std::lock_guard<std::mutex> lock{mutex_};

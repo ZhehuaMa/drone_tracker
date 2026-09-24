@@ -1,0 +1,17 @@
+{
+  "settings": {
+    "governors": {
+      "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": "performance",
+      "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": "performance"
+    },
+    "affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "nice": 0
+  },
+  "service_active": true,
+  "config_and_release_unchanged": true
+}

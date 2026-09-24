@@ -11,10 +11,13 @@ usage() {
   --test   编译测试程序，并在构建成功后运行 CTest。
   --help   显示帮助。
 
-需要启动 Docker，并提前准备镜像 roc-rk3576-ros2-build:humble-arm64。
+需要启动 Docker，并提前用 dockerfiles/build-image.sh 构建镜像
+drone-tracker-rk3576:humble-arm64-rknn2.3.2（RKNN Runtime 2.3.2，
+与生产开发板系统库位级一致）。
 容器关闭网络，不安装依赖；退出后自动删除。
 产物保存在仓库的 .docker-artifacts/install/，日志在 .docker-artifacts/log/。
-容器测试不代表 RK3576 实机模型或相机验证通过。
+本镜像也用于正式发布产物的编译；容器构建通过仍不代表 RK3576 实机
+相机、模型或持续负载验证通过。
 EOF
 }
 
@@ -31,13 +34,14 @@ done
 
 repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 artifacts_dir="$repo_dir/.docker-artifacts"
-build_image=roc-rk3576-ros2-build:humble-arm64
+build_image=drone-tracker-rk3576:humble-arm64-rknn2.3.2
 # 固定名称也用于阻止本脚本并发使用同一套构建目录。
 container_name=drone-tracker-repository-build
 
 command -v docker >/dev/null || { printf '未找到 docker 命令。\n' >&2; exit 1; }
 docker info >/dev/null
-docker image inspect "$build_image" >/dev/null
+docker image inspect "$build_image" >/dev/null 2>&1 \
+  || { printf '未找到镜像 %s，请先执行 dockerfiles/build-image.sh 构建。\n' "$build_image" >&2; exit 1; }
 if docker container inspect "$container_name" >/dev/null 2>&1; then
   printf '容器 %s 已存在，请先确认上一轮构建已结束并清理该容器。\n' "$container_name" >&2
   exit 1
@@ -70,6 +74,8 @@ docker run --rm --network none --platform linux/arm64 \
       -DCMAKE_BUILD_TYPE=Release \
       -DDRONE_TRACKER_PLATFORM=rk3576 \
       -DDRONE_TRACKER_BUILD_TESTS="$DRONE_BUILD_TESTS" \
+      -DDRONE_TRACKER_BUILD_OSD=ON \
+      -DDRONE_TRACKER_BUILD_RECORDING=ON \
       2>&1 | tee log/build-console.log
 
     if [[ "$DRONE_BUILD_TESTS" == ON ]]; then

@@ -1,0 +1,78 @@
+# RK3576 正式构建镜像：ROS 2 Humble + RKNN Runtime 2.3.2（与生产开发板系统库位级一致）。
+# 本镜像同时用于日常本机增量编译和正式发布产物的编译，不再需要在开发板上单独编译发布版本。
+FROM ros:humble-ros-base-jammy
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# RKNN 2.3.2 对应生产开发板 RKNPU 驱动 0.9.8、系统库 /usr/lib/librknnrt.so，
+# 其 SHA-256（d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8）
+# 已与生产板系统库核对一致，见 checksums/rknn-v2.3.2.sha256。
+ARG RKNN_VERSION=v2.3.2
+ARG RKNN_BASE_URL=https://raw.githubusercontent.com/airockchip/rknn-toolkit2/v2.3.2/rknpu2/runtime/Linux/librknn_api
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    CFLAGS=-march=armv8-a \
+    CXXFLAGS=-march=armv8-a
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        cmake \
+        curl \
+        file \
+        git \
+        libopencv-dev=4.5.4+dfsg-9ubuntu4 \
+        ninja-build \
+        python3-colcon-common-extensions \
+        python3-rosdep \
+        python3-vcstool \
+        ros-humble-cv-bridge \
+        ros-humble-mavros-msgs \
+        ros-humble-vision-msgs \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY checksums/rknn-v2.3.2.sha256 /tmp/rknn/checksums.sha256
+
+RUN curl --fail --location --retry 5 --retry-all-errors \
+        "${RKNN_BASE_URL}/include/rknn_api.h" \
+        --output /tmp/rknn/rknn_api.h \
+    && curl --fail --location --retry 5 --retry-all-errors \
+        "${RKNN_BASE_URL}/include/rknn_custom_op.h" \
+        --output /tmp/rknn/rknn_custom_op.h \
+    && curl --fail --location --retry 5 --retry-all-errors \
+        "${RKNN_BASE_URL}/include/rknn_matmul_api.h" \
+        --output /tmp/rknn/rknn_matmul_api.h \
+    && curl --fail --location --retry 5 --retry-all-errors \
+        "${RKNN_BASE_URL}/aarch64/librknnrt.so" \
+        --output /tmp/rknn/librknnrt.so \
+    && cd /tmp/rknn \
+    && sha256sum --check checksums.sha256 \
+    && install -d /opt/rknn-runtime/include /opt/rknn-runtime/lib \
+    && install -m 0644 rknn_api.h rknn_custom_op.h rknn_matmul_api.h /opt/rknn-runtime/include/ \
+    && install -m 0755 librknnrt.so /opt/rknn-runtime/lib/librknnrt.so \
+    && rm -rf /tmp/rknn
+
+COPY vendor/firefly-jammy-arm64/ /tmp/firefly-media/
+COPY checksums/firefly-media-jammy-arm64.sha256 /tmp/firefly-media/checksums.sha256
+
+RUN cd /tmp/firefly-media \
+    && sha256sum --check checksums.sha256 \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ./librga2_2.2.0-1_arm64.deb \
+        ./librga-dev_2.2.0-1_arm64.deb \
+        ./librockchip-mpp1_1.5.0-1_arm64.deb \
+        ./librockchip-mpp-dev_1.5.0-1_arm64.deb \
+    && rm -rf /var/lib/apt/lists/* /tmp/firefly-media
+
+RUN rosdep init 2>/dev/null || true
+
+# HDMI 后端需要 DRM 头文件及 libdrm.pc；RGA 开发包不会自动提供它们。
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libdrm-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work/ros2_ws
+
+CMD ["bash"]

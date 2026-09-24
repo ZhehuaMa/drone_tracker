@@ -161,6 +161,7 @@ void DroneTrackerNode::closeRecording() noexcept {
 
 void DroneTrackerNode::setupDisplay(std::unique_ptr<osd::DisplayBackend> backend) {
     osd::DisplayConfig config{};
+    config.render_path = osd::parseRenderPath(get_parameter("osd.render_path").as_string());
     config.timing_enabled = get_parameter("osd.timing_enabled").as_bool();
     config.drm_device = get_parameter("osd.drm_device").as_string();
     config.connector = get_parameter("osd.connector").as_string();
@@ -189,8 +190,8 @@ void DroneTrackerNode::setupDisplay(std::unique_ptr<osd::DisplayBackend> backend
     }
     std::function<void(const osd::TimingWindow &)> timing_sink{};
     if (config.timing_enabled) {
-        timing_sink = [this](const osd::TimingWindow &window) {
-            const auto message{osd::formatTiming(window)};
+        timing_sink = [this, path = config.render_path](const osd::TimingWindow &window) {
+            const auto message{osd::formatTiming(window, path)};
             RCLCPP_INFO(get_logger(), "%s", message.c_str());
         };
     }
