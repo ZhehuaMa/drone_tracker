@@ -603,3 +603,48 @@ SC233HGS 每次成功开流后，先观察驱动时间，再交付图像。固�
 ```
 
 不要用启动短测替代 100 次新建销毁、20 分钟持续采集或正式模型 ROS 验收。此变更不实施录像；未来录像分流只能位于同一预热合格边界之后。部署与回滚范围是应用程序，系统 RKNN Runtime 保持不变；回滚旧程序仍会恢复其启动重复时间失败限制。
+
+### HDMI 显示分段计时
+
+启动参数 `osd.timing_enabled` 默认 `false`。在相机或视频 YAML 的 `osd:` 下设为
+`timing_enabled: true` 并重启，才会采集并输出计时；运行时修改会被拒绝。
+`osd.enabled=false` 时不会因计时开关而创建显示资源。关闭计时并重启即可回退。
+
+计时全部使用 `steady_clock`（不受系统校时影响的单调时钟）。每秒由独立遥测回调
+取走固定容量快照，释放提交锁后写日志。新轮前也会冲刷，避免积累无界轮次；
+在途旧轮的结果仍归入旧轮。退出及故障保留尾部窗口，SIGKILL 和断电除外。
+计数按事件发生窗口归属；跨窗口提交的帧可能在下一窗口才显示。
+
+| 指标 | 测量范围 |
+|---|---|
+| source_copy | 源帧映射、输入分配、缓存同步和逐行复制 |
+| scale_convert | 显示几何、目标清理、缩放及颜色转换 |
+| layout | 全部文字、遥测和框图层绘制 |
+| compose | 图层复制、缓存同步、视频复制及 RGA 硬件混合 |
+| commit | 构造显示请求、授权检查和设备提交 |
+| flip_wait | 等待显示完成事件；不是屏幕实际发光时刻 |
+| render_total | 取包后至显示处理完成的父区间，包含上述子阶段 |
+| other | 父区间减已测子阶段，含调度和其余处理；不要重复相加 |
+| pending_wait | 被实际取出的包从接受到取出，替换掉的包不采样 |
+| submit_to_display | 成功新视频从接受到显示完成；不是相机到屏幕完整延迟 |
+| new_frame_interval | 同一连续段内两次新视频成功完成的间隔 |
+
+停止、EOF、输入失败、新轮或进入过期等待会断开间隔链。重复冻结底图不增加新视频计数。
+每轮首个新视频处理标记 `first_frames=1`，首次分配保留在耗时内。
+日志分别列出 `new_video`、`repeat` 和 `success`、`rejected`、`failure`。
+未执行阶段 `count=0`，不伪造零耗时或分位数；失败阶段包含抛异常前的耗时。
+`submitted/replaced/displayed/rejected/commits` 是窗口增量，其中 `commits` 为成功完成的显示更新。
+
+日志示例（数值仅演示格式）：
+
+```text
+OSD timing round=1 window_id=3 window_us=1000123 submitted=35 replaced=33 displayed=2 rejected=0 commits=2 unit=us quantiles=approx_pow2
+  new_video result=success count=2 first_frames=0 ... layout{count=2,mean=400000,max=410000,p95_approx=524288,p99_approx=524288} ...
+  new_video result=failure count=0 first_frames=0 samples=none
+```
+
+均值和最大值使用原始微秒值。P95/P99 分别是覆盖 95%/99% 样本的近似耗时界限。
+直方图上界为 1、2、4、8…67108864 微秒；分位数取桶上界，可能接近真实值的两倍。
+超出末桶报告 `>67108864`。样本少时不能据此推断稳定的长尾分布。
+用实际 `window_us` 计算速率，不假定回调恰好每秒一次。
+RGA 阶段包含 CPU 调度和同步等待，不能称为纯硬件执行耗时。

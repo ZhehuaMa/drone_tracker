@@ -108,11 +108,27 @@ osd::PresentationPacket packet(std::uint64_t round, int sequence, Resources &res
     return {std::make_shared<TestFrame>(sequence, resources), round, static_cast<std::uint64_t>(sequence),
             123, 2, {{static_cast<double>(sequence), 0, 1, 1, "target"}}};
 }
+struct TimingCapture {
+    std::mutex mutex{};
+    std::vector<osd::TimingWindow> windows{};
+    void record(const osd::TimingWindow &window) {
+        std::lock_guard<std::mutex> lock{mutex};
+        windows.push_back(window);
+    }
+    std::uint64_t count(std::size_t group, osd::TimingStage stage) {
+        std::lock_guard<std::mutex> lock{mutex};
+        std::uint64_t result{};
+        for (const auto &window : windows) { result += window.groups[group].stages[static_cast<std::size_t>(stage)].count; }
+        return result;
+    }
+};
 void pairingAndOwnership() {
     Resources resources{};
     BackendState state{};
     state.block_prepare = true;
-    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state)};
+    TimingCapture timing{};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state), 1000ms, osd::SteadyClock::now,
+        [&](const osd::TimingWindow &window) { timing.record(window); }};
     presenter.start();
     const auto round{presenter.beginRound()};
     require(presenter.beginRound() == round, "duplicate ON changed round");
@@ -148,12 +164,17 @@ void pairingAndOwnership() {
         require(new_frames == 2, "new frame count");
     }
     presenter.shutdown();
+    presenter.reportTiming();
+    require(timing.count(0, osd::TimingStage::PendingWait) == 2, "replaced packet was sampled");
+    require(timing.count(0, osd::TimingStage::NewFrameInterval) == 1, "new interval missing");
 }
 void stopBeforeHandoff() {
     Resources resources{};
     BackendState state{};
     state.block_prepare = true;
-    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state)};
+    TimingCapture timing{};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state), 1000ms, osd::SteadyClock::now,
+        [&](const osd::TimingWindow &window) { timing.record(window); }};
     presenter.start();
     const auto round{presenter.beginRound()};
     presenter.submit(packet(round, 1, resources));
@@ -172,15 +193,20 @@ void stopBeforeHandoff() {
         require(state.outputs.back().boxes.empty(), "late box revived");
     }
     presenter.shutdown();
+    presenter.reportTiming();
+    require(timing.count(1, osd::TimingStage::RenderTotal) == 1, "rejected render sample missing");
+    require(timing.count(0, osd::TimingStage::SubmitToDisplay) == 0, "rejected display sampled as success");
     require(resources.frames == 0 && resources.views == 0, "stop resource leak");
 }
 void stopInFlightAndRestart() {
     Resources resources{};
     BackendState state{};
     state.block_present = true;
+    TimingCapture timing{};
     std::atomic<int> clock_ms{0};
     osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state), 50ms,
-        [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{clock_ms.load()}}; }};
+        [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{clock_ms.load()}}; },
+        [&](const osd::TimingWindow &window) { timing.record(window); }};
     presenter.start();
     const auto round{presenter.beginRound()};
     presenter.submit(packet(round, 1, resources));
@@ -221,12 +247,53 @@ void stopInFlightAndRestart() {
     waitFor(state, [&] { return state.outputs.back().status == osd::DisplayStatus::Eof
         && state.outputs.back().telemetry.warning == "new warning"; });
     presenter.shutdown();
+    presenter.reportTiming();
+    require(timing.count(0, osd::TimingStage::NewFrameInterval) == 0, "interval crossed stop/new round");
     require(resources.frames == 0, "restart leaked frames");
+}
+void timingIntervalsAndStale() {
+    Resources resources{};
+    BackendState state{};
+    TimingCapture timing{};
+    std::atomic<int> clock_ms{0};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state), 1000ms,
+        [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{clock_ms.load()}}; },
+        [&](const osd::TimingWindow &window) { timing.record(window); }};
+    presenter.start();
+    const auto round{presenter.beginRound()};
+    const auto send{[&](int sequence, int time) {
+        clock_ms = time;
+        require(presenter.submit(packet(round, sequence, resources)), "timed packet rejected");
+        const auto deadline{osd::SteadyClock::now() + 2s};
+        while (presenter.counters().displayed < static_cast<std::uint64_t>(sequence)
+               && osd::SteadyClock::now() < deadline) { std::this_thread::yield(); }
+        require(presenter.counters().displayed == static_cast<std::uint64_t>(sequence), "timed display timeout");
+    }};
+    send(1, 0);
+    send(2, 500);
+    clock_ms = 2000;
+    waitFor(state, [&] { return state.outputs.back().status == osd::DisplayStatus::Stale; });
+    send(3, 2100);
+    presenter.endRound(round, osd::DisplayStatus::Eof);
+    presenter.shutdown();
+    presenter.reportTiming();
+    require(timing.count(0, osd::TimingStage::NewFrameInterval) == 1, "stale did not break interval");
+    long double interval_sum{};
+    std::uint64_t submitted{}, displayed{};
+    for (const auto &window : timing.windows) {
+        interval_sum += window.groups[0].stages[static_cast<std::size_t>(osd::TimingStage::NewFrameInterval)].total_us;
+        submitted += window.submitted;
+        displayed += window.displayed;
+    }
+    require(interval_sum == 500000, "interval did not use injected monotonic clock");
+    require(submitted == 3 && displayed == 3, "snapshot counter deltas lost or duplicated");
 }
 void failureAndExit() {
     Resources resources{};
     BackendState state{};
-    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state)};
+    TimingCapture timing{};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state), 1000ms, osd::SteadyClock::now,
+        [&](const osd::TimingWindow &window) { timing.record(window); }};
     presenter.start();
     const auto round{presenter.beginRound()};
     presenter.endRound(round, osd::DisplayStatus::InputFailure);
@@ -244,6 +311,8 @@ void failureAndExit() {
         state.fail = true;
     }
     presenter.shutdown();
+    presenter.reportTiming();
+    require(timing.count(2, osd::TimingStage::RenderTotal) == 1, "failure sample missing");
     require(presenter.failure() == "injected display failure", "failure not recorded");
     require(!presenter.submit(packet(next, 2, resources)), "failed backend accepts packets");
     presenter.shutdown();
@@ -255,6 +324,7 @@ int main() {
         pairingAndOwnership();
         stopBeforeHandoff();
         stopInFlightAndRestart();
+        timingIntervalsAndStale();
         failureAndExit();
         std::cout << "OSD pairing, lifetime, stop and restart tests passed\n";
         return 0;

@@ -17,6 +17,7 @@ drone_tracker_node:
     # HDMI 显示独立于 ROS 调试图像；全部 osd 参数只在启动时生效。
     osd:
       enabled: false
+      timing_enabled: false  # 显示分段计时，仅启动时生效；关闭后重启可回退
       drm_device: "/dev/dri/card0"
       connector: "HDMI-A-1"
       width: 720

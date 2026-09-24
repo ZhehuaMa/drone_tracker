@@ -296,6 +296,7 @@ void HdmiBackend::initialize() {
               << " refresh_hz=" << mode_.clock * 1000.0 / mode_.htotal / mode_.vtotal << '\n';
 }
 void HdmiBackend::prepareVideo(const Frame &frame) {
+    osd::TimingSpan timing{timing_sample_, osd::TimingStage::SourceCopy, timing_now_};
     const int width{frame.width()}, height{frame.height()};
     if (width <= 0 || height <= 0 || width > 8192 || height > 8192) {
         throw std::invalid_argument("OSD source dimensions invalid");
@@ -331,6 +332,7 @@ void HdmiBackend::prepareVideo(const Frame &frame) {
         }
         input_.sync(false);
     }
+    timing.next(osd::TimingStage::ScaleConvert);
     prepared_geometry_ = osd::fitVideo(width, height, config_.width, config_.height);
     const auto &r{prepared_geometry_.destination};
     const im_rect rectangle{r.x, r.y, r.width, r.height};
@@ -378,7 +380,9 @@ bool HdmiBackend::present(const osd::PresentationState &state, const std::functi
     if (state.new_video && !prepared_) { throw std::logic_error("OSD missing prepared video"); }
     const int next{1 - scanout_};
     const auto &geometry{state.new_video ? prepared_geometry_ : live_geometry_};
+    osd::TimingSpan timing{timing_sample_, osd::TimingStage::Layout, timing_now_};
     const auto layers{layout_.draw(state, geometry, config_.width, config_.height, std::chrono::system_clock::now())};
+    timing.next(osd::TimingStage::Compose);
     hud_.sync(true);
     std::memcpy(hud_.pixels(), layers.hud.data, hud_.size());
     hud_.sync(false);
@@ -390,6 +394,7 @@ bool HdmiBackend::present(const osd::PresentationState &state, const std::functi
     requireRga(imcopy(video, output, 1), "base copy");
     auto hud{hud_.image(config_.width, config_.height, config_.width, RK_FORMAT_BGRA_8888)};
     requireRga(imblend(hud, output, IM_ALPHA_BLEND_SRC_OVER, 1), "HUD blend");
+    timing.next(osd::TimingStage::Commit);
     auto update{request()};
     add(update.get(), primary_, "FB_ID", primary_buffers_[next].framebuffer);
     add(update.get(), overlay_, "FB_ID", overlay_buffers_[next].framebuffer);
@@ -397,7 +402,9 @@ bool HdmiBackend::present(const osd::PresentationState &state, const std::functi
     flip_done_ = false;
     check(drmModeAtomicCommit(fd_, update.get(), DRM_MODE_ATOMIC_NONBLOCK | DRM_MODE_PAGE_FLIP_EVENT, this),
           "paired plane commit");
+    timing.next(osd::TimingStage::FlipWait);
     waitCompletion();
+    timing.finish();
     scanout_ = next;
     if (state.new_video) {
         live_video_ = 1 - live_video_;

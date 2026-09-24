@@ -228,7 +228,7 @@ void osdCompatibility() {
     for (bool enabled : {false, true}) {
         for (bool images : {false, true}) {
             auto display{std::make_shared<DisplayTrace>()};
-            Harness h{options({{"osd.enabled", enabled}, {"visualized_result", images}}), {}, {}, {},
+            Harness h{options({{"osd.enabled", enabled}, {"osd.timing_enabled", true}, {"visualized_result", images}}), {}, {}, {},
                       std::make_unique<TestDisplay>(display)};
             h.node->run();
             h.until([&] { return h.detections.size() >= 5; }, "OSD blocked detections");
@@ -294,7 +294,7 @@ void configuration() {
     require(h.paths->head.find("/models/head.rknn") != std::string::npos, "relative path not resolved");
     for (const auto &parameter : std::vector<rclcpp::Parameter>{{"use_sim_time", true}, {"camera.fx", 200.0},
         {"tracker.enable_dcf", true}, {"video_source", "other.mov"}, {"need_save", true},
-        {"osd.enabled", true}, {"osd.width", 1280}, {"recording.enabled", true},
+        {"osd.enabled", true}, {"osd.timing_enabled", true}, {"osd.width", 1280}, {"recording.enabled", true},
         {"recording.directory", "/var/lib/drone_tracker/other"}, {"recording.bitrate_bps", 8000000},
         {"recording.segment_seconds", 30}, {"recording.sync_interval_ms", 500},
         {"recording.max_total_bytes", 1000000}, {"recording.min_free_bytes", 1000000}}) {

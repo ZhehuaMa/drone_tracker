@@ -17,7 +17,8 @@ class OsdPresenter {
 public:
     explicit OsdPresenter(std::unique_ptr<DisplayBackend> backend,
                           std::chrono::milliseconds stale = std::chrono::milliseconds{1000},
-                          std::function<SteadyClock::time_point()> now = SteadyClock::now);
+                          std::function<SteadyClock::time_point()> now = SteadyClock::now,
+                          std::function<void(const TimingWindow &)> timing_sink = {});
     ~OsdPresenter();
     OsdPresenter(const OsdPresenter &) = delete;
     OsdPresenter &operator=(const OsdPresenter &) = delete;
@@ -33,13 +34,24 @@ public:
     void updateTelemetry(TelemetrySnapshot snapshot);
     PresentationCounters counters() const;
     std::string failure() const;
+    /** @brief 独立诊断回调及退出调用；快照后释放提交锁再输出。 */
+    void reportTiming();
 
 private:
     void render() noexcept;
+    TimingWindow &timingWindow(std::uint64_t round);
+    const std::function<void(const TimingWindow &)> timing_sink_;
+    // 每次新轮前冲刷；至多当前轮、一个在途旧轮及初始等待轮。
+    std::array<std::optional<TimingWindow>, 3> timing_windows_{};
+    std::uint64_t timing_window_id_{};
+    SteadyClock::time_point timing_window_start_{};
+    std::optional<SteadyClock::time_point> last_display_{};
+    std::uint64_t interval_generation_{}, first_video_round_{~std::uint64_t{0}};
     std::unique_ptr<DisplayBackend> backend_;
     const std::chrono::milliseconds stale_;
     const std::function<SteadyClock::time_point()> now_;
     mutable std::mutex mutex_{};
+    std::mutex round_mutex_{}; // 串行化轮次切换及其锁外冲刷，保证窗口容量上界。
     std::condition_variable wake_{};
     std::thread thread_{};
     std::optional<PresentationPacket> pending_{};

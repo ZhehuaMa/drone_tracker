@@ -76,7 +76,10 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
 DroneTrackerNode::~DroneTrackerNode() {
     stop();
     osd_telemetry_.reset();
-    if (osd_presenter_) { osd_presenter_->shutdown(); }
+    if (osd_presenter_) {
+        osd_presenter_->shutdown();
+        osd_presenter_->reportTiming();
+    }
     if (mv_camera_) { mv_camera_->stop(); }
     tracker_.reset();
     closeRecording();
@@ -158,6 +161,7 @@ void DroneTrackerNode::closeRecording() noexcept {
 
 void DroneTrackerNode::setupDisplay(std::unique_ptr<osd::DisplayBackend> backend) {
     osd::DisplayConfig config{};
+    config.timing_enabled = get_parameter("osd.timing_enabled").as_bool();
     config.drm_device = get_parameter("osd.drm_device").as_string();
     config.connector = get_parameter("osd.connector").as_string();
     config.refresh_hz = get_parameter("osd.refresh_hz").as_double();
@@ -183,7 +187,15 @@ void DroneTrackerNode::setupDisplay(std::unique_ptr<osd::DisplayBackend> backend
         throw std::invalid_argument("osd.enabled requires DRONE_TRACKER_BUILD_OSD=ON");
 #endif
     }
-    osd_presenter_ = std::make_unique<osd::OsdPresenter>(std::move(backend), std::chrono::milliseconds{stale});
+    std::function<void(const osd::TimingWindow &)> timing_sink{};
+    if (config.timing_enabled) {
+        timing_sink = [this](const osd::TimingWindow &window) {
+            const auto message{osd::formatTiming(window)};
+            RCLCPP_INFO(get_logger(), "%s", message.c_str());
+        };
+    }
+    osd_presenter_ = std::make_unique<osd::OsdPresenter>(std::move(backend), std::chrono::milliseconds{stale},
+        osd::SteadyClock::now, std::move(timing_sink));
     osd_presenter_->start();
     osd_telemetry_ = std::make_unique<osd::OsdTelemetryAdapter>(*this,
         [this](osd::TelemetrySnapshot snapshot) {
@@ -191,11 +203,13 @@ void DroneTrackerNode::setupDisplay(std::unique_ptr<osd::DisplayBackend> backend
             const auto failure{osd_presenter_->failure()};
             if (!failure.empty() && !osd_failure_reported_) {
                 osd_failure_reported_ = true;
+                osd_presenter_->reportTiming();
                 RCLCPP_ERROR(get_logger(), "OSD disabled after display failure: %s; tracking continues", failure.c_str());
             }
             const auto now{osd::SteadyClock::now()};
             if (now - osd_last_report_ >= std::chrono::seconds{1}) {
                 osd_last_report_ = now;
+                osd_presenter_->reportTiming();
                 const auto counts{osd_presenter_->counters()};
                 RCLCPP_INFO(get_logger(), "OSD submitted=%lu replaced=%lu displayed=%lu commits=%lu rejected=%lu",
                     static_cast<unsigned long>(counts.submitted), static_cast<unsigned long>(counts.replaced),

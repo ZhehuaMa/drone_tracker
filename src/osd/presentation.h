@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "frame/frame.h"
+#include "osd/timing.h"
 
 namespace osd {
 using SteadyClock = std::chrono::steady_clock;
@@ -63,6 +64,7 @@ struct PresentationPacket {
     std::uint64_t round{}, sequence{}, frame_time_us{};
     std::int8_t tracker_state{};
     std::vector<DisplayBox> boxes{};
+    SteadyClock::time_point accepted{};
 };
 enum class DisplayStatus { WaitingInput, WaitingFirst, Live, Stale, Stopped, Eof, InputFailure };
 /** @brief 不持有源帧的画面元数据，后端自行保留最后实际显示的纯视频底图。 */
@@ -86,6 +88,8 @@ struct PresentationState {
 class DisplayBackend {
 public:
     virtual ~DisplayBackend() = default;
+    /** @brief 借用当前渲染记录，仅渲染线程设置和使用，下一次渲染前清除。 */
+    void setTimingSample(TimingSample *sample) noexcept { timing_sample_ = sample; }
     virtual void initialize() = 0;
     virtual void prepareVideo(const Frame &frame) = 0;
     virtual bool present(const PresentationState &state, const std::function<bool()> &authorize) = 0;
@@ -94,6 +98,9 @@ public:
     /** @brief 唯一允许并发调用的方法，用于唤醒退出等待。 */
     virtual void interrupt() noexcept = 0;
     virtual void shutdown() noexcept = 0;
+protected:
+    TimingSample *timing_sample_{};
+    const std::function<SteadyClock::time_point()> timing_now_{SteadyClock::now};
 };
 } // namespace osd
 #endif // OSD_PRESENTATION_H
