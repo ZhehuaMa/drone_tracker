@@ -28,6 +28,10 @@ bool Sc233hgsCameraFrameSource::start() {
     implementation_->stop();
     if (recording_) {
         recording_->start(implementation_->diagnostic().format);
+        if (recording_->status().phase == "failed") {
+            recording_->stop(implementation_->status());
+            return false;
+        }
         implementation_->setRecordingSink(recording_->sink());
     }
     const bool started{implementation_->start()};

@@ -20,6 +20,7 @@
 #include <thread>
 
 #include "metadata.h"
+#include "platform/cpu_affinity.h"
 
 extern char **environ;
 
@@ -41,6 +42,14 @@ std::string configJson(const FrameSourceConfig &config, const CameraFormat &f, s
     std::ifstream model_file{"/proc/device-tree/model", std::ios::binary};
     std::array<char, 256> model{};
     model_file.read(model.data(), model.size() - 1);
+    const auto &policy{cpu_affinity::current()};
+    std::ostringstream allowed{};
+    allowed << '[';
+    for (std::size_t i{}; i < policy.allowed_cpus.size(); ++i) {
+        if (i) { allowed << ','; }
+        allowed << policy.allowed_cpus[i];
+    }
+    allowed << ']';
     std::ostringstream out{};
     out << "{\"directory\":" << quote(c.directory) << ",\"identity\":" << quote(c.identity)
         << ",\"board_hostname\":" << quote(board.nodename) << ",\"board_model\":" << quote(model.data())
@@ -49,6 +58,11 @@ std::string configJson(const FrameSourceConfig &config, const CameraFormat &f, s
         << ",\"sync_interval_ms\":" << c.sync_interval_ms << ",\"max_total_bytes\":" << c.max_total_bytes
         << ",\"min_free_bytes\":" << c.min_free_bytes << ",\"round\":" << round
         << ",\"width\":" << f.width << ",\"height\":" << f.height << ",\"stride\":" << f.stride
+        << ",\"cpu_policy_version\":" << (policy.configured ? 1 : 0)
+        << ",\"cpu_policy_mode\":" << quote(policy.configured
+            ? (policy.mode == cpu_affinity::Mode::RolePinned ? "role-pinned" : "inherit") : "none")
+        << ",\"cpu_allowed\":" << allowed.str()
+        << ",\"cpu_recording\":" << cpu_affinity::core(policy, cpu_affinity::Role::Recording)
         << ",\"fps\":" << config.fps << ",\"quantization\":" << f.quantization
         << ",\"colorspace\":" << f.colorspace << ",\"ycbcr\":" << f.ycbcr_encoding
         << ",\"transfer\":" << f.transfer_function << ",\"camera\":" << quote(config.path) << '}';

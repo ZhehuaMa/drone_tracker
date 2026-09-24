@@ -5,6 +5,7 @@
 #include <sys/prctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <algorithm>
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -13,6 +14,7 @@
 #include <thread>
 
 #include "storage.h"
+#include "platform/cpu_affinity.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -60,6 +62,29 @@ int main() {
         const auto round{values["round"].as<std::uint64_t>()};
         slots = std::make_unique<RecordingSlots>(3, format.width, format.height, round);
         ::close(3);
+        const std::string cpu_mode{values["cpu_policy_mode"].as<std::string>("none")};
+        const int cpu_version{values["cpu_policy_version"].as<int>(0)};
+        if ((cpu_mode == "none" && cpu_version != 0) || (cpu_mode != "none" && cpu_version != 1)) {
+            throw std::invalid_argument("Invalid recording CPU policy snapshot version");
+        }
+        if (cpu_mode == "role-pinned") {
+            const auto allowed{values["cpu_allowed"]};
+            if (!allowed || !allowed.IsSequence()) {
+                throw std::invalid_argument("Recording CPU policy missing allowed_cpus");
+            }
+            cpu_affinity::Policy policy{};
+            policy.configured = true;
+            policy.mode = cpu_affinity::Mode::RolePinned;
+            policy.recording = values["cpu_recording"].as<int>();
+            for (const auto &entry : allowed) { policy.allowed_cpus.push_back(entry.as<int>()); }
+            if (std::find(policy.allowed_cpus.begin(), policy.allowed_cpus.end(), policy.recording)
+                == policy.allowed_cpus.end()) {
+                throw std::invalid_argument("Recording CPU outside policy allowed_cpus");
+            }
+            cpu_affinity::apply(policy, cpu_affinity::Role::Recording, round);
+        } else if (cpu_mode != "inherit" && cpu_mode != "none") {
+            throw std::invalid_argument("Invalid recording CPU policy snapshot mode");
+        }
         CameraRecordingConfig config{};
         config.enabled = true; config.directory = values["directory"].as<std::string>();
         config.identity = values["identity"].as<std::string>(); config.bitrate_bps = values["bitrate_bps"].as<std::int64_t>();

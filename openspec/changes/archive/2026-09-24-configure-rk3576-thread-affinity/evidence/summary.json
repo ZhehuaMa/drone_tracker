@@ -1,0 +1,311 @@
+[
+  {
+    "case": "split-1",
+    "seconds": 64.518279,
+    "fps": 57.394587354073714,
+    "submit_fps": 57.394587354073714,
+    "stages": {
+      "scale_convert": {
+        "count": 3703,
+        "mean_ms": 3.289347356197678,
+        "max_ms": 5.765,
+        "p95_upper_ms": 4.096
+      },
+      "layout": {
+        "count": 3703,
+        "mean_ms": 0.5143630059411288,
+        "max_ms": 1.66,
+        "p95_upper_ms": 1.024
+      },
+      "commit": {
+        "count": 3703,
+        "mean_ms": 0.0783507994869025,
+        "max_ms": 0.297,
+        "p95_upper_ms": 0.128
+      },
+      "flip_wait": {
+        "count": 3703,
+        "mean_ms": 7.810183815825008,
+        "max_ms": 16.766,
+        "p95_upper_ms": 16.384
+      },
+      "render_total": {
+        "count": 3703,
+        "mean_ms": 13.460444234404534,
+        "max_ms": 25.249,
+        "p95_upper_ms": 32.768
+      },
+      "pending_wait": {
+        "count": 3703,
+        "mean_ms": 1.157875522992169,
+        "max_ms": 6.785,
+        "p95_upper_ms": 8.192
+      },
+      "submit_to_display": {
+        "count": 3703,
+        "mean_ms": 14.618829659735349,
+        "max_ms": 25.269,
+        "p95_upper_ms": 32.768
+      },
+      "new_frame_interval": {
+        "count": 3703,
+        "mean_ms": 17.419784229003515,
+        "max_ms": 715.315,
+        "p95_upper_ms": 32.768
+      },
+      "other": {
+        "count": 3703,
+        "mean_ms": 0.012054553497164463,
+        "max_ms": 0.033,
+        "p95_upper_ms": 0.016
+      },
+      "source_prepare": {
+        "count": 3703,
+        "mean_ms": 1.410774833918444,
+        "max_ms": 2.33,
+        "p95_upper_ms": 2.048
+      },
+      "overlay_upload": {
+        "count": 3703,
+        "mean_ms": 0.34536861922765333,
+        "max_ms": 1.099,
+        "p95_upper_ms": 0.512
+      }
+    },
+    "busy": {
+      "cpu": 20.589509332913288,
+      "cpu0": 7.671707624448645,
+      "cpu1": 11.167112931170262,
+      "cpu2": 8.601134215500945,
+      "cpu3": 3.4031826059555694,
+      "cpu4": 24.38563327032136,
+      "cpu5": 68.65154379332073,
+      "cpu6": 20.5419029615627,
+      "cpu7": 20.28985507246377
+    },
+    "role_counts": {
+      "4": 2,
+      "5": 1,
+      "6": 1,
+      "7": 4
+    },
+    "binding_errors": [],
+    "runtime_affinity_violations": [],
+    "init_count": 2,
+    "lost_count": 0,
+    "final_camera": [
+      "[INFO] [1790239219.585065417] [drone_tracker_node]: Camera final mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=4503 enqueued=4489 queue_dropped=14 sequence_gaps=1 consumed=4334 time=driver_monotonic unattributed_command_frame_difference=-4503 clock_offset_delta_us=0 stop_us=7748 restored=1 state=3 reason=Stopped by caller"
+    ],
+    "final_recording": [
+      "[INFO] [1790239219.584951427] [drone_tracker_node]: Camera recording phase=finished round=1 attempted=4503 accepted=4503 dropped=0 cancelled=0 encoded=4503 written=4503 synced=4503 lag_us=0 last_sync_mono_us=2504768298 sync_us=8851 used_bytes=8882528879 free_bytes=32187895808 prepare_us=91006 stop_us=28896 session=/var/lib/drone_tracker/recordings/session-a5234a2c5a1eab379a48e5628f052f04 reason="
+    ]
+  },
+  {
+    "case": "audit-baseline",
+    "seconds": 65.369853,
+    "fps": 6.838014459050412,
+    "submit_fps": 24.10897267888915,
+    "stages": {
+      "scale_convert": {
+        "count": 447,
+        "mean_ms": 50.2142196868009,
+        "max_ms": 149.559,
+        "p95_upper_ms": 131.072
+      },
+      "layout": {
+        "count": 447,
+        "mean_ms": 24.843007091722598,
+        "max_ms": 135.437,
+        "p95_upper_ms": 131.072
+      },
+      "commit": {
+        "count": 447,
+        "mean_ms": 2.7887832975391493,
+        "max_ms": 69.71,
+        "p95_upper_ms": 32.768
+      },
+      "flip_wait": {
+        "count": 447,
+        "mean_ms": 33.90422259507831,
+        "max_ms": 78.117,
+        "p95_upper_ms": 65.536
+      },
+      "render_total": {
+        "count": 447,
+        "mean_ms": 145.59714317673377,
+        "max_ms": 316.213,
+        "p95_upper_ms": 262.144
+      },
+      "pending_wait": {
+        "count": 447,
+        "mean_ms": 19.71954944071589,
+        "max_ms": 53.653,
+        "p95_upper_ms": 65.536
+      },
+      "submit_to_display": {
+        "count": 447,
+        "mean_ms": 165.31725727069352,
+        "max_ms": 345.398,
+        "p95_upper_ms": 262.144
+      },
+      "new_frame_interval": {
+        "count": 447,
+        "mean_ms": 146.21439821029082,
+        "max_ms": 361.4,
+        "p95_upper_ms": 262.144
+      },
+      "other": {
+        "count": 447,
+        "mean_ms": 0.16582553176733775,
+        "max_ms": 37.253,
+        "p95_upper_ms": 0.064
+      },
+      "source_prepare": {
+        "count": 447,
+        "mean_ms": 18.724373691275165,
+        "max_ms": 121.267,
+        "p95_upper_ms": 131.072
+      },
+      "overlay_upload": {
+        "count": 447,
+        "mean_ms": 14.95670841163311,
+        "max_ms": 71.934,
+        "p95_upper_ms": 65.536
+      }
+    },
+    "busy": {
+      "cpu": 16.433118546696686,
+      "cpu0": 10.186335403726709,
+      "cpu1": 6.476160894548843,
+      "cpu2": 7.949076230399006,
+      "cpu3": 7.872670807453416,
+      "cpu4": 98.92873777363764,
+      "cpu5": 0.0,
+      "cpu6": 0.0,
+      "cpu7": 0.0
+    },
+    "role_counts": {
+      "4": 2,
+      "5": 1,
+      "6": 1,
+      "7": 4
+    },
+    "binding_errors": [],
+    "runtime_affinity_violations": [],
+    "init_count": 1,
+    "lost_count": 0,
+    "final_camera": [
+      "[INFO] [1790239301.244561864] [drone_tracker_node]: Camera final mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=4547 enqueued=4547 queue_dropped=0 sequence_gaps=12 consumed=1845 time=driver_monotonic unattributed_command_frame_difference=-4547 clock_offset_delta_us=0 stop_us=9398 restored=1 state=3 reason=Stopped by caller"
+    ],
+    "final_recording": [
+      "[INFO] [1790239301.244440123] [drone_tracker_node]: Camera recording phase=finished round=1 attempted=4547 accepted=4547 dropped=0 cancelled=0 encoded=4547 written=4547 synced=4547 lag_us=0 last_sync_mono_us=2586429508 sync_us=8532 used_bytes=8993952941 free_bytes=32075874304 prepare_us=90732 stop_us=26828 session=/var/lib/drone_tracker/recordings/session-2c9818ce87f20358f662b6fe3e2238bd reason="
+    ]
+  },
+  {
+    "case": "split-2",
+    "seconds": 65.434088,
+    "fps": 53.35139690492821,
+    "submit_fps": 53.366679459183416,
+    "stages": {
+      "scale_convert": {
+        "count": 3491,
+        "mean_ms": 4.415641423660841,
+        "max_ms": 6.094,
+        "p95_upper_ms": 8.192
+      },
+      "layout": {
+        "count": 3491,
+        "mean_ms": 0.6711630335147523,
+        "max_ms": 1.297,
+        "p95_upper_ms": 1.024
+      },
+      "commit": {
+        "count": 3491,
+        "mean_ms": 0.1091572199656259,
+        "max_ms": 0.25,
+        "p95_upper_ms": 0.256
+      },
+      "flip_wait": {
+        "count": 3491,
+        "mean_ms": 7.646779682039528,
+        "max_ms": 16.96,
+        "p95_upper_ms": 16.384
+      },
+      "render_total": {
+        "count": 3491,
+        "mean_ms": 15.006953766828993,
+        "max_ms": 25.538,
+        "p95_upper_ms": 32.768
+      },
+      "pending_wait": {
+        "count": 3491,
+        "mean_ms": 1.3810215161844737,
+        "max_ms": 15.2,
+        "p95_upper_ms": 8.192
+      },
+      "submit_to_display": {
+        "count": 3491,
+        "mean_ms": 16.388459896877684,
+        "max_ms": 31.847,
+        "p95_upper_ms": 32.768
+      },
+      "new_frame_interval": {
+        "count": 3491,
+        "mean_ms": 18.744481065597245,
+        "max_ms": 149.728,
+        "p95_upper_ms": 65.536
+      },
+      "other": {
+        "count": 3491,
+        "mean_ms": 0.016037809767974788,
+        "max_ms": 0.056,
+        "p95_upper_ms": 0.032
+      },
+      "source_prepare": {
+        "count": 3491,
+        "mean_ms": 1.5922012546548265,
+        "max_ms": 3.046,
+        "p95_upper_ms": 4.096
+      },
+      "overlay_upload": {
+        "count": 3491,
+        "mean_ms": 0.5559676817530794,
+        "max_ms": 1.302,
+        "p95_upper_ms": 1.024
+      }
+    },
+    "busy": {
+      "cpu": 31.856818854156394,
+      "cpu0": 12.16280170373876,
+      "cpu1": 9.626005996528326,
+      "cpu2": 8.28467729209405,
+      "cpu3": 8.963231813160801,
+      "cpu4": 92.93152414010729,
+      "cpu5": 67.33470096260059,
+      "cpu6": 28.44745976648785,
+      "cpu7": 27.090564846954877
+    },
+    "role_counts": {
+      "4": 5,
+      "5": 1,
+      "6": 1,
+      "7": 16
+    },
+    "binding_errors": [],
+    "runtime_affinity_violations": [],
+    "init_count": 4,
+    "lost_count": 0,
+    "final_camera": [
+      "[INFO] [1790239382.163608085] [drone_tracker_node]: Camera final mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=4517 enqueued=4517 queue_dropped=0 sequence_gaps=1 consumed=4031 time=driver_monotonic unattributed_command_frame_difference=-4517 clock_offset_delta_us=1 stop_us=4888 restored=1 state=3 reason=Stopped by caller",
+      "[INFO] [1790239389.614856674] [drone_tracker_node]: Camera final mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=287 enqueued=287 queue_dropped=0 sequence_gaps=1 consumed=244 time=driver_monotonic unattributed_command_frame_difference=-287 clock_offset_delta_us=-1 stop_us=4324 restored=1 state=3 reason=Stopped by caller",
+      "[INFO] [1790239396.979932777] [drone_tracker_node]: Camera final mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=288 enqueued=288 queue_dropped=0 sequence_gaps=1 consumed=227 time=driver_monotonic unattributed_command_frame_difference=-288 clock_offset_delta_us=0 stop_us=4680 restored=1 state=3 reason=Stopped by caller",
+      "[INFO] [1790239404.392689097] [drone_tracker_node]: Camera final mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=288 enqueued=288 queue_dropped=0 sequence_gaps=1 consumed=251 time=driver_monotonic unattributed_command_frame_difference=-288 clock_offset_delta_us=0 stop_us=9766 restored=1 state=3 reason=Stopped by caller"
+    ],
+    "final_recording": [
+      "[INFO] [1790239382.163476452] [drone_tracker_node]: Camera recording phase=finished round=1 attempted=4517 accepted=4517 dropped=0 cancelled=0 encoded=4517 written=4517 synced=4517 lag_us=0 last_sync_mono_us=2667354060 sync_us=1794 used_bytes=9045369962 free_bytes=32023842816 prepare_us=92592 stop_us=14526 session=/var/lib/drone_tracker/recordings/session-e8c9b0844e4e0bd07dbf747af4a6695b reason=",
+      "[INFO] [1790239389.614724790] [drone_tracker_node]: Camera recording phase=finished round=2 attempted=287 accepted=287 dropped=0 cancelled=1 encoded=287 written=287 synced=287 lag_us=0 last_sync_mono_us=2674748868 sync_us=1852 used_bytes=9048573915 free_bytes=32020549632 prepare_us=98350 stop_us=20720 session=/var/lib/drone_tracker/recordings/session-ed484dcbc1517cc3708a893b48cc2c0c reason=",
+      "[INFO] [1790239396.979784907] [drone_tracker_node]: Camera recording phase=finished round=3 attempted=288 accepted=288 dropped=0 cancelled=0 encoded=288 written=288 synced=288 lag_us=0 last_sync_mono_us=2682161888 sync_us=3706 used_bytes=9051545394 free_bytes=32017494016 prepare_us=97268 stop_us=26903 session=/var/lib/drone_tracker/recordings/session-6d3e4fb8a69b8c1b5e722e562cfabe9c reason=",
+      "[INFO] [1790239404.392564573] [drone_tracker_node]: Camera recording phase=finished round=4 attempted=288 accepted=288 dropped=0 cancelled=0 encoded=288 written=288 synced=288 lag_us=0 last_sync_mono_us=2689579311 sync_us=1768 used_bytes=9054558813 free_bytes=32014385152 prepare_us=95578 stop_us=18657 session=/var/lib/drone_tracker/recordings/session-ddc619640324c5e87970b8af12ff3443 reason="
+    ]
+  }
+]

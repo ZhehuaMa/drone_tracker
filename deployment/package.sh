@@ -3,31 +3,44 @@
 set -euo pipefail
 export LC_ALL=C
 usage() {
-    echo "用法: $0 输出目录 [--without-models]"
+    echo "用法: $0 输出目录 [--without-models] [--cpu-policy /绝对路径/策略.yaml]"
 }
-[[ $# -ge 1 && $# -le 2 ]] || { usage; exit 2; }
+[[ $# -ge 1 ]] || { usage; exit 2; }
+output_argument=$1
+shift
 include_models=1
-if [[ $# == 2 ]]; then
-    [[ $2 == --without-models ]] || { usage; exit 2; }
-    include_models=0
+cpu_policy=
+while (($#)); do
+    case "$1" in
+        --without-models) include_models=0; shift ;;
+        --cpu-policy) [[ $# -ge 2 ]] || { usage; exit 2; }; cpu_policy=$2; shift 2 ;;
+        *) usage; exit 2 ;;
+    esac
+done
+if [[ -n $cpu_policy ]]; then
+    [[ $cpu_policy == /* && -f $cpu_policy ]] || { echo '显式策略必须是存在的绝对路径' >&2; exit 2; }
+else
+    cpu_policy=/opt/drone_tracker/config/cpu-affinity.yaml
+    [[ -f $cpu_policy ]] || { echo '旧源安装缺少 CPU 策略；须显式提供 --cpu-policy /绝对路径/策略.yaml' >&2; exit 2; }
 fi
 [[ $(uname -m) == aarch64 ]] || { echo '必须在 ARM64 生产源板打包' >&2; exit 1; }
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-mkdir -p -- "$1"
-output=$(cd -- "$1" && pwd)
+mkdir -p -- "$output_argument"
+output=$(cd -- "$output_argument" && pwd)
 stage=$(mktemp -d "$output/.package-XXXXXXXX")
 trap 'rm -rf -- "$stage"' EXIT
 name="drone-tracker-$(date -u +%Y%m%dT%H%M%SZ)-${stage##*-}"
 bundle="$stage/$name"
 mkdir -p "$bundle/payload/lib/drone_tracker" "$bundle/config"
-cp "$script_dir"/{deploy.sh,run-camera,prepare-display.py,drone-tracker.service,README.md} "$bundle/"
+cp "$script_dir"/{deploy.sh,run-camera,prepare-display.py,cpu-policy.py,drone-tracker.service,README.md} "$bundle/"
+python3 "$script_dir/cpu-policy.py" "$cpu_policy" >/dev/null
 
 # 使用源板 ROS 环境解析共享库，不依赖调用者的交互 shell。
 set +u
 source /opt/ros/humble/setup.bash
 set -u
 # PyYAML 是 ROS 2 launch 的已有依赖；只解析数据，不执行配置内容。
-python3 - "$bundle" "$include_models" <<'PY'
+python3 - "$bundle" "$include_models" "$cpu_policy" <<'PY'
 import hashlib
 import json
 import pathlib
@@ -39,6 +52,7 @@ import yaml
 
 bundle = pathlib.Path(sys.argv[1])
 include_models = sys.argv[2] == '1'
+policy_source = pathlib.Path(sys.argv[3])
 root = pathlib.Path('/opt/drone_tracker')
 release = (root / 'current').resolve(strict=True)
 tracked = {}
@@ -55,6 +69,7 @@ def copy(source, target):
     tracked[str(source)] = before
 
 copy(root / 'config/camera.yaml', bundle / 'config/camera.yaml')
+copy(policy_source, bundle / 'config/cpu-affinity.yaml')
 params = yaml.safe_load((bundle / 'config/camera.yaml').read_text())['drone_tracker_node']['ros__parameters']
 for name in ('drone_tracker_node', 'rk3576_recording_worker', 'rk3576_recording_inspect'):
     copy(release / 'lib/drone_tracker' / name, bundle / 'payload/lib/drone_tracker' / name)
@@ -141,6 +156,7 @@ for source, expected in tracked.items():
 (bundle / 'SOURCE.json').write_text(json.dumps({
     'board': pathlib.Path('/proc/device-tree/model').read_text().rstrip('\0'),
     'release': str(release), 'models_included': include_models,
+    'cpu_policy_source': str(policy_source), 'cpu_policy_sha256': digest(policy_source),
     'files': tracked,
 }, ensure_ascii=False, indent=2) + '\n')
 PY

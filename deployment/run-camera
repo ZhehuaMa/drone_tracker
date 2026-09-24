@@ -5,6 +5,9 @@ source /opt/ros/humble/setup.bash
 source /opt/drone_tracker/current/share/drone_tracker/local_setup.bash
 export LD_LIBRARY_PATH="/opt/drone_tracker/current/lib/bundled-ros${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+policy=/opt/drone_tracker/config/cpu-affinity.yaml
+cpus=$(python3 "$script_dir/cpu-policy.py" "$policy")
+export DRONE_TRACKER_CPU_CONFIG="$policy"
 python3 "$script_dir/prepare-display.py" /opt/drone_tracker/config/camera.yaml
-exec taskset -c 4-7 /opt/drone_tracker/current/lib/drone_tracker/drone_tracker_node \
+exec taskset -c "$cpus" /opt/drone_tracker/current/lib/drone_tracker/drone_tracker_node \
     --ros-args --params-file /opt/drone_tracker/config/camera.yaml "$@"

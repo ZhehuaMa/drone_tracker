@@ -11,7 +11,6 @@ ExecStart=/opt/drone_tracker/bin/run-camera
 WorkingDirectory=/opt/drone_tracker
 Environment=ROS_LOG_DIR=/var/log/drone_tracker
 LogsDirectory=drone_tracker
-CPUAffinity=4-7
 Restart=on-failure
 RestartSec=3
 KillSignal=SIGINT

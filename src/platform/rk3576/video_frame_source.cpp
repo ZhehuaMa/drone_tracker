@@ -1,4 +1,5 @@
 #include "video_frame_source.h"
+#include "platform/cpu_affinity.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -32,6 +33,7 @@ struct Rk3576VideoFrameSource::Impl {
     std::unique_ptr<Queue> queue{std::make_unique<Queue>(30)};
     VideoSample first{};
     std::thread worker{};
+    std::uint64_t affinity_round{};
     int width{};
     int height{};
     std::int64_t base{};
@@ -201,7 +203,8 @@ bool Rk3576VideoFrameSource::start() {
         videoTimestamp(impl_->base, pts);
         videoDeadline(impl_->origin, pts);
         impl_->publish(VideoState::Running);
-        impl_->worker = impl_->dependencies.launch([this] { impl_->run(); });
+        impl_->worker = cpu_affinity::start(cpu_affinity::Role::Capture, [this] { impl_->run(); },
+            impl_->dependencies.launch, ++impl_->affinity_round);
         if (!impl_->worker.joinable()) {
             throw std::runtime_error("Thread launcher returned no worker");
         }

@@ -6,8 +6,9 @@
 namespace osd {
 OsdPresenter::OsdPresenter(std::unique_ptr<DisplayBackend> backend, std::chrono::milliseconds stale,
                            std::function<SteadyClock::time_point()> now,
-                           std::function<void(const TimingWindow &)> timing_sink)
-    : timing_sink_{std::move(timing_sink)}, backend_{std::move(backend)}, stale_{stale}, now_{std::move(now)} {
+                           std::function<void(const TimingWindow &)> timing_sink, std::function<void()> before_work)
+    : timing_sink_{std::move(timing_sink)}, before_work_{std::move(before_work)},
+      backend_{std::move(backend)}, stale_{stale}, now_{std::move(now)} {
     if (!backend_ || !now_ || stale_.count() <= 0) {
         throw std::invalid_argument("OSD requires backend and positive frame timeout");
     }
@@ -156,6 +157,7 @@ void OsdPresenter::reportTiming() {
 }
 void OsdPresenter::render() noexcept {
     try {
+        if (before_work_) { before_work_(); }
         backend_->initialize();
         {
             std::lock_guard<std::mutex> lock{mutex_};

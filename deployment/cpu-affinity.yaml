@@ -1,0 +1,11 @@
+# RK3576 生产板已验证的职责映射。修改后重启节点生效。
+version: 1
+mode: role-pinned
+allowed_cpus: [4, 5, 6, 7]
+roles:
+  control: 4
+  tracking: 4
+  yolo: 5
+  display: 6
+  capture: 7
+  recording: 7

@@ -1,0 +1,14 @@
+[
+  {
+    "case": "split-1",
+    "thread_samples": 1045,
+    "unlogged_tids": [],
+    "changed_affinity_tids": []
+  },
+  {
+    "case": "split-2",
+    "thread_samples": 1026,
+    "unlogged_tids": [],
+    "changed_affinity_tids": []
+  }
+]

@@ -1,5 +1,6 @@
 #include "model/validation.h"
 #include "yolo_detector.h"
+#include "platform/cpu_affinity.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -51,7 +52,7 @@ bool YoloV8Detector::init() {
         input_h = size.value.height;
         input_w = size.value.width;
         m_stop_requested = false;
-        m_worker_thread = m_launcher([this] { workerThreadLoop(); });
+        m_worker_thread = cpu_affinity::start(cpu_affinity::Role::Yolo, [this] { workerThreadLoop(); }, m_launcher);
         if (!m_worker_thread.joinable()) { return false; }
         return true;
     } catch (const std::exception &error) {

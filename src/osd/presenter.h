@@ -18,7 +18,8 @@ public:
     explicit OsdPresenter(std::unique_ptr<DisplayBackend> backend,
                           std::chrono::milliseconds stale = std::chrono::milliseconds{1000},
                           std::function<SteadyClock::time_point()> now = SteadyClock::now,
-                          std::function<void(const TimingWindow &)> timing_sink = {});
+                          std::function<void(const TimingWindow &)> timing_sink = {},
+                          std::function<void()> before_work = {});
     ~OsdPresenter();
     OsdPresenter(const OsdPresenter &) = delete;
     OsdPresenter &operator=(const OsdPresenter &) = delete;
@@ -41,6 +42,7 @@ private:
     void render() noexcept;
     TimingWindow &timingWindow(std::uint64_t round);
     const std::function<void(const TimingWindow &)> timing_sink_;
+    const std::function<void()> before_work_;
     // 每次新轮前冲刷；至多当前轮、一个在途旧轮及初始等待轮。
     std::array<std::optional<TimingWindow>, 3> timing_windows_{};
     std::uint64_t timing_window_id_{};

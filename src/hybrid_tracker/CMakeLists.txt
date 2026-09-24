@@ -20,8 +20,16 @@ add_library(preprocess_geometry STATIC preprocess/preprocess_geometry.cpp)
 target_include_directories(preprocess_geometry PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(preprocess_geometry PUBLIC ${OpenCV_LIBS})
 
+add_library(cpu_affinity STATIC ../platform/cpu_affinity.cpp)
+target_include_directories(cpu_affinity PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+if(DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
+    find_package(yaml-cpp REQUIRED)
+    target_compile_definitions(cpu_affinity PRIVATE DRONE_TRACKER_RK3576)
+    target_link_libraries(cpu_affinity PUBLIC yaml-cpp)
+endif()
+
 add_library(hybrid_tracker STATIC hybrid_tracker.cpp yolo_detector.cpp nano_tracker.cpp dcf_tracker.cpp rotation_kf.cpp)
-target_link_libraries(hybrid_tracker PUBLIC platform_interfaces model_common preprocess_geometry ${OpenCV_LIBS} Threads::Threads)
+target_link_libraries(hybrid_tracker PUBLIC platform_interfaces model_common preprocess_geometry ${OpenCV_LIBS} Threads::Threads cpu_affinity)
 
 # 装配顺序使用真实代码，模型加载及预处理创建可由测试替换；本目标不使用 SDK。
 add_library(jetson_tracker_assembly STATIC ../platform/jetson/tracker_assembly.cpp)

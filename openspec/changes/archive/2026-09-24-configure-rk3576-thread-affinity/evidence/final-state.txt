@@ -1,0 +1,8 @@
+active
+MainPID=5030
+CPUAffinity=4-7
+91e6b85400545dc4a1498251bf132c1cace64b6654b5e02237dbfd81214fdb69  /opt/drone_tracker/config/camera.yaml
+66414023f3f528bef8526551560b0a837efe14eaf2d07a0d641618dee868e513  /opt/drone_tracker/current/lib/drone_tracker/drone_tracker_node
+production_without_test_library
+String value is: cached-overlay
+Boolean value is: True

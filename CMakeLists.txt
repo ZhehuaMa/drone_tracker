@@ -139,6 +139,11 @@ install(DIRECTORY
 )
 
 if(DRONE_TRACKER_BUILD_TESTS AND DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
+    add_executable(cpu_affinity_tests src/platform/rk3576/tests/cpu_affinity_test.cpp)
+    target_link_libraries(cpu_affinity_tests PRIVATE cpu_affinity)
+    add_test(NAME cpu_affinity_tests COMMAND cpu_affinity_tests)
+    add_test(NAME deployment_cpu_policy_tests COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/deployment/tests/test_cpu_policy.py ${CMAKE_CURRENT_SOURCE_DIR})
     add_executable(ros_video_tests src/tests/ros_video_test.cpp)
     target_link_libraries(ros_video_tests drone_tracker_ros rk3576_video)
     set(ROS_VIDEO_FIXTURES "${CMAKE_CURRENT_BINARY_DIR}/ros-video-fixtures")

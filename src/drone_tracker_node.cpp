@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "platform/frame_source_ops.h"
+#include "platform/cpu_affinity.h"
 #ifdef DRONE_TRACKER_RK3576
 #include "platform/file_identity.h"
 #endif
@@ -31,6 +32,7 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
     std::function<std::thread(std::function<void()>)> launcher, std::function<void(const char *)> recording_hook,
     std::unique_ptr<osd::DisplayBackend> display_backend)
     : Node("drone_tracker_node", options), recording_hook_{std::move(recording_hook)}, launcher_{std::move(launcher)} {
+    cpu_affinity::initializeControl();
     if (!factory) { factory = CreatePlatformFactory(); }
     if (!launcher_) {
         launcher_ = [](std::function<void()> work) { return std::thread{std::move(work)}; };
@@ -108,7 +110,8 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
             osd_sequence_ = 0;
         }
         openRecording(stamp);
-        worker_thread_ = launcher_([this] { worker(); });
+        worker_thread_ = cpu_affinity::start(cpu_affinity::Role::Tracking, [this] { worker(); },
+            launcher_, ++round_number_);
         if (!worker_thread_.joinable()) { throw std::runtime_error("Thread launcher returned no worker"); }
     } catch (const std::exception &error) {
         running = false;
@@ -196,7 +199,8 @@ void DroneTrackerNode::setupDisplay(std::unique_ptr<osd::DisplayBackend> backend
         };
     }
     osd_presenter_ = std::make_unique<osd::OsdPresenter>(std::move(backend), std::chrono::milliseconds{stale},
-        osd::SteadyClock::now, std::move(timing_sink));
+        osd::SteadyClock::now, std::move(timing_sink),
+        [] { cpu_affinity::apply(cpu_affinity::Role::Display); });
     osd_presenter_->start();
     osd_telemetry_ = std::make_unique<osd::OsdTelemetryAdapter>(*this,
         [this](osd::TelemetrySnapshot snapshot) {

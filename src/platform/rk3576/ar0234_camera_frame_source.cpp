@@ -1,4 +1,5 @@
 #include "ar0234_camera_frame_source.h"
+#include "platform/cpu_affinity.h"
 
 #include <atomic>
 #include <cmath>
@@ -25,6 +26,7 @@ struct Ar0234CameraFrameSource::Impl {
     std::unique_ptr<Rk3576CameraCaptureBase> device{};
     std::unique_ptr<Queue> queue{std::make_unique<Queue>(30)};
     std::thread worker{};
+    std::uint64_t affinity_round{};
     std::thread trigger_worker{};
     std::mutex wait_mutex{};
     std::condition_variable changed{};
@@ -257,7 +259,8 @@ bool Ar0234CameraFrameSource::start() {
             impl_->record.clock_pair = impl_->device->clockPair();
             impl_->record.source.state = FrameSourceState::Running;
         }
-        impl_->worker = impl_->dependencies.launch([this] { impl_->run(); });
+        impl_->worker = cpu_affinity::start(cpu_affinity::Role::Capture, [this] { impl_->run(); },
+            impl_->dependencies.launch, ++impl_->affinity_round);
         if (!impl_->worker.joinable()) { throw std::runtime_error("Camera thread launcher returned no worker"); }
         if (impl_->config.trigger_mode) {
             std::unique_lock<std::mutex> lock{impl_->wait_mutex};

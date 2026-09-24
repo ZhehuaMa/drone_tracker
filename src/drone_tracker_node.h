@@ -219,6 +219,7 @@ private:
     RotationHistory gimbal_history_;
     mutable std::mutex gimbal_mtx_;
 
+    std::uint64_t round_number_{};
     std::thread worker_thread_;
     std::atomic_bool running = false;
     int8_t last_tracker_state = -1;

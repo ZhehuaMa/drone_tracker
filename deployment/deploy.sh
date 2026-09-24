@@ -27,7 +27,11 @@ cd "$bundle"
 sha256sum --check --quiet SHA256SUMS || fail '部署包校验失败'
 runtime_hash=d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8
 [[ $(sha256sum /usr/lib/librknnrt.so | cut -d' ' -f1) == "$runtime_hash" ]] || fail '系统 RKNN Runtime 与生产基线不同'
-taskset -c 4-7 true || fail 'CPU 4–7 不可用'
+cpus=$(python3 "$bundle/cpu-policy.py" "$bundle/config/cpu-affinity.yaml") || fail 'CPU 策略无效'
+IFS=, read -ra policy_cores <<< "$cpus"
+for cpu in "${policy_cores[@]}"; do
+    taskset -c "$cpu" true || fail "CPU $cpu 不可用"
+done
 while IFS= read -r device; do
     [[ -c $device ]] || fail "配置设备不存在: $device；请先核对相机拓扑，不要直接修改配置"
 done < DEVICES
@@ -90,12 +94,15 @@ if ((was_active)); then systemctl stop "$service"; fi
 mkdir -p "$root/config" "$root/bin" "$root/models" /var/lib/drone_tracker/recordings
 if [[ -d models ]]; then cp -a models/. "$root/models/"; fi
 install -m 644 config/camera.yaml "$root/config/camera.yaml"
+install -m 644 config/cpu-affinity.yaml "$root/config/cpu-affinity.yaml"
 install -m 755 run-camera "$root/bin/run-camera"
 install -m 644 prepare-display.py "$root/bin/prepare-display.py"
+install -m 644 cpu-policy.py "$root/bin/cpu-policy.py"
 install -m 644 drone-tracker.service "/etc/systemd/system/$service"
 ln -s "$release" "$root/.current-$stamp"
 mv -Tf "$root/.current-$stamp" "$root/current"
 cmp config/camera.yaml "$root/config/camera.yaml"
+cmp config/cpu-affinity.yaml "$root/config/cpu-affinity.yaml"
 (cd "$root" && sha256sum --check --quiet "$bundle/MODELS.sha256")
 systemctl daemon-reload
 systemctl enable "$service"

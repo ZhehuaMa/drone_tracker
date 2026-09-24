@@ -27,13 +27,19 @@ target_include_directories(rk3576_recording_probe PRIVATE "${CMAKE_CURRENT_LIST_
 target_link_libraries(rk3576_recording_probe PRIVATE ${OpenCV_LIBS} Threads::Threads)
 
 find_package(yaml-cpp REQUIRED)
+if(NOT TARGET cpu_affinity)
+    add_library(cpu_affinity STATIC ../../../platform/cpu_affinity.cpp)
+    target_include_directories(cpu_affinity PUBLIC ../../../)
+    target_compile_definitions(cpu_affinity PRIVATE DRONE_TRACKER_RK3576)
+    target_link_libraries(cpu_affinity PUBLIC yaml-cpp)
+endif()
 add_executable(rk3576_recording_worker worker.cpp encoder.cpp storage.cpp session.cpp)
 target_compile_features(rk3576_recording_worker PRIVATE cxx_std_17)
 target_compile_options(rk3576_recording_worker PRIVATE -Wall -Wextra -Wpedantic)
 target_include_directories(rk3576_recording_worker PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../.."
     "${CMAKE_CURRENT_LIST_DIR}/../../../hybrid_tracker" ${OpenCV_INCLUDE_DIRS})
 target_include_directories(rk3576_recording_worker SYSTEM PRIVATE ${RECORDING_MPP_INCLUDE_DIR})
-target_link_libraries(rk3576_recording_worker PRIVATE PkgConfig::RECORDING_MPP PkgConfig::RECORDING_AV
+target_link_libraries(rk3576_recording_worker PRIVATE cpu_affinity PkgConfig::RECORDING_MPP PkgConfig::RECORDING_AV
     yaml-cpp ${OpenCV_LIBS} Threads::Threads)
 add_executable(rk3576_recording_driver recording_driver.cpp session.cpp
     ../rk3576_camera_capture_base.cpp ../sc233hgs_camera_device.cpp ../camera_timing.cpp ../host_frame.cpp)
@@ -41,13 +47,13 @@ target_compile_features(rk3576_recording_driver PRIVATE cxx_std_17)
 target_compile_options(rk3576_recording_driver PRIVATE -Wall -Wextra -Wpedantic)
 target_include_directories(rk3576_recording_driver PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../.."
     "${CMAKE_CURRENT_LIST_DIR}/../../../hybrid_tracker" ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(rk3576_recording_driver PRIVATE ${OpenCV_LIBS} Threads::Threads)
+target_link_libraries(rk3576_recording_driver PRIVATE cpu_affinity ${OpenCV_LIBS} Threads::Threads)
 add_executable(rk3576_recording_storage_tests storage_test.cpp storage.cpp session.cpp)
 target_compile_features(rk3576_recording_storage_tests PRIVATE cxx_std_17)
 target_compile_options(rk3576_recording_storage_tests PRIVATE -Wall -Wextra -Wpedantic)
 target_include_directories(rk3576_recording_storage_tests PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../.."
     "${CMAKE_CURRENT_LIST_DIR}/../../../hybrid_tracker" ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(rk3576_recording_storage_tests PRIVATE PkgConfig::RECORDING_AV yaml-cpp
+target_link_libraries(rk3576_recording_storage_tests PRIVATE cpu_affinity PkgConfig::RECORDING_AV yaml-cpp
     ${OpenCV_LIBS} Threads::Threads)
 add_executable(rk3576_recording_inspect inspect.cpp)
 add_executable(rk3576_recording_session_tests session_test.cpp session.cpp)
@@ -55,7 +61,7 @@ target_compile_features(rk3576_recording_session_tests PRIVATE cxx_std_17)
 target_compile_options(rk3576_recording_session_tests PRIVATE -Wall -Wextra -Wpedantic)
 target_include_directories(rk3576_recording_session_tests PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../.."
     "${CMAKE_CURRENT_LIST_DIR}/../../../hybrid_tracker" ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(rk3576_recording_session_tests PRIVATE yaml-cpp ${OpenCV_LIBS} Threads::Threads)
+target_link_libraries(rk3576_recording_session_tests PRIVATE cpu_affinity yaml-cpp ${OpenCV_LIBS} Threads::Threads)
 target_compile_features(rk3576_recording_inspect PRIVATE cxx_std_17)
 target_compile_options(rk3576_recording_inspect PRIVATE -Wall -Wextra -Wpedantic)
 target_include_directories(rk3576_recording_inspect PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../.."
