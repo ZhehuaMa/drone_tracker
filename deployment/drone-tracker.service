@@ -1,0 +1,23 @@
+[Unit]
+Description=Drone tracker production camera node
+Wants=network-online.target
+After=local-fs.target network-online.target display-manager.service lightdm.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/opt/drone_tracker/bin/run-camera
+WorkingDirectory=/opt/drone_tracker
+Environment=ROS_LOG_DIR=/var/log/drone_tracker
+LogsDirectory=drone_tracker
+CPUAffinity=4-7
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGINT
+KillMode=mixed
+TimeoutStopSec=30
+UMask=0022
+
+[Install]
+WantedBy=multi-user.target

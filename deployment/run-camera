@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# 使用与服务相同的 CPU 核心；不修改生产配置。
+set -eo pipefail
+source /opt/ros/humble/setup.bash
+source /opt/drone_tracker/current/share/drone_tracker/local_setup.bash
+export LD_LIBRARY_PATH="/opt/drone_tracker/current/lib/bundled-ros${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+python3 "$script_dir/prepare-display.py" /opt/drone_tracker/config/camera.yaml
+exec taskset -c 4-7 /opt/drone_tracker/current/lib/drone_tracker/drone_tracker_node \
+    --ros-args --params-file /opt/drone_tracker/config/camera.yaml "$@"
