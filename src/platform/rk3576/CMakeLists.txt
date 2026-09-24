@@ -1,4 +1,7 @@
 if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    if(DRONE_TRACKER_BUILD_RECORDING)
+        add_subdirectory(recording)
+    endif()
     include(backend.cmake)
     return()
 endif()

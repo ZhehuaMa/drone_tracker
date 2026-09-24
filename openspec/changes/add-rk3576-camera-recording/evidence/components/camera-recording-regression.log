@@ -1,0 +1,8 @@
+生产板 HZ-RK3576_WuKong，2026-09-24。仅列本轮已经完成的相机相关测试；不代表完整 CTest 已完成。
+ 1/15 Test  #1: ar0234_camera_device_tests ..........   Passed    1.23 sec
+ 2/15 Test  #2: camera_timing_tests .................   Passed    0.01 sec
+ 3/15 Test  #3: ar0234_camera_frame_source_tests ....   Passed    0.72 sec
+ 4/15 Test  #4: ar0234_camera_driver_missing_args ...   Passed    0.14 sec
+ 5/15 Test  #5: ar0234_camera_driver_invalid_args ...   Passed    0.14 sec
+ 6/15 Test  #6: ar0234_camera_driver_tests ..........   Passed    1.57 sec
+ 7/15 Test  #7: sc233hgs_camera_tests ...............   Passed    0.17 sec

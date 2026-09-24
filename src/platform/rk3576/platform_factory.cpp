@@ -2,6 +2,7 @@
 
 #include "host_frame.h"
 #include "video_frame_source.h"
+#include "recording/session.h"
 
 namespace rk3576 {
 namespace {
@@ -20,6 +21,10 @@ public:
     Factory(AssemblyDependencies dependencies, FactoryOptions options)
         : dependencies_{std::move(dependencies)}, options_{std::move(options)} {}
     PlatformResult<std::unique_ptr<FrameSource>> createFrameSource(const FrameSourceConfig &config) override {
+        try { recording::validateConfig(config); }
+        catch (const std::exception &error) {
+            return PlatformResult<std::unique_ptr<FrameSource>>::failure({"rk3576", "recording", config.path, error.what()});
+        }
         if (config.type == FrameSourceType::Video) {
             try {
                 return {std::make_unique<Rk3576VideoFrameSource>(config)};

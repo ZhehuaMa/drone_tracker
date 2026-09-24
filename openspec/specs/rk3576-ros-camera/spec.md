@@ -12,6 +12,8 @@
 
 相机 SHALL 要求 use_history_timestamp=false、use_sim_time=false、need_save=false。模型路径 SHALL 遵守现有四文件角色规则。camera.fx/fy/cx/cy SHALL 全部显式且有限，fx/fy SHALL 为正；它们表示实际图像像素坐标中的焦距和主点，MUST NOT 再按输出尺寸缩放。运行期修改输入、模式、频率、内参、模型、算法、时钟、记录及传感器型号配置 SHALL 明确拒绝。
 
+录像 SHALL 使用独立的 `recording.*` 启动参数并遵守 `rk3576-camera-recording`。仅 SC233HGS 相机 SHALL 接受 `recording.enabled=true`。运行期修改 `recording.*` SHALL 明确拒绝。关闭录像 SHALL 保持现有输入行为，不创建录像进程或视频文件。新录像 MUST NOT 自动打开 ROS bag。
+
 #### Scenario: 合法软件模式
 - **WHEN** 配置 `sensor_model=ar0234`、1920×1200、设备 fps=60、software_trigger、trigger_rate_hz=20，以及合法模型与内参
 - **THEN** 初始化后等待 ON，不自动拍摄，不把触发频率当作设备 fps
@@ -26,7 +28,7 @@
 
 #### Scenario: 记录请求
 - **WHEN** 相机配置 need_save=true
-- **THEN** 初始化失败且说明首版不支持记录，不开始拍摄，不创建部分 ROS bag
+- **THEN** 初始化失败且说明 need_save 不用于 RK3576 相机录像；应使用 recording.enabled，不开始拍摄，不创建部分 ROS bag
 
 #### Scenario: 运行期改频率
 - **WHEN** 已初始化的节点收到修改 mv_camera.trigger_rate_hz 的参数请求
@@ -44,6 +46,18 @@
 - **WHEN** 已初始化的节点收到修改 `mv_camera.sensor_model` 的参数请求
 - **THEN** 返回失败并说明需重启节点应用配置
 
+#### Scenario: 独立录像配置
+- **WHEN** SC233HGS 相机配置 need_save=false、recording.enabled=true 且录像配置合法
+- **THEN** 节点接受配置并等待 ON，录像不受 visualized_result 或 OSD 开关影响
+
+#### Scenario: 运行中修改录像周期
+- **WHEN** 节点运行中请求修改 recording.sync_interval_ms
+- **THEN** 明确拒绝并说明需重启节点应用
+
+#### Scenario: 其他输入启用新录像
+- **WHEN** AR0234、Jetson 或视频文件输入配置 recording.enabled=true
+- **THEN** 初始化明确拒绝不支持的配置，不静默忽略，不改变旧 need_save 行为
+
 ### Requirement: ON 和 OFF 控制完整运行轮次
 
 ON SHALL 启动整轮采集与跟踪，MUST NOT 解释为单次拍照命令。软件模式 SHALL 在采集就绪后开始周期触发。连续模式 SHALL 不发送触发命令。OFF SHALL 停止后续触发并结束本轮，重复 ON 不增加工作线程，空闲 OFF 安全。启动失败 SHALL 回滚已有资源。首帧超时 SHALL 遵守相机帧源契约。
@@ -51,6 +65,10 @@ ON SHALL 启动整轮采集与跟踪，MUST NOT 解释为单次拍照命令。�
 新轮 SHALL 清空旧队列、统计和跟踪状态，建立新时间基准。模型 SHALL 跨轮复用。收尾 SHALL 清除旧检测请求和结果，并等待在途模型访问结束。相机不报告文件 EOF；普通设备失败后的下一次 ON SHALL 重新打开核验设备。
 
 SC233HGS 每轮 SHALL 遵守 `rk3576-sc233hgs-camera-frame-source` 的有界启动预热。预热是交付图像前的时间递增观察期。预热观察帧 MUST NOT 提交算法，也 MUST NOT 产生对应的检测框或图像消息。预热阶段 SHALL 能响应 OFF，不等待预热期限结束。预热未稳定或致命元数据错误 SHALL 作为相机失败结束本轮，MUST NOT 伪装成算法 TargetLost。预热 SHALL 只增加内部诊断阶段，不改变四个 TrackerState 数值或六个业务话题。AR0234、Jetson 与视频 SHALL 保持原启停和时间语义。
+
+启用录像时，每次 ON SHALL 尝试建立独立录像会话，从相机完成归还、停止及预热期限最终检查后的合格帧边界开始录制，包括没有目标的期间。OFF SHALL 停止录像接收并结束该会话，不继续采集。重复 ON MUST NOT 创建第二个录像会话。静态配置错误 SHALL 在初始化时拒绝；合法配置下的录像资源或运行故障 SHALL 只使录像失败并报告，MUST NOT 停止仍健康的采集、跟踪或 OSD。相机/跟踪本身故障 SHALL 按原规则结束整轮。录像收尾 SHALL 有有限等待预算并与相机停止、模型等待分别报告；超时 MUST NOT 无限阻塞 ON/OFF。
+
+录像准备与相机预热 SHALL 使用独立起点和预算；录像准备耗时 MUST NOT 缩短开流后的预热期限。预热中 OFF 或失败 SHALL 按 `rk3576-camera-recording` 保存零帧取消或失败结果，不伪造视频。录像时间起点及基于视频输入的健康检查 SHALL 从合格帧边界建立，MUST NOT 把等待预热误报为编码或持久化停滞。
 
 #### Scenario: 首次启动失败后重试
 - **WHEN** 首次 ON 时设备不可用，设备恢复后再次 ON
@@ -60,6 +78,10 @@ SC233HGS 每轮 SHALL 遵守 `rk3576-sc233hgs-camera-frame-source` 的有界启�
 - **WHEN** 旧轮 YOLO 尚在推理时收到 OFF，随后清理完成并再次 ON
 - **THEN** 旧轮帧安全存活到访问结束，新轮不获取旧结果，模型无需重新加载
 
+#### Scenario: 没有目标仍录制
+- **WHEN** ON 后一直处于 Detecting，随后收到 OFF
+- **THEN** 录像覆盖该轮预热后的合格采集期间，OFF 后停止接收，视频不包含检测框或 OSD
+
 #### Scenario: 预热中 OFF
 - **WHEN** SC233HGS 已开流但尚未输出合格帧时收到 OFF
 - **THEN** 及时停止并回收本轮，不发布观察帧对应的框或图像，不因没有首帧误报预热失败
@@ -67,6 +89,18 @@ SC233HGS 每轮 SHALL 遵守 `rk3576-sc233hgs-camera-frame-source` 的有界启�
 #### Scenario: 预热失败后新轮
 - **WHEN** 一轮因时间重复未能在界限内稳定，清理后再次收到 ON
 - **THEN** 新轮重新预热，旧轮无帧或失败状态不占用新轮时间基准，不自动发送 TargetLost
+
+#### Scenario: 录像准备后相机预热失败
+- **WHEN** 录像资源已准备，相机随后因预热未稳定结束本轮
+- **THEN** 保留相机失败原因与零帧录像结果，有限回收录像资源，不把失败归因于编码器没有输出
+
+#### Scenario: 录像故障后下一轮重试
+- **WHEN** 合法录像目录当前不可写，ON 启动相机，随后 OFF，权限恢复后再次 ON
+- **THEN** 首轮报告录像失败但跟踪继续，第二轮在旧录像资源已回收时建立新会话，不混入旧轮帧
+
+#### Scenario: 录像收尾超时
+- **WHEN** OFF 后录像写盘不能在收尾预算内完成
+- **THEN** 报告录像未正常完成，停止提交，隔离旧会话资源，不无限等待写盘，也不改变模型在途访问的安全等待规则
 
 ### Requirement: 图像与预测消息保持原有语义
 

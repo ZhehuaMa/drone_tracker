@@ -34,9 +34,13 @@ struct Ar0234CameraFrameSource::Impl {
     std::atomic<bool> stopped{false};
     mutable std::mutex mutex{};
     Ar0234CameraDiagnostic record{};
+    CameraNv12Sink *recording{};
 
     Impl(FrameSourceConfig input, Ar0234CameraDependencies injected)
         : config{std::move(input)}, dependencies{std::move(injected)} {
+        if (config.camera_recording.enabled && config.camera_sensor_model != CameraSensorModel::Sc233hgs) {
+            throw std::invalid_argument("AR0234 does not support independent recording");
+        }
         if (!dependencies.system) { dependencies.system = std::make_shared<CameraSystem>(); }
         if (!dependencies.launch) {
             dependencies.launch = [](std::function<void()> work) { return std::thread{std::move(work)}; };
@@ -145,6 +149,17 @@ struct Ar0234CameraFrameSource::Impl {
         catch (...) { fail("Unknown trigger worker failure"); requestStop(); }
     }
     void run() noexcept {
+        // 设备内最终检查后，帧源还有一次停止检查；二者都通过后才发布。
+        struct DeferredSink final : CameraNv12Sink {
+            CameraNv12Sink *target{};
+            bool ready{};
+            explicit DeferredSink(CameraNv12Sink *sink) : target{sink} {}
+            ~DeferredSink() override { cancel(); }
+            void stage(const CameraNv12View &view) noexcept override { target->stage(view); }
+            void publish() noexcept override { ready = true; }
+            void cancel() noexcept override { if (target) { target->cancel(); } ready = false; }
+            void commit() noexcept { if (ready) { target->publish(); ready = false; } }
+        } deferred{recording};
         try {
             {
                 std::lock_guard<std::mutex> lock{wait_mutex};
@@ -152,12 +167,14 @@ struct Ar0234CameraFrameSource::Impl {
             }
             changed.notify_all();
             auto last_dequeue{stream_started_us};
+            std::uint64_t last_gaps{};
             while (!stopped.load()) {
-                auto sample{device->next(100, dependencies.compare_pixels)};
+                auto sample{device->next(100, dependencies.compare_pixels, recording ? &deferred : nullptr)};
                 if (stopped.load()) {
                     if (sample.result == CameraSampleResult::FrameReady) { device->discardReadyFrame(); }
                     break;
                 }
+                deferred.commit();
                 if (sample.result == CameraSampleResult::NoSample) {
                     const auto now{dependencies.system->clockUs(CLOCK_MONOTONIC)};
                     if (now < last_dequeue || now - last_dequeue >= 2000000) {
@@ -166,7 +183,10 @@ struct Ar0234CameraFrameSource::Impl {
                     continue;
                 }
                 last_dequeue = sample.dequeue_us;
+                const auto gap_count{device->sequenceGaps() - last_gaps};
+                last_gaps = device->sequenceGaps();
                 if (sample.result == CameraSampleResult::WarmupDiscarded) {
+                    if (recording) { recording->disposition(sample, gap_count, false); }
                     std::lock_guard<std::mutex> lock{mutex};
                     record.source.camera = device->captureStatus();
                     record.source.sequence_gaps = device->sequenceGaps();
@@ -175,6 +195,7 @@ struct Ar0234CameraFrameSource::Impl {
                     continue;
                 }
                 const bool enqueued{queue->try_enqueue(sample.frame)};
+                if (recording) { recording->disposition(sample, gap_count, !enqueued); }
                 Ar0234CameraDiagnostic snapshot{};
                 {
                     std::lock_guard<std::mutex> lock{mutex};
@@ -298,6 +319,13 @@ bool Ar0234CameraFrameSource::tryFrame(FrameRef &frame) {
 void Ar0234CameraFrameSource::discardFrames() {
     FrameRef frame{};
     while (impl_->queue->try_dequeue(frame)) {}
+}
+void Ar0234CameraFrameSource::setRecordingSink(CameraNv12Sink *sink) {
+    if (isRunning() || impl_->worker.joinable()) { throw std::logic_error("Set recording sink only after stop"); }
+    if (sink && impl_->config.camera_sensor_model != CameraSensorModel::Sc233hgs) {
+        throw std::invalid_argument("AR0234 does not support independent recording");
+    }
+    impl_->recording = sink;
 }
 void Ar0234CameraFrameSource::configureRecording(bool enabled, const std::string &, const std::string &) {
     if (enabled) { throw std::invalid_argument("RK3576 camera recording unsupported"); }

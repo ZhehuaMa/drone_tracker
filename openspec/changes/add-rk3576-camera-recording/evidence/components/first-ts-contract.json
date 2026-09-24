@@ -1,0 +1,26 @@
+[
+  {
+    "file": "000001.ts",
+    "frames": 610,
+    "first_pts_90k": 0,
+    "no_b_frames": true,
+    "all_pts_match_capture": true,
+    "idr_max_gap_us": 1016345
+  },
+  {
+    "file": "000002.ts",
+    "frames": 610,
+    "first_pts_90k": 914707,
+    "no_b_frames": true,
+    "all_pts_match_capture": true,
+    "idr_max_gap_us": 1016344
+  },
+  {
+    "file": "000003.ts",
+    "frames": 264,
+    "first_pts_90k": 1829415,
+    "no_b_frames": true,
+    "all_pts_match_capture": true,
+    "idr_max_gap_us": 1016342
+  }
+]

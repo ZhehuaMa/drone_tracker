@@ -205,14 +205,14 @@ public:
             value.num_planes = 1;
             value.field = V4L2_FIELD_NONE;
             value.plane_fmt[0].bytesperline = stride;
-            value.plane_fmt[0].sizeimage = stride * height;
+            value.plane_fmt[0].sizeimage = stride * (height + (nv12 ? height / 2 : 0));
         } else if (request == VIDIOC_REQBUFS) {
             auto &value{*static_cast<v4l2_requestbuffers *>(argument)};
             if (hit(value.count ? "allocate" : "release")) { return -1; }
             allocated = value.count != 0;
             if (value.count) {
                 value.count = buffer_count;
-                pixels.assign(buffer_count, std::vector<unsigned char>(stride * height + offset, 255));
+                pixels.assign(buffer_count, std::vector<unsigned char>(stride * (height + (nv12 ? height / 2 : 0)) + offset, 255));
             }
         } else if (request == VIDIOC_QUERYBUF) {
             if (hit("query")) { return -1; }

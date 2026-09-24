@@ -1,0 +1,212 @@
+[
+  {
+    "label": "kill-final-20260924",
+    "result": {
+      "label": "worker-kill",
+      "command": [
+        "/home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/recording_validation_node",
+        "--ros-args",
+        "--params-file",
+        "/opt/drone_tracker/config/camera.yaml",
+        "-p",
+        "recording.enabled:=true",
+        "-p",
+        "recording.directory:=/home/hzhy/drone-recording-validation-20260923/kill-final-20260924-recordings",
+        "-p",
+        "recording.sync_interval_ms:=1000",
+        "-p",
+        "recording.segment_seconds:=60",
+        "-p",
+        "need_save:=false",
+        "-p",
+        "osd.enabled:=true",
+        "-p",
+        "visualized_result:=false",
+        "-p",
+        "mv_camera.media_device:=/dev/media2"
+      ],
+      "sync_ms": 1000,
+      "osd": true,
+      "images": false,
+      "rounds": [
+        {
+          "on_us": 12399040354,
+          "first_box_us": 12399497758,
+          "before_boxes": 0,
+          "worker_pid": 33100,
+          "post_kill_boxes": 43,
+          "off_us": 12403890487,
+          "stop_observed_us": 144395,
+          "boxes_total_after_stop": 79
+        },
+        {
+          "on_us": 12405646492,
+          "first_box_us": 12406122378,
+          "before_boxes": 79,
+          "off_us": 12408140866,
+          "stop_observed_us": 474863,
+          "boxes_total_after_stop": 201
+        }
+      ],
+      "input": "SC233HGS /dev/video22 1920x1200 NV12 60fps",
+      "simulated_attitude": true,
+      "quality_evaluation": false,
+      "storage_device": "/dev/mmcblk0p7",
+      "block_io_scope": "整个验收目录所在分区，包含其他进程写入；不是本进程专属写入量",
+      "pid": 33083,
+      "exit_code": 0,
+      "parent_kill_expected": false,
+      "events": [
+        [
+          12399.518261221,
+          "Drone Tracker Started"
+        ],
+        [
+          12400.211729073,
+          "Detecting..."
+        ],
+        [
+          12401.031907294,
+          "Target Found"
+        ],
+        [
+          12401.509721133,
+          "Tracking..."
+        ],
+        [
+          12402.009074742,
+          "Camera recording failed: Recording worker exited without a completed session"
+        ],
+        [
+          12404.012248824,
+          "Drone Tracker Stopped"
+        ],
+        [
+          12406.083746628,
+          "Drone Tracker Started"
+        ],
+        [
+          12406.515273218,
+          "Detecting..."
+        ],
+        [
+          12408.592662882,
+          "Drone Tracker Stopped"
+        ]
+      ],
+      "states": [
+        [
+          12399.503621888,
+          0
+        ],
+        [
+          12400.701352762,
+          1
+        ],
+        [
+          12400.745103185,
+          2
+        ],
+        [
+          12406.128566555,
+          0
+        ]
+      ]
+    },
+    "videos": [
+      {
+        "session": "session-70156341110a4d50b091275988adc8ff",
+        "file": "000001.ts",
+        "decoded_prefix_frames": 123,
+        "last_frame_crc": "0,     182942,     182942,     1500,  3456000, 0x31fa42b6",
+        "decoder_exit_code": 0,
+        "decoder_diagnostics": "",
+        "normal_completion_marker": true
+      },
+      {
+        "session": "session-97744fc3fb075794b9db9807eb1952b8",
+        "file": "000001.ts",
+        "decoded_prefix_frames": 136,
+        "last_frame_crc": "0,     202438,     202438,     1500,  3456000, 0x8cec5dfa",
+        "decoder_exit_code": 0,
+        "decoder_diagnostics": "",
+        "normal_completion_marker": false
+      }
+    ]
+  },
+  {
+    "label": "parent-final-20260924",
+    "result": {
+      "label": "parent-kill",
+      "command": [
+        "/home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/recording_validation_node",
+        "--ros-args",
+        "--params-file",
+        "/opt/drone_tracker/config/camera.yaml",
+        "-p",
+        "recording.enabled:=true",
+        "-p",
+        "recording.directory:=/home/hzhy/drone-recording-validation-20260923/parent-final-20260924-recordings",
+        "-p",
+        "recording.sync_interval_ms:=1000",
+        "-p",
+        "recording.segment_seconds:=60",
+        "-p",
+        "need_save:=false",
+        "-p",
+        "osd.enabled:=true",
+        "-p",
+        "visualized_result:=false",
+        "-p",
+        "mv_camera.media_device:=/dev/media2"
+      ],
+      "sync_ms": 1000,
+      "osd": true,
+      "images": false,
+      "rounds": [
+        {
+          "on_us": 12417418509,
+          "first_box_us": 12417918975,
+          "before_boxes": 0,
+          "worker_pid": 33247,
+          "worker_reclaimed": true
+        }
+      ],
+      "input": "SC233HGS /dev/video22 1920x1200 NV12 60fps",
+      "simulated_attitude": true,
+      "quality_evaluation": false,
+      "storage_device": "/dev/mmcblk0p7",
+      "block_io_scope": "整个验收目录所在分区，包含其他进程写入；不是本进程专属写入量",
+      "pid": 33230,
+      "exit_code": -9,
+      "parent_kill_expected": true,
+      "events": [
+        [
+          12417.926564847,
+          "Drone Tracker Started"
+        ],
+        [
+          12418.497411384,
+          "Detecting..."
+        ]
+      ],
+      "states": [
+        [
+          12417.903985905,
+          0
+        ]
+      ]
+    },
+    "videos": [
+      {
+        "session": "session-2cd05814af875c2ef955510d89431f66",
+        "file": "000001.ts",
+        "decoded_prefix_frames": 132,
+        "last_frame_crc": "0,     196439,     196439,     1500,  3456000, 0x13ffe0ba",
+        "decoder_exit_code": 0,
+        "decoder_diagnostics": "",
+        "normal_completion_marker": false
+      }
+    ]
+  }
+]

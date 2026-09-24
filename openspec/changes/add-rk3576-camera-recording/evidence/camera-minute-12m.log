@@ -1,0 +1,9 @@
+camera_stride=1920 colorspace=0 quantization=1 ycbcr=0 transfer=0
+mpp[16029]: mpp_info: mpp version: 520ab553 author: Herman Chen   2025-12-16 fix[sys_cfg]: Fix decoder sys_cfg crash
+mpp[16029]: mpp_enc: set prep cfg w:h [1920:1200] stride [1920:1200] fmt 0 rotate 0 mirror 0
+mpp[16029]: mpp_enc: set rc cbr bps [12000000:12750000:11250000] fps [60:1:fix] - [60:1:fix] gop 60
+mpp[16029]: mpp_enc: mode cbr bps [11250000:12000000:12750000] fps fix [60/1] -> fix [60/1] gop i [60] v [0]
+warmup_discarded=10 recording_dropped=8 recording_invalid=0 first_sequence=10 sequence_gaps=0 capture_fps=59.8861
+capture_seconds=15.7306 encode_seconds=26.2783 max_encode_seconds=0.00852448 write_seconds=2.03581
+max_rss_kib=36144 idr_count=112
+frames=3600 bytes=79354416 seconds=60.5635 throughput_fps=59.4417 input_buffer_bytes=3456000

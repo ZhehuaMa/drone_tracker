@@ -1,0 +1,7 @@
+{
+  "git_base": "aa97b7f7dea4d888fca48e95c236a79c33e061dc",
+  "uncommitted": true,
+  "source_file_count": 239,
+  "source_tree_sha256": "b018aa7cf4d6525a2bac6d5ca41d4895aadf6eea3c88d9c2bc3ad193547fc48e",
+  "algorithm": "排序后的路径、NUL 和文件 SHA256 二进制摘要，合并计算 SHA256；范围 src、parameters、launch、CMakeLists.txt、package.xml、build.sh。"
+}

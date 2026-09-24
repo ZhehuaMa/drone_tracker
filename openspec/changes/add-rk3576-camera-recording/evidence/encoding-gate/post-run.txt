@@ -1,0 +1,36 @@
+
+Dma-buf Objects:
+size    	flags   	mode    	count   	exp_name	ino     	name
+03686400	00000002	00080007	00000008	system-uncached	00000018	1626-Xorg
+	Attached Devices:
+	27800000.gpu
+	27800000.gpu
+	display-subsystem
+Total 3 devices attached
+
+03686400	00000002	00080007	00000008	system-uncached	00000017	1626-Xorg
+	Attached Devices:
+	27800000.gpu
+	27800000.gpu
+	display-subsystem
+Total 3 devices attached
+
+03686400	00000002	00080007	00000006	system-uncached	00000016	1626-Xorg
+	Attached Devices:
+	27800000.gpu
+	display-subsystem
+Total 2 devices attached
+
+00045056	00000002	00080007	00000003	videobuf2_cma_sg	00000014	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+00045056	00000002	00080007	00000003	videobuf2_cma_sg	00000013	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+
+Total 5 objects, 11149312 bytes
+d9bcee73c39b73992f96160ac56abdba6ce3220c0fe955dedbcc12809c7a8a60  /home/hzhy/drone-recording-validation-20260923/diagnostic/src/platform/rk3576/recording/recording_probe.cpp
+7b1066b4b1e4d8595c601c79d54d921034a49dd1fd165a5d39319d9c6c7df347  /home/hzhy/drone-recording-validation-20260923/diagnostic/build/rk3576_recording_probe
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /usr/lib/librknnrt.so

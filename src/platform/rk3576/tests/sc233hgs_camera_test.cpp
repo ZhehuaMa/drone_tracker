@@ -2,6 +2,8 @@
 #include "sc233hgs_camera_frame_source.h"
 #include "../platform_factory.h"
 #include "camera_test_support.h"
+#include "../recording/nv12_copy.h"
+#include "../recording/shared_slots.h"
 
 #include <iostream>
 #include <utility>
@@ -388,6 +390,161 @@ void warmupDeadlineAndSequence() {
     }
 }
 
+class RecordingInput final : public CameraNv12Sink {
+public:
+    std::vector<std::uint8_t> pixels{std::vector<std::uint8_t>(48)};
+    unsigned stages{};
+    unsigned publications{};
+    unsigned cancellations{};
+    bool staged{};
+    bool reject{};
+    CameraNv12View identity{};
+    void stage(const CameraNv12View &view) noexcept override {
+        ++stages;
+        identity = view;
+        identity.pixels = nullptr;
+        staged = !reject && copyNv12(view, pixels.data(), pixels.size());
+    }
+    void publish() noexcept override { if (staged) { ++publications; } staged = false; }
+    void cancel() noexcept override { if (staged) { ++cancellations; } staged = false; }
+};
+class FinalCheckSystem final : public System {
+public:
+    std::function<void()> after_return{};
+    int ioctl(int fd, unsigned long request, void *argument) override {
+        const int result{System::ioctl(fd, request, argument)};
+        if (request == VIDIOC_QBUF && streaming && produced == 8 && after_return) { after_return(); }
+        return result;
+    }
+};
+void sharedRecordingSlots() {
+    RecordingSlots slots{8, 4, 23};
+    std::vector<std::uint8_t> source(96, 42);
+    CameraNv12View view{}; view.pixels = source.data(); view.available_bytes = source.size();
+    view.format.width = 8; view.format.height = 4; view.format.stride = 16;
+    view.format.colorspace = V4L2_COLORSPACE_REC709;
+    view.format.quantization = V4L2_QUANTIZATION_FULL_RANGE;
+    view.format.ycbcr_encoding = V4L2_YCBCR_ENC_709;
+    view.format.transfer_function = V4L2_XFER_FUNC_709;
+    slots.stage(view);
+    require(slots.acquire() == -1, "Unpublished slot visible");
+    slots.cancel();
+    require(slots.acquire() == -1 && slots.statistics().cancelled == 1, "Cancelled slot visible");
+    for (unsigned index{}; index < 6; ++index) {
+        view.sequence = index; view.timestamp_us = index + 1;
+        slots.stage(view); slots.publish();
+    }
+    require(slots.statistics().published == 4 && slots.statistics().full == 2
+        && slots.statistics().ranges[0].first == 4 && slots.statistics().ranges[0].last == 5,
+        "Full slots did not preserve originals and record drops");
+    const int oldest{slots.acquire()};
+    require(oldest >= 0 && slots.identity(oldest).sequence == 0 && slots.identity(oldest).round == 23,
+        "Wrong round or FIFO order");
+    const auto &stored_format{slots.identity(oldest).format};
+    require(stored_format.colorspace == view.format.colorspace
+        && stored_format.quantization == view.format.quantization
+        && stored_format.ycbcr_encoding == view.format.ycbcr_encoding
+        && stored_format.transfer_function == view.format.transfer_function,
+        "Recording shared slot changed color metadata");
+    slots.stage(view); slots.publish();
+    require(slots.statistics().full == 3 && slots.pixels(oldest)[0] == 42, "Reading slot reused");
+    slots.release(oldest);
+    view.timestamp_us = 10; view.sequence = 10;
+    slots.stage(view); slots.publish();
+    const int next{slots.acquire()};
+    require(next >= 0 && slots.identity(next).sequence == 1, "Reused slot overtook old frame");
+    slots.release(next);
+    RecordingSlots next_round{8, 4, 24};
+    require(next_round.acquire() == -1, "New round contains old frame");
+    RecordingSlots attached{next_round.fd(), 8, 4, 24};
+    next_round.stage(view); next_round.publish();
+    const int shared{attached.acquire()};
+    require(shared >= 0 && attached.identity(shared).round == 24 && attached.pixels(shared)[0] == 42,
+        "Attached mapping lost shared contents");
+    attached.release(shared);
+    CameraSample disposition{};
+    disposition.result = CameraSampleResult::FrameReady;
+    disposition.sequence = view.sequence;
+    next_round.disposition(disposition, 2, true);
+    RecordingSlots::Event event{};
+    require(attached.nextEvent(event) && event.kind == 6 && event.count == 2
+        && event.first_sequence == view.sequence - 2 && event.last_sequence == view.sequence - 1,
+        "Driver gap range missing");
+    require(attached.nextEvent(event) && event.kind == 7 && event.first_sequence == view.sequence,
+        "Tracking queue drop range missing");
+    next_round.stage(view);
+    next_round.header().stop_accepting.store(true);
+    next_round.publish();
+    require(attached.acquire() == -1 && next_round.header().accepted.load() == 1
+        && next_round.header().dropped.load() == 1, "Stop between stage and publish accepted a new frame");
+    rejects([] { RecordingSlots too_large{8192, 8192, 1}; }, "64 MiB");
+}
+
+void recordingFinalConfirmation() {
+    for (int mode{}; mode < 5; ++mode) {
+        auto system{std::make_shared<FinalCheckSystem>()};
+        system->nv12 = true; system->width = 8; system->height = 4; system->stride = 16;
+        auto value{config()}; value.width = 8; value.height = 4;
+        Sc233hgsCameraDevice device{value, system};
+        RecordingInput sink{};
+        device.prepare(); device.start();
+        for (int index{}; index < 7; ++index) { device.next(1, true, &sink); }
+        require(sink.stages == 0 && sink.publications == 0, "Observation copied NV12");
+        if (mode == 1) { system->after_return = [&] { system->monotonic += 2000000; }; }
+        if (mode == 2) { system->after_return = [&] { device.wake(); }; }
+        if (mode == 3) { system->failure = "return"; system->occurrence = 8; }
+        if (mode == 4) { sink.reject = true; }
+        if (mode == 1 || mode == 3) {
+            rejects([&] { device.next(1, true, &sink); }, mode == 1 ? "time limit" : "QBUF");
+        } else {
+            const auto sample{device.next(1, true, &sink)};
+            require(static_cast<bool>(sample.frame) == (mode != 2), "Recording changed camera result");
+            if (sample.frame) { require(sample.pixels_equal, "Recording changed tracking pixels"); }
+        }
+        require(sink.stages == 1 && sink.publications == (mode == 0 ? 1U : 0U),
+                "Unconfirmed frame published");
+        if (mode > 0 && mode < 4) { require(sink.cancellations == 1, "Pending frame not cancelled"); }
+        if (mode == 0) {
+            for (int row{}; row < 4; ++row) {
+                for (int col{}; col < 8; ++col) {
+                    require(sink.pixels[row * 8 + col] == (row + col + 7) % 251, "Y row padding copied");
+                }
+            }
+            for (int index{32}; index < 48; ++index) { require(sink.pixels[index] == 255, "UV offset wrong"); }
+            require(sink.identity.sequence == 7, "Wrong recording identity");
+        }
+        device.finish(); system->clean();
+    }
+    {
+        auto system{std::make_shared<System>()};
+        system->nv12 = true; system->width = 8; system->height = 4; system->stride = 16;
+        system->mutate = [](v4l2_buffer &buffer) {
+            const int times[]{100, 100, 117, 117, 134, 151, 168, 185, 202, 219, 236};
+            buffer.timestamp.tv_sec = 0; buffer.timestamp.tv_usec = times[buffer.sequence];
+        };
+        auto value{config()}; value.width = 8; value.height = 4;
+        Sc233hgsCameraDevice device{value, system};
+        RecordingInput sink{};
+        device.prepare(); device.start();
+        for (int index{}; index < 10; ++index) { device.next(1, true, &sink); }
+        require(sink.stages == 0, "Repeated observation copied pixels");
+        const auto sample{device.next(1, true, &sink)};
+        require(sample.frame && sink.publications == 1 && sink.identity.sequence == 10,
+                "Recording started before final confirmation after repeated timestamps");
+        require(sink.identity.timestamp_us == static_cast<std::int64_t>(sample.frame->timestampUs()),
+                "Tracking and recording time identity differs");
+        device.finish(); system->clean();
+    }
+    std::vector<std::uint8_t> source(96, 42), target(48, 17);
+    CameraNv12View view{}; view.pixels = source.data(); view.available_bytes = 87;
+    view.format.width = 8; view.format.height = 4; view.format.stride = 16;
+    require(!copyNv12(view, target.data(), target.size()) && target.front() == 17,
+            "Short UV buffer accepted or modified output");
+    view.available_bytes = 88;
+    require(copyNv12(view, target.data(), target.size()) && target.back() == 42,
+            "Valid padded NV12 rejected");
+}
+
 void factoryDispatchesExplicitModel() {
     auto system{std::make_shared<System>()};
     system->nv12 = true;
@@ -427,6 +584,8 @@ int main() {
         warmupLifecycle();
         warmupFailurePaths();
         warmupDeadlineAndSequence();
+        sharedRecordingSlots();
+        recordingFinalConfirmation();
         factoryDispatchesExplicitModel();
         std::cout << "SC233HGS configuration tests passed\n";
         return 0;

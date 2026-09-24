@@ -1,0 +1,110 @@
+{
+  "label": "smoke-osd",
+  "command": [
+    "/home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/recording_validation_node",
+    "--ros-args",
+    "--params-file",
+    "/opt/drone_tracker/config/camera.yaml",
+    "-p",
+    "recording.enabled:=true",
+    "-p",
+    "recording.directory:=/home/hzhy/drone-recording-validation-20260923/joint-recordings",
+    "-p",
+    "recording.sync_interval_ms:=1000",
+    "-p",
+    "recording.segment_seconds:=60",
+    "-p",
+    "need_save:=false",
+    "-p",
+    "osd.enabled:=true",
+    "-p",
+    "visualized_result:=false",
+    "-p",
+    "mv_camera.media_device:=/dev/media2"
+  ],
+  "sync_ms": 1000,
+  "osd": true,
+  "images": false,
+  "rounds": [
+    {
+      "on_us": 9634065494,
+      "first_box_us": 9634547032,
+      "before_boxes": 0,
+      "window_begin_us": 9639568910,
+      "window_boxes_begin": 83,
+      "window_end_us": 9709568910,
+      "window_boxes_end": 1773,
+      "off_us": 9709628828,
+      "stop_observed_us": 470222,
+      "boxes_total_after_stop": 1778
+    }
+  ],
+  "input": "SC233HGS /dev/video22 1920x1200 NV12 60fps",
+  "simulated_attitude": true,
+  "quality_evaluation": false,
+  "pid": 25475,
+  "exit_code": 0,
+  "parent_kill_expected": false,
+  "events": [
+    [
+      9634.558902099,
+      "Drone Tracker Started"
+    ],
+    [
+      9635.26205247,
+      "Detecting..."
+    ],
+    [
+      9636.057487118,
+      "Target Found"
+    ],
+    [
+      9636.553933725,
+      "Tracking..."
+    ],
+    [
+      9710.054670463,
+      "Drone Tracker Stopped"
+    ]
+  ],
+  "states": [
+    [
+      9634.537199714,
+      0
+    ],
+    [
+      9635.5912292,
+      1
+    ],
+    [
+      9635.630877968,
+      2
+    ]
+  ],
+  "resource_samples": 67,
+  "resource_limitation": "生产内核无 /proc/PID/io；旧脚本把 CPU、RSS、FD 采样一并丢弃。本轮不提供这些资源指标。",
+  "status_samples": 777,
+  "unknown_sync_samples": 11,
+  "known_sync_lag_max_us": 1066335,
+  "final_status": {
+    "monotonic_us": "9711677183",
+    "latest_frame_us": "1790178480016005",
+    "synced_frame_us": "1790178480016005",
+    "sync_duration_us": "9148",
+    "prepare_us": "145375",
+    "stop_us": "39414",
+    "read": "4511",
+    "attempted": "4511",
+    "accepted": "4511",
+    "dropped": "0",
+    "encoded": "4511",
+    "written": "4511",
+    "synced": "4511",
+    "total_bytes": "101032411",
+    "free_bytes": "47482540032",
+    "warmup_discarded": "10",
+    "sync_known": "1",
+    "failed": "0"
+  },
+  "validation_scope": "70 秒合格帧后观测窗口，模拟姿态输入；不替代五分钟性能对照、三十分钟负载及画质验收。"
+}

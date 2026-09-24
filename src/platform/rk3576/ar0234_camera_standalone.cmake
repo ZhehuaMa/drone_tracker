@@ -16,6 +16,7 @@ add_library(rk3576_ar0234_camera STATIC ar0234_camera_device.cpp rk3576_camera_c
     camera_timing.cpp ar0234_camera_frame_source.cpp)
 target_link_libraries(rk3576_ar0234_camera PUBLIC rk3576_yolo_host)
 add_library(rk3576_sc233hgs_camera STATIC sc233hgs_camera_device.cpp sc233hgs_camera_frame_source.cpp)
+target_sources(rk3576_sc233hgs_camera PRIVATE recording/session.cpp)
 target_link_libraries(rk3576_sc233hgs_camera PUBLIC rk3576_ar0234_camera)
 add_library(rk3576_tracker_assembly STATIC tracker_assembly.cpp platform_factory.cpp)
 target_link_libraries(rk3576_tracker_assembly PUBLIC rk3576_yolo_host rk3576_video rk3576_ar0234_camera

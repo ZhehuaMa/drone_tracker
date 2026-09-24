@@ -1,6 +1,7 @@
 #include "sc233hgs_camera_frame_source.h"
 
 #include "sc233hgs_camera_device.h"
+#include "recording/session.h"
 
 #include <stdexcept>
 
@@ -11,6 +12,8 @@ Sc233hgsCameraFrameSource::Sc233hgsCameraFrameSource(
         throw std::invalid_argument("SC233HGS supports continuous capture only; software trigger is unsupported");
     }
     config.camera_sensor_model = CameraSensorModel::Sc233hgs;
+    recording::validateConfig(config);
+    if (config.camera_recording.enabled) { recording_ = std::make_unique<recording::Session>(config); }
     // 注入构造 SC233HGS 专属设备的工厂，使共用的队列/触发实现无需反向依赖本类型。
     dependencies.make_device = [](const FrameSourceConfig &device_config,
                                   std::shared_ptr<CameraSystem> device_system) {
@@ -20,14 +23,30 @@ Sc233hgsCameraFrameSource::Sc233hgsCameraFrameSource(
 }
 
 Sc233hgsCameraFrameSource::~Sc233hgsCameraFrameSource() { stop(); }
-bool Sc233hgsCameraFrameSource::start() { return implementation_->start(); }
+bool Sc233hgsCameraFrameSource::start() {
+    if (implementation_->isRunning()) { return false; }
+    implementation_->stop();
+    if (recording_) {
+        recording_->start(implementation_->diagnostic().format);
+        implementation_->setRecordingSink(recording_->sink());
+    }
+    const bool started{implementation_->start()};
+    if (!started && recording_) { recording_->stop(implementation_->status()); }
+    return started;
+}
 bool Sc233hgsCameraFrameSource::stop() {
+    if (recording_) { recording_->stopAccepting(); }
     const bool result{implementation_->stop()};
+    if (recording_) { recording_->stop(implementation_->status()); }
     implementation_->discardFrames();
     return result;
 }
 bool Sc233hgsCameraFrameSource::isRunning() const { return implementation_->isRunning(); }
-FrameSourceStatus Sc233hgsCameraFrameSource::status() const { return implementation_->status(); }
+FrameSourceStatus Sc233hgsCameraFrameSource::status() const {
+    auto result{implementation_->status()};
+    if (recording_) { result.recording = recording_->status(); }
+    return result;
+}
 bool Sc233hgsCameraFrameSource::getImageSize(int &width, int &height) const {
     return implementation_->getImageSize(width, height);
 }

@@ -1,0 +1,10 @@
+Internal ctest changing into directory: /home/hzhy/drone-recording-validation-20260923/implementation/full-build
+Test project /home/hzhy/drone-recording-validation-20260923/implementation/full-build
+    Start 1: ros_video_generate_fixtures
+1/2 Test #1: ros_video_generate_fixtures ......   Passed    0.67 sec
+    Start 2: ros_video_tests
+2/2 Test #2: ros_video_tests ..................   Passed   13.32 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =  14.00 sec

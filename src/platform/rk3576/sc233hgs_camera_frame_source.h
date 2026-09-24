@@ -4,6 +4,7 @@
 #include "ar0234_camera_frame_source.h"
 
 namespace rk3576 {
+namespace recording { class Session; }
 using Sc233hgsCameraDependencies = Ar0234CameraDependencies;
 using Sc233hgsCameraDiagnostic = Ar0234CameraDiagnostic;
 
@@ -29,6 +30,7 @@ public:
     Sc233hgsCameraDiagnostic diagnostic() const;
 
 private:
+    std::unique_ptr<recording::Session> recording_;
     std::unique_ptr<Ar0234CameraFrameSource> implementation_;
 };
 } // namespace rk3576

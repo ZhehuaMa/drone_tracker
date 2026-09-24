@@ -1,0 +1,6 @@
+mpp[40419]: mpp_info: mpp version: 520ab553 author: Herman Chen   2025-12-16 fix[sys_cfg]: Fix decoder sys_cfg crash
+mpp[40419]: mpp_enc: set prep cfg w:h [1920:1200] stride [1920:1200] fmt 0 rotate 0 mirror 0
+mpp[40419]: mpp_enc: set rc cbr bps [12000000:12750000:11250000] fps [60:1:fix] - [60:1:fix] gop 60
+mpp[40419]: mpp_enc: Warning: invalid cabac_init_idc 0 for h264 profile 66, set to -1.
+mpp[40419]: mpp_enc: mode cbr bps [11250000:12000000:12750000] fps fix [60/1] -> fix [60/1] gop i [60] v [0]
+frames=600 bytes=1325739 seconds=5.13817 throughput_fps=116.773 input_buffer_bytes=3456000

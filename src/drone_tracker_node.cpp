@@ -6,6 +6,9 @@
 #include <stdexcept>
 
 #include "platform/frame_source_ops.h"
+#ifdef DRONE_TRACKER_RK3576
+#include "platform/file_identity.h"
+#endif
 #include "osd/config.h"
 #ifdef DRONE_TRACKER_HAS_OSD
 #include "platform/rk3576/osd/hdmi_backend.h"
@@ -40,6 +43,11 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
         result.successful = true;
         for (const auto &parameter : parameters) {
             const auto &name{parameter.get_name()};
+            if (name.rfind("recording.", 0) == 0) {
+                result.successful = false;
+                result.reason = "Recording startup parameters cannot change at runtime; restart the node: " + name;
+                break;
+            }
             if (name.rfind("osd.", 0) == 0) {
                 result.successful = false;
                 result.reason = "OSD startup parameters cannot change at runtime: " + name;
@@ -90,6 +98,7 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
         consumed_frames_ = 0;
         last_acquisition_report_ = std::chrono::steady_clock::now();
         last_camera_phase_.clear();
+        last_camera_recording_phase_.clear();
         running = true;
         if (osd_presenter_) {
             osd_round_ = osd_presenter_->beginRound();
@@ -250,11 +259,28 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
 
     FrameSourceConfig source_config{};
     source_config.type = is_camera ? FrameSourceType::Camera : FrameSourceType::Video;
+    auto &recording{source_config.camera_recording};
+    recording.enabled = get_parameter("recording.enabled").as_bool();
+#ifndef DRONE_TRACKER_RK3576
+    if (recording.enabled) { throw std::invalid_argument("Independent recording requires RK3576 SC233HGS"); }
+#endif
+    recording.directory = get_parameter("recording.directory").as_string();
+    recording.bitrate_bps = get_parameter("recording.bitrate_bps").as_int();
+    const auto segment{get_parameter("recording.segment_seconds").as_int()};
+    const auto interval{get_parameter("recording.sync_interval_ms").as_int()};
+    const auto maximum{get_parameter("recording.max_total_bytes").as_int()};
+    const auto minimum{get_parameter("recording.min_free_bytes").as_int()};
+    if (segment < 10 || segment > 600 || (interval != 500 && interval != 1000 && interval != 2000)
+        || recording.bitrate_bps <= 0 || recording.bitrate_bps > INT32_MAX || maximum <= 0 || minimum <= 0) {
+        throw std::invalid_argument("Invalid recording numeric startup parameter");
+    }
+    recording.segment_seconds = static_cast<int>(segment); recording.sync_interval_ms = static_cast<int>(interval);
+    recording.max_total_bytes = maximum; recording.min_free_bytes = minimum;
 #ifdef DRONE_TRACKER_RK3576
     source_config.path = shorthand ? "/dev/" + video_source : video_source;
     if (is_camera) {
         if (get_parameter("need_save").as_bool()) {
-            throw std::invalid_argument("RK3576 camera requires need_save=false; recording unsupported");
+            throw std::invalid_argument("RK3576 camera requires need_save=false; use recording.enabled for SC233HGS");
         }
         const auto mode{get_parameter("mv_camera.capture_mode").as_string()};
         if (mode != "continuous" && mode != "software_trigger") {
@@ -295,6 +321,34 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
     source_config.flip = flip;
     source_config.mirror = mirror;
     source_config.use_history_timestamp = use_history_timestamp_;
+#ifdef DRONE_TRACKER_RK3576
+    if (recording.enabled) {
+        if (!is_camera || source_config.camera_sensor_model != CameraSensorModel::Sc233hgs) {
+            throw std::invalid_argument("recording.enabled requires SC233HGS camera input");
+        }
+        try {
+            std::ostringstream identity{};
+            identity << "program_sha256=" << recordingFileIdentity("/proc/self/exe") << '\n';
+            auto names{list_parameters({}, 100).names};
+            std::sort(names.begin(), names.end());
+            for (const auto &name : names) {
+                identity << name << '=' << get_parameter(name).value_to_string() << '\n';
+            }
+            const std::filesystem::path models{
+                std::filesystem::path{ament_index_cpp::get_package_share_directory(ROS_PACKAGE_NAME)} / "models"};
+            for (const char *name : {"tracker.yolo_engine", "tracker.nano_template_backbone",
+                                     "tracker.nano_search_backbone", "tracker.nano_head"}) {
+                std::filesystem::path path{get_parameter(name).as_string()};
+                if (path.is_relative()) { path = models / path; }
+                identity << name << " path=" << path.string()
+                    << " sha256=" << recordingFileIdentity(path.string()) << '\n';
+            }
+            recording.identity = identity.str();
+        } catch (const std::exception &error) {
+            recording.preparation_error = error.what();
+        }
+    }
+#endif
     RCLCPP_INFO(this->get_logger(), "Opening %s: %s", is_camera ? "camera device" : "video file", video_source.c_str());
     auto source{factory.createFrameSource(source_config)};
     if (!source) { throw std::runtime_error(source.error.describe()); }
@@ -464,10 +518,33 @@ void DroneTrackerNode::reportAcquisition(bool final) {
     if (!camera_input_) { return; }
     const auto now{std::chrono::steady_clock::now()};
     const auto state{mv_camera_->status()};
-    const bool transition{state.camera.phase != last_camera_phase_};
+    const bool transition{state.camera.phase != last_camera_phase_
+        || (state.recording.phase == "failed" && last_camera_recording_phase_ != "failed")};
     if (!final && !transition && now - last_acquisition_report_ < 1s) { return; }
     last_camera_phase_ = state.camera.phase;
     last_acquisition_report_ = now;
+    const auto &recording{state.recording};
+    if (recording.enabled) {
+        const auto lag{recording.synced_known
+            ? std::to_string(recording.latest_frame_us - recording.last_synced_frame_us) : "unknown"};
+        RCLCPP_INFO(get_logger(),
+            "Camera recording phase=%s round=%lu attempted=%lu accepted=%lu dropped=%lu cancelled=%lu "
+            "encoded=%lu written=%lu synced=%lu lag_us=%s last_sync_mono_us=%ld sync_us=%ld "
+            "used_bytes=%lu free_bytes=%lu prepare_us=%ld stop_us=%ld session=%s reason=%s",
+            recording.phase.c_str(), static_cast<unsigned long>(recording.round),
+            static_cast<unsigned long>(recording.attempted), static_cast<unsigned long>(recording.accepted),
+            static_cast<unsigned long>(recording.dropped), static_cast<unsigned long>(recording.cancelled),
+            static_cast<unsigned long>(recording.encoded), static_cast<unsigned long>(recording.written),
+            static_cast<unsigned long>(recording.synced), lag.c_str(), static_cast<long>(recording.last_sync_monotonic_us),
+            static_cast<long>(recording.sync_duration_us), static_cast<unsigned long>(recording.total_bytes),
+            static_cast<unsigned long>(recording.free_bytes), static_cast<long>(recording.prepare_us),
+            static_cast<long>(recording.stop_us), recording.session.c_str(), recording.reason.c_str());
+        if (recording.phase == "failed" && last_camera_recording_phase_ != "failed") {
+            status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1,
+                "Camera recording failed: " + recording.reason, true);
+        }
+        last_camera_recording_phase_ = recording.phase;
+    }
     RCLCPP_INFO(get_logger(),
         "Camera %s mode=%s requested_hz=%.3f actual_hz=%.3f commands=%lu command_errors=%lu skipped=%lu "
         "read=%lu enqueued=%lu queue_dropped=%lu sequence_gaps=%lu consumed=%lu time=%s "
@@ -561,7 +638,15 @@ void DroneTrackerNode::processFrames() {
                 ctx.R_cam_now = R;
         }
 
+        const auto update_begin{update_timing_observer_ ? std::chrono::steady_clock::now()
+            : std::chrono::steady_clock::time_point{}};
         TrackerOutput out = tracker_->update(ctx);
+        if (update_timing_observer_) {
+            const auto update_end{std::chrono::steady_clock::now()};
+            update_timing_observer_(
+                std::chrono::duration_cast<std::chrono::microseconds>(update_begin.time_since_epoch()).count(),
+                std::chrono::duration_cast<std::chrono::microseconds>(update_end - update_begin).count(), out.consumed);
+        }
 
         auto elapsed = this->now() - start_time;
         double cost_ms = elapsed.seconds() * 1000;

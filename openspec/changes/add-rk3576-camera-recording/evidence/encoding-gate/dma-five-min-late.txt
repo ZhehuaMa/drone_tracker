@@ -1,0 +1,173 @@
+session iova range dump:
+   0: 0x00000000ff800000..0x00000000ffb4bfff (      3376 KiB)
+   1: 0x00000000ff400000..0x00000000ff760fff (      3460 KiB)
+   2: 0x00000000ff000000..0x00000000ff360fff (      3460 KiB)
+   3: 0x00000000ff3c0000..0x00000000ff3e3fff (       144 KiB)
+   4: 0x00000000fefc0000..0x00000000fefe3fff (       144 KiB)
+   5: 0x00000000fefb8000..0x00000000fefb8fff (         4 KiB)
+   6: 0x00000000ff3b9000..0x00000000ff3b9fff (         4 KiB)
+session: pid=16923 index=25
+ device: 27a00000.rkvenc-core
+ memory: 10 MiB
+------------------------------------------------------------------------------------------------------------
+| session|  device|   width|  height|  format|  fps_in| fps_out| rc_mode| bitrate|gop_size|fps_calc| profile|
+|      25|  RKVENC|    1920|    1200|    h264|      60|      60|     cbr|12000000|      60|   60.10|  baseli|
+
+Dma-buf Objects:
+size    	flags   	mode    	count   	exp_name	ino     	name
+02306048	00000002	00080007	00000003	system-uncached	00000299	16923-rk3576_recordin
+	Attached Devices:
+	27a00000.rkvenc-core
+Total 1 devices attached
+
+04608000	00000002	00080007	00000001	videobuf2_cma_sg	00000298	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+04034560	00000002	00080007	00000003	videobuf2_cma_sg	00000297	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+03072000	00000000	00080005	00000002	videobuf2_cma_sg	00000296	392-rkaiq_3A_server
+	Attached Devices:
+	27c00000.isp
+Total 1 devices attached
+
+03072000	00000000	00080005	00000002	videobuf2_cma_sg	00000295	392-rkaiq_3A_server
+	Attached Devices:
+	27c00000.isp
+Total 1 devices attached
+
+03072000	00000000	00080005	00000002	videobuf2_cma_sg	00000294	392-rkaiq_3A_server
+	Attached Devices:
+	27c00000.isp
+Total 1 devices attached
+
+03072000	00000000	00080005	00000002	videobuf2_cma_sg	00000293	392-rkaiq_3A_server
+	Attached Devices:
+	27c00000.isp
+Total 1 devices attached
+
+00016384	00000000	00080005	00000001	videobuf2_vmalloc	00000292	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+00016384	00000000	00080005	00000001	videobuf2_vmalloc	00000291	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+00016384	00000000	00080005	00000001	videobuf2_vmalloc	00000290	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+00016384	00000000	00080005	00000001	videobuf2_vmalloc	00000289	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+00016384	00000000	00080005	00000001	videobuf2_cma_sg	00000288	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+00016384	00000000	00080005	00000001	videobuf2_cma_sg	00000287	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+00016384	00000000	00080005	00000001	videobuf2_cma_sg	00000286	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+00016384	00000000	00080005	00000001	videobuf2_cma_sg	00000285	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+03457024	00000002	00080007	00000002	system-uncached	00000284	16923-rk3576_recordin
+	Attached Devices:
+	27a00000.rkvenc-core
+Total 1 devices attached
+
+00004096	00000002	00080007	00000001	system-uncached	00000283	16923-rk3576_recordin
+	Attached Devices:
+Total 0 devices attached
+
+00147456	00000002	00080007	00000001	system-uncached	00000282	16923-rk3576_recordin
+	Attached Devices:
+Total 0 devices attached
+
+03543040	00000002	00080007	00000001	system-uncached	00000281	16923-rk3576_recordin
+	Attached Devices:
+Total 0 devices attached
+
+00004096	00000002	00080007	00000001	system-uncached	00000280	16923-rk3576_recordin
+	Attached Devices:
+Total 0 devices attached
+
+00147456	00000002	00080007	00000001	system-uncached	00000279	16923-rk3576_recordin
+	Attached Devices:
+Total 0 devices attached
+
+03543040	00000002	00080007	00000001	system-uncached	00000278	16923-rk3576_recordin
+	Attached Devices:
+Total 0 devices attached
+
+00004096	00000002	00080007	00000001	system-uncached	00000277	16923-rk3576_recordin
+	Attached Devices:
+	27a00000.rkvenc-core
+Total 1 devices attached
+
+00147456	00000002	00080007	00000001	system-uncached	00000276	16923-rk3576_recordin
+	Attached Devices:
+	27a00000.rkvenc-core
+Total 1 devices attached
+
+03543040	00000002	00080007	00000001	system-uncached	00000275	16923-rk3576_recordin
+	Attached Devices:
+	27a00000.rkvenc-core
+Total 1 devices attached
+
+00004096	00000002	00080007	00000001	system-uncached	00000274	16923-rk3576_recordin
+	Attached Devices:
+	27a00000.rkvenc-core
+Total 1 devices attached
+
+00147456	00000002	00080007	00000001	system-uncached	00000273	16923-rk3576_recordin
+	Attached Devices:
+	27a00000.rkvenc-core
+Total 1 devices attached
+
+03543040	00000002	00080007	00000001	system-uncached	00000272	16923-rk3576_recordin
+	Attached Devices:
+	27a00000.rkvenc-core
+Total 1 devices attached
+
+03686400	00000002	00080007	00000008	system-uncached	00000018	1626-Xorg
+	Attached Devices:
+	27800000.gpu
+	27800000.gpu
+	display-subsystem
+Total 3 devices attached
+
+03686400	00000002	00080007	00000008	system-uncached	00000017	1626-Xorg
+	Attached Devices:
+	27800000.gpu
+	27800000.gpu
+	display-subsystem
+Total 3 devices attached
+
+03686400	00000002	00080007	00000006	system-uncached	00000016	1626-Xorg
+	Attached Devices:
+	27800000.gpu
+	display-subsystem
+Total 2 devices attached
+
+00045056	00000002	00080007	00000003	videobuf2_cma_sg	00000014	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+00045056	00000002	00080007	00000003	videobuf2_cma_sg	00000013	392-rkaiq_3A_server
+	Attached Devices:
+Total 0 devices attached
+
+
+Total 33 objects, 52752384 bytes
+  16923       04:28 37284 rk3576_recordin
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /usr/lib/librknnrt.so

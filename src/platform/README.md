@@ -4,6 +4,65 @@
 
 生产构建默认使用 `DRONE_TRACKER_PLATFORM=jetson`，也支持显式选择 `rk3576` 的本地 MJPEG 视频与相机节点。未知值在硬件依赖发现前拒绝。RK3576 相机支持连续及软件触发；硬件解码和 RGA 图像加速仍未提供。可控模型仅在测试中注入，生产程序没有假模型选项。
 
+## RK3576 SC233HGS 独立录像
+
+录像默认关闭，仅支持 SC233HGS 连续采集。启用后从相机采集边界复制完整 NV12 画面，使用 Rockchip MPP 硬件编码 H.264，并写入独立的 MPEG-TS 分段。NV12 包含亮度和色度平面；录像保存两者，不从带框的 ROS 图像或 HDMI 画面取图。画面不增加裁剪、缩放、翻转或业务叠加。H.264 是有损压缩，解码像素不等同于算法编码前的原始像素。
+
+在生产板匹配 SDK 的构建中增加 `-DDRONE_TRACKER_BUILD_RECORDING=ON`。该选项安装 `rk3576_recording_worker` 和 `rk3576_recording_inspect`；MPP 与 FFmpeg 封装库只链接录像程序。工作程序必须与 `drone_tracker_node` 安装在同一目录。不要替换系统 RKNN Runtime。仅需独立构建录像工具时使用：
+
+```sh
+cmake -S src/platform/rk3576/recording -B build/recording -DCMAKE_BUILD_TYPE=Release
+cmake --build build/recording -j1
+```
+
+先为节点运行账号创建持久目录并授予写权限。目录必须是绝对路径，且实际挂载为本地 ext4；不能使用 tmpfs、ramfs 或网络文件系统。程序复核内核挂载信息，不能只凭路径名判断。目录父级必须已经存在；不要在启动、安装或升级脚本中清空历史录像。
+
+生产相机 YAML 的启用示例（其余模型、相机与 OSD 参数沿用已核验的生产配置）：
+
+```yaml
+drone_tracker_node:
+  ros__parameters:
+    need_save: false
+    recording:
+      enabled: true
+      directory: /var/lib/drone_tracker/recordings
+      bitrate_bps: 12000000
+      segment_seconds: 60
+      sync_interval_ms: 1000
+      max_total_bytes: 21474836480
+      min_free_bytes: 5368709120
+```
+
+`bitrate_bps` 单位为位/秒；默认 12 Mbps 约产生每小时 5.4 GB 视频，实际值还受编码内容及封装开销影响。`segment_seconds` 可取 10–600 秒，到期后在下一张 IDR 帧切段。IDR 是不依赖前面图像的解码起点，各段独立保存必要参数。`sync_interval_ms` 只允许 500、1000 或 2000 毫秒，表示向文件系统发起数据同步的周期。它不是掉电损失上限。
+
+`max_total_bytes` 默认 20 GiB，统计完成、未完成及附属文件；`min_free_bytes` 默认保留 5 GiB 磁盘空间。达到任一保护线时停止本轮录像并保留历史文件。系统不循环覆盖，也不会自动删除旧会话。操作人员应在任务间导出、核对并按自己的保留策略清理。
+
+所有 `recording.*` 都是启动参数，运行期修改会被拒绝。新录像与 `need_save`、ROS bag、ROS 图像和 HDMI OSD 开关相互独立，不要求发现目标。相机输入仍须保持 `need_save=false`。视频输入、AR0234 和 Jetson 拒绝启用该录像能力。
+
+ON 准备新会话，只有相机启动预热通过并完成驱动缓冲归还的合格帧才进入录像。预热观察帧不会补录。首个被录像接受的帧 PTS 为零；PTS 是视频中的显示时间，后续间隔来自真实采集时间，录像掉帧不会压缩时间轴。OFF 停止接收并排空已接受内容，正常退出会保存完成标记。预热中取消或失败保存零帧原因，不创建占位 `.ts`。关闭录像不会禁用相机预热。
+
+每轮建立排他创建的 `session-…` 目录，包含以下证据：
+
+- `session.json`：程序、模型、配置、板卡及实际图像格式身份。
+- `000001.ts` 等：原始分段视频。
+- `000001.frames.jsonl` 等：一行一个帧记录，关联采集身份、PTS、编码时刻和完整视频帧的结束字节位置。
+- `events.jsonl`：驱动缺口、跟踪队列丢弃和录像支路丢弃，分别保留分类及序号区间。
+- `commits.jsonl`：已同步视频和附属时间记录的提交边界。
+- `camera.json`：预热、合格帧及终止统计。
+- 段级和会话级 `complete.json`：已完成收尾的结果。会话仍须检查 `outcome` 与 `video_success`；零帧取消不表示存在有效视频。
+
+缺少完成标记表示未完成，不能仅凭文件存在推断视频成功。`.pending` 是未完成发布的元数据，保留为故障证据。同步水位表示最后成功同步到文件系统的位置；尚未建立时日志显示未知。默认同步周期下，最新合格输入比水位落后超过两秒会报告退化。持续五秒没有同步进展或实际同步超时会结束本轮录像。录像故障通过日志与状态文本报告，不结束仍健康的跟踪；旧进程尚未回收时禁止下一轮复用其缓冲。
+
+重启后可独立运行以下只读检查，报告路径必须尚不存在。检查与相机 ON 无依赖，可以单独安排执行：
+
+```sh
+rk3576_recording_inspect /var/lib/drone_tracker/recordings /var/lib/drone_tracker/inspection-001.jsonl
+```
+
+检查器保留原件，报告缺失或损坏的元数据、最后可解析提交及完整 TS 包前缀，并限制单行、文件数量、内存和报告大小。TS 包结构完整不代表成功解码；检查器不会解码、转换或重写视频。解析出提交记录也不能证明突然掉电前的同步调用已成功返回。通用解码验证属于独立验收，不改变生产回放入口。
+
+回滚时先 OFF 并等待停止日志，正常退出节点，然后设置 `recording.enabled=false` 并重启。保留已有会话供检查。本功能不包含离线转换、回放解码扩展或循环覆盖。非断电测试不能承诺真实掉电的数据损失上限，也不能承诺硬件损坏后恢复。
+
 ## RK3576 独立 YOLO 使用
 
 在 ARM64 环境使用 C++17、OpenCV（core、imgproc、dnn、video、imgcodecs、videoio）、线程库及 RKNN SDK。目标兼容性基线为 Runtime 2.3.2、驱动 0.9.8。本次沿用既有 2.3.0 构建 SDK（编译所用的头文件与链接库），产物在目标板 Runtime 2.3.2 上验证，不要求重建 SDK 镜像。此入口无需 ROS、CUDA、TensorRT 或 VPI。开发机的容器和挂载约定见仓库根目录 `AGENTS.local.md`；以下命令在该 ARM64 环境内执行，SDK 路径按实际安装位置填写：

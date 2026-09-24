@@ -1,0 +1,13 @@
+Consolidate compiler generated dependencies of target rk3576_recording_probe
+[ 16%] Building CXX object CMakeFiles/rk3576_recording_probe.dir/recording_probe.cpp.o
+[ 33%] Linking CXX executable rk3576_recording_probe
+[100%] Built target rk3576_recording_probe
+camera_stride=1920 colorspace=0 quantization=1 ycbcr=0 transfer=0
+mpp[15833]: mpp_info: mpp version: 520ab553 author: Herman Chen   2025-12-16 fix[sys_cfg]: Fix decoder sys_cfg crash
+mpp[15833]: mpp_enc: set prep cfg w:h [1920:1200] stride [1920:1200] fmt 0 rotate 0 mirror 0
+mpp[15833]: mpp_enc: set rc cbr bps [12000000:12750000:11250000] fps [60:1:fix] - [60:1:fix] gop 60
+mpp[15833]: mpp_enc: mode cbr bps [11250000:12000000:12750000] fps fix [60/1] -> fix [60/1] gop i [60] v [0]
+warmup_discarded=10 first_sequence=11 sequence_gaps=32 capture_fps=57.0659
+capture_seconds=3.39184 encode_seconds=4.3785 max_encode_seconds=0.00773559 write_seconds=0.338983
+max_rss_kib=25716 idr_count=12
+frames=600 bytes=15106428 seconds=10.909 throughput_fps=55.0003 input_buffer_bytes=3456000

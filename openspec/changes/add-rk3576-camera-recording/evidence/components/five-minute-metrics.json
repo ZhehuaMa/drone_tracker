@@ -1,0 +1,63 @@
+{
+  "percentile_method": "nearest rank",
+  "runs": [
+    {
+      "label": "five-minute",
+      "sync_ms": 1000,
+      "exit_code": 0,
+      "error": null,
+      "windows": [
+        {
+          "duration_seconds": 300.0,
+          "consumed_frames": 8112,
+          "tracking_p95_us": 47575,
+          "consumption_fps": 27.04,
+          "sync_known_samples": 3000,
+          "sync_unknown_samples": 0,
+          "sync_lag_p99_us": 1032998,
+          "sync_lag_max_us": 1066331,
+          "sync_duration_max_us": 26215,
+          "recording_dropped_total_max": 0,
+          "recording_failed_samples": 0,
+          "resources": {
+            "node": {
+              "samples": 252,
+              "cpu_percent_one_core": 214.86342345724998,
+              "rss_first_kib": 228640,
+              "rss_last_kib": 263948,
+              "rss_max_kib": 324732,
+              "fds_first": 55,
+              "fds_last": 61,
+              "fds_max": 61
+            },
+            "worker": {
+              "samples": 252,
+              "cpu_percent_one_core": 18.732984275504286,
+              "rss_first_kib": 29844,
+              "rss_last_kib": 30868,
+              "rss_max_kib": 30868,
+              "fds_first": 42,
+              "fds_last": 42,
+              "fds_max": 42
+            }
+          },
+          "temperature_max_millicelsius": 85923,
+          "partition_written_bytes_delta": 419237888,
+          "power_samples": 0
+        }
+      ]
+    }
+  ],
+  "whole_round_sync_samples": [
+    {
+      "round": 1,
+      "active_status_samples": 3054,
+      "unknown_sync_samples": 11
+    },
+    {
+      "round": 2,
+      "active_status_samples": 24,
+      "unknown_sync_samples": 11
+    }
+  ]
+}

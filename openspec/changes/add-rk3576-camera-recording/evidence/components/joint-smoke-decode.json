@@ -1,0 +1,22 @@
+[
+  {
+    "file": "000001.ts",
+    "sha256": "6c8927a9f01c8b9a6a4aeb4c4b6b1d4e78593cd50731549e42f6e492bdcd66cb",
+    "frames": 3660,
+    "first_pts_us": 0,
+    "last_pts_us": 60963822,
+    "independent_decode": true,
+    "exact_frame_pts_match": true,
+    "no_b_frames": true
+  },
+  {
+    "file": "000002.ts",
+    "sha256": "7f5c66e0557efb77d243bcb9122a1c295b163b08947ebeaea2aa2bac009ef7fc",
+    "frames": 851,
+    "first_pts_us": 60980492,
+    "last_pts_us": 75142619,
+    "independent_decode": true,
+    "exact_frame_pts_match": true,
+    "no_b_frames": true
+  }
+]

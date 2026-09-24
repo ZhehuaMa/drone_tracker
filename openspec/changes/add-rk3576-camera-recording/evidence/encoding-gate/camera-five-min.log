@@ -1,0 +1,16 @@
+camera_stride=1920 colorspace=0 quantization=1 ycbcr=0 transfer=0
+mpp[16923]: mpp_info: mpp version: 520ab553 author: Herman Chen   2025-12-16 fix[sys_cfg]: Fix decoder sys_cfg crash
+mpp[16923]: mpp_enc: set prep cfg w:h [1920:1200] stride [1920:1200] fmt 0 rotate 0 mirror 0
+mpp[16923]: mpp_enc: set rc cbr bps [12000000:12750000:11250000] fps [60:1:fix] - [60:1:fix] gop 60
+mpp[16923]: mpp_enc: mode cbr bps [11250000:12000000:12750000] fps fix [60/1] -> fix [60/1] gop i [60] v [0]
+warmup_discarded=10 recording_dropped=0 recording_invalid=0 first_sequence=11 sequence_gaps=1 capture_fps=60.0192
+stage=wait_input samples=18060 mean_us=7399.4 p99_us=8594.41 max_us=321987
+stage=sync_begin samples=18060 mean_us=1.03451 p99_us=1.417 max_us=22.394
+stage=copy_to_mpp samples=18060 mean_us=1687 p99_us=1871.62 max_us=2912.79
+stage=sync_end samples=18060 mean_us=1.15728 p99_us=1.746 max_us=149.041
+stage=encode samples=18060 mean_us=7284.14 p99_us=7405.32 max_us=12832.8
+stage=scan_and_enqueue samples=18060 mean_us=291.339 p99_us=6510.93 max_us=11073.7
+mpp_input_group_bytes=3456000
+capture_seconds=133.631 encode_seconds=131.571 max_encode_seconds=0.0128338 write_seconds=3.30268 encoded_queue_peak_bytes=841028
+max_rss_kib=37616 idr_count=593
+frames=18060 bytes=436828224 seconds=301.298 throughput_fps=59.9407 input_buffer_bytes=3456000

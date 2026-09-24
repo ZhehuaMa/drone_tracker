@@ -1,0 +1,3 @@
+2d23c10ec278eccf74bb0c8d5555a9157151c5312e400c1f305a115c17bda121  .docker-artifacts/recording-validation/diagnostic/camera-five-min.h264
+9c2b3c1ac5fb1d2c9d6b45dd4ab493ec173b12e409098428c4a27f6fcd7407d0  .docker-artifacts/recording-validation/diagnostic/hal_h264e_vepu510.c
+9b084dc3f2b73b6c2368729b0d926e3ba6e00463d67d0b3a07ff33394e74f2c6  .docker-artifacts/recording-validation/diagnostic/mpp_enc_impl.c

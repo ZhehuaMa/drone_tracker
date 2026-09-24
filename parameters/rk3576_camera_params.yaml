@@ -4,6 +4,16 @@ drone_tracker_node:
     need_save: false
     save_path: "/tmp/drone-recordings"
     visualized_result: true
+    # SC233HGS 独立 H.264/TS 录像；与 need_save/ROS bag、ROS 图像及 HDMI 开关独立。
+    # 生产启用示例：复核本地 ext4 挂载及目录权限，使用 SC233HGS 连续模式后设 enabled: true。
+    recording:
+      enabled: false
+      directory: /var/lib/drone_tracker/recordings
+      bitrate_bps: 12000000
+      segment_seconds: 60
+      sync_interval_ms: 1000  # 仅允许 500、1000、2000；不是掉电损失上限。
+      max_total_bytes: 21474836480  # 20 GiB，包含未完成会话与附属文件。
+      min_free_bytes: 5368709120  # 5 GiB；达到保护线停止录像，不删除历史内容。
     # HDMI 显示独立于 ROS 调试图像；全部 osd 参数只在启动时生效。
     osd:
       enabled: false

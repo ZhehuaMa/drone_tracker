@@ -67,6 +67,8 @@ public:
     bool tryFrame(FrameRef &frame) override;
     /** @brief 丢弃当前轮次剩余帧，供需要严格轮次隔离的封装源使用。 */
     void discardFrames();
+    /** @brief 仅在采集停止时装配非拥有的录像接收器；接收器必须覆盖整个采集轮次。 */
+    void setRecordingSink(CameraNv12Sink *sink);
     /** @brief 启用录像抛出 std::invalid_argument；禁用为无操作。 */
     void configureRecording(bool enabled, const std::string &, const std::string &) override;
 private:

@@ -1,0 +1,2 @@
+Storage ordering, short write, EINTR, EIO, ENOSPC, sync failure and zero-frame tests passed
+20 lifecycle rounds, slot states, kill, recovery and bounded timeout tests passed

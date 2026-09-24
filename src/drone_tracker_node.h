@@ -67,6 +67,13 @@ private:
         this->declare_parameter<std::string>("save_path", ".");
         this->declare_parameter<bool>("visualized_result", false);
         this->declare_parameter<bool>("use_history_timestamp", false);
+        declare_parameter<bool>("recording.enabled", false);
+        declare_parameter<std::string>("recording.directory", "/var/lib/drone_tracker/recordings");
+        declare_parameter<std::int64_t>("recording.bitrate_bps", 12000000);
+        declare_parameter<std::int64_t>("recording.segment_seconds", 60);
+        declare_parameter<std::int64_t>("recording.sync_interval_ms", 1000);
+        declare_parameter<std::int64_t>("recording.max_total_bytes", 21474836480LL);
+        declare_parameter<std::int64_t>("recording.min_free_bytes", 5368709120LL);
         declare_parameter<bool>("osd.enabled", false);
         declare_parameter<std::string>("osd.drm_device", "/dev/dri/card0");
         declare_parameter<std::string>("osd.connector", "HDMI-A-1");
@@ -173,9 +180,12 @@ private:
     std::mutex control_mutex_{}; // 仅控制侧持有；worker 收尾不需要此锁。
     std::mutex bag_mutex_{};
     std::function<void(const char *)> recording_hook_{};
+    // 仅由验收入口设置；默认不采样，不改变生产话题或调度。
+    std::function<void(std::int64_t, std::int64_t, bool)> update_timing_observer_{};
     std::mutex wait_mutex_{};
     std::condition_variable wait_cv_{};
     std::atomic_bool recording_failed_{false};
+    std::string last_camera_recording_phase_{};
     std::function<std::thread(std::function<void()>)> launcher_{};
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr parameter_guard_{};
 

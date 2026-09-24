@@ -1,0 +1,149 @@
+[
+  {
+    "session": "session-68e1122c143a51c78669392dae899013",
+    "complete": {
+      "outcome": "complete",
+      "video_success": true,
+      "frames": 122,
+      "accepted": 122,
+      "attempted": 122,
+      "dropped": 0,
+      "cancelled": 0
+    },
+    "camera": {
+      "reason": "Stopped by caller",
+      "failed": false,
+      "phase": "streaming",
+      "warmup_reason": "",
+      "dequeued": 132,
+      "warmup_discarded": 10,
+      "terminal_discarded": 0,
+      "qualified": 122,
+      "tracking_enqueued": 122,
+      "tracking_dropped": 0,
+      "sequence_gaps": 0,
+      "time_source": "driver_monotonic",
+      "warmup_examined": 11,
+      "warmup_repeats": 2,
+      "warmup_us": 298438,
+      "warmup_limit_us": 2000000,
+      "stream_started_monotonic_us": 12363578207,
+      "warmup_max_samples": 120,
+      "warmup_required_streak": 8,
+      "first_sequence": 10,
+      "first_timestamp_us": 1790181134163632,
+      "first_latency_us": 298438
+    },
+    "segments": [
+      {
+        "file": "000001.ts",
+        "frames": 122,
+        "first_pts_us": 0,
+        "last_pts_us": 2016032,
+        "sha256": "428990e5ba50407825323762e0f363c50e9fb2b9a7e0fedcd16bca9c68f4a9e0",
+        "independent_decode": true,
+        "exact_pts_match": true
+      }
+    ],
+    "first_encoding_after_qualified_us": 14600,
+    "frame_accounting_passed": true,
+    "commit_boundaries_exist": true,
+    "program_model_config_identity_present": true
+  },
+  {
+    "session": "session-bd22845f8071b54581e0c365ad947c32",
+    "complete": {
+      "outcome": "complete",
+      "video_success": true,
+      "frames": 18310,
+      "accepted": 18310,
+      "attempted": 18310,
+      "dropped": 0,
+      "cancelled": 0
+    },
+    "camera": {
+      "reason": "Stopped by caller",
+      "failed": false,
+      "phase": "streaming",
+      "warmup_reason": "",
+      "dequeued": 18320,
+      "warmup_discarded": 10,
+      "terminal_discarded": 0,
+      "qualified": 18310,
+      "tracking_enqueued": 18238,
+      "tracking_dropped": 72,
+      "sequence_gaps": 0,
+      "time_source": "driver_monotonic",
+      "warmup_examined": 11,
+      "warmup_repeats": 2,
+      "warmup_us": 300542,
+      "warmup_limit_us": 2000000,
+      "stream_started_monotonic_us": 12056153946,
+      "warmup_max_samples": 120,
+      "warmup_required_streak": 8,
+      "first_sequence": 10,
+      "first_timestamp_us": 1790180826746955,
+      "first_latency_us": 300542
+    },
+    "segments": [
+      {
+        "file": "000001.ts",
+        "frames": 3660,
+        "first_pts_us": 0,
+        "last_pts_us": 60963834,
+        "sha256": "ded8c2a533f144ebb6381bb7652e1e358473b58920699cf34e089f2462a96032",
+        "independent_decode": true,
+        "exact_pts_match": true
+      },
+      {
+        "file": "000002.ts",
+        "frames": 3660,
+        "first_pts_us": 60980494,
+        "last_pts_us": 121944306,
+        "sha256": "ad08deab446c728b5b742b45a7d909c4c846b1ad613ba77d7bc200c1d90ad54c",
+        "independent_decode": true,
+        "exact_pts_match": true
+      },
+      {
+        "file": "000003.ts",
+        "frames": 3660,
+        "first_pts_us": 121960992,
+        "last_pts_us": 182924787,
+        "sha256": "e62053fb0d4719a4576914c7be9aa0ce00f38d75b2ac69f4aea0d2b6d5530e16",
+        "independent_decode": true,
+        "exact_pts_match": true
+      },
+      {
+        "file": "000004.ts",
+        "frames": 3660,
+        "first_pts_us": 182941460,
+        "last_pts_us": 243905273,
+        "sha256": "43bab79047279117ac0cdb984e14ab40461219050f0b2c1084ace431270eedd8",
+        "independent_decode": true,
+        "exact_pts_match": true
+      },
+      {
+        "file": "000005.ts",
+        "frames": 3660,
+        "first_pts_us": 243921936,
+        "last_pts_us": 304885755,
+        "sha256": "8627ddaefc170998b2e12d6bff20c7115217891585c5b90d64651f79ad5fc398",
+        "independent_decode": true,
+        "exact_pts_match": true
+      },
+      {
+        "file": "000006.ts",
+        "frames": 10,
+        "first_pts_us": 304902418,
+        "last_pts_us": 305052380,
+        "sha256": "370d90fd7a2a587ae4096cc058d0ca88a4ce456c2fa4b9a6f140d63aa8bfccc3",
+        "independent_decode": true,
+        "exact_pts_match": true
+      }
+    ],
+    "first_encoding_after_qualified_us": 13061,
+    "frame_accounting_passed": true,
+    "commit_boundaries_exist": true,
+    "program_model_config_identity_present": true
+  }
+]

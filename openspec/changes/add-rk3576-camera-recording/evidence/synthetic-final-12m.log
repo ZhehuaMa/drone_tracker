@@ -1,0 +1,10 @@
+mpp[16177]: mpp_info: mpp version: 520ab553 author: Herman Chen   2025-12-16 fix[sys_cfg]: Fix decoder sys_cfg crash
+mpp[16177]: mpp_enc: set prep cfg w:h [1920:1200] stride [1920:1200] fmt 0 rotate 0 mirror 0
+mpp[16177]: mpp_enc: set rc cbr bps [12000000:12750000:11250000] fps [60:1:fix] - [60:1:fix] gop 60
+mpp[16177]: mpp_enc: mode cbr bps [11250000:12000000:12750000] fps fix [60/1] -> fix [60/1] gop i [60] v [0]
+capture_seconds=0.000148356 encode_seconds=4.31458 max_encode_seconds=0.00754283 write_seconds=0.0421744 encoded_queue_peak_bytes=90880
+max_rss_kib=6544 idr_count=10
+frames=600 bytes=1325739 seconds=5.27528 throughput_fps=113.738 input_buffer_bytes=3456000
+16167 bash -c source /opt/ros/humble/setup.bash; timeout 30 /home/hzhy/drone-recording-validation-20260923/build-final/rk3576_recording_probe /home/hzhy/drone-recording-validation-20260923/synthetic-final-12m.h264 60 12000000 600; pgrep -af "[r]k3576_recording_probe"; fuser /dev/video22; sha256sum /usr/lib/librknnrt.so; sha256sum /home/hzhy/drone-recording-validation-20260923/camera-queued-minute-12m.h264
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /usr/lib/librknnrt.so
+c036b87c2b32701cd1164e66c6ff140a8a9ccba6fb707b43b698de13b55e268d  /home/hzhy/drone-recording-validation-20260923/camera-queued-minute-12m.h264

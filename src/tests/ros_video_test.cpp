@@ -31,6 +31,7 @@ struct SourceTrace {
     std::atomic_bool active{}, eof{}, fail_start{}, fail_input{}, tail_race{}, long_gap{};
     std::atomic<int> limit{10000};
     std::atomic_bool warming_up{};
+    std::atomic_bool recording_failed{};
     std::mutex mutex{};
     std::vector<std::uint64_t> timestamps{};
     std::vector<FrameRef> frames{};
@@ -49,8 +50,14 @@ public:
     bool isRunning() const override { return trace_->active; }
     bool getImageSize(int &w, int &h) const override { w = 100; h = 80; return true; }
     FrameSourceStatus status() const override {
-        return {trace_->fail_input || trace_->fail_start ? FrameSourceState::Failed
+        FrameSourceStatus result{trace_->fail_input || trace_->fail_start ? FrameSourceState::Failed
             : trace_->eof ? FrameSourceState::Eof : FrameSourceState::Running, "controlled", "test source"};
+        result.recording.enabled = trace_->config.camera_recording.enabled;
+        if (result.recording.enabled) {
+            result.recording.phase = trace_->recording_failed ? "failed" : "waiting_for_qualified_input";
+            if (trace_->recording_failed) { result.recording.reason = "injected recording storage failure"; }
+        }
+        return result;
     }
     bool waitFrame(FrameRef &frame, std::chrono::microseconds timeout) override {
         frame.reset();
@@ -269,7 +276,8 @@ void configuration() {
         {"tracker.yolo_target_class_id", 1}, {"camera.fx", 0.0}, {"camera.fy", -1.0},
         {"camera.cy", std::numeric_limits<double>::quiet_NaN()}, {"use_sim_time", true},
         {"use_history_timestamp", true}, {"osd.width", 0}, {"osd.frame_stale_ms", 0},
-        {"osd.battery_cells", -1}, {"osd.refresh_hz", std::numeric_limits<double>::infinity()}}) {
+        {"osd.battery_cells", -1}, {"osd.refresh_hz", std::numeric_limits<double>::infinity()},
+        {"recording.enabled", true}}) {
         auto source{std::make_shared<SourceTrace>()};
         bool rejected{false};
         try {
@@ -286,7 +294,10 @@ void configuration() {
     require(h.paths->head.find("/models/head.rknn") != std::string::npos, "relative path not resolved");
     for (const auto &parameter : std::vector<rclcpp::Parameter>{{"use_sim_time", true}, {"camera.fx", 200.0},
         {"tracker.enable_dcf", true}, {"video_source", "other.mov"}, {"need_save", true},
-        {"osd.enabled", true}, {"osd.width", 1280}}) {
+        {"osd.enabled", true}, {"osd.width", 1280}, {"recording.enabled", true},
+        {"recording.directory", "/var/lib/drone_tracker/other"}, {"recording.bitrate_bps", 8000000},
+        {"recording.segment_seconds", 30}, {"recording.sync_interval_ms", 500},
+        {"recording.max_total_bytes", 1000000}, {"recording.min_free_bytes", 1000000}}) {
         require(!h.node->set_parameter(parameter).successful, "startup parameter changed");
     }
 }
@@ -559,6 +570,46 @@ void realVideo() {
     eof.until([&] { return DroneTrackerNodeTestAccess::idle(*eof.node); }, "real EOF direct restart");
     require(eof.detections.size() > previous && eof.trace->assemblies == 1, "real EOF models not reused");
 }
+void independentCameraRecording() {
+    for (const bool display_enabled : {false, true}) {
+        for (const bool images : {false, true}) {
+            std::atomic<int> bag_operations{};
+            auto display{std::make_shared<DisplayTrace>()};
+            Harness h{options({{"video_source", "/dev/video10"}, {"mv_camera.sensor_model", "sc233hgs"},
+                {"mv_camera.capture_mode", "continuous"}, {"mv_camera.trigger_rate_hz", 0.0},
+                {"mv_camera.media_device", "/dev/media0"}, {"mv_camera.sensor_entity", "sc233hgs 4-0030"},
+                {"mv_camera.width_px", 100}, {"mv_camera.height_px", 80}, {"mv_camera.fps", 60},
+                {"mv_camera.output_width_px", 0}, {"mv_camera.output_height_px", 0},
+                {"recording.enabled", true}, {"osd.enabled", display_enabled}, {"visualized_result", images}}),
+                {}, [&](const char *) { ++bag_operations; }, {}, std::make_unique<TestDisplay>(display)};
+            require(h.source->config.camera_recording.enabled
+                && h.source->config.camera_recording.bitrate_bps == 12000000
+                && h.source->config.camera_recording.sync_interval_ms == 1000,
+                "Recording startup configuration not forwarded");
+            // 缺少测试模型文件时，身份读取错误属于录像准备故障，不能阻止可控跟踪器初始化。
+            require(!h.source->config.camera_recording.preparation_error.empty(),
+                "Recording identity failure was not isolated");
+            h.source->recording_failed = true;
+            h.source->warming_up = true;
+            h.node->run(); h.node->run(); h.pump(80ms);
+            require(h.source->starts == 1 && h.detections.empty() && h.images.empty(),
+                "Recording failure changed duplicate ON or warmup behavior");
+            h.source->warming_up = false;
+            h.until([&] { return h.detections.size() >= 5; }, "Recording failure stopped healthy tracking");
+            require(h.source->active && h.states.size() == 1 && h.states.front() == 0,
+                "Recording failure changed tracking state");
+            h.node->stop(); h.pump(80ms);
+            require(h.images.empty() == !images && display->initializes == (display_enabled ? 1 : 0),
+                "Recording changed image or OSD switches");
+            const auto count{h.detections.size()};
+            h.node->run();
+            h.until([&] { return h.detections.size() > count; }, "Recording failure blocked next ON");
+            h.node->stop();
+            require(h.trace->assemblies == 1 && bag_operations == 0,
+                "Independent recording reloaded models or enabled ROS bag");
+        }
+    }
+}
 void recording() {
     const auto root{std::filesystem::temp_directory_path()
         / ("ros-video-bags-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))};
@@ -637,6 +688,7 @@ int main(int argc, char **argv) {
         recording();
         realVideo();
         cameraContracts();
+        independentCameraRecording();
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         rclcpp::shutdown();

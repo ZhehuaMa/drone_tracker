@@ -1,0 +1,123 @@
+Consolidate compiler generated dependencies of target model_common
+Consolidate compiler generated dependencies of target drone_osd_core
+[  8%] Built target model_common
+[ 14%] Built target drone_osd_core
+Consolidate compiler generated dependencies of target preprocess_geometry
+Consolidate compiler generated dependencies of target drone_osd_rk3576
+[ 17%] Built target preprocess_geometry
+[ 23%] Built target drone_osd_rk3576
+Consolidate compiler generated dependencies of target drone_osd_telemetry
+Consolidate compiler generated dependencies of target hybrid_tracker
+[ 26%] Built target drone_osd_telemetry
+[ 38%] Built target hybrid_tracker
+Consolidate compiler generated dependencies of target rk3576_yolo_host
+Consolidate compiler generated dependencies of target drone_tracker_ros
+[ 44%] Built target rk3576_yolo_host
+[ 47%] Built target drone_tracker_ros
+Consolidate compiler generated dependencies of target rk3576_yolo_runtime
+Consolidate compiler generated dependencies of target rk3576_ar0234_camera
+[ 58%] Built target rk3576_yolo_runtime
+[ 67%] Built target rk3576_ar0234_camera
+Consolidate compiler generated dependencies of target rk3576_video
+Consolidate compiler generated dependencies of target rk3576_yolo_sdk
+[ 73%] Built target rk3576_video
+[ 82%] Built target rk3576_yolo_sdk
+Consolidate compiler generated dependencies of target rk3576_sc233hgs_camera
+[ 88%] Built target rk3576_sc233hgs_camera
+Consolidate compiler generated dependencies of target rk3576_tracker_assembly
+[ 94%] Built target rk3576_tracker_assembly
+Consolidate compiler generated dependencies of target platform_rk3576
+[ 97%] Built target platform_rk3576
+Consolidate compiler generated dependencies of target drone_tracker_node
+[100%] Built target drone_tracker_node
+[ 14%] Built target drone_osd_core
+[ 14%] Built target model_common
+[ 17%] Built target preprocess_geometry
+[ 20%] Built target drone_osd_telemetry
+[ 26%] Built target drone_osd_rk3576
+[ 38%] Built target hybrid_tracker
+[ 44%] Built target rk3576_yolo_host
+[ 47%] Built target drone_tracker_ros
+[ 58%] Built target rk3576_yolo_runtime
+[ 67%] Built target rk3576_ar0234_camera
+[ 73%] Built target rk3576_video
+[ 82%] Built target rk3576_yolo_sdk
+[ 88%] Built target rk3576_sc233hgs_camera
+[ 94%] Built target rk3576_tracker_assembly
+[ 97%] Built target platform_rk3576
+Consolidate compiler generated dependencies of target recording_validation_node
+[100%] Built target recording_validation_node
+Consolidate compiler generated dependencies of target rk3576_recording_worker
+[100%] Built target rk3576_recording_worker
+Consolidate compiler generated dependencies of target rk3576_recording_inspect
+[100%] Built target rk3576_recording_inspect
+[ 15%] Built target model_common
+[ 25%] Built target drone_osd_core
+[ 30%] Built target preprocess_geometry
+[ 40%] Built target drone_osd_rk3576
+[ 45%] Built target drone_osd_telemetry
+[ 65%] Built target hybrid_tracker
+[ 75%] Built target rk3576_yolo_host
+[ 80%] Built target drone_tracker_ros
+[ 90%] Built target rk3576_video
+Consolidate compiler generated dependencies of target ros_video_tests
+[100%] Built target ros_video_tests
+-- Install configuration: "Release"
+-- Installing: /home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/drone_tracker_node
+-- Set runtime path of "/home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/drone_tracker_node" to ""
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/licenses/FONT_LICENSE.txt
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//models
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//models/model_stub.md
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//launch
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//launch/drone_tracker.launch.py
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//launch/rk3576_video.launch.py
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//launch/balloon_tracker.launch.py
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//launch/rk3576_camera.launch.py
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//parameters
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//parameters/replay_fp16.yaml
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//parameters/replay_int8.yaml
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//parameters/rk3576_camera_params.yaml
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//parameters/rk3576_video_params.yaml
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//parameters/balloon_tracker_params.yaml
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker//parameters/drone_tracker_params.yaml
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/ament_index/resource_index/package_run_dependencies/drone_tracker
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/ament_index/resource_index/parent_prefix_path/drone_tracker
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/environment/ament_prefix_path.sh
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/environment/ament_prefix_path.dsv
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/environment/path.sh
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/environment/path.dsv
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/local_setup.bash
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/local_setup.sh
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/local_setup.zsh
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/local_setup.dsv
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/package.dsv
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/ament_index/resource_index/packages/drone_tracker
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/cmake/drone_trackerConfig.cmake
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/cmake/drone_trackerConfig-version.cmake
+-- Up-to-date: /home/hzhy/drone-recording-validation-20260923/validation-install/share/drone_tracker/package.xml
+-- Installing: /home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/rk3576_recording_worker
+-- Installing: /home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/rk3576_recording_inspect
+-- Installing: /home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/nanotrackv3_baseline
+-- Installing: /home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/nanotrackv3_search_direct
+-- Installing: /home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/nanotrackv3_search_direct_probe
+-- Installing: /home/hzhy/drone-recording-validation-20260923/validation-install/lib/drone_tracker/nanotrackv3_benchmark_compare
+Internal ctest changing into directory: /home/hzhy/drone-recording-validation-20260923/implementation/full-build
+Test project /home/hzhy/drone-recording-validation-20260923/implementation/full-build
+    Start  1: ros_video_generate_fixtures
+1/7 Test  #1: ros_video_generate_fixtures ......   Passed    0.54 sec
+    Start  2: ros_video_tests
+2/7 Test  #2: ros_video_tests ..................   Passed   12.13 sec
+    Start  3: ros_initialization_tests
+3/7 Test  #3: ros_initialization_tests .........   Passed    2.97 sec
+    Start  4: jetson_config_tests
+4/7 Test  #4: jetson_config_tests ..............   Passed    0.77 sec
+    Start 13: osd_presenter_tests
+5/7 Test #13: osd_presenter_tests ..............   Passed    0.11 sec
+    Start 16: osd_telemetry_tests
+6/7 Test #16: osd_telemetry_tests ..............   Passed    0.02 sec
+    Start 17: ros_osd_telemetry_tests
+7/7 Test #17: ros_osd_telemetry_tests ..........   Passed    0.77 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Total Test time (real) =  17.33 sec

@@ -1,0 +1,1 @@
+probe resource limit: fps<=240, bitrate<=100000000, frames<=36000

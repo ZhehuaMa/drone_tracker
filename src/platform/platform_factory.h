@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "frame/frame.h"
+#include "camera_recording.h"
 #include "hybrid_tracker/model/model_backend.h"
 #include "hybrid_tracker/preprocess/image_preprocessor.h"
 
@@ -49,6 +50,7 @@ struct FrameSourceConfig {
     /** @brief 软件触发命令频率（Hz），独立于设备 fps；连续模式为零。 */
     double camera_trigger_rate_hz{};
     CameraSensorModel camera_sensor_model{CameraSensorModel::Ar0234};
+    CameraRecordingConfig camera_recording{};
 };
 
 enum class FrameSourceState { Unknown, Ready, Running, Stopped, Eof, Failed };
@@ -78,6 +80,7 @@ struct CameraCaptureStatus {
     std::int64_t first_latency_us{};
     bool resources_reclaimed{};
     std::vector<CameraWarmupEvidence> evidence{};
+    std::int64_t stream_started_monotonic_us{};
 };
 /** @brief 只读状态快照；计数只属于当前轮次，查询不会消费帧。 */
 struct FrameSourceStatus {
@@ -102,6 +105,7 @@ struct FrameSourceStatus {
     std::int64_t last_trigger_us{};
     std::int64_t clock_offset_delta_us{};
     CameraCaptureStatus camera{};
+    CameraRecordingStatus recording{};
 };
 
 /** @brief 单消费者帧源；实现直接使用原采集队列，不增加中转线程。 */

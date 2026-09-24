@@ -69,6 +69,9 @@ class JetsonPlatformFactory final : public PlatformFactory {
 public:
     PlatformResult<std::unique_ptr<FrameSource>> createFrameSource(const FrameSourceConfig &config) override {
         try {
+            if (config.camera_recording.enabled) {
+                throw std::invalid_argument("Independent camera recording requires RK3576 SC233HGS");
+            }
             auto source{std::make_unique<JetsonFrameSource>(config)};
             int width{}, height{};
             if (!source->getImageSize(width, height) || width <= 0 || height <= 0) {

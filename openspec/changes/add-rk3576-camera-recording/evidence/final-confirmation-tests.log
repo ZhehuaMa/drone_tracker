@@ -1,0 +1,63 @@
+[  4%] Built target platform_headers_check
+[  7%] Built target preprocess_geometry
+[ 10%] Built target model_common
+[ 14%] Built target jetson_tracker_assembly
+[ 23%] Built target hybrid_tracker
+[ 32%] Built target yolo_output_adapter_tests
+[ 32%] Built target model_contract_tests
+[ 32%] Built target preprocess_common_tests
+[ 39%] Built target rk3576_yolo_host
+[ 48%] Built target preprocess_contract_tests
+[ 48%] Built target platform_contract_tests
+[ 50%] Built target hybrid_tracker_tests
+[ 54%] Built target rknn_preprocess_tests
+[ 60%] Built target rk3576_video
+[ 68%] Built target rk3576_ar0234_camera
+[ 73%] Built target rk3576_sc233hgs_camera
+[ 78%] Built target rk3576_tracker_assembly
+[ 87%] Built target ar0234_camera_frame_source_tests
+[ 90%] Built target ar0234_camera_device_tests
+[ 90%] Built target camera_timing_tests
+[ 90%] Built target ar0234_camera_driver_support
+[ 96%] Built target ar0234_camera_driver_tests
+[ 96%] Built target ar0234_camera_source_driver
+Consolidate compiler generated dependencies of target sc233hgs_camera_tests
+[ 98%] Building CXX object CMakeFiles/sc233hgs_camera_tests.dir/tests/sc233hgs_camera_test.cpp.o
+[100%] Linking CXX executable sc233hgs_camera_tests
+[100%] Built target sc233hgs_camera_tests
+Internal ctest changing into directory: /work/source/.docker-artifacts/recording-camera-tests
+Test project /work/source/.docker-artifacts/recording-camera-tests
+      Start  1: ar0234_camera_device_tests
+ 1/15 Test  #1: ar0234_camera_device_tests ..........   Passed    0.10 sec
+      Start  2: camera_timing_tests
+ 2/15 Test  #2: camera_timing_tests .................   Passed    0.00 sec
+      Start  3: ar0234_camera_frame_source_tests
+ 3/15 Test  #3: ar0234_camera_frame_source_tests ....   Passed    0.30 sec
+      Start  4: ar0234_camera_driver_missing_args
+ 4/15 Test  #4: ar0234_camera_driver_missing_args ...   Passed    0.02 sec
+      Start  5: ar0234_camera_driver_invalid_args
+ 5/15 Test  #5: ar0234_camera_driver_invalid_args ...   Passed    0.01 sec
+      Start  6: ar0234_camera_driver_tests
+ 6/15 Test  #6: ar0234_camera_driver_tests ..........   Passed    1.64 sec
+      Start  7: sc233hgs_camera_tests
+ 7/15 Test  #7: sc233hgs_camera_tests ...............   Passed    0.04 sec
+      Start  8: yolo_output_adapter_tests
+ 8/15 Test  #8: yolo_output_adapter_tests ...........   Passed    1.34 sec
+      Start  9: model_contract_tests
+ 9/15 Test  #9: model_contract_tests ................   Passed    0.00 sec
+      Start 10: preprocess_common_tests
+10/15 Test #10: preprocess_common_tests .............   Passed    0.00 sec
+      Start 11: preprocess_contract_tests
+11/15 Test #11: preprocess_contract_tests ...........   Passed    0.16 sec
+      Start 12: hybrid_tracker_tests
+12/15 Test #12: hybrid_tracker_tests ................   Passed    0.01 sec
+      Start 13: platform_contract_tests
+13/15 Test #13: platform_contract_tests .............   Passed    0.04 sec
+      Start 14: rknn_preprocess_tests
+14/15 Test #14: rknn_preprocess_tests ...............   Passed    0.01 sec
+      Start 15: platform_selection_tests
+15/15 Test #15: platform_selection_tests ............   Passed    0.24 sec
+
+100% tests passed, 0 tests failed out of 15
+
+Total Test time (real) =   3.94 sec

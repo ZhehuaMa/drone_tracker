@@ -42,6 +42,10 @@ struct CameraFormat {
     std::uint32_t stride{};
     std::uint32_t sizeimage{};
     std::uint32_t buffers{};
+    std::uint32_t colorspace{};
+    std::uint32_t quantization{};
+    std::uint32_t ycbcr_encoding{};
+    std::uint32_t transfer_function{};
 };
 enum class CameraSampleResult { NoSample, WarmupDiscarded, FrameReady };
 struct CameraSample {
@@ -58,6 +62,31 @@ struct CameraSample {
     // 验收可选：驱动持有期内逐项比较已复制的同帧像素，不是两次采集画面对照。
     bool pixels_checked{};
     bool pixels_equal{};
+};
+/** @brief 借用驱动像素的只读视图，仅在 stage 调用期间有效。 */
+struct CameraNv12View {
+    const std::uint8_t *pixels{};
+    std::size_t available_bytes{};
+    CameraFormat format{};
+    std::int64_t timestamp_us{};
+    std::int64_t driver_seconds{};
+    std::int64_t driver_microseconds{};
+    std::uint32_t flags{};
+    std::uint32_t sequence{};
+};
+/**
+ * @brief 录像的两步提交边界。所有方法必须非阻塞，并在内部隔离录像错误。
+ * stage 仅复制到自有暂存槽，不能发布；publish 在相机最终确认后调用。
+ * cancel 撤销暂存；三者由同一个采集线程调用，接收器须比本次 next 调用活得更久。
+ */
+class CameraNv12Sink {
+public:
+    virtual ~CameraNv12Sink() = default;
+    virtual void stage(const CameraNv12View &view) noexcept = 0;
+    virtual void publish() noexcept = 0;
+    virtual void cancel() noexcept = 0;
+    /** @brief 同一采集线程报告驱动缺口与跟踪队列处置，不复制图像。 */
+    virtual void disposition(const CameraSample &, std::uint64_t, bool) noexcept {}
 };
 /** @brief 校验不支持的选项，任何设备操作前调用。 */
 void validateCameraConfig(const FrameSourceConfig &config);
@@ -88,7 +117,7 @@ public:
     /** @brief 默认没有待恢复控制项；持有传感器控制项的实现覆写。 */
     virtual std::vector<std::string> unrestoredControls() const;
     /** @brief 根据 result 区分无出队、已归还观察帧和合格帧；错误抛异常，等待可被停止唤醒。 */
-    CameraSample next(int timeout_ms, bool compare_pixels = false);
+    CameraSample next(int timeout_ms, bool compare_pixels = false, CameraNv12Sink *recording = nullptr);
     /** @brief 唤醒 poll，不关闭采集句柄；空字符串表示成功。 */
     std::string wake();
     /** @brief 逆序清理并保留所有错误；调用前生产线程必须已退出采集循环。 */

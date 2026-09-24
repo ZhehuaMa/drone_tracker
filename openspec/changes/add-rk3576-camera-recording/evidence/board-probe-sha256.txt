@@ -1,0 +1,4 @@
+005f52c111a07bc47f7d5cd9e61d3b83e5e1a94648200c2dc5b084763f2374ae  /home/hzhy/drone-recording-validation-20260923/build-final/rk3576_recording_probe
+e560097ab6746d4f77cf9c3039e39bc15fc53f3599600d96ef733cb05c61184a  /home/hzhy/drone-recording-validation-20260923/final-confirmation/src/platform/rk3576/recording/recording_probe.cpp
+d49120080c084a535940f8042beb37de6ee7a59a7494d5d1a94df105ac62861e  /home/hzhy/drone-recording-validation-20260923/final-confirmation/src/platform/rk3576/recording/nv12_copy.h
+7751ee5af366aaa3c46602dd4aa91ff3b583d08710d2becc791e528d9d8b92c7  /home/hzhy/drone-recording-validation-20260923/final-confirmation/src/platform/rk3576/recording/shared_slots.h

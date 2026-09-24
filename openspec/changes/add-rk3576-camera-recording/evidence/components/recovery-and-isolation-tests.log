@@ -1,0 +1,5 @@
+Inspection complete; packet structure only, no decoding or original-file modification
+Inspection complete; packet structure only, no decoding or original-file modification
+Report must be a new exclusive file
+Damaged metadata, commit boundary, repeat inspection and evidence preservation passed
+20 lifecycle rounds, slot states, kill, recovery and bounded timeout tests passed

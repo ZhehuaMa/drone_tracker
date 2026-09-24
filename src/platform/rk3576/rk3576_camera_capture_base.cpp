@@ -243,6 +243,10 @@ void Rk3576CameraCaptureBase::checkFormat() {
     check(system_->ioctl(fd_, VIDIOC_G_FMT, &value), "G_FMT");
     const auto &pixel{value.fmt.pix_mp};
     format_ = {pixel.width, pixel.height, pixel.plane_fmt[0].bytesperline, pixel.plane_fmt[0].sizeimage, 0};
+    format_.colorspace = pixel.colorspace;
+    format_.quantization = pixel.quantization;
+    format_.ycbcr_encoding = pixel.ycbcr_enc;
+    format_.transfer_function = pixel.xfer_func;
     const auto expected_format{pixelFormat()};
     if (pixel.width != static_cast<unsigned>(config_.width) || pixel.height != static_cast<unsigned>(config_.height)
         || pixel.pixelformat != expected_format || pixel.num_planes != 1 || pixel.field != V4L2_FIELD_NONE
@@ -331,6 +335,7 @@ void Rk3576CameraCaptureBase::start() {
         check(system_->ioctl(fd_, VIDIOC_STREAMON, &type), "STREAMON");
         streaming_ = true;
         stream_started_us_ = system_->clockUs(CLOCK_MONOTONIC);
+        capture_status_.stream_started_monotonic_us = stream_started_us_;
         if (needsTimestampWarmup()) {
             warmup_ = std::make_unique<CameraWarmup>(pair_, stream_started_us_);
             capture_status_.phase = "warming_up";
@@ -341,7 +346,15 @@ void Rk3576CameraCaptureBase::start() {
         throw std::runtime_error(reason + finish());
     }
 }
-CameraSample Rk3576CameraCaptureBase::next(int timeout_ms, bool compare_pixels) {
+CameraSample Rk3576CameraCaptureBase::next(int timeout_ms, bool compare_pixels, CameraNv12Sink *recording) {
+    if (recording && pixelFormat() != V4L2_PIX_FMT_NV12) {
+        throw std::invalid_argument("NV12 recording requires SC233HGS capture");
+    }
+    // 包括异常和提前返回，任何未最终确认的暂存帧都不能被子进程读取。
+    struct PendingRecording {
+        CameraNv12Sink *sink{};
+        ~PendingRecording() { if (sink) { sink->cancel(); } }
+    } pending{recording};
     if (stop_requested_.load()) { return {}; }
     const bool observing{warmup_ && !warmup_->ready()};
     auto checkDeadline{[&] {
@@ -471,6 +484,10 @@ CameraSample Rk3576CameraCaptureBase::next(int timeout_ms, bool compare_pixels) 
             }
             if (!sample.pixels_equal) { throw std::runtime_error("Same-frame driver pixel comparison failed"); }
         }
+        if (recording) {
+            recording->stage({pixels, plane.bytesused - plane.data_offset, format_, timestamp,
+                              sample.seconds, sample.microseconds, sample.flags, sample.sequence});
+        }
         PlaneBuffer returned{buffer.index};
         check(system_->ioctl(fd_, VIDIOC_QBUF, &returned.buffer), "return QBUF" + metadata(dequeued));
         if (stop_requested_.load()) { sample.frame.reset(); return {}; }
@@ -495,6 +512,7 @@ CameraSample Rk3576CameraCaptureBase::next(int timeout_ms, bool compare_pixels) 
         }
         --capture_status_.terminal_discarded;
         sample.result = CameraSampleResult::FrameReady;
+        if (recording) { recording->publish(); pending.sink = nullptr; }
         return sample;
     } catch (const std::exception &error) {
         capture_status_.reason = error.what();
