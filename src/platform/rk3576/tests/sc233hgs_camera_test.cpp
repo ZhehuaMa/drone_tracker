@@ -80,6 +80,22 @@ void rejectsRecording() {
     source.configureRecording(false, "", "");
 }
 
+void recordingConfigFailureKeepsCameraRunning() {
+    auto system{std::make_shared<System>()};
+    system->nv12 = true;
+    auto value{config()};
+    value.camera_recording.enabled = true;
+    value.camera_recording.bitrate_bps = 0;
+    Sc233hgsCameraFrameSource source{value, dependencies(system)};
+    require(source.start(), "invalid recording config stopped healthy SC233HGS camera");
+    const auto status{source.status()};
+    require(status.recording.phase == "failed" && !status.recording.reason.empty()
+        && status.state == FrameSourceState::Running,
+        "SC233HGS recording config failure was not isolated");
+    source.stop();
+    system->clean();
+}
+
 void rejectsFormatMismatch() {
     auto system{std::make_shared<System>()};
     auto value{config()};
@@ -575,6 +591,7 @@ int main() {
         rejectsNonZeroContinuousRate();
         rejectsScaling();
         rejectsRecording();
+        recordingConfigFailureKeepsCameraRunning();
         rejectsFormatMismatch();
         reportsCaptureOpenFailure();
         copiesYPlaneAndRestarts();

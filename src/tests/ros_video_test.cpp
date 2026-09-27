@@ -7,12 +7,17 @@
 #include <future>
 #include <iostream>
 #include <rosbag2_cpp/reader.hpp>
+#include <rclcpp/serialization.hpp>
 
 // 测试不链接生产平台，因此没有真实 RKNN 推理或运行期假模型参数。
 std::unique_ptr<PlatformFactory> CreatePlatformFactory() { throw std::logic_error("Test must inject factory"); }
 struct DroneTrackerNodeTestAccess {
     static bool idle(const DroneTrackerNode &node) { return node.run_state_ == DroneTrackerNode::RunState::Idle; }
     static CameraIntrinsics intrinsics(const DroneTrackerNode &node) { return node.cam_intrinsics_; }
+    static BagSession::Status bagStatus(DroneTrackerNode &node) {
+        std::lock_guard<std::mutex> lock{node.bag_status_mutex_};
+        return node.last_bag_status_;
+    }
     static cv::Matx33d rotation(DroneTrackerNode &node) {
         std::lock_guard<std::mutex> lock{node.gimbal_mtx_};
         cv::Matx33d result{cv::Matx33d::eye()};
@@ -24,6 +29,14 @@ namespace {
 using namespace ros_test;
 using model_test::require;
 using namespace std::chrono_literals;
+template<typename Message>
+Message decodeBag(const rosbag2_storage::SerializedBagMessage &item) {
+    rclcpp::SerializedMessage serialized{*item.serialized_data};
+    rclcpp::Serialization<Message> serialization{};
+    Message result{};
+    serialization.deserialize_message(&serialized, &result);
+    return result;
+}
 struct SourceTrace {
     std::string video{};
     FrameSourceConfig config{};
@@ -32,6 +45,7 @@ struct SourceTrace {
     std::atomic<int> limit{10000};
     std::atomic_bool warming_up{};
     std::atomic_bool recording_failed{};
+    std::atomic<int> legacy_recording_requests{};
     std::mutex mutex{};
     std::vector<std::uint64_t> timestamps{};
     std::vector<FrameRef> frames{};
@@ -73,7 +87,9 @@ public:
         if (trace_->tail_race.exchange(false)) { return next(frame); }
         return false;
     }
-    void configureRecording(bool, const std::string &, const std::string &) override {}
+    void configureRecording(bool enabled, const std::string &, const std::string &) override {
+        if (enabled) { ++trace_->legacy_recording_requests; }
+    }
 private:
     bool next(FrameRef &frame) {
         const auto timestamp{std::chrono::duration_cast<std::chrono::microseconds>(
@@ -287,7 +303,7 @@ void configuration() {
         {"camera.cy", std::numeric_limits<double>::quiet_NaN()}, {"use_sim_time", true},
         {"use_history_timestamp", true}, {"osd.width", 0}, {"osd.frame_stale_ms", 0},
         {"osd.render_path", "invalid"}, {"osd.battery_cells", -1}, {"osd.refresh_hz", std::numeric_limits<double>::infinity()},
-        {"recording.enabled", true}}) {
+        {"osd.connector", ""}}) {
         auto source{std::make_shared<SourceTrace>()};
         bool rejected{false};
         try {
@@ -495,12 +511,21 @@ void cameraContracts() {
             require(off.detections.back().header.frame_id.empty() && off.trace->assemblies == 1,
                     "In-flight old camera result leaked");
         }
+        const auto bag_root{std::filesystem::temp_directory_path() / ("camera-bag-"
+            + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))};
+        std::filesystem::create_directories(bag_root);
         params.append_parameter_override("need_save", true);
-        bool rejected{false};
-        try { Harness invalid{params}; } catch (const std::exception &error) {
-            rejected = std::string{error.what()}.find("need_save=false") != std::string::npos;
-        }
-        require(rejected, "Camera recording was not rejected at initialization");
+        params.append_parameter_override("save_path", bag_root.string());
+        Harness bag{params};
+        require(bag.source->starts == 0 && bag.source->legacy_recording_requests == 0,
+            "RK3576 camera bag request reached legacy recording boundary");
+        bag.node->run();
+        bag.until([&] { return !bag.detections.empty(); }, "Camera bag stopped tracking");
+        bag.node->stop();
+        require(bag.source->legacy_recording_requests == 0
+            && DroneTrackerNodeTestAccess::bagStatus(*bag.node).phase == "complete",
+            "Camera bag did not close independently");
+        std::filesystem::remove_all(bag_root);
     }
     {
         auto params{options({{"video_source", "/dev/video10"},
@@ -582,6 +607,34 @@ void realVideo() {
     require(eof.detections.size() > previous && eof.trace->assemblies == 1, "real EOF models not reused");
 }
 void independentCameraRecording() {
+    for (const auto &input : {std::string{"test.mov"}, std::string{"/dev/video10"}}) {
+        std::vector<rclcpp::Parameter> extra{{"video_source", input}, {"recording.enabled", true}};
+        if (input.rfind("/dev/", 0) == 0) {
+            extra.emplace_back("mv_camera.capture_mode", "continuous");
+            extra.emplace_back("mv_camera.trigger_rate_hz", 0.0);
+            extra.emplace_back("mv_camera.media_device", "/dev/media0");
+            extra.emplace_back("mv_camera.sensor_entity", "ar0234 test");
+        }
+        Harness unsupported{options(extra)};
+        require(!unsupported.source->config.camera_recording.enabled,
+            "unsupported input received independent recording request");
+        unsupported.node->run();
+        unsupported.until([&] { return !unsupported.detections.empty(); },
+            "unsupported recording stopped healthy tracking");
+        unsupported.node->stop();
+    }
+    {
+        Harness invalid{options({{"video_source", "/dev/video10"}, {"mv_camera.sensor_model", "sc233hgs"},
+            {"mv_camera.capture_mode", "continuous"}, {"mv_camera.trigger_rate_hz", 0.0},
+            {"mv_camera.media_device", "/dev/media0"}, {"mv_camera.sensor_entity", "sc233hgs test"},
+            {"recording.enabled", true}, {"recording.bitrate_bps", 0}})};
+        require(!invalid.source->config.camera_recording.preparation_error.empty(),
+            "invalid recording parameter did not become deferred session error");
+        invalid.node->run();
+        invalid.until([&] { return !invalid.detections.empty(); },
+            "invalid recording parameter stopped tracking");
+        invalid.node->stop();
+    }
     for (const bool display_enabled : {false, true}) {
         for (const bool images : {false, true}) {
             std::atomic<int> bag_operations{};
@@ -621,6 +674,151 @@ void independentCameraRecording() {
         }
     }
 }
+void bagQueueLimits() {
+    const auto root{std::filesystem::temp_directory_path()
+        / ("bag-queue-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))};
+    std::filesystem::create_directories(root);
+    std::mutex gate{};
+    std::condition_variable changed{};
+    bool entered{}, release{};
+    BagSession::Status result{};
+    BagSession session{(root / "round").string(), false,
+        [&](const char *operation) {
+            if (std::string{operation} != "open") { return; }
+            std::unique_lock<std::mutex> lock{gate};
+            entered = true;
+            changed.notify_all();
+            changed.wait(lock, [&] { return release; });
+        }, [&](const BagSession::Status &status) { result = status; }};
+    {
+        std::unique_lock<std::mutex> lock{gate};
+        require(changed.wait_for(lock, 2s, [&] { return entered; }), "bag worker did not reach open gate");
+    }
+    auto pose{std::make_shared<sensor_msgs::msg::Imu>()};
+    const auto begin{std::chrono::steady_clock::now()};
+    for (std::size_t i{}; i < BagSession::max_messages; ++i) {
+        require(session.submit(pose, "/fpv/gimbal", rclcpp::Time{static_cast<std::int64_t>(i)}),
+            "bounded bag rejected within message capacity");
+    }
+    require(!session.submit(pose, "/fpv/gimbal", rclcpp::Time{1})
+        && !session.submit(pose, "/fpv/gimbal", rclcpp::Time{1}, BagSession::max_bytes + 1),
+        "bounded bag accepted overflow");
+    require(std::chrono::steady_clock::now() - begin < 1s,
+        "bag producer waited for blocked writer");
+    {
+        std::lock_guard<std::mutex> lock{gate};
+        release = true;
+    }
+    changed.notify_all();
+    session.stop();
+    require(result.phase == "incomplete" && result.topics.at("/fpv/gimbal").accepted == BagSession::max_messages
+        && result.topics.at("/fpv/gimbal").written == BagSession::max_messages
+        && result.topics.at("/fpv/gimbal").dropped == 2, "bag overflow status or counts incorrect");
+    rosbag2_cpp::Reader reader{};
+    reader.open((root / "round").string());
+    std::int64_t expected{};
+    while (reader.has_next()) {
+        const auto item{reader.read_next()};
+        require(item->topic_name == "/fpv/gimbal" && item->time_stamp == expected,
+            "bag worker changed accepted per-topic order or timestamp");
+        ++expected;
+    }
+    require(expected == static_cast<std::int64_t>(BagSession::max_messages),
+        "bag overflow lost an accepted queued message");
+    {
+        std::lock_guard<std::mutex> lock{gate};
+        entered = false;
+        release = false;
+    }
+    BagSession byte_session{(root / "bytes").string(), false,
+        [&](const char *operation) {
+            if (std::string{operation} != "open") { return; }
+            std::unique_lock<std::mutex> lock{gate};
+            entered = true;
+            changed.notify_all();
+            changed.wait(lock, [&] { return release; });
+        }, [&](const BagSession::Status &status) { result = status; }};
+    {
+        std::unique_lock<std::mutex> lock{gate};
+        require(changed.wait_for(lock, 2s, [&] { return entered; }), "byte-limit worker did not reach gate");
+    }
+    const std::size_t large{40U * 1024U * 1024U};
+    require(byte_session.submit(pose, "/fpv/gimbal", rclcpp::Time{1}, large)
+        && !byte_session.submit(pose, "/fpv/gimbal", rclcpp::Time{2}, large),
+        "bag byte capacity did not reject second payload");
+    {
+        std::lock_guard<std::mutex> lock{gate};
+        release = true;
+    }
+    changed.notify_all();
+    byte_session.stop();
+    require(result.phase == "incomplete" && result.topics.at("/fpv/gimbal").accepted == 1
+        && result.topics.at("/fpv/gimbal").dropped == 1,
+        "bag byte overflow status incorrect");
+    std::filesystem::remove_all(root);
+}
+void bagWithoutImagesAndDualRecording() {
+    const auto root{std::filesystem::temp_directory_path()
+        / ("bag-no-images-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))};
+    std::filesystem::create_directories(root);
+    Harness h{options({{"video_source", "/dev/video10"}, {"mv_camera.sensor_model", "sc233hgs"},
+        {"mv_camera.capture_mode", "continuous"}, {"mv_camera.trigger_rate_hz", 0.0},
+        {"mv_camera.media_device", "/dev/media0"}, {"mv_camera.sensor_entity", "sc233hgs test"},
+        {"recording.enabled", true}, {"need_save", true}, {"save_path", root.string()},
+        {"visualized_result", false}})};
+    require(h.source->config.camera_recording.enabled && h.source->legacy_recording_requests == 0,
+        "dual recording switches were coupled at initialization");
+    h.source->recording_failed = true;
+    h.node->run();
+    h.until([&] { return h.detections.size() >= 5; }, "camera recording failure stopped bag or tracking");
+    h.node->stop();
+    const auto status{DroneTrackerNodeTestAccess::bagStatus(*h.node)};
+    require(status.phase == "complete" && status.topics.at("/fpv/target_bbox").written > 0
+        && h.images.empty() && h.source->legacy_recording_requests == 0,
+        "dual recording or image disablement changed bag state");
+    int bags{};
+    for (const auto &entry : std::filesystem::directory_iterator(root)) {
+        rosbag2_cpp::Reader reader{};
+        reader.open(entry.path().string());
+        const auto metadata{reader.get_all_topics_and_types()};
+        require(std::none_of(metadata.begin(), metadata.end(), [](const auto &topic) {
+            return topic.name == "/fpv/tracker_image";
+        }), "disabled image topic appeared in bag metadata");
+        std::uint64_t boxes{};
+        while (reader.has_next()) {
+            const auto item{reader.read_next()};
+            require(item->topic_name != "/fpv/tracker_image", "disabled image message appeared in bag");
+            if (item->topic_name == "/fpv/target_bbox") { ++boxes; }
+        }
+        require(boxes == status.topics.at("/fpv/target_bbox").written,
+            "no-image bag detection count differs from node count");
+        ++bags;
+    }
+    require(bags == 1, "dual recording produced incorrect bag round count");
+    auto display{std::make_shared<DisplayTrace>()};
+    Harness failed{options({{"video_source", "/dev/video10"}, {"mv_camera.sensor_model", "sc233hgs"},
+        {"mv_camera.capture_mode", "continuous"}, {"mv_camera.trigger_rate_hz", 0.0},
+        {"mv_camera.media_device", "/dev/media0"}, {"mv_camera.sensor_entity", "sc233hgs test"},
+        {"recording.enabled", true}, {"need_save", true}, {"save_path", root.string()},
+        {"visualized_result", false}, {"osd.enabled", true}}), {},
+        [](const char *operation) {
+            if (std::string{operation} == "write") { throw std::runtime_error("injected bag write failure"); }
+        }, {}, std::make_unique<TestDisplay>(display)};
+    failed.node->run();
+    failed.until([&] { return failed.detections.size() >= 5; }, "bag write fault stopped tracking");
+    require(failed.source->active && failed.source->config.camera_recording.enabled,
+        "bag write fault stopped independent recording");
+    failed.node->stop();
+    require(DroneTrackerNodeTestAccess::bagStatus(*failed.node).phase == "failed",
+        "dual recording bag fault was not isolated");
+    {
+        std::lock_guard<std::mutex> lock{display->mutex};
+        require(std::any_of(display->states.begin(), display->states.end(), [](const auto &state) {
+            return state.new_video;
+        }), "bag write fault stopped healthy HDMI frames");
+    }
+    std::filesystem::remove_all(root);
+}
 void recording() {
     const auto root{std::filesystem::temp_directory_path()
         / ("ros-video-bags-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))};
@@ -629,6 +827,7 @@ void recording() {
     auto imu{h.observer->create_publisher<sensor_msgs::msg::Imu>("/fpv/gimbal", rclcpp::QoS{1}.best_effort())};
     auto odom{h.observer->create_publisher<nav_msgs::msg::Odometry>("/fpv/odom", rclcpp::QoS{10}.best_effort())};
     h.pump(200ms);
+    std::vector<BagSession::Status> statuses{};
     for (int round{0}; round < 2; ++round) {
         h.source->limit = round == 0 ? 10000 : 15;
         h.node->run();
@@ -647,8 +846,15 @@ void recording() {
             }
         }};
         h.pump(300ms);
+        if (round == 1) {
+            h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); },
+                "video EOF did not close bag while callbacks continued");
+        }
         // 发布线程在 OFF/EOF 和 bag 关闭期间持续发送。
+        const auto close_begin{std::chrono::steady_clock::now()};
         h.node->stop(); h.pump(30ms);
+        require(std::chrono::steady_clock::now() - close_begin < 3s, "normal bag round cleanup exceeded 3 seconds");
+        statuses.push_back(DroneTrackerNodeTestAccess::bagStatus(*h.node));
         sending = false;
         publisher.join();
         const auto rotation{DroneTrackerNodeTestAccess::rotation(*h.node)};
@@ -656,32 +862,82 @@ void recording() {
             "gimbal orientation mapping changed");
     }
     int bags{};
+    std::map<std::string, std::uint64_t> read_counts{};
     for (const auto &entry : std::filesystem::directory_iterator(root)) {
         rosbag2_cpp::Reader reader{};
         reader.open(entry.path().string());
         std::vector<std::string> topics{};
-        while (reader.has_next()) { topics.push_back(reader.read_next()->topic_name); }
+        while (reader.has_next()) {
+            const auto item{reader.read_next()};
+            topics.push_back(item->topic_name);
+            ++read_counts[item->topic_name];
+            if (item->topic_name == "/fpv/gimbal") {
+                const auto message{decodeBag<sensor_msgs::msg::Imu>(*item)};
+                require(rclcpp::Time{message.header.stamp}.nanoseconds() == item->time_stamp
+                    && message.orientation.w > 0.0, "bag gimbal payload or timestamp changed");
+            } else if (item->topic_name == "/fpv/odom") {
+                const auto message{decodeBag<nav_msgs::msg::Odometry>(*item)};
+                require(rclcpp::Time{message.header.stamp}.nanoseconds() == item->time_stamp,
+                    "bag odometry timestamp changed");
+            } else if (item->topic_name == "/fpv/target_bbox") {
+                const auto message{decodeBag<vision_msgs::msg::Detection2D>(*item)};
+                require(rclcpp::Time{message.header.stamp}.nanoseconds() == item->time_stamp
+                    && std::isfinite(message.bbox.size_x), "bag detection payload or timestamp changed");
+            } else if (item->topic_name == "/fpv/tracker_image") {
+                const auto message{decodeBag<sensor_msgs::msg::Image>(*item)};
+                require(rclcpp::Time{message.header.stamp}.nanoseconds() == item->time_stamp
+                    && message.encoding == "bgr8" && !message.data.empty(), "bag image payload or timestamp changed");
+            }
+        }
+        const auto metadata{reader.get_all_topics_and_types()};
         for (const auto *topic : {"/fpv/gimbal", "/fpv/odom", "/fpv/target_bbox", "/fpv/tracker_image"}) {
             require(std::find(topics.begin(), topics.end(), topic) != topics.end(), "closed bag missing topic");
+            require(std::any_of(metadata.begin(), metadata.end(), [topic](const auto &value) {
+                return value.name == topic && !value.type.empty();
+            }), "closed bag missing typed topic metadata");
         }
         ++bags;
     }
     require(bags == 2, "incorrect recording rounds");
+    std::map<std::string, std::uint64_t> accepted{};
+    for (const auto &status : statuses) {
+        require(status.phase == "complete", "normal bag was not marked complete");
+        for (const auto &topic : status.topics) {
+            require(topic.second.dropped == 0 && topic.second.accepted == topic.second.written,
+                "complete bag has missing accepted messages");
+            accepted[topic.first] += topic.second.accepted;
+        }
+    }
+    require(accepted == read_counts, "bag contents disagree with accepted message counts");
     builtin_interfaces::msg::Time fixed{};
     fixed.sec = 123;
     h.node->run(fixed); h.pump(50ms); h.node->stop();
     const int before{h.source->starts};
     h.node->run(fixed);
-    require(h.source->starts == before, "existing recording overwritten");
-    for (const auto *failure : {"open", "write"}) {
+    h.pump(50ms); h.node->stop();
+    require(h.source->starts > before
+        && DroneTrackerNodeTestAccess::bagStatus(*h.node).phase == "failed",
+        "existing recording did not fail independently");
+    for (const auto *failure : {"open", "write", "close"}) {
         std::atomic_bool inject{true};
         Harness broken{options({{"need_save", true}, {"save_path", root.string()}}), {},
             [failure, &inject](const char *operation) {
                 if (inject && std::string{operation} == failure) { throw std::runtime_error("injected bag failure"); }
             }};
         broken.node->run(); broken.pump(100ms); broken.node->stop();
-        require(!broken.source->active, "recording failure left source running");
-        if (std::string{failure} == "open") { require(broken.source->starts == 0, "open failure started source"); }
+        require(!broken.source->active && broken.source->starts > 0 && !broken.detections.empty(),
+            "bag failure changed source lifecycle");
+        const auto failed_status{DroneTrackerNodeTestAccess::bagStatus(*broken.node)};
+        require(failed_status.phase == "failed" && failed_status.reason.find("injected bag failure") != std::string::npos,
+            "bag failure not reported");
+        if (std::string{failure} == "write") {
+            std::uint64_t accepted{}, written{};
+            for (const auto &topic : failed_status.topics) {
+                accepted += topic.second.accepted;
+                written += topic.second.written;
+            }
+            require(accepted > written, "bag write failure did not retain unwritten count");
+        }
         inject = false;
         broken.node->run(); broken.pump(100ms); broken.node->stop();
         require(broken.source->delivered > 0, "recording failure prevented retry");
@@ -697,6 +953,8 @@ int main(int argc, char **argv) {
         messagesAndRestart();
         cleanupAndFailures();
         recording();
+        bagQueueLimits();
+        bagWithoutImagesAndDualRecording();
         realVideo();
         cameraContracts();
         independentCameraRecording();

@@ -12,7 +12,7 @@ struct FrameRecordingConfig {
     std::string prefix{};
 };
 
-/** @brief 将同一组录像参数交给帧源，不启动采集或创建额外消费者。 */
+/** @brief Jetson 旧相机录像边界；RK3576 节点的 need_save 只进入 bag，不调用此函数。 */
 inline void configureFrameSourceRecording(FrameSource &source, const FrameRecordingConfig &config) {
     source.configureRecording(config.enabled, config.directory, config.prefix);
 }

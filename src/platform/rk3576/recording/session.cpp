@@ -74,6 +74,8 @@ std::string configJson(const FrameSourceConfig &config, const CameraFormat &f, s
 void validateConfig(const FrameSourceConfig &config) {
     const auto &c{config.camera_recording};
     if (!c.enabled) { return; }
+    // 节点已将录像专属校验错误保存为本轮故障；仍允许相机帧源创建。
+    if (!c.preparation_error.empty()) { return; }
     if (config.type != FrameSourceType::Camera || config.camera_sensor_model != CameraSensorModel::Sc233hgs) {
         throw std::invalid_argument("Independent recording requires RK3576 SC233HGS camera");
     }

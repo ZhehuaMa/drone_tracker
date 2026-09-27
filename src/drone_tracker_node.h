@@ -18,7 +18,11 @@
 #include <functional>
 #include <condition_variable>
 #include <limits>
+#ifdef DRONE_TRACKER_RK3576
+#include "bag_session.h"
+#else
 #include <rosbag2_cpp/writer.hpp>
+#endif
 
 #include "hybrid_tracker.h"
 #include "rotation_history.h"
@@ -164,25 +168,35 @@ private:
     std::chrono::steady_clock::time_point last_acquisition_report_{};
     std::string last_camera_phase_{};
     void openRecording(const builtin_interfaces::msg::Time &stamp);
+    void sealRecording() noexcept;
     void closeRecording() noexcept;
-    template<typename Message> void record(const Message &message, const std::string &topic,
-                                           const rclcpp::Time &stamp) {
+    template<typename Message> void record(std::shared_ptr<Message> message, const std::string &topic,
+                                           const rclcpp::Time &stamp, std::size_t bytes = sizeof(Message)) {
         std::lock_guard<std::mutex> lock{bag_mutex_};
+#ifdef DRONE_TRACKER_RK3576
+        if (bag_session_) { bag_session_->submit(std::move(message), topic, stamp, bytes); }
+#else
+        (void)bytes;
         if (!rosbag_writer_) { return; }
         try {
             if (recording_hook_) { recording_hook_("write"); }
-            rosbag_writer_->write(message, topic, stamp);
+            rosbag_writer_->write(*message, topic, stamp);
         } catch (const std::exception &error) {
             RCLCPP_ERROR(get_logger(), "Recording write failed: %s", error.what());
             recording_failed_ = true;
             running = false;
             wait_cv_.notify_all();
         }
+#endif
     }
     enum class RunState { Idle, Starting, Running, Stopping };
     std::atomic<RunState> run_state_{RunState::Idle};
     std::mutex control_mutex_{}; // 仅控制侧持有；worker 收尾不需要此锁。
     std::mutex bag_mutex_{};
+#ifdef DRONE_TRACKER_RK3576
+    std::mutex bag_status_mutex_{};
+    BagSession::Status last_bag_status_{};
+#endif
     std::function<void(const char *)> recording_hook_{};
     // 仅由验收入口设置；默认不采样，不改变生产话题或调度。
     std::function<void(std::int64_t, std::int64_t, bool)> update_timing_observer_{};
@@ -204,7 +218,12 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
     rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr tracker_state_pub_;
 
-    std::unique_ptr<rosbag2_cpp::Writer> rosbag_writer_;
+#ifdef DRONE_TRACKER_RK3576
+    std::unique_ptr<BagSession> bag_session_{};
+#else
+    std::unique_ptr<rosbag2_cpp::Writer> rosbag_writer_{};
+#endif
+    std::string recording_config_error_{};
     std::unique_ptr<StatusPublisher> status_publisher_;
 
     std::shared_ptr<HybridTracker> tracker_;

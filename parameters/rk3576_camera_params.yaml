@@ -1,9 +1,12 @@
 # RK3576 相机入口：启动后等待 ON；必须先填写模型路径。内参暂用模拟值。
 drone_tracker_node:
   ros__parameters:
+    # ROS bag（按话题保存消息）开关；支持 RK3576 相机和视频，故障只影响本轮 bag。
     need_save: false
+    # 每轮 bag 在此目录下新建独立子目录；不会覆盖已有目录。生产启用前确认可写和剩余空间。
     save_path: "/tmp/drone-recordings"
-    visualized_result: true
+    # 调试图像输出；生产保持 false，bag 中也不注册 /fpv/tracker_image。
+    visualized_result: false
     # SC233HGS 独立 H.264/TS 录像；与 need_save/ROS bag、ROS 图像及 HDMI 开关独立。
     # 生产启用示例：复核本地 ext4 挂载及目录权限，使用 SC233HGS 连续模式后设 enabled: true。
     recording:

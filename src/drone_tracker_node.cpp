@@ -99,6 +99,12 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
     run_state_ = RunState::Starting;
     RCLCPP_INFO(get_logger(), "Round starting");
     recording_failed_ = false;
+#ifdef DRONE_TRACKER_RK3576
+    {
+        std::lock_guard<std::mutex> lock{bag_status_mutex_};
+        last_bag_status_ = {};
+    }
+#endif
     try {
         tracker_->finishRound();
         tracker_->reset();
@@ -137,6 +143,7 @@ void DroneTrackerNode::stop() {
     }
     running = false;
     wait_cv_.notify_all();
+    sealRecording();
     if (worker_thread_.joinable()) { worker_thread_.join(); }
     if (camera_input_) {
         RCLCPP_INFO(get_logger(), "Node OFF total_us=%ld", static_cast<long>(
@@ -148,18 +155,70 @@ void DroneTrackerNode::openRecording(const builtin_interfaces::msg::Time &stamp)
     const bool enabled{get_parameter("need_save").as_bool()};
     const auto directory{get_parameter("save_path").as_string()};
     const std::string prefix{std::to_string(stamp.sec) + "_" + std::to_string(stamp.nanosec)};
+#ifndef DRONE_TRACKER_RK3576
     configureFrameSourceRecording(*mv_camera_, {enabled, directory, prefix});
+#endif
+    if (!recording_config_error_.empty()) {
+        RCLCPP_ERROR(get_logger(), "Camera recording unavailable: %s", recording_config_error_.c_str());
+        status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1,
+            "Camera recording unavailable: " + recording_config_error_, true);
+    }
     std::lock_guard<std::mutex> lock{bag_mutex_};
     if (!enabled) { return; }
     const auto path{std::filesystem::path{directory} / ("drone_rosbag_" + prefix)};
+#ifdef DRONE_TRACKER_RK3576
+    bag_session_ = std::make_unique<BagSession>(path.string(), enable_image_output_, recording_hook_,
+        [this](const BagSession::Status &status) {
+            {
+                std::lock_guard<std::mutex> lock{bag_status_mutex_};
+                last_bag_status_ = status;
+            }
+            std::uint64_t accepted{}, written{}, dropped{};
+            for (const auto &topic : status.topics) {
+                accepted += topic.second.accepted;
+                written += topic.second.written;
+                dropped += topic.second.dropped;
+                RCLCPP_INFO(get_logger(), "Bag topic=%s attempted=%lu accepted=%lu written=%lu dropped=%lu",
+                    topic.first.c_str(), static_cast<unsigned long>(topic.second.attempted),
+                    static_cast<unsigned long>(topic.second.accepted), static_cast<unsigned long>(topic.second.written),
+                    static_cast<unsigned long>(topic.second.dropped));
+            }
+            RCLCPP_INFO(get_logger(), "Bag phase=%s accepted=%lu written=%lu dropped=%lu peak_bytes=%lu reason=%s",
+                status.phase.c_str(), static_cast<unsigned long>(accepted), static_cast<unsigned long>(written),
+                static_cast<unsigned long>(dropped), static_cast<unsigned long>(status.peak_bytes),
+                status.reason.c_str());
+            if (status.phase == "failed" || status.phase == "incomplete") {
+                recording_failed_ = true;
+                RCLCPP_ERROR(get_logger(), "Bag %s: %s; tracking continues", status.phase.c_str(), status.reason.c_str());
+                status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1,
+                    "Bag " + status.phase + ": " + status.reason, true);
+            }
+        });
+#else
     if (std::filesystem::exists(path)) { throw std::runtime_error("Recording directory already exists: " + path.string()); }
     if (recording_hook_) { recording_hook_("open"); }
     rosbag_writer_ = std::make_unique<rosbag2_cpp::Writer>();
     rosbag_writer_->open(path.string());
     rosbag_writer_->create_topic({TOPIC_ODOM, "nav_msgs/msg/Odometry", rmw_get_serialization_format(), ""});
+#endif
+}
+
+void DroneTrackerNode::sealRecording() noexcept {
+#ifdef DRONE_TRACKER_RK3576
+    std::lock_guard<std::mutex> lock{bag_mutex_};
+    if (bag_session_) { bag_session_->seal(); }
+#endif
 }
 
 void DroneTrackerNode::closeRecording() noexcept {
+#ifdef DRONE_TRACKER_RK3576
+    std::unique_ptr<BagSession> session{};
+    {
+        std::lock_guard<std::mutex> lock{bag_mutex_};
+        session = std::move(bag_session_);
+    }
+    if (session) { session->stop(); }
+#else
     std::lock_guard<std::mutex> lock{bag_mutex_};
     if (!rosbag_writer_) { return; }
     try {
@@ -169,6 +228,7 @@ void DroneTrackerNode::closeRecording() noexcept {
         RCLCPP_ERROR(get_logger(), "Recording close failed: %s", error.what());
     }
     rosbag_writer_.reset();
+#endif
 }
 
 void DroneTrackerNode::setupDisplay(std::unique_ptr<osd::DisplayBackend> backend) {
@@ -298,18 +358,23 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
     const auto interval{get_parameter("recording.sync_interval_ms").as_int()};
     const auto maximum{get_parameter("recording.max_total_bytes").as_int()};
     const auto minimum{get_parameter("recording.min_free_bytes").as_int()};
-    if (segment < 10 || segment > 600 || (interval != 500 && interval != 1000 && interval != 2000)
-        || recording.bitrate_bps <= 0 || recording.bitrate_bps > INT32_MAX || maximum <= 0 || minimum <= 0) {
+    const bool invalid_recording{segment < 10 || segment > 600 || (interval != 500 && interval != 1000 && interval != 2000)
+        || recording.bitrate_bps <= 0 || recording.bitrate_bps > INT32_MAX || maximum <= 0 || minimum <= 0};
+    if (invalid_recording) {
+#ifndef DRONE_TRACKER_RK3576
         throw std::invalid_argument("Invalid recording numeric startup parameter");
+#else
+        recording.preparation_error = "Invalid recording numeric startup parameter";
+#endif
     }
-    recording.segment_seconds = static_cast<int>(segment); recording.sync_interval_ms = static_cast<int>(interval);
-    recording.max_total_bytes = maximum; recording.min_free_bytes = minimum;
+    if (!invalid_recording) {
+        recording.segment_seconds = static_cast<int>(segment); recording.sync_interval_ms = static_cast<int>(interval);
+        recording.max_total_bytes = static_cast<std::uint64_t>(maximum);
+        recording.min_free_bytes = static_cast<std::uint64_t>(minimum);
+    }
 #ifdef DRONE_TRACKER_RK3576
     source_config.path = shorthand ? "/dev/" + video_source : video_source;
     if (is_camera) {
-        if (get_parameter("need_save").as_bool()) {
-            throw std::invalid_argument("RK3576 camera requires need_save=false; use recording.enabled for SC233HGS");
-        }
         const auto mode{get_parameter("mv_camera.capture_mode").as_string()};
         if (mode != "continuous" && mode != "software_trigger") {
             throw std::invalid_argument("mv_camera.capture_mode requires continuous or software_trigger");
@@ -352,9 +417,10 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
 #ifdef DRONE_TRACKER_RK3576
     if (recording.enabled) {
         if (!is_camera || source_config.camera_sensor_model != CameraSensorModel::Sc233hgs) {
-            throw std::invalid_argument("recording.enabled requires SC233HGS camera input");
+            recording_config_error_ = "recording.enabled requires SC233HGS camera input";
+            recording.enabled = false;
         }
-        try {
+        if (recording.enabled && recording.preparation_error.empty()) try {
             std::ostringstream identity{};
             identity << "program_sha256=" << recordingFileIdentity("/proc/self/exe") << '\n';
             auto names{list_parameters({}, 100).names};
@@ -522,6 +588,7 @@ void DroneTrackerNode::worker() {
     }
     run_state_ = RunState::Stopping;
     running = false;
+    sealRecording();
     const auto stop_begin{std::chrono::steady_clock::now()};
     const bool source_stopped{mv_camera_->stop()};
     if (!source_stopped) { RCLCPP_ERROR(get_logger(), "Input cleanup failed: %s", mv_camera_->status().reason.c_str()); }
@@ -534,8 +601,7 @@ void DroneTrackerNode::worker() {
     closeRecording();
     if (recording_failed_) { RCLCPP_ERROR(get_logger(), "Round ended: recording failure"); }
     if (osd_presenter_) {
-        osd_presenter_->endRound(osd_round_, recording_failed_ ? osd::DisplayStatus::InputFailure
-                                                             : osd::DisplayStatus::Stopped);
+        osd_presenter_->endRound(osd_round_, osd::DisplayStatus::Stopped);
     }
     status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1, "Drone Tracker Stopped", true);
     run_state_ = RunState::Idle;
@@ -716,15 +782,15 @@ void DroneTrackerNode::processFrames() {
             }
             // 发布实时预测框（KF predict_only(now) 外推），空 frame_id 表示无效检测。
             // 时间戳用外推时刻（与外推框同 epoch，避免下游对已外推的测量二次外推）
-            auto detection_msg = std::make_unique<vision_msgs::msg::Detection2D>();
+            auto detection_msg = std::make_shared<vision_msgs::msg::Detection2D>();
             detection_msg->header.stamp = rclcpp::Time(ctx.now_us * 1000);
             detection_msg->header.frame_id = out.tracking ? "camera_frame" : "";
             detection_msg->bbox.center.position.x = out.realtime_box.cx;
             detection_msg->bbox.center.position.y = out.realtime_box.cy;
             detection_msg->bbox.size_x = out.realtime_box.width;
             detection_msg->bbox.size_y = out.realtime_box.height;
-            record(*detection_msg, TOPIC_TARGET_BBOX, detection_msg->header.stamp);
-            detection_pub_->publish(std::move(detection_msg));
+            record(detection_msg, TOPIC_TARGET_BBOX, detection_msg->header.stamp);
+            detection_pub_->publish(*detection_msg);
 
             // 状态仅变化时发布
             int8_t tracker_state_int = static_cast<int8_t>(out.state);
@@ -802,10 +868,11 @@ void DroneTrackerNode::processFrames() {
                 cv_img.header.frame_id = "camera_frame";
                 cv_img.encoding = "bgr8";
                 cv_img.image = frame;
-                auto img_msg = std::make_unique<sensor_msgs::msg::Image>();
+                auto img_msg = std::make_shared<sensor_msgs::msg::Image>();
                 cv_img.toImageMsg(*img_msg);
-                record(*img_msg, TOPIC_TRACKER_IMAGE, rclcpp::Time(frame_ts*1000));
-                image_pub_->publish(std::move(img_msg));
+                record(img_msg, TOPIC_TRACKER_IMAGE, rclcpp::Time(frame_ts*1000),
+                    sizeof(sensor_msgs::msg::Image) + img_msg->data.size());
+                image_pub_->publish(*img_msg);
             }
 
             elapsed = this->now() - start_time;
@@ -830,7 +897,7 @@ void DroneTrackerNode::processFrames() {
 
 void DroneTrackerNode::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
-    record(*msg, TOPIC_ODOM, rclcpp::Time(msg->header.stamp));
+    record(msg, TOPIC_ODOM, rclcpp::Time(msg->header.stamp));
 }
 
 void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
@@ -857,7 +924,7 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
         gimbal_history_.push(ts_us, R);
     }
 
-    record(*msg, TOPIC_GIMBAL, rclcpp::Time(msg->header.stamp));
+    record(msg, TOPIC_GIMBAL, rclcpp::Time(msg->header.stamp));
 }
 
 StatusPublisher::StatusPublisher(rclcpp::Node &node, int hz)

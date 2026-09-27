@@ -37,7 +37,7 @@ drone_tracker_node:
 
 `max_total_bytes` 默认 20 GiB，统计完成、未完成及附属文件；`min_free_bytes` 默认保留 5 GiB 磁盘空间。达到任一保护线时停止本轮录像并保留历史文件。系统不循环覆盖，也不会自动删除旧会话。操作人员应在任务间导出、核对并按自己的保留策略清理。
 
-所有 `recording.*` 都是启动参数，运行期修改会被拒绝。新录像与 `need_save`、ROS bag、ROS 图像和 HDMI OSD 开关相互独立，不要求发现目标。相机输入仍须保持 `need_save=false`。视频输入、AR0234 和 Jetson 拒绝启用该录像能力。
+所有 `recording.*` 都是启动参数，运行期修改会被拒绝。`recording.enabled` 只控制 SC233HGS 原画面录像；`need_save` 只控制 ROS bag。两项可以同时启用，均不要求发现目标。RK3576 视频输入或 AR0234 设置 `recording.enabled=true` 时，节点仍会初始化，并在 ON 后报告独立录像不可用。无效的 SC233HGS 录像专属参数也在 ON 后报告，不阻止健康跟踪。Jetson 仍拒绝该独立录像开关。
 
 ON 准备新会话，只有相机启动预热通过并完成驱动缓冲归还的合格帧才进入录像。预热观察帧不会补录。首个被录像接受的帧 PTS 为零；PTS 是视频中的显示时间，后续间隔来自真实采集时间，录像掉帧不会压缩时间轴。OFF 停止接收并排空已接受内容，正常退出会保存完成标记。预热中取消或失败保存零帧原因，不创建占位 `.ts`。关闭录像不会禁用相机预热。
 
@@ -198,7 +198,7 @@ auto output{tracker->update(context)};
 
 帧源保留原采集队列。包含 `platform/frame_source_ops.h` 后，调用 `waitForLatestFrame(source, frame, 1s)`，由公共函数先等待首帧，再排空积压取得最新帧。可选回调在收到首帧后、排空前执行，节点用它记录处理计时起点。只能有一个消费者，不应再添加转发消费者。相机与视频队列的构造参数分别为 10 和 30；底层按块分配，因此这些数字不代表严格容量。满队列时丢弃新帧，不覆盖旧帧。
 
-启动前调用 `configureFrameSourceRecording(source, {need_save, directory, prefix})`。公共函数把配置交给帧源，相机转交给原 `MVCamera::setup()`；视频输入不创建相机录像。节点和模拟测试使用相同的取帧与录像配置函数。ROS bag 仍由节点管理。
+Jetson 节点在启动前调用 `configureFrameSourceRecording(source, {need_save, directory, prefix})`，保留旧相机图像录像行为。RK3576 节点不把 `need_save` 传给帧源；相机和视频输入均由节点独立尝试 ROS bag。SC233HGS 原画面录像只接受 `recording.*` 配置。帧源仍由原单一消费者取帧。
 
 OFF/ON 继续使用既有停止和 `reset()` 流程，模型不卸载。最终销毁时，跟踪器先等待检测线程结束，再释放缓存、模型和预处理资源。`DetectionThreadLauncher` 是可替换的线程启动函数，仅用于验证启动失败；默认值创建普通 `std::thread`。
 
@@ -378,7 +378,7 @@ ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header "{frame_id: OFF}"
 
 启动后不能修改输入、模型、内参、算法、记录或时钟配置。修改参数文件后重启节点。launch 只覆盖视频路径，不覆盖 DCF 等算法参数。DCF 是用于辅助跟踪的相关滤波器。
 
-`need_save=true` 时，每轮在 `save_path` 下按触发时间创建独立 ROS bag（ROS 消息记录文件）。目录碰撞或打开失败会拒绝本轮；写入失败结束本轮。姿态、里程计、检测框及开启的图像输出按原话题和时间记录。视频输入不创建额外相机录像。OFF、EOF 和普通错误均关闭记录；恢复文件或目录后可重试。
+`need_save=true` 时，每轮在 `save_path` 下按触发时间创建独立 ROS bag（ROS 消息记录文件）。写入线程独占文件写入器，回调和跟踪线程只提交消息到最多 256 条、64 MiB 的队列。队列满时拒收当前消息、计数并把 bag 标记为不完整。目录碰撞、打开、写入或关闭失败只使本轮 bag 失败；健康的跟踪、HDMI 和独立录像继续。姿态、里程计、检测框及开启的图像输出保留原话题和时间戳。`visualized_result=false` 时不注册 `/fpv/tracker_image`。OFF、EOF 和普通输入错误均收尾本轮 bag；恢复文件或目录后可重试，不覆盖旧目录。
 
 ROS 视频接入已完成规定的 RK3576 实机验收，包括纯 FP16 和纯 INT8 模型配置的基础集成、失败清理，以及固定 INT8 配置下同进程 20 轮启停和额外至少 30 分钟播放负载。验证证据与缺口见 [ROS 视频接入验证记录](../../openspec/changes/integrate-rk3576-ros-video/validation.md)。这些结果不代表模型检测质量、部署性能或 Jetson 实机等价性通过；NPU 设备内存尚未测量。前序完整回放的 7.2、7.3 仍未完成。
 
@@ -564,7 +564,7 @@ ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: OFF}'
 
 首帧或后续连续两秒无成功出队为采集故障，短暂等待不等于文件结束。ROS 每秒最多输出一次常规采集汇总，终态另输出完整统计。相机停止耗时与包含模型等待的节点停止耗时分别报告。输入故障和 OFF 不伪造算法的 TargetLost 状态。
 
-相机 `need_save=true` 在初始化时失败，不创建部分 ROS bag 或录像。视频及 Jetson 记录行为保持不变。图像使用原帧时间，预测框使用当前预测时间；六个原有输入输出话题及状态数值保持不变。
+相机 `need_save=true` 可完成初始化并等待 ON；ON 后独立尝试 bag，不请求相机帧源执行旧录像。视频输入同样可记录 bag，Jetson 的旧相机录像边界保持不变。图像使用原帧时间，预测框使用当前预测时间；六个原有输入输出话题及状态数值保持不变。
 
 本变更的构建、无设备测试及暂缓实机项目见 [ROS 相机实施记录](../../openspec/changes/integrate-rk3576-ros-camera/validation.md)。历史连续相机和 shell 触发记录不能替代新实现验收；模型质量、曝光同步、Jetson 等价性及前序回放 7.2、7.3 的结论保持不变。
 

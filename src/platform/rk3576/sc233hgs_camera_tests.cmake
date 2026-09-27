@@ -1,5 +1,5 @@
 if(DRONE_TRACKER_BUILD_TESTS)
-    add_executable(sc233hgs_camera_tests tests/sc233hgs_camera_test.cpp)
+    add_executable(sc233hgs_camera_tests "${CMAKE_CURRENT_LIST_DIR}/tests/sc233hgs_camera_test.cpp")
     target_include_directories(sc233hgs_camera_tests PRIVATE "${CMAKE_CURRENT_LIST_DIR}")
     target_link_libraries(sc233hgs_camera_tests PRIVATE rk3576_tracker_assembly)
     add_test(NAME sc233hgs_camera_tests COMMAND sc233hgs_camera_tests)

@@ -12,7 +12,11 @@ Sc233hgsCameraFrameSource::Sc233hgsCameraFrameSource(
         throw std::invalid_argument("SC233HGS supports continuous capture only; software trigger is unsupported");
     }
     config.camera_sensor_model = CameraSensorModel::Sc233hgs;
-    recording::validateConfig(config);
+    try {
+        recording::validateConfig(config);
+    } catch (const std::exception &error) {
+        config.camera_recording.preparation_error = error.what();
+    }
     if (config.camera_recording.enabled) { recording_ = std::make_unique<recording::Session>(config); }
     // 注入构造 SC233HGS 专属设备的工厂，使共用的队列/触发实现无需反向依赖本类型。
     dependencies.make_device = [](const FrameSourceConfig &device_config,
@@ -30,9 +34,9 @@ bool Sc233hgsCameraFrameSource::start() {
         recording_->start(implementation_->diagnostic().format);
         if (recording_->status().phase == "failed") {
             recording_->stop(implementation_->status());
-            return false;
+        } else {
+            implementation_->setRecordingSink(recording_->sink());
         }
-        implementation_->setRecordingSink(recording_->sink());
     }
     const bool started{implementation_->start()};
     if (!started && recording_) { recording_->stop(implementation_->status()); }
