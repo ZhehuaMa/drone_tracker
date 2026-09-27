@@ -2,6 +2,16 @@
 
 部署包来自生产板已安装版本。包含主节点、录像工作进程、录像检查器、ROS 包发现文件、原样配置及配置引用的 RKNN 模型。随包包含程序依赖的 ROS 共享库和 vision_msgs 非 Python 类型支持库，存放在版本目录的 `lib/bundled-ros`。预检和启动优先使用这些库，不覆盖系统 ROS。没有源码、基准测试程序、RKNN Runtime 或基础系统共享库。
 
+## 从开发机校时
+
+将测试板通过 ADB 接入开发机，确认开发机时间正确，然后在仓库根目录运行：
+
+```bash
+./deployment/sync-board-time.sh
+```
+
+连接多台 ADB 设备时，将目标序列号作为参数，例如 `./deployment/sync-board-time.sh b31f8847ff67f9d1`。脚本只接受 `HZ-RK3576_WuKong Board` 且要求板端 ADB shell 为 root。它临时停止正在运行的 `drone-tracker` 和 `drone-interceptor` 服务，写入系统时钟和硬件实时时钟（RTC），核对读回时间，再恢复原先运行的服务。校时失败时也会尝试恢复服务。此脚本是开发机工具，不在目标板上运行。
+
 ## 在其他生产板安装
 
 适用板卡为 `HZ-RK3576_WuKong Board`，Ubuntu 22.04 ARM64、ROS 2 Humble，系统 RKNN Runtime 2.3.2、RKNPU 驱动 0.9.8。基础系统库（如 OpenCV、FFmpeg）和相机驱动须预先安装。无需在目标板通过 apt 补装 vision_msgs 或 cv_bridge；ROS 2 Humble 基础环境仍需存在。
