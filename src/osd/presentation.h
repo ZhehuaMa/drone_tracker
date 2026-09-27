@@ -38,6 +38,8 @@ struct Battery {
 };
 struct GpsStatus {
     std::optional<int> satellites{};
+    /** @brief GPSRAW 原始定位等级；0/1 无定位，2 为二维，3 及以上为三维或增强定位。 */
+    std::optional<int> fix_type{};
     std::optional<double> speed_mps{}, course_deg{};
 };
 /** @brief 显示侧独立快照；无 ROS 消息、借用字符串或设备类型。 */
@@ -76,6 +78,8 @@ struct PresentationState {
     bool has_video{};
     bool new_video{};
     TelemetrySnapshot telemetry{};
+    /** @brief 当前轮内、两秒有效的 ON/OFF 显示提示；空串表示没有有效事件。 */
+    std::string trigger{};
 };
 /**
  * @brief 可注入显示后端。除 interrupt 外，所有调用只来自渲染线程且不持有提交锁。

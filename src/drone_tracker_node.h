@@ -159,6 +159,8 @@ private:
     void reportAcquisition(bool final);
     bool camera_input_{};
     std::uint64_t consumed_frames_{};
+    std::chrono::steady_clock::time_point round_metrics_start_{};
+    osd::PresentationCounters round_display_start_{};
     std::chrono::steady_clock::time_point last_acquisition_report_{};
     std::string last_camera_phase_{};
     void openRecording(const builtin_interfaces::msg::Time &stamp);

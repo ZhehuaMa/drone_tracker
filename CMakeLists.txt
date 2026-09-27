@@ -121,7 +121,8 @@ install(TARGETS
   drone_tracker_node
   DESTINATION lib/${PROJECT_NAME}
 )
-install(FILES src/osd/FONT_LICENSE.txt DESTINATION share/${PROJECT_NAME}/licenses)
+install(FILES src/osd/FONT_LICENSE.txt src/osd/DEJAVU_FONT_LICENSE.txt
+    DESTINATION share/${PROJECT_NAME}/licenses)
 
 install(DIRECTORY
   models

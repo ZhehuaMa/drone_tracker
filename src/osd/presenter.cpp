@@ -52,6 +52,7 @@ std::uint64_t OsdPresenter::beginRound() {
     std::lock_guard<std::mutex> lock{mutex_};
     if (!active_ && !stopping_ && failure_.empty()) {
         ++round_;
+        trigger_.clear();
         last_display_.reset();
         ++interval_generation_;
         ++version_;
@@ -62,6 +63,14 @@ std::uint64_t OsdPresenter::beginRound() {
         wake_.notify_all();
     }
     return round_;
+}
+void OsdPresenter::showTrigger(std::uint64_t round, bool on) {
+    std::lock_guard<std::mutex> lock{mutex_};
+    if (round != round_ || stopping_ || !failure_.empty()) { return; }
+    trigger_ = on ? "TRIG ON" : "TRIG OFF";
+    trigger_until_ = now_() + std::chrono::seconds{2};
+    ++version_;
+    wake_.notify_all();
 }
 void OsdPresenter::endRound(std::uint64_t round, DisplayStatus reason) {
     std::lock_guard<std::mutex> round_lock{round_mutex_};
@@ -194,6 +203,8 @@ void OsdPresenter::render() noexcept {
                     }
                 }
                 next.telemetry = telemetry_;
+                next.round = round_;
+                next.trigger = !trigger_.empty() && now_() < trigger_until_ ? trigger_ : "";
                 next.status = status_;
                 if (active_ && status_ == DisplayStatus::Live && now_() - last_received_ > stale_) {
                     next.status = DisplayStatus::Stale;

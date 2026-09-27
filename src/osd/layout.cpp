@@ -3,75 +3,399 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <ctime>
-#include <iomanip>
-#include <map>
 #include <functional>
-#include <sstream>
+#include <map>
 #include <stdexcept>
 #include <utility>
 
+#include "osd/reference_font.h"
+#include "osd/short_text.h"
 #include "osd/status_glyphs.h"
 
 #include <opencv2/imgproc.hpp>
 
 namespace osd {
 namespace {
-const cv::Scalar WHITE{255, 255, 255, 255};
-const cv::Scalar AMBER{20, 200, 255, 255};
-std::string number(std::optional<double> value, int precision = 1) {
-    if (!value || !std::isfinite(*value)) {
-        return "--";
+constexpr int WIDTH{720};
+constexpr int HEIGHT{480};
+const cv::Scalar WHITE{235, 235, 235, 255};
+const cv::Scalar AMBER{60, 200, 255, 255};
+const cv::Scalar RED{70, 70, 255, 255};
+const cv::Scalar GREEN{90, 230, 90, 255};
+const cv::Scalar CYAN{255, 220, 80, 255};
+const cv::Scalar BLUE{255, 150, 90, 255};
+const cv::Scalar BLACK{0, 0, 0, 255};
+constexpr double RADIANS{3.14159265358979323846 / 180.0};
+
+cv::Scalar stateColor(std::int8_t state) {
+    switch (state) {
+    case 0: return WHITE;
+    case 1: return CYAN;
+    case 2: return GREEN;
+    case 3: return RED;
+    default: return WHITE;
     }
-    std::ostringstream text{};
-    text << std::fixed << std::setprecision(precision) << *value;
-    return text.str();
 }
-void text(cv::Mat &canvas, int x, int y, const std::string &value, const cv::Scalar &color = WHITE) {
-    // 二值 alpha 避免 RGA 混合部分透明文字时产生白边。
-    std::string ascii{value};
-    for (char &c : ascii) {
-        if (static_cast<unsigned char>(c) < 32 || static_cast<unsigned char>(c) > 126) {
-            c = '?';
+std::string stateText(std::int8_t state) {
+    switch (state) {
+    case 0: return "TRK SCANNING";
+    case 1: return "TRK FOUND";
+    case 2: return "TRK TRACKING";
+    case 3: return "TARGET LOST";
+    default: return "TRK --";
+    }
+}
+void fill(cv::Mat &image, cv::Rect area, cv::Scalar color) {
+    area &= cv::Rect{0, 0, image.cols, image.rows};
+    if (!area.empty()) { image(area).setTo(color); }
+}
+void line(cv::Mat &image, cv::Point from, cv::Point to, cv::Scalar color, int thickness) {
+    int dx{std::abs(to.x - from.x)}, sx{from.x < to.x ? 1 : -1};
+    int dy{-std::abs(to.y - from.y)}, sy{from.y < to.y ? 1 : -1};
+    int error{dx + dy};
+    while (true) {
+        fill(image, {from.x - thickness / 2, from.y - thickness / 2, thickness, thickness}, color);
+        if (from == to) { break; }
+        const int twice{2 * error};
+        if (twice >= dy) { error += dy; from.x += sx; }
+        if (twice <= dx) { error += dx; from.y += sy; }
+    }
+}
+void bitmapText(cv::Mat &image, int x, int y, const std::string &value, cv::Scalar color, bool small = false) {
+    x += 2;
+    y += 2;
+    const int glyph_width{small ? FONT_W_SMALL : FONT_W};
+    const int glyph_height{small ? FONT_H_SMALL : FONT_H};
+    for (unsigned char source : value) {
+        const int index{(source >= FONT_FIRST && source < FONT_FIRST + FONT_COUNT)
+            ? source - FONT_FIRST : '?' - FONT_FIRST};
+        const unsigned char *atlas{small ? FONT_ATLAS_SMALL[index] : FONT_ATLAS[index]};
+        // 与参考项目相同：阈值 48，向四周扩 2 像素作黑描边；彩色核心压成二值 alpha。
+        for (int gy{-2}; gy < glyph_height + 2; ++gy) {
+            for (int gx{-2}; gx < glyph_width + 2; ++gx) {
+                const int px{x + gx}, py{y + gy};
+                if (px < 0 || py < 0 || px >= image.cols || py >= image.rows) { continue; }
+                bool outline{};
+                for (int oy{-2}; oy <= 2 && !outline; ++oy) {
+                    for (int ox{-2}; ox <= 2; ++ox) {
+                        const int ax{gx - ox}, ay{gy - oy};
+                        if (ax >= 0 && ax < glyph_width && ay >= 0 && ay < glyph_height
+                            && atlas[ay * glyph_width + ax] >= 48) {
+                            outline = true;
+                            break;
+                        }
+                    }
+                }
+                if (outline) { image.at<cv::Vec4b>(py, px) = {0, 0, 0, 255}; }
+            }
         }
+        for (int gy{0}; gy < glyph_height; ++gy) {
+            for (int gx{0}; gx < glyph_width; ++gx) {
+                const int px{x + gx}, py{y + gy};
+                if (px < 0 || py < 0 || px >= image.cols || py >= image.rows) { continue; }
+                const unsigned int alpha{atlas[gy * glyph_width + gx]};
+                if (alpha == 0) { continue; }
+                cv::Vec4b &pixel{image.at<cv::Vec4b>(py, px)};
+                for (int channel{0}; channel < 3; ++channel) {
+                    pixel[channel] = static_cast<unsigned char>((alpha * color[channel]
+                        + (255 - alpha) * pixel[channel]) / 255);
+                }
+                pixel[3] = 255;
+            }
+        }
+        x += glyph_width;
     }
-    cv::putText(canvas, ascii, {x, y}, cv::FONT_HERSHEY_SIMPLEX, 0.48, {0, 0, 0, 255}, 3, cv::LINE_8);
-    cv::putText(canvas, ascii, {x, y}, cv::FONT_HERSHEY_SIMPLEX, 0.48, color, 1, cv::LINE_8);
 }
-void chinese(cv::Mat &canvas, int y, const std::u32string &message) {
-    if (message.empty()) {
-        return;
-    }
+void chinese(cv::Mat &image, int y, const std::u32string &message) {
+    if (message.empty()) { return; }
     const int width{static_cast<int>(message.size()) * 24};
-    int x{(canvas.cols - width) / 2};
-    cv::rectangle(canvas, {x - 4, y - 4, width + 8, 32}, {0, 0, 0, 255}, cv::FILLED);
-    for (char32_t c : message) {
+    int x{(image.cols - width) / 2};
+    fill(image, {x - 4, y - 4, width + 8, 32}, BLACK);
+    for (char32_t character : message) {
         const auto glyph{std::find_if(std::begin(STATUS_GLYPHS), std::end(STATUS_GLYPHS),
-                                      [c](const StatusGlyph &g) { return g.codepoint == c; })};
-        if (glyph == std::end(STATUS_GLYPHS)) {
-            throw std::logic_error("OSD missing fixed status glyph");
-        }
+            [character](const StatusGlyph &candidate) { return candidate.codepoint == character; })};
+        if (glyph == std::end(STATUS_GLYPHS)) { throw std::logic_error("OSD missing fixed status glyph"); }
         for (int row{0}; row < 24; ++row) {
             for (int column{0}; column < 24; ++column) {
-                if ((glyph->rows[row] & (1U << column)) && x + column >= 0 && x + column < canvas.cols
-                    && y + row >= 0 && y + row < canvas.rows) {
-                    canvas.at<cv::Vec4b>(y + row, x + column) = {20, 200, 255, 255};
+                if ((glyph->rows[row] & (1U << column)) && x + column >= 0 && x + column < image.cols
+                    && y + row >= 0 && y + row < image.rows) {
+                    image.at<cv::Vec4b>(y + row, x + column) = {60, 200, 255, 255};
                 }
             }
         }
         x += 24;
     }
 }
-cv::Scalar stateColor(std::int8_t state) {
-    switch (state) {
-    case 0: return WHITE;
-    case 1: return {255, 255, 0, 255};
-    case 2: return {0, 255, 0, 255};
-    case 3: return {0, 0, 255, 255};
-    default: return WHITE;
+void corner(cv::Mat &image, int x, int y, int sx, int sy, int length, int thickness, cv::Scalar color) {
+    fill(image, {sx > 0 ? x : x - length + 1, y, length, thickness}, color);
+    fill(image, {x, sy > 0 ? y : y - length + 1, thickness, length}, color);
+}
+struct Element {
+    std::string id{}, key{};
+    cv::Rect bounds{};
+    bool target{};
+    std::function<void(cv::Mat &, cv::Point)> paint{};
+};
+using Elements = std::vector<Element>;
+void addText(Elements &elements, std::string id, int x, int y, std::string value, cv::Scalar color,
+             bool small = false) {
+    const int glyph_width{small ? FONT_W_SMALL : FONT_W};
+    const int glyph_height{small ? FONT_H_SMALL : FONT_H};
+    const cv::Rect area{x, y, static_cast<int>(value.size()) * glyph_width + 4, glyph_height + 4};
+    const std::string key{value + "/" + std::to_string(color[0]) + "/" + std::to_string(color[1])
+        + "/" + std::to_string(color[2])};
+    elements.push_back({std::move(id), key, area, false,
+        [x, y, value = std::move(value), color, small](cv::Mat &image, cv::Point origin) {
+            bitmapText(image, x - origin.x, y - origin.y, value, color, small);
+        }});
+}
+void addGraphic(Elements &elements, std::string id, std::string key, cv::Rect bounds,
+                std::function<void(cv::Mat &, cv::Point)> paint, bool target = false) {
+    elements.push_back({std::move(id), std::move(key), bounds, target, std::move(paint)});
+}
+std::string optionalInt(std::optional<double> value, const char *pattern, const char *missing) {
+    if (!value || !std::isfinite(*value)) { return missing; }
+    char buffer[32]{};
+    std::snprintf(buffer, sizeof(buffer), pattern, static_cast<int>(std::lround(*value)));
+    return buffer;
+}
+std::string satelliteText(const GpsStatus &gps) {
+    const std::string count{gps.satellites ? std::to_string(*gps.satellites) : "--"};
+    const std::string fix{gps.fix_type ? (*gps.fix_type >= 3 ? "3D" : *gps.fix_type == 2 ? "2D" : "--") : "--"};
+    return "SAT " + count + " " + fix;
+}
+std::string warningText(const TelemetrySnapshot &telemetry) {
+    if (telemetry.warning == "FAILSAFE") { return "FAILSAFE"; }
+    if (telemetry.warning == "BATTERY CRITICAL") { return "CRITICAL"; }
+    if (telemetry.warning == "BATTERY LOW") { return "LOW BATT"; }
+    if (telemetry.warning == "CONNECTION LOST" || telemetry.warning == "CONNECTION UNKNOWN") {
+        return "NO LINK";
+    }
+    return "";
+}
+void addTarget(Elements &elements, const PresentationState &state, const VideoGeometry &geometry,
+               int width, int height) {
+    if (state.status != DisplayStatus::Live || state.boxes.empty()) { return; }
+    const auto mapped{geometry.mapBox(state.boxes.front())};
+    if (!mapped) { return; }
+    const cv::Rect box{mapped->x, mapped->y, mapped->width, mapped->height};
+    const cv::Rect video{geometry.destination.x, geometry.destination.y,
+        geometry.destination.width, geometry.destination.height};
+    const cv::Rect canvas{0, 0, width, height};
+    if ((box & video & canvas).empty()) { return; }
+    const std::string label{state.boxes.front().label.empty() ? stateText(state.tracker_state)
+        : state.boxes.front().label.substr(0, 24)};
+    const int label_width{static_cast<int>(label.size()) * FONT_W + 12};
+    int plate_x{box.x};
+    if (plate_x + label_width > width) { plate_x = box.x + box.width - label_width; }
+    plate_x = std::max(0, plate_x);
+    const int plate_y{box.y >= FONT_H + 8 ? box.y - FONT_H - 8 : box.y + box.height + 2};
+    const cv::Rect plate{plate_x, plate_y, label_width, FONT_H + 6};
+    const bool locked{state.tracker_state == 2};
+    const cv::Rect footprint{(box | plate) + cv::Size{16, 16} + cv::Point{-8, -8}};
+    const cv::Rect clipped{footprint & video & canvas};
+    const cv::Scalar color{stateColor(state.tracker_state)};
+    const std::string key{std::to_string(box.x) + "/" + std::to_string(box.y) + "/"
+        + std::to_string(box.width) + "/" + std::to_string(box.height) + "/"
+        + label + "/" + std::to_string(state.tracker_state)};
+    addGraphic(elements, "target", key, clipped,
+        [box, plate, label, color, locked](cv::Mat &image, cv::Point origin) {
+            const cv::Rect b{box - origin};
+            const cv::Rect p{plate - origin};
+            const int thickness{locked ? 3 : 2};
+            const int length{std::clamp(std::min(box.width, box.height) / 3, 10, 36)};
+            corner(image, b.x, b.y, 1, 1, length, thickness, color);
+            corner(image, b.x + b.width - thickness, b.y, -1, 1, length, thickness, color);
+            corner(image, b.x, b.y + b.height - thickness, 1, -1, length, thickness, color);
+            corner(image, b.x + b.width - thickness, b.y + b.height - thickness,
+                -1, -1, length, thickness, color);
+            if (locked) {
+                const cv::Rect outer{b.x - 6, b.y - 6, b.width + 12, b.height + 12};
+                corner(image, outer.x, outer.y, 1, 1, 12, 2, color);
+                corner(image, outer.x + outer.width - 2, outer.y, -1, 1, 12, 2, color);
+                corner(image, outer.x, outer.y + outer.height - 2, 1, -1, 12, 2, color);
+                corner(image, outer.x + outer.width - 2, outer.y + outer.height - 2, -1, -1, 12, 2, color);
+                const cv::Point center{b.x + b.width / 2, b.y + b.height / 2};
+                line(image, center + cv::Point{-8, 0}, center + cv::Point{0, -8}, color, 2);
+                line(image, center + cv::Point{0, -8}, center + cv::Point{8, 0}, color, 2);
+                line(image, center + cv::Point{8, 0}, center + cv::Point{0, 8}, color, 2);
+                line(image, center + cv::Point{0, 8}, center + cv::Point{-8, 0}, color, 2);
+            }
+            fill(image, p, {color[0] / 2, color[1] / 2, color[2] / 2, 255});
+            fill(image, {p.x, p.y, p.width, 2}, color);
+            fill(image, {p.x, p.y + p.height - 2, p.width, 2}, color);
+            fill(image, {p.x, p.y, 2, p.height}, color);
+            fill(image, {p.x + p.width - 2, p.y, 2, p.height}, color);
+            bitmapText(image, p.x + 6, p.y + 3, label, WHITE);
+        }, true);
+}
+Elements scene(const PresentationState &state, const VideoGeometry &geometry, int width, int height,
+               std::chrono::system_clock::time_point wall_time, const std::string &craft) {
+    Elements elements{};
+    addGraphic(elements, "corners", "static", {0, 0, WIDTH, HEIGHT}, [](cv::Mat &image, cv::Point origin) {
+        corner(image, 16 - origin.x, 16 - origin.y, 1, 1, 30, 2, WHITE);
+        corner(image, 703 - origin.x, 16 - origin.y, -1, 1, 30, 2, WHITE);
+        corner(image, 16 - origin.x, 463 - origin.y, 1, -1, 30, 2, WHITE);
+        corner(image, 703 - origin.x, 463 - origin.y, -1, -1, 30, 2, WHITE);
+    });
+    addGraphic(elements, "reticle", "static", {325, 205, 70, 70}, [](cv::Mat &image, cv::Point origin) {
+        const int cx{360 - origin.x}, cy{240 - origin.y};
+        fill(image, {cx - 44, cy - 1, 33, 2}, RED);
+        fill(image, {cx + 11, cy - 1, 33, 2}, RED);
+        fill(image, {cx - 1, cy - 44, 2, 33}, RED);
+        fill(image, {cx - 1, cy + 11, 2, 33}, RED);
+        for (int angle{0}; angle < 360; angle += 3) {
+            const double radians{angle * RADIANS};
+            fill(image, {cx + static_cast<int>(22 * std::cos(radians)),
+                cy + static_cast<int>(22 * std::sin(radians)), 1, 1}, RED);
+        }
+        fill(image, {cx - 2, cy - 2, 4, 4}, RED);
+    });
+    addText(elements, "craft", 22, 10, craft.substr(0, 24), WHITE);
+    addText(elements, "subtitle", 22, 48, "RK3576 OSD NTSC", CYAN, true);
+    const auto &telemetry{state.telemetry};
+    const Battery battery{telemetry.battery.value.value_or(Battery{})};
+    const GpsStatus gps{telemetry.gps.value.value_or(GpsStatus{})};
+    std::string mode{telemetry.flight.value ? telemetry.flight.value->mode.substr(0, 9) : "--"};
+    mode.insert(0, 9 - mode.size(), ' ');
+    addText(elements, "mode", 554, 10, mode,
+        telemetry.flight.value && telemetry.flight.value->mode == "OFFBOARD" ? CYAN : AMBER);
+    addText(elements, "tracker", 506, 48, stateText(state.tracker_state),
+        stateColor(state.tracker_state));
+    addText(elements, "timer", 570, 86, short_text::armedTime(telemetry.armed_seconds), CYAN);
+    const cv::Scalar battery_color{telemetry.battery_warning.value && *telemetry.battery_warning.value == 3 ? RED
+        : telemetry.battery_warning.value && *telemetry.battery_warning.value == 2 ? AMBER : WHITE};
+    addText(elements, "battery", 554, 162, short_text::voltage(battery.voltage), battery_color);
+    const std::optional<double> cell{battery.cell_voltage};
+    char cell_buffer[32]{};
+    if (cell) { std::snprintf(cell_buffer, sizeof(cell_buffer), "CELL %4.2f", *cell); }
+    addText(elements, "cell", 554, 200, cell ? cell_buffer : "CELL --", battery_color);
+    addText(elements, "current", 554, 238, short_text::current(battery.current_amp), WHITE);
+    addText(elements, "used", 554, 276, short_text::milliampHours(battery.consumed_mah), WHITE);
+    addText(elements, "altitude", 22, 118, optionalInt(telemetry.altitude_m, "ALT %04dM", "ALT --M"), WHITE);
+    addText(elements, "speed", 22, 156, short_text::speedKmh(gps.speed_mps), WHITE);
+    addText(elements, "heading", 22, 194,
+        optionalInt(telemetry.attitude.value ? std::optional<double>{telemetry.attitude.value->heading_deg}
+            : std::nullopt, "HDG %03d", "HDG --"), WHITE);
+    addText(elements, "satellites", 22, 232, satelliteText(gps),
+        gps.fix_type && *gps.fix_type >= 2 ? WHITE : AMBER);
+    addText(elements, "temperature", 22, 270,
+        optionalInt(telemetry.temperature_c.value, "TMP %+03dC", "TMP --C"), WHITE, true);
+    addText(elements, "home-distance", 312, 86,
+        telemetry.home_distance_m && telemetry.home_relative_deg
+            ? optionalInt(telemetry.home_distance_m, "%3dM", " --") : " --", AMBER);
+    if (telemetry.home_distance_m && telemetry.home_relative_deg) {
+        const double angle{*telemetry.home_relative_deg * RADIANS};
+        addGraphic(elements, "home-arrow", std::to_string(*telemetry.home_relative_deg), {328, 32, 64, 52},
+            [angle](cv::Mat &image, cv::Point origin) {
+                const auto rotate{[&](double x, double y) {
+                    return cv::Point{360 - origin.x + static_cast<int>(x * std::cos(angle) - y * std::sin(angle)),
+                        58 - origin.y + static_cast<int>(x * std::sin(angle) + y * std::cos(angle))};
+                }};
+                const cv::Point tip{rotate(0, -22)}, left{rotate(-11, 11)}, right{rotate(11, 11)};
+                const cv::Point tail{rotate(0, 5)};
+                line(image, tip, left, AMBER, 2); line(image, tip, right, AMBER, 2);
+                line(image, left, tail, AMBER, 2); line(image, right, tail, AMBER, 2);
+            });
+    }
+    if (telemetry.attitude.value) {
+        const Attitude attitude{*telemetry.attitude.value};
+        addGraphic(elements, "horizon", std::to_string(attitude.pitch_deg) + "/"
+            + std::to_string(attitude.roll_deg), {232, 140, 256, 200},
+            [attitude](cv::Mat &image, cv::Point origin) {
+                const float angle{static_cast<float>(-attitude.roll_deg * 3.14159265f / 180.0f)};
+                const float cosine{std::cos(angle)}, sine{std::sin(angle)};
+                for (int rung{-20}; rung <= 20; rung += 5) {
+                    if (rung == 0) { continue; }
+                    const float dy{static_cast<float>((rung - attitude.pitch_deg) * 5)};
+                    if (std::abs(dy) > 90) { continue; }
+                    const int length{rung % 10 == 0 ? 80 : 40};
+                    const cv::Point first{360 - origin.x + static_cast<int>(-length * cosine - dy * sine),
+                        240 - origin.y + static_cast<int>(-length * sine + dy * cosine)};
+                    const cv::Point second{360 - origin.x + static_cast<int>(length * cosine - dy * sine),
+                        240 - origin.y + static_cast<int>(length * sine + dy * cosine)};
+                    line(image, first, second, WHITE, 2);
+                }
+            });
+    }
+    if (battery.percentage && *battery.percentage >= 0 && *battery.percentage <= 1) {
+        const double remaining{*battery.percentage};
+        addGraphic(elements, "battery-bar", std::to_string(remaining), {16, 310, 260, 54},
+            [remaining](cv::Mat &image, cv::Point origin) {
+                fill(image, {20 - origin.x, 330 - origin.y, 150, 12}, BLACK);
+                fill(image, {21 - origin.x, 331 - origin.y,
+                    static_cast<int>(148 * remaining), 10}, remaining < 0.25 ? RED : AMBER);
+                char value[16]{};
+                std::snprintf(value, sizeof(value), "%3d%%", static_cast<int>(remaining * 100));
+                bitmapText(image, 178 - origin.x, 318 - origin.y, value, WHITE);
+            });
+    }
+    addText(elements, "clock", 22, 390, short_text::localClock(wall_time), AMBER);
+    addText(elements, "frame", 22, 430,
+        short_text::frameNumber(state.has_video ? std::optional<std::uint64_t>{state.sequence} : std::nullopt),
+        WHITE, true);
+    const auto status{OsdLayout::statusText(state.status, state.has_video)};
+    if (!status.empty()) {
+        addGraphic(elements, "status", std::to_string(static_cast<int>(state.status))
+            + (state.has_video ? "v" : "n"), {0, 386, WIDTH, 36},
+            [status](cv::Mat &image, cv::Point origin) { chinese(image, 4 - origin.y + 386, status); });
+    } else {
+        addText(elements, "message", 200, 390, telemetry.warning.substr(0, 20),
+            telemetry.warning == "FAILSAFE" || telemetry.warning == "BATTERY CRITICAL" ? RED : BLUE);
+    }
+    const auto milliseconds{std::chrono::duration_cast<std::chrono::milliseconds>(wall_time.time_since_epoch()).count()};
+    if (!state.trigger.empty()) { addText(elements, "trigger", 296, 430, state.trigger, CYAN); }
+    else if (telemetry.flight.value && !telemetry.flight.value->armed) {
+        addText(elements, "arm", 296, 430, "DISARMED", WHITE);
+    } else if (telemetry.flight.value && telemetry.flight.value->armed && telemetry.armed_seconds
+        && *telemetry.armed_seconds < 3 && ((milliseconds / 300) % 2 == 0)) {
+        addText(elements, "arm", 296, 430, "ARMED", GREEN);
+    }
+    const std::string warning{warningText(telemetry)};
+    if (!warning.empty() && ((milliseconds / 300) % 2 == 0)) {
+        addText(elements, "warning", 570, 430, warning,
+            warning == "NO LINK" ? AMBER : RED);
+    }
+    addTarget(elements, state, geometry, width, height);
+    return elements;
+}
+void overlay(cv::Mat &destination, const cv::Mat &source, cv::Rect bounds, cv::Rect area = {}) {
+    if (area.empty()) { area = bounds; }
+    const cv::Rect clipped{bounds & area & cv::Rect{0, 0, destination.cols, destination.rows}};
+    for (int y{clipped.y}; y < clipped.y + clipped.height; ++y) {
+        for (int x{clipped.x}; x < clipped.x + clipped.width; ++x) {
+            const auto pixel{source.at<cv::Vec4b>(y - bounds.y, x - bounds.x)};
+            if (pixel[3]) { destination.at<cv::Vec4b>(y, x) = pixel; }
+        }
     }
 }
+cv::Rect scaledBounds(cv::Rect area, int width, int height) {
+    const auto scale{[](int value, int target, int source) {
+        return static_cast<int>(std::ceil(static_cast<double>(value) * target / source));
+    }};
+    const int x{scale(area.x, width, WIDTH)}, y{scale(area.y, height, HEIGHT)};
+    return {x, y, scale(area.x + area.width, width, WIDTH) - x,
+        scale(area.y + area.height, height, HEIGHT) - y};
+}
+cv::Mat elementPixels(const Element &element, int width, int height, cv::Rect &bounds) {
+    cv::Mat source{element.bounds.height, element.bounds.width, CV_8UC4, cv::Scalar{}};
+    element.paint(source, element.bounds.tl());
+    if (element.target) { bounds = element.bounds; return source; }
+    bounds = scaledBounds(element.bounds, width, height);
+    cv::Mat output{bounds.height, bounds.width, CV_8UC4, cv::Scalar{}};
+    for (int y{0}; y < output.rows; ++y) {
+        const int sy{std::clamp((y + bounds.y) * HEIGHT / height - element.bounds.y, 0, source.rows - 1)};
+        for (int x{0}; x < output.cols; ++x) {
+            const int sx{std::clamp((x + bounds.x) * WIDTH / width - element.bounds.x, 0, source.cols - 1)};
+            output.at<cv::Vec4b>(y, x) = source.at<cv::Vec4b>(sy, sx);
+        }
+    }
+    return output;
+}
 } // namespace
+
 OsdLayout::OsdLayout(std::string craft_name) : craft_name_{std::move(craft_name)} {}
 std::u32string OsdLayout::statusText(DisplayStatus status, bool has_video) {
     const std::u32string prefix{has_video ? U"画面已冻结：" : U""};
@@ -88,361 +412,96 @@ std::u32string OsdLayout::statusText(DisplayStatus status, bool has_video) {
 }
 DisplayLayers OsdLayout::draw(const PresentationState &state, const VideoGeometry &geometry,
                               int width, int height, std::chrono::system_clock::time_point wall_time) const {
-    if (width <= 0 || height <= 0) {
-        throw std::invalid_argument("OSD invalid canvas");
+    if (width <= 0 || height <= 0) { throw std::invalid_argument("OSD invalid canvas"); }
+    DisplayLayers output{cv::Mat{height, width, CV_8UC4, cv::Scalar{}},
+        cv::Mat{height, width, CV_8UC4, cv::Scalar{}}};
+    for (const Element &element : scene(state, geometry, width, height, wall_time, craft_name_)) {
+        cv::Rect bounds{};
+        const cv::Mat pixels{elementPixels(element, width, height, bounds)};
+        overlay(element.target ? output.target : output.hud, pixels, bounds);
     }
-    cv::Mat hud{480, 720, CV_8UC4, cv::Scalar{0, 0, 0, 0}};
-    DisplayLayers result{cv::Mat{}, cv::Mat{height, width, CV_8UC4, cv::Scalar{0, 0, 0, 0}}};
-    text(hud, 16, 24, craft_name_.substr(0, 24));
-    const std::array<const char *, 4> states{{"DETECTING", "TARGET FOUND", "TRACKING", "TARGET LOST"}};
-    text(hud, 520, 24, state.tracker_state >= 0 && state.tracker_state < 4
-        ? states[state.tracker_state] : "UNKNOWN", stateColor(state.tracker_state));
-    const auto &t{state.telemetry};
-    text(hud, 16, 54, "MODE " + (t.flight.value ? t.flight.value->mode.substr(0, 20) : "--"));
-    text(hud, 16, 78, t.flight.value ? (t.flight.value->armed ? "ARMED" : "DISARMED") : "ARM --");
-    text(hud, 16, 102, "T+ " + number(t.armed_seconds, 0) + " s");
-    const Battery battery{t.battery.value.value_or(Battery{})};
-    text(hud, 16, 140, "BAT " + number(battery.voltage) + " V");
-    text(hud, 16, 164, "CELL " + number(battery.cell_voltage, 2) + " V");
-    text(hud, 16, 188, "CUR " + number(battery.current_amp) + " A");
-    text(hud, 16, 212, "USED " + number(battery.consumed_mah, 0) + " mAh");
-    text(hud, 16, 236, "LEFT " + number(battery.percentage ? std::optional<double>{*battery.percentage * 100}
-                                                         : std::nullopt, 0) + " %");
-    text(hud, 16, 274, "ALT " + number(t.altitude_m) + " m");
-    text(hud, 16, 298, "TEMP " + number(t.temperature_c.value) + " C");
-    const GpsStatus gps{t.gps.value.value_or(GpsStatus{})};
-    text(hud, 520, 54, "SPD " + number(gps.speed_mps) + " m/s");
-    text(hud, 520, 78, "SAT " + (gps.satellites ? std::to_string(*gps.satellites) : "--"));
-    text(hud, 520, 102, "HDG " + number(t.attitude.value
-        ? std::optional<double>{t.attitude.value->heading_deg} : std::nullopt, 0));
-    text(hud, 520, 126, "RADAR " + (t.radar_state.value ? std::to_string(*t.radar_state.value) : "--"));
-    text(hud, 520, 150, "HOME " + number(t.home_distance_m, 0) + " m");
-    text(hud, 470, 290, "LAT " + number(t.position.value
-        ? std::optional<double>{t.position.value->latitude_deg} : std::nullopt, 6));
-    text(hud, 470, 314, "LON " + number(t.position.value
-        ? std::optional<double>{t.position.value->longitude_deg} : std::nullopt, 6));
-    constexpr double radians{3.14159265358979323846 / 180.0};
-    if (t.attitude.value) {
-        const double angle{t.attitude.value->roll_deg * radians};
-        const int cy{240 + static_cast<int>(std::clamp(t.attitude.value->pitch_deg, -20.0, 20.0) * 3)};
-        const int dx{static_cast<int>(70 * std::cos(angle))};
-        const int dy{static_cast<int>(70 * std::sin(angle))};
-        cv::line(hud, {360 - dx, cy - dy}, {360 + dx, cy + dy}, WHITE, 2);
-    } else {
-        text(hud, 300, 270, "ATTITUDE --");
-    }
-    if (t.home_relative_deg) {
-        const double angle{*t.home_relative_deg * radians};
-        cv::arrowedLine(hud, {600, 220}, {600 + static_cast<int>(25 * std::sin(angle)),
-            220 - static_cast<int>(25 * std::cos(angle))}, AMBER, 2);
-    }
-    cv::line(hud, {345, 240}, {354, 240}, WHITE, 1);
-    cv::line(hud, {366, 240}, {375, 240}, WHITE, 1);
-    cv::line(hud, {360, 225}, {360, 234}, WHITE, 1);
-    cv::line(hud, {360, 246}, {360, 255}, WHITE, 1);
-    text(hud, 200, 362, t.warning.substr(0, 35), AMBER);
-    chinese(hud, 390, statusText(state.status, state.has_video));
-    text(hud, 16, 454, "FRAME " + (state.has_video ? std::to_string(state.frame_time_us) : "--"));
-    const auto time{std::chrono::system_clock::to_time_t(wall_time)};
-    std::tm utc{};
-    gmtime_r(&time, &utc);
-    std::ostringstream clock{};
-    clock << std::put_time(&utc, "%H:%M:%S UTC");
-    text(hud, 535, 454, clock.str());
-    cv::resize(hud, result.hud, {width, height}, 0, 0, cv::INTER_NEAREST);
-    if (state.status == DisplayStatus::Live) {
-        for (const auto &box : state.boxes) {
-            const auto rectangle{geometry.mapBox(box)};
-            if (!rectangle) {
-                continue;
-            }
-            const auto &r{*rectangle};
-            const auto color{stateColor(state.tracker_state)};
-            const cv::Rect clipped{cv::Rect{r.x, r.y, r.width, r.height} & cv::Rect{0, 0, width, height}};
-            if (clipped.empty()) {
-                continue;
-            }
-            cv::rectangle(result.target, clipped, color, state.tracker_state == 2 ? 3 : 1);
-            if (!box.label.empty()) {
-                text(result.target, clipped.x, std::clamp(clipped.y + 18, 18, std::max(18, height - 2)),
-                     box.label.substr(0, 24), color);
-            }
-            if (state.tracker_state == 2) {
-                const cv::Point center{clipped.x + clipped.width / 2, clipped.y + clipped.height / 2};
-                cv::drawMarker(result.target, center, color, cv::MARKER_DIAMOND, 12, 2);
-            }
-        }
-    }
-    const auto &video{geometry.destination};
-    const cv::Rect bounds{cv::Rect{video.x, video.y, video.width, video.height} & cv::Rect{0, 0, width, height}};
-    cv::Mat clipped_target{height, width, CV_8UC4, cv::Scalar{0, 0, 0, 0}};
-    if (!bounds.empty()) {
-        result.target(bounds).copyTo(clipped_target(bounds));
-    }
-    result.target = std::move(clipped_target);
-    return result;
+    return output;
 }
-} // namespace osd
-
-namespace osd {
 struct CachedOsdLayout::Cache {
-    struct Glyph { cv::Mat outline{}, fill{}; int advance{}; };
     struct Field { std::string key{}; cv::Rect bounds{}; cv::Mat pixels{}; bool used{}; };
     std::string craft{};
-    cv::Mat canvas{}, base{};
-    std::map<std::pair<unsigned char, int>, Glyph> glyphs{};
+    cv::Mat canvas{};
     std::map<std::string, Field> fields{};
     std::vector<std::string> order{};
     std::vector<cv::Rect> dirty{};
+    LayoutWork counters{};
     std::uint64_t round{~std::uint64_t{0}};
     VideoGeometry geometry{};
-    LayoutWork counters{};
     bool theme_changed{true};
-
-    const Glyph &glyph(unsigned char c, int prefix_advance = 0) {
-        if (c < 32 || c > 126) { c = '?'; }
-        // OpenCV Hershey 文本使用 16 位小数累计笔位置。保留这个相位，避免逐字取整造成字距漂移。
-        constexpr int scale{31457}; // round(0.48 * 65536)，与 putText 一致。
-        const int phase{(prefix_advance * scale) & 65535};
-        const auto key{std::make_pair(c, phase)};
-        const auto found{glyphs.find(key)};
-        if (found != glyphs.end()) { return found->second; }
-        int baseline{};
-        const int advance{cv::getTextSize(std::string(1, c), cv::FONT_HERSHEY_SIMPLEX, 1, 0, &baseline).width};
-        Glyph value{cv::Mat::zeros(28, advance + 10, CV_8UC1),
-                    cv::Mat::zeros(28, advance + 10, CV_8UC1), advance};
-        // 空格前缀不产生像素，只移动笔位置；选择最接近原相位的整数前缀。
-        // 最大相位误差不足 1/4096 像素；固定字形结果由布局基准测试约束。
-        const int space{cv::getTextSize(" ", cv::FONT_HERSHEY_SIMPLEX, 1, 0, &baseline).width};
-        int prefix{}, distance{65536};
-        for (int candidate{0}; candidate < 4096; ++candidate) {
-            const int candidate_phase{static_cast<int>((static_cast<std::int64_t>(candidate) * space * scale) & 65535)};
-            const int difference{std::abs(candidate_phase - phase)};
-            if (difference < distance) { distance = difference; prefix = candidate; }
-            if (distance == 0) { break; }
-        }
-        const std::string run{std::string(prefix, ' ') + static_cast<char>(c)};
-        const cv::Point origin{4 - static_cast<int>((static_cast<std::int64_t>(prefix) * space * scale) >> 16), 20};
-        cv::putText(value.outline, run, origin, cv::FONT_HERSHEY_SIMPLEX, 0.48, 255, 3, cv::LINE_8);
-        cv::putText(value.fill, run, origin, cv::FONT_HERSHEY_SIMPLEX, 0.48, 255, 1, cv::LINE_8);
-        ++counters.glyphs;
-        return glyphs.emplace(key, std::move(value)).first->second;
-    }
-    void mark(cv::Rect area) {
-        area &= cv::Rect{0, 0, canvas.cols, canvas.rows};
-        if (!area.empty()) { dirty.push_back(area); }
-    }
-    void field(const std::string &id, const std::string &key, cv::Rect bounds,
-               const std::function<cv::Mat()> &paint) {
-        order.push_back(id);
-        auto &entry{fields[id]};
-        entry.used = true;
-        if (entry.key == key && entry.bounds == bounds && !entry.pixels.empty()) { return; }
-        mark(entry.bounds); mark(bounds);
-        entry.key = key; entry.bounds = bounds; entry.pixels = paint();
-        ++counters.fields;
-    }
-    // 逻辑 HUD 固定为 720×480；缩放矩形使用全局最近邻采样，避免局部缩放接缝。
-    void logical(const std::string &id, const std::string &key, cv::Rect rectangle,
-                 const std::function<void(cv::Mat &, cv::Point)> &paint) {
-        const auto ceilScale{[](int x, int target, int source) {
-            return static_cast<int>(std::ceil(static_cast<double>(x) * target / source));
-        }};
-        const cv::Rect bounds{ceilScale(rectangle.x, canvas.cols, 720), ceilScale(rectangle.y, canvas.rows, 480),
-            ceilScale(rectangle.x + rectangle.width, canvas.cols, 720) - ceilScale(rectangle.x, canvas.cols, 720),
-            ceilScale(rectangle.y + rectangle.height, canvas.rows, 480) - ceilScale(rectangle.y, canvas.rows, 480)};
-        field(id, key, bounds, [&] {
-            cv::Mat source{rectangle.height, rectangle.width, CV_8UC4, cv::Scalar{}};
-            paint(source, rectangle.tl());
-            cv::Mat scaled{bounds.height, bounds.width, CV_8UC4, cv::Scalar{}};
-            for (int y{0}; y < scaled.rows; ++y) {
-                const int sy{std::clamp((y + bounds.y) * 480 / canvas.rows - rectangle.y, 0, source.rows - 1)};
-                for (int x{0}; x < scaled.cols; ++x) {
-                    const int sx{std::clamp((x + bounds.x) * 720 / canvas.cols - rectangle.x, 0, source.cols - 1)};
-                    scaled.at<cv::Vec4b>(y, x) = source.at<cv::Vec4b>(sy, sx);
-                }
-            }
-            return scaled;
-        });
-    }
-    void glyphRun(cv::Mat &image, int x, int y, const std::string &value, cv::Scalar color) {
-        for (bool outline : {true, false}) {
-            int offset{};
-            for (unsigned char character : value) {
-                const auto &g{glyph(character, offset)};
-                const auto &mask{outline ? g.outline : g.fill};
-                const cv::Point origin{x - 4 + static_cast<int>((static_cast<std::int64_t>(offset) * 31457) >> 16), y - 20};
-                const cv::Rect dst{cv::Rect{origin.x, origin.y, mask.cols, mask.rows}
-                                   & cv::Rect{0, 0, image.cols, image.rows}};
-                if (!dst.empty()) {
-                    image(dst).setTo(outline ? cv::Scalar{0, 0, 0, 255} : color,
-                        mask(cv::Rect{dst.x - origin.x, dst.y - origin.y, dst.width, dst.height}));
-                }
-                offset += g.advance;
-            }
-        }
-    }
-    void label(const std::string &id, int x, int y, const std::string &value, cv::Scalar color = WHITE) {
-        int advance{};
-        for (unsigned char c : value) { advance += glyph(c, advance).advance; }
-        const cv::Rect rectangle{x - 4, y - 20, static_cast<int>(std::ceil(advance * 0.48)) + 10, 28};
-        const std::string key{value + "/" + std::to_string(color[0]) + "/" + std::to_string(color[1])
-                              + "/" + std::to_string(color[2])};
-        logical(id, key, rectangle, [&](cv::Mat &image, cv::Point) {
-            glyphRun(image, 4, 20, value, color);
-        });
-    }
-    void composite(const Field &field, const cv::Rect &area) {
-        const auto region{area & field.bounds};
-        for (int y{region.y}; y < region.y + region.height; ++y) {
-            auto *dst{canvas.ptr<cv::Vec4b>(y)};
-            const auto *src{field.pixels.ptr<cv::Vec4b>(y - field.bounds.y)};
-            for (int x{region.x}; x < region.x + region.width; ++x) {
-                const auto value{src[x - field.bounds.x]};
-                if (value[3]) { dst[x] = value; }
-            }
-        }
-    }
-    void finish() {
-        for (auto it{fields.begin()}; it != fields.end();) {
-            if (!it->second.used) { mark(it->second.bounds); it = fields.erase(it); }
-            else { ++it; }
-        }
-        // 合并相交矩形，避免交叠恢复擦掉刚画好的字段；互不相交的字段仍独立更新。
-        for (std::size_t i{0}; i < dirty.size(); ++i) {
-            for (std::size_t j{i + 1}; j < dirty.size();) {
-                if (!(dirty[i] & dirty[j]).empty()) {
-                    dirty[i] |= dirty[j]; dirty.erase(dirty.begin() + j); j = i + 1;
-                } else { ++j; }
-            }
-        }
-        for (const auto &area : dirty) {
-            base(area).copyTo(canvas(area));
-            for (const auto &id : order) { composite(fields.at(id), area); }
-            counters.dirty_pixels += static_cast<std::uint64_t>(area.area());
-        }
-    }
 };
 CachedOsdLayout::CachedOsdLayout(std::string craft_name) : cache_{std::make_unique<Cache>()} {
     cache_->craft = std::move(craft_name);
 }
 CachedOsdLayout::~CachedOsdLayout() = default;
-void CachedOsdLayout::setCraftName(std::string value) {
-    if (cache_->craft != value) { cache_->craft = std::move(value); cache_->theme_changed = true; }
+void CachedOsdLayout::setCraftName(std::string craft_name) {
+    if (cache_->craft != craft_name) { cache_->craft = std::move(craft_name); cache_->theme_changed = true; }
 }
 LayoutWork CachedOsdLayout::work() const { return cache_->counters; }
 const cv::Mat &CachedOsdLayout::draw(const PresentationState &state, const VideoGeometry &geometry,
                                     int width, int height, std::chrono::system_clock::time_point wall_time) {
     if (width <= 0 || height <= 0) { throw std::invalid_argument("OSD invalid cached canvas"); }
-    auto &c{*cache_};
-    const auto &a{c.geometry.destination}; const auto &b{geometry.destination};
-    if (c.theme_changed || c.canvas.cols != width || c.canvas.rows != height || c.round != state.round
-        || c.geometry.source_width != geometry.source_width || c.geometry.source_height != geometry.source_height
-        || a.x != b.x || a.y != b.y || a.width != b.width || a.height != b.height) {
-        c.canvas = cv::Mat{height, width, CV_8UC4, cv::Scalar{}};
-        cv::Mat logical{480, 720, CV_8UC4, cv::Scalar{}};
-        text(logical, 16, 24, c.craft.substr(0, 24));
-        cv::line(logical, {345, 240}, {354, 240}, WHITE, 1);
-        cv::line(logical, {366, 240}, {375, 240}, WHITE, 1);
-        cv::line(logical, {360, 225}, {360, 234}, WHITE, 1);
-        cv::line(logical, {360, 246}, {360, 255}, WHITE, 1);
-        cv::resize(logical, c.base, {width, height}, 0, 0, cv::INTER_NEAREST);
-        c.fields.clear(); c.geometry = geometry; c.round = state.round; c.theme_changed = false;
-        ++c.counters.rebuilds;
+    Cache &cache{*cache_};
+    const auto &old{cache.geometry.destination}, &current{geometry.destination};
+    if (cache.theme_changed || cache.canvas.cols != width || cache.canvas.rows != height || cache.round != state.round
+        || cache.geometry.source_width != geometry.source_width || cache.geometry.source_height != geometry.source_height
+        || old.x != current.x || old.y != current.y || old.width != current.width || old.height != current.height) {
+        cache.canvas = cv::Mat{height, width, CV_8UC4, cv::Scalar{}};
+        cache.fields.clear();
+        cache.geometry = geometry;
+        cache.round = state.round;
+        cache.theme_changed = false;
+        ++cache.counters.rebuilds;
     }
-    c.order.clear(); c.dirty.clear();
-    if (c.fields.empty()) { c.mark({0, 0, width, height}); }
-    for (auto &entry : c.fields) { entry.second.used = false; }
-    const std::array<const char *, 4> states{{"DETECTING", "TARGET FOUND", "TRACKING", "TARGET LOST"}};
-    c.label("state", 520, 24, state.tracker_state >= 0 && state.tracker_state < 4
-        ? states[state.tracker_state] : "UNKNOWN", stateColor(state.tracker_state));
-    const auto &t{state.telemetry};
-    c.label("mode", 16, 54, "MODE " + (t.flight.value ? t.flight.value->mode.substr(0, 20) : "--"));
-    c.label("armed", 16, 78, t.flight.value ? (t.flight.value->armed ? "ARMED" : "DISARMED") : "ARM --");
-    c.label("timer", 16, 102, "T+ " + number(t.armed_seconds, 0) + " s");
-    const Battery battery{t.battery.value.value_or(Battery{})};
-    c.label("battery", 16, 140, "BAT " + number(battery.voltage) + " V");
-    c.label("cell", 16, 164, "CELL " + number(battery.cell_voltage, 2) + " V");
-    c.label("current", 16, 188, "CUR " + number(battery.current_amp) + " A");
-    c.label("used", 16, 212, "USED " + number(battery.consumed_mah, 0) + " mAh");
-    c.label("left", 16, 236, "LEFT " + number(battery.percentage ? std::optional<double>{*battery.percentage * 100}
-        : std::nullopt, 0) + " %");
-    c.label("altitude", 16, 274, "ALT " + number(t.altitude_m) + " m");
-    c.label("temperature", 16, 298, "TEMP " + number(t.temperature_c.value) + " C");
-    const GpsStatus gps{t.gps.value.value_or(GpsStatus{})};
-    c.label("speed", 520, 54, "SPD " + number(gps.speed_mps) + " m/s");
-    c.label("satellites", 520, 78, "SAT " + (gps.satellites ? std::to_string(*gps.satellites) : "--"));
-    c.label("heading", 520, 102, "HDG " + number(t.attitude.value
-        ? std::optional<double>{t.attitude.value->heading_deg} : std::nullopt, 0));
-    c.label("radar", 520, 126, "RADAR " + (t.radar_state.value ? std::to_string(*t.radar_state.value) : "--"));
-    c.label("home", 520, 150, "HOME " + number(t.home_distance_m, 0) + " m");
-    c.label("latitude", 470, 290, "LAT " + number(t.position.value
-        ? std::optional<double>{t.position.value->latitude_deg} : std::nullopt, 6));
-    c.label("longitude", 470, 314, "LON " + number(t.position.value
-        ? std::optional<double>{t.position.value->longitude_deg} : std::nullopt, 6));
-    constexpr double radians{3.14159265358979323846 / 180.0};
-    if (t.attitude.value) {
-        const double angle{t.attitude.value->roll_deg * radians};
-        const int cy{240 + static_cast<int>(std::clamp(t.attitude.value->pitch_deg, -20.0, 20.0) * 3)};
-        const int dx{static_cast<int>(70 * std::cos(angle))}, dy{static_cast<int>(70 * std::sin(angle))};
-        c.logical("horizon", std::to_string(cy) + "/" + std::to_string(dx) + "/" + std::to_string(dy),
-            {286, 106, 148, 268}, [&](cv::Mat &image, cv::Point origin) {
-                cv::line(image, cv::Point{360 - dx, cy - dy} - origin,
-                         cv::Point{360 + dx, cy + dy} - origin, WHITE, 2);
-            });
-    } else { c.label("unknown-attitude", 300, 270, "ATTITUDE --"); }
-    if (t.home_relative_deg) {
-        const double angle{*t.home_relative_deg * radians};
-        const cv::Point end{600 + static_cast<int>(25 * std::sin(angle)), 220 - static_cast<int>(25 * std::cos(angle))};
-        c.logical("home-arrow", std::to_string(end.x) + "/" + std::to_string(end.y), {570, 190, 60, 60},
-            [&](cv::Mat &image, cv::Point origin) { cv::arrowedLine(image, cv::Point{600, 220} - origin, end - origin, AMBER, 2); });
-    }
-    c.label("warning", 200, 362, t.warning.substr(0, 35), AMBER);
-    const auto message{OsdLayout::statusText(state.status, state.has_video)};
-    c.logical("status", std::to_string(static_cast<int>(state.status)) + (state.has_video ? "v" : "n"),
-        {0, 386, 720, 32}, [&](cv::Mat &image, cv::Point) { chinese(image, 4, message); });
-    c.label("frame", 16, 454, "FRAME " + (state.has_video ? std::to_string(state.frame_time_us) : "--"));
-    const auto time{std::chrono::system_clock::to_time_t(wall_time)};
-    std::tm utc{}; gmtime_r(&time, &utc); std::ostringstream clock{};
-    clock << std::put_time(&utc, "%H:%M:%S UTC");
-    c.label("clock", 535, 454, clock.str());
-    if (state.status == DisplayStatus::Live) {
-        std::size_t index{};
-        for (const auto &box : state.boxes) {
-            const auto mapped{geometry.mapBox(box)};
-            if (!mapped) { continue; }
-            const auto &r{*mapped};
-            const cv::Rect clipped{cv::Rect{r.x, r.y, r.width, r.height} & cv::Rect{0, 0, width, height}};
-            if (clipped.empty()) { continue; }
-            const cv::Rect video{b.x, b.y, b.width, b.height};
-            cv::Rect painted{clipped + cv::Size{20, 20} + cv::Point{-10, -10}};
-            if (!box.label.empty()) {
-                int baseline{};
-                const auto size{cv::getTextSize(box.label.substr(0, 24), cv::FONT_HERSHEY_SIMPLEX, 0.48, 3, &baseline)};
-                const int label_y{std::clamp(clipped.y + 18, 18, std::max(18, height - 2))};
-                painted |= cv::Rect{clipped.x - 4, label_y - 20, size.width + 10, 28};
-            }
-            const cv::Rect bounds{painted & video & cv::Rect{0, 0, width, height}};
-            const auto color{stateColor(state.tracker_state)};
-            const std::string key{std::to_string(clipped.x) + "/" + std::to_string(clipped.y) + "/"
-                + std::to_string(clipped.width) + "/" + std::to_string(clipped.height) + "/"
-                + std::to_string(state.tracker_state) + "/" + box.label};
-            c.field("box-" + std::to_string(index++), key, bounds, [&] {
-                cv::Mat image{bounds.height, bounds.width, CV_8UC4, cv::Scalar{}};
-                cv::rectangle(image, clipped - bounds.tl(), color, state.tracker_state == 2 ? 3 : 1);
-                if (!box.label.empty()) {
-                    c.glyphRun(image, clipped.x - bounds.x,
-                        std::clamp(clipped.y + 18, 18, std::max(18, height - 2)) - bounds.y, box.label.substr(0, 24), color);
-                }
-                if (state.tracker_state == 2) {
-                    cv::drawMarker(image, cv::Point{clipped.x + clipped.width / 2, clipped.y + clipped.height / 2}
-                        - bounds.tl(), color, cv::MARKER_DIAMOND, 12, 2);
-                }
-                return image;
-            });
+    cache.order.clear();
+    cache.dirty.clear();
+    if (cache.fields.empty()) { cache.dirty.push_back({0, 0, width, height}); }
+    for (auto &field : cache.fields) { field.second.used = false; }
+    for (const Element &element : scene(state, geometry, width, height, wall_time, cache.craft)) {
+        cache.order.push_back(element.id);
+        Cache::Field &field{cache.fields[element.id]};
+        field.used = true;
+        const cv::Rect bounds{element.target ? element.bounds : scaledBounds(element.bounds, width, height)};
+        if (field.key == element.key && field.bounds == bounds && !field.pixels.empty()) { continue; }
+        if (!field.bounds.empty()) { cache.dirty.push_back(field.bounds); }
+        cache.dirty.push_back(bounds);
+        field.key = element.key;
+        field.pixels = elementPixels(element, width, height, field.bounds);
+        ++cache.counters.fields;
+        if (element.id == "craft" || element.id == "subtitle" || element.id == "target"
+            || element.id == "message" || element.id == "warning") {
+            cache.counters.glyphs += element.key.size();
         }
     }
-    c.finish();
-    return c.canvas;
+    for (auto it{cache.fields.begin()}; it != cache.fields.end();) {
+        if (it->second.used) { ++it; }
+        else { cache.dirty.push_back(it->second.bounds); it = cache.fields.erase(it); }
+    }
+    for (std::size_t i{0}; i < cache.dirty.size(); ++i) {
+        for (std::size_t j{i + 1}; j < cache.dirty.size();) {
+            if (!(cache.dirty[i] & cache.dirty[j]).empty()) {
+                cache.dirty[i] |= cache.dirty[j];
+                cache.dirty.erase(cache.dirty.begin() + j);
+                j = i + 1;
+            } else { ++j; }
+        }
+    }
+    for (cv::Rect area : cache.dirty) {
+        area &= cv::Rect{0, 0, width, height};
+        if (area.empty()) { continue; }
+        cache.canvas(area).setTo(cv::Scalar{});
+        for (const std::string &id : cache.order) {
+            const auto &field{cache.fields.at(id)};
+            const cv::Rect overlap{area & field.bounds};
+            if (overlap.empty()) { continue; }
+            overlay(cache.canvas, field.pixels, field.bounds, overlap);
+        }
+        cache.counters.dirty_pixels += static_cast<std::uint64_t>(area.area());
+    }
+    return cache.canvas;
 }
 } // namespace osd

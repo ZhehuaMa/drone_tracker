@@ -331,6 +331,35 @@ void failureAndExit(bool cached) {
     presenter.shutdown();
     require(resources.frames == 0 && resources.views == 0, "exit leak");
 }
+void triggerLifetime(bool cached) {
+    BackendState state{};
+    std::atomic<int> time_ms{0};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms,
+        [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{time_ms.load()}}; }};
+    presenter.start();
+    const auto first{presenter.beginRound()};
+    presenter.showTrigger(first, true);
+    waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().trigger == "TRIG ON"; });
+    time_ms = 1900;
+    require(presenter.beginRound() == first, "duplicate ON changed trigger round");
+    presenter.showTrigger(first, true);
+    time_ms = 2100;
+    waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().trigger == "TRIG ON"; });
+    time_ms = 3900;
+    waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().trigger.empty(); });
+    presenter.endRound(first, osd::DisplayStatus::Stopped);
+    presenter.showTrigger(first, false);
+    waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().trigger == "TRIG OFF"; });
+    const auto second{presenter.beginRound()};
+    require(second > first, "new trigger round not advanced");
+    presenter.showTrigger(first, true);
+    waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().round == second; });
+    {
+        std::lock_guard<std::mutex> lock{state.mutex};
+        require(state.outputs.back().trigger.empty(), "old-round trigger leaked into new round");
+    }
+    presenter.shutdown();
+}
 } // namespace
 int main() {
     try {
@@ -340,6 +369,7 @@ int main() {
             stopInFlightAndRestart(cached);
             timingIntervalsAndStale(cached);
             failureAndExit(cached);
+            triggerLifetime(cached);
         }
         std::cout << "OSD pairing, lifetime, stop and restart tests passed\n";
         return 0;

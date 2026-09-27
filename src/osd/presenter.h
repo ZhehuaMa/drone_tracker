@@ -30,6 +30,8 @@ public:
     std::uint64_t beginRound();
     /** @brief 只停止指定轮，防止旧工作线程的 EOF 关闭新轮。 */
     void endRound(std::uint64_t round, DisplayStatus reason);
+    /** @brief 只接收当前轮的触发事件，使用单调时钟维持两秒。 */
+    void showTrigger(std::uint64_t round, bool on);
     /** @brief 仅交接所有权，不映射或复制像素，也不等待设备。 */
     bool submit(PresentationPacket packet);
     void updateTelemetry(TelemetrySnapshot snapshot);
@@ -58,6 +60,8 @@ private:
     std::thread thread_{};
     std::optional<PresentationPacket> pending_{};
     TelemetrySnapshot telemetry_{};
+    std::string trigger_{};
+    SteadyClock::time_point trigger_until_{};
     PresentationCounters counters_{};
     std::uint64_t round_{}, version_{}, last_sequence_{};
     bool active_{}, stopping_{}, initialized_{}, finished_{}, started_{};

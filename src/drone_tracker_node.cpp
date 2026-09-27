@@ -91,7 +91,10 @@ void DroneTrackerNode::run() { run(static_cast<builtin_interfaces::msg::Time>(no
 
 void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
     std::lock_guard<std::mutex> control{control_mutex_};
-    if (run_state_.load() != RunState::Idle) { return; }
+    if (run_state_.load() != RunState::Idle) {
+        if (osd_presenter_) { osd_presenter_->showTrigger(osd_round_, true); }
+        return;
+    }
     if (worker_thread_.joinable()) { worker_thread_.join(); }
     run_state_ = RunState::Starting;
     RCLCPP_INFO(get_logger(), "Round starting");
@@ -102,11 +105,14 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
         last_tracker_state = -1;
         consumed_frames_ = 0;
         last_acquisition_report_ = std::chrono::steady_clock::now();
+        round_metrics_start_ = last_acquisition_report_;
+        round_display_start_ = osd_presenter_ ? osd_presenter_->counters() : osd::PresentationCounters{};
         last_camera_phase_.clear();
         last_camera_recording_phase_.clear();
         running = true;
         if (osd_presenter_) {
             osd_round_ = osd_presenter_->beginRound();
+            osd_presenter_->showTrigger(osd_round_, true);
             osd_sequence_ = 0;
         }
         openRecording(stamp);
@@ -125,7 +131,10 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
 void DroneTrackerNode::stop() {
     const auto before{std::chrono::steady_clock::now()};
     std::lock_guard<std::mutex> control{control_mutex_};
-    if (osd_presenter_) { osd_presenter_->endRound(osd_round_, osd::DisplayStatus::Stopped); }
+    if (osd_presenter_) {
+        osd_presenter_->endRound(osd_round_, osd::DisplayStatus::Stopped);
+        osd_presenter_->showTrigger(osd_round_, false);
+    }
     running = false;
     wait_cv_.notify_all();
     if (worker_thread_.joinable()) { worker_thread_.join(); }
@@ -542,6 +551,16 @@ void DroneTrackerNode::reportAcquisition(bool final) {
     if (!final && !transition && now - last_acquisition_report_ < 1s) { return; }
     last_camera_phase_ = state.camera.phase;
     last_acquisition_report_ = now;
+    const auto display{osd_presenter_ ? osd_presenter_->counters() : osd::PresentationCounters{}};
+    RCLCPP_INFO(get_logger(),
+        "Round performance round=%lu elapsed_mono_us=%ld consumed=%lu hdmi_displayed=%lu "
+        "hdmi_replaced=%lu hdmi_rejected=%lu",
+        static_cast<unsigned long>(round_number_), static_cast<long>(
+            std::chrono::duration_cast<std::chrono::microseconds>(now - round_metrics_start_).count()),
+        static_cast<unsigned long>(consumed_frames_),
+        static_cast<unsigned long>(display.displayed - round_display_start_.displayed),
+        static_cast<unsigned long>(display.replaced - round_display_start_.replaced),
+        static_cast<unsigned long>(display.rejected - round_display_start_.rejected));
     const auto &recording{state.recording};
     if (recording.enabled) {
         const auto lag{recording.synced_known

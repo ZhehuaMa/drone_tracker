@@ -36,10 +36,13 @@ int main() {
         battery.percentage = 0.5;
         store.receive(battery);
         require(store.snapshot().battery.value->consumed_mah == 3000, "charge units wrong");
+        require(store.snapshot().battery.value->percentage == 0.5, "valid battery percentage missing");
         require(!store.snapshot().battery.value->cell_voltage, "cell count guessed");
         battery.capacity = std::numeric_limits<float>::quiet_NaN();
+        battery.percentage = -1;
         store.receive(battery);
         require(!store.snapshot().battery.value->consumed_mah, "missing capacity accepted");
+        require(!store.snapshot().battery.value->percentage, "unknown percentage accepted");
         mavros_msgs::msg::GPSRAW gps{};
         gps.fix_type = 3;
         gps.vel = 1234;
@@ -47,7 +50,8 @@ int main() {
         gps.satellites_visible = 12;
         store.receive(gps);
         require(std::abs(*store.snapshot().gps.value->speed_mps - 12.34) < 1e-9, "speed units");
-        gps.vel = 65535; gps.cog = 65535; gps.satellites_visible = 255;
+        require(store.snapshot().gps.value->fix_type == 3, "GPS fix level missing");
+        gps.vel = 65535; gps.cog = 65535; gps.satellites_visible = 255; gps.fix_type = 255;
         store.receive(gps);
         require(!store.snapshot().gps.value, "GPS sentinel accepted");
         mavros_msgs::msg::State flight{};
@@ -74,6 +78,7 @@ int main() {
         std_msgs::msg::Bool failsafe{}; failsafe.data = true; store.receive(failsafe);
         store.receiveBatteryWarning(3);
         require(store.snapshot().warning == "FAILSAFE", "warning priority");
+        require(store.snapshot().battery_warning.value == 3, "battery grade missing");
         flight.connected = false; store.receive(flight);
         require(store.snapshot().warning == "CONNECTION LOST", "connection priority");
         time_ms = 2100;
@@ -81,6 +86,7 @@ int main() {
         const auto expired{store.snapshot()};
         require(!expired.flight.value && !expired.battery.value && expired.temperature_c.value == 20,
             "groups do not expire independently");
+        require(!expired.gps.value && !expired.battery_warning.value, "GPS or battery grade did not expire");
         require(expired.warning == "CONNECTION UNKNOWN", "expired alert retained");
         require(!expired.altitude_m && !expired.home_distance_m, "expired derived state retained");
         temperature.temperature = std::numeric_limits<double>::infinity(); store.receive(temperature);

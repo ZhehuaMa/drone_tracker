@@ -102,12 +102,13 @@ void TelemetryStore::receive(const sensor_msgs::msg::BatteryState &message) {
 void TelemetryStore::receive(const mavros_msgs::msg::GPSRAW &message) {
     GpsStatus gps{};
     if (message.satellites_visible != 255) { gps.satellites = message.satellites_visible; }
+    if (message.fix_type <= 8) { gps.fix_type = message.fix_type; }
     if (message.fix_type >= 2 && message.fix_type <= 8) {
         if (message.vel != 65535) { gps.speed_mps = message.vel * 0.01; }
         if (message.cog < 36000) { gps.course_deg = message.cog * 0.01; }
     }
     std::lock_guard<std::mutex> lock{mutex_};
-    assign(data_.gps, gps.satellites || gps.speed_mps || gps.course_deg
+    assign(data_.gps, gps.satellites || gps.fix_type || gps.speed_mps || gps.course_deg
         ? std::optional<GpsStatus>{gps} : std::nullopt, now_());
 }
 void TelemetryStore::receive(const sensor_msgs::msg::NavSatFix &message) {
