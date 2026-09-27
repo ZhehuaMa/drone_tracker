@@ -98,6 +98,12 @@ ON 开始新轮；重复 ON 不新增轮次。ON/OFF 短提示只在当前轮保
 | 左下与底部 | 可信剩余比例电量条、本地时钟、帧序号、实时消息、ON/OFF 短提示和独立告警 | 剩余比例未知时隐藏电量条；冻结与故障时中文提示占用消息区，告警保留在右侧。 |
 | 视频中的单目标 | 状态色角框；Tracking 另有外角框、中心菱形与标签底板 | 无有效框、等待或冻结时全部清除。算法未提供置信度或编号，画面不会造出百分比、`T01` 或第二目标。 |
 
+`/fpv/tracker_trigger` 的 `frame_id="MISSION"` 表示开始执行拦截任务。收到该值后，右列状态栏由 `TRK TRACKING` 改为 `ON MISSION`，直到本节点向 `/fpv/tracker_state` 发布下一条跟踪状态。普通 `ON`、`OFF` 仍只影响启停和约两秒的短提示。任务文字不改变目标框配色或跟踪状态含义；`TrackerState=3` 仍表示 `TargetLost`（目标丢失），下一条状态为 `3` 时状态栏显示 `TARGET LOST`。
+
+调试状态切换时，使用 `journalctl -u drone-tracker.service -f | grep -E 'Tracker trigger received|Tracker state published|OSD control|OSD display'`。`OSD control` 记录任务置位、状态发布解除任务及停轮请求；`OSD display` 只在成功提交且状态栏文字、跟踪框标签或显示状态变化时输出。`hud` 是右上角文字，`target_label` 是当前单目标框标签，空字符串表示没有框标签。收到 `OFF` 后，预期看到 `event=end_round status=Stopped`，随后看到 `OSD display status=Stopped has_video=1 new_video=0 boxes=0 target_label=""`；`has_video=1` 表示保留最后的视频底图，并非仍在采集。当前实现仍可能保留上一帧的 `hud="TRK TRACKING"`，应以停止事件和显示状态判断是否停止。
+
+电流取自 `/mavros/battery`。HUD 对有效电流显示绝对值，例如输入 `-3.0 A` 显示 `CUR 03.0A`；未知或非有限值显示 `CUR --A`。该显示转换不修改原始 ROS 消息。
+
 严重告警为红色，约每 300 毫秒切换可见性；连接异常为琥珀色。`cached-overlay` 只重画变化区域，`legacy` 每次完整绘制，两者使用同一元素定义。可重复生成的纯 CPU 快照、差异图及生成命令保存在 HUD 对齐变更目录。参考快照里的两个人造目标与虚构置信度仅用于识别视觉差异。
 
 内部计数 `submitted/replaced/displayed/refreshes` 分别表示接受的新包、槽内替换包、实际显示的新包和成功画面提交。节点日志将最后一项标为 `commits`。`refreshes` 是提交次数，不是显示器物理扫描次数；屏幕刷新率另由模式信息报告。相同帧重复提交不能计为新视频帧率。

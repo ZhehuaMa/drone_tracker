@@ -17,6 +17,7 @@ int main() {
         require(osd::short_text::voltage(22.2) == "BAT 22.2V", "voltage format");
         require(osd::short_text::voltage({}) == "BAT --V", "missing voltage");
         require(osd::short_text::current(4.3) == "CUR 04.3A", "current format");
+        require(osd::short_text::current(-3.0) == "CUR 03.0A", "negative current magnitude");
         require(osd::short_text::current({}) == "CUR --A", "missing current");
         require(osd::short_text::current(std::numeric_limits<double>::quiet_NaN()) == "CUR --A",
             "non-finite current");

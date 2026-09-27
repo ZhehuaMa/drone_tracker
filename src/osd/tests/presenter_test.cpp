@@ -135,6 +135,40 @@ struct TimingCapture {
         return result;
     }
 };
+struct DiagnosticCapture {
+    std::mutex mutex{};
+    std::condition_variable changed{};
+    std::vector<std::string> lines{};
+    void record(const std::string &line) {
+        std::lock_guard<std::mutex> lock{mutex};
+        lines.push_back(line);
+        changed.notify_all();
+    }
+    bool contains(const std::string &fragment) {
+        std::lock_guard<std::mutex> lock{mutex};
+        for (const auto &line : lines) {
+            if (line.find(fragment) != std::string::npos) { return true; }
+        }
+        return false;
+    }
+    bool waitFor(const std::string &fragment) {
+        std::unique_lock<std::mutex> lock{mutex};
+        return changed.wait_for(lock, 2s, [&] {
+            for (const auto &line : lines) {
+                if (line.find(fragment) != std::string::npos) { return true; }
+            }
+            return false;
+        });
+    }
+    std::size_t countDisplay() {
+        std::lock_guard<std::mutex> lock{mutex};
+        std::size_t count{};
+        for (const auto &line : lines) {
+            if (line.find("OSD display") == 0) { ++count; }
+        }
+        return count;
+    }
+};
 void pairingAndOwnership(bool cached) {
     Resources resources{};
     BackendState state{};
@@ -360,6 +394,61 @@ void triggerLifetime(bool cached) {
     }
     presenter.shutdown();
 }
+void missionLifetime(bool cached) {
+    BackendState state{};
+    DiagnosticCapture diagnostics{};
+    std::atomic<int> time_ms{0};
+    Resources resources{};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms,
+        [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{time_ms.load()}}; }, {}, {},
+        [&](const std::string &line) { diagnostics.record(line); }};
+    presenter.start();
+    const auto round{presenter.beginRound()};
+    auto first{packet(round, 1, resources)};
+    first.boxes.front().label.clear();
+    require(presenter.submit(std::move(first)), "mission initial packet rejected");
+    waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().new_video; });
+    require(diagnostics.waitFor("hud=\"TRK TRACKING\" target_label=\"TRK TRACKING\""),
+        "initial displayed labels missing from diagnostics");
+    presenter.showMission();
+    waitFor(state, [&] { return state.outputs.back().mission_active; });
+    require(diagnostics.contains("event=mission round="), "mission receipt missing from diagnostics");
+    require(diagnostics.waitFor("hud=\"ON MISSION\" target_label=\"TRK TRACKING\""),
+        "mission display missing from diagnostics");
+    const std::size_t display_logs_before_following{diagnostics.countDisplay()};
+    time_ms = 3000;
+    auto following{packet(round, 2, resources)};
+    following.boxes.front().label.clear();
+    require(presenter.submit(std::move(following)), "mission following packet rejected");
+    waitFor(state, [&] { return state.outputs.back().new_video && state.outputs.back().sequence == 2; });
+    for (int attempt{0}; attempt < 200 && presenter.counters().displayed < 2; ++attempt) {
+        std::this_thread::sleep_for(1ms);
+    }
+    require(presenter.counters().displayed >= 2, "following frame not committed");
+    require(diagnostics.countDisplay() == display_logs_before_following,
+        "unchanged video frame produced diagnostic log");
+    {
+        std::lock_guard<std::mutex> lock{state.mutex};
+        require(state.outputs.back().mission_active, "mission expired without tracker state publication");
+        require(state.outputs.back().tracker_state == 2, "mission changed paired tracker state");
+    }
+    presenter.trackerStatePublished();
+    waitFor(state, [&] { return !state.outputs.back().mission_active; });
+    require(diagnostics.contains("event=mission_cleared round="), "mission clear missing from diagnostics");
+    presenter.showTrigger(round, true);
+    waitFor(state, [&] { return state.outputs.back().trigger == "TRIG ON"; });
+    {
+        std::lock_guard<std::mutex> lock{state.mutex};
+        require(!state.outputs.back().mission_active, "ON started mission overlay");
+    }
+    presenter.endRound(round, osd::DisplayStatus::Stopped);
+    waitFor(state, [&] { return state.outputs.back().status == osd::DisplayStatus::Stopped; });
+    require(diagnostics.contains("event=end_round round="), "stop event missing from diagnostics");
+    require(diagnostics.waitFor("status=Stopped hud=\"TRK TRACKING\" target_label=\"\" boxes=0 has_video=1 new_video=0"),
+        "frozen display missing from diagnostics");
+    presenter.shutdown();
+    require(resources.frames == 0 && resources.views == 0, "mission test leaked frames");
+}
 } // namespace
 int main() {
     try {
@@ -370,6 +459,7 @@ int main() {
             timingIntervalsAndStale(cached);
             failureAndExit(cached);
             triggerLifetime(cached);
+            missionLifetime(cached);
         }
         std::cout << "OSD pairing, lifetime, stop and restart tests passed\n";
         return 0;

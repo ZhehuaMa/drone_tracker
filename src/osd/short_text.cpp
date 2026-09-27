@@ -26,7 +26,8 @@ std::string voltage(std::optional<double> value) {
     return fixed(value, "BAT %04.1fV", "BAT --V");
 }
 std::string current(std::optional<double> value) {
-    return fixed(value, "CUR %04.1fA", "CUR --A");
+    return fixed(value && std::isfinite(*value) ? std::optional<double>{std::fabs(*value)} : std::nullopt,
+        "CUR %04.1fA", "CUR --A");
 }
 std::string milliampHours(std::optional<double> value) {
     if (!value || !std::isfinite(*value) || *value < 0) { return "MAH --"; }

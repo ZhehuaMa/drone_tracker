@@ -185,8 +185,7 @@ void addTarget(Elements &elements, const PresentationState &state, const VideoGe
         geometry.destination.width, geometry.destination.height};
     const cv::Rect canvas{0, 0, width, height};
     if ((box & video & canvas).empty()) { return; }
-    const std::string label{state.boxes.front().label.empty() ? stateText(state.tracker_state)
-        : state.boxes.front().label.substr(0, 24)};
+    const std::string label{targetLabelText(state)};
     const int label_width{static_cast<int>(label.size()) * FONT_W + 12};
     int plate_x{box.x};
     if (plate_x + label_width > width) { plate_x = box.x + box.width - label_width; }
@@ -262,8 +261,8 @@ Elements scene(const PresentationState &state, const VideoGeometry &geometry, in
     mode.insert(0, 9 - mode.size(), ' ');
     addText(elements, "mode", 554, 10, mode,
         telemetry.flight.value && telemetry.flight.value->mode == "OFFBOARD" ? CYAN : AMBER);
-    addText(elements, "tracker", 506, 48, stateText(state.tracker_state),
-        stateColor(state.tracker_state));
+    addText(elements, "tracker", 506, 48, statusBarText(state),
+        state.mission_active ? CYAN : stateColor(state.tracker_state));
     addText(elements, "timer", 570, 86, short_text::armedTime(telemetry.armed_seconds), CYAN);
     const cv::Scalar battery_color{telemetry.battery_warning.value && *telemetry.battery_warning.value == 3 ? RED
         : telemetry.battery_warning.value && *telemetry.battery_warning.value == 2 ? AMBER : WHITE};
@@ -395,6 +394,16 @@ cv::Mat elementPixels(const Element &element, int width, int height, cv::Rect &b
     return output;
 }
 } // namespace
+
+std::string statusBarText(const PresentationState &state) {
+    return state.mission_active ? "ON MISSION" : stateText(state.tracker_state);
+}
+
+std::string targetLabelText(const PresentationState &state) {
+    if (state.status != DisplayStatus::Live || state.boxes.empty()) { return {}; }
+    return state.boxes.front().label.empty() ? stateText(state.tracker_state)
+        : state.boxes.front().label.substr(0, 24);
+}
 
 OsdLayout::OsdLayout(std::string craft_name) : craft_name_{std::move(craft_name)} {}
 std::u32string OsdLayout::statusText(DisplayStatus status, bool has_video) {

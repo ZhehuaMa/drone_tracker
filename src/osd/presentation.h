@@ -73,6 +73,7 @@ enum class DisplayStatus { WaitingInput, WaitingFirst, Live, Stale, Stopped, Eof
 struct PresentationState {
     std::uint64_t round{}, sequence{}, frame_time_us{};
     std::int8_t tracker_state{};
+    bool mission_active{};
     std::vector<DisplayBox> boxes{};
     DisplayStatus status{DisplayStatus::WaitingInput};
     bool has_video{};

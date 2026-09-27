@@ -24,7 +24,7 @@
 | `/fpv/radar_state` | `std_msgs/msg/Int8` | 独立雷达状态 |
 | `/fpv/low_level_feedback` | `quadrotor_msgs/msg/LowLevelFeedback` | 可选电池告警等级 |
 
-系统 SHALL 复用现有 `/fpv/tracker_trigger` 的 ON/OFF 接收事件显示触发提示，不增加独立控制通路。低层反馈适配未编译时 SHALL 隐藏依赖该输入的显示，其他遥测仍可工作。
+系统 SHALL 复用现有 `/fpv/tracker_trigger` 的 `ON`、`OFF` 接收事件显示限时触发提示。收到 `frame_id="MISSION"` 时，系统 SHALL 按 `osd-presentation` 的任务状态栏要求显示 `ON MISSION`。这三种触发值 SHALL 沿用现有 `std_msgs/msg/Header` 消息类型，不增加独立控制通路。低层反馈适配未编译时 SHALL 隐藏依赖该输入的显示，其他遥测仍可工作。
 
 #### Scenario: 没有自定义消息包
 - **WHEN** 构建未启用低层反馈适配，标准电池与姿态话题正常到达
@@ -33,6 +33,10 @@
 #### Scenario: 雷达正在跟踪而本地检测中
 - **WHEN** 外部雷达状态为 2，本地提交包状态为 Detecting
 - **THEN** 显示两者各自状态，不将本地框或跟踪状态改为 Tracking
+
+#### Scenario: 收到任务触发
+- **WHEN** `/fpv/tracker_trigger` 的 `frame_id` 为 `MISSION`
+- **THEN** HUD 状态栏显示 `ON MISSION`，不创建新的 ROS 话题或消息类型
 
 ### Requirement: 未知和过期数据不能显示为有效零值
 
@@ -50,7 +54,7 @@
 
 系统 SHALL 校验并归一化有效姿态四元数，再计算俯仰、横滚与以北为零度、顺时针递增的航向。GPS 地速与航迹 SHALL 按消息单位转换。有效定位 SHALL 用于经纬度显示及返航距离计算。
 
-电池剩余电量 SHALL 按 `BatteryState.charge` 的 Ah 含义处理。只有有效容量和合法剩余电量同时存在时，系统 SHALL 显示两者差值换算的已耗 mAh。单节电压 SHALL 仅在已配置节数或有效单节数据存在时显示。系统 MUST NOT 用整包电压猜测节数后当作确定值。
+电池剩余电量 SHALL 按 `BatteryState.charge` 的 Ah 含义处理。只有有效容量和合法剩余电量同时存在时，系统 SHALL 显示两者差值换算的已耗 mAh。单节电压 SHALL 仅在已配置节数或有效单节数据存在时显示。系统 MUST NOT 用整包电压猜测节数后当作确定值。HUD 电流数值 SHALL 为有效 `BatteryState.current` 的绝对值。原始 ROS 消息 SHALL 保持不变；未知或非有限电流 SHALL 显示未知标记。
 
 #### Scenario: 电池剩余量换算
 - **WHEN** `capacity=13 Ah`、`charge=10 Ah` 且字段有效
@@ -59,6 +63,14 @@
 #### Scenario: 无有效容量
 - **WHEN** 电压有效但 charge 或 capacity 未知
 - **THEN** 电压正常显示，已耗 mAh 隐藏或标为未知
+
+#### Scenario: 负电流显示为正值
+- **WHEN** `/mavros/battery` 发布有效电流 `-3.0 A`
+- **THEN** HUD 显示 `CUR 03.0A`，其他电池字段不因取绝对值改变
+
+#### Scenario: 未知电流不冒充零
+- **WHEN** `/mavros/battery` 电流为非有限值
+- **THEN** HUD 显示 `CUR --A`，不显示 `CUR 00.0A`
 
 ### Requirement: 返航与气压高度使用有效参考
 

@@ -269,7 +269,8 @@ void DroneTrackerNode::setupDisplay(std::unique_ptr<osd::DisplayBackend> backend
     }
     osd_presenter_ = std::make_unique<osd::OsdPresenter>(std::move(backend), std::chrono::milliseconds{stale},
         osd::SteadyClock::now, std::move(timing_sink),
-        [] { cpu_affinity::apply(cpu_affinity::Role::Display); });
+        [] { cpu_affinity::apply(cpu_affinity::Role::Display); },
+        [this](const std::string &message) { RCLCPP_INFO(get_logger(), "%s", message.c_str()); });
     osd_presenter_->start();
     osd_telemetry_ = std::make_unique<osd::OsdTelemetryAdapter>(*this,
         [this](osd::TelemetrySnapshot snapshot) {
@@ -562,10 +563,14 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
         TOPIC_TRACKER_TRIGGER, rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
         [this](const std_msgs::msg::Header::SharedPtr msg)
         {
+            RCLCPP_INFO(get_logger(), "Tracker trigger received frame_id=\"%s\" round=%lu",
+                msg->frame_id.c_str(), static_cast<unsigned long>(osd_round_));
             if (msg->frame_id == "ON") {
                 run(msg->stamp);
             } else if (msg->frame_id == "OFF") {
                 stop();
+            } else if (msg->frame_id == "MISSION" && osd_presenter_) {
+                osd_presenter_->showMission();
             }
         }
     );
@@ -802,6 +807,9 @@ void DroneTrackerNode::processFrames() {
                 auto msg = std::make_unique<std_msgs::msg::Int8>();
                 msg->data = tracker_state_int;
                 tracker_state_pub_->publish(std::move(msg));
+                RCLCPP_INFO(get_logger(), "Tracker state published round=%lu value=%d",
+                    static_cast<unsigned long>(osd_round_), static_cast<int>(tracker_state_int));
+                if (osd_presenter_) { osd_presenter_->trackerStatePublished(); }
                 last_tracker_state = tracker_state_int;
             }
         }

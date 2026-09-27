@@ -63,6 +63,15 @@ int main(int argc, char **argv) {
         const cv::Vec4b tracking{normal.target.at<cv::Vec4b>(269, 459)};
         require(tracking[0] == 90 && tracking[1] == 230 && tracking[2] == 90,
             "tracking green corner color");
+        state.mission_active = true;
+        equivalent(legacy, cached, state, geometry, 720, 480, time);
+        const auto mission{legacy.draw(state, geometry, 720, 480, time)};
+        require(cv::norm(mission.hud(cv::Rect{500, 45, 190, 40}),
+            normal.hud(cv::Rect{500, 45, 190, 40}), cv::NORM_INF) > 0,
+            "mission banner did not replace tracking text");
+        require(cv::norm(mission.target, normal.target, cv::NORM_INF) == 0,
+            "mission changed paired target styling");
+        state.mission_active = false;
         for (const auto [tracker, expected] : {
                  std::pair<std::int8_t, cv::Vec4b>{0, {235, 235, 235, 255}},
                  {1, {255, 220, 80, 255}}, {3, {70, 70, 255, 255}}}) {

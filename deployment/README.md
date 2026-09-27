@@ -94,6 +94,8 @@ bash deployment/package.sh /tmp/drone-tracker-packages --cpu-policy /绝对路�
 
 默认包含当前配置引用的模型。目标板已具有相同模型时可追加 `--without-models`；安装仍会检查模型内容与源板一致。旧源安装没有 CPU 策略时，必须显式传入 `--cpu-policy`，例如使用已核对的 `deployment/cpu-affinity.yaml`。脚本不会自行生成策略。`SOURCE.json` 会记录策略来源和 SHA-256 指纹。已有策略且未传该选项时，脚本复制当前安装的策略。打包不重新编译、不启动相机、不更改服务。打包期间若源配置、模型、二进制或当前版本链接变化，会终止生成。
 
+若程序已在本机 ARM64 容器编译并上传到源板的临时安装目录，可增加 `--release /绝对路径/安装目录`。脚本从该目录读取程序和 ROS 包文件，仍从 `/opt/drone_tracker/config` 与 `/opt/drone_tracker/models` 读取生产配置和模型。这样可在切换服务前打包并执行 `deploy.sh --check`。
+
 包内有源程序附带的许可证文件。模型和生成的部署包应存放于忽略的本地产物目录，不提交到源码仓库。
 
 ### 显示计时诊断版本

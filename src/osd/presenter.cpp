@@ -1,17 +1,39 @@
 #include "osd/presenter.h"
+#include "osd/layout.h"
 
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
 namespace osd {
+namespace {
+const char *statusName(DisplayStatus status) {
+    switch (status) {
+    case DisplayStatus::WaitingInput: return "WaitingInput";
+    case DisplayStatus::WaitingFirst: return "WaitingFirst";
+    case DisplayStatus::Live: return "Live";
+    case DisplayStatus::Stale: return "Stale";
+    case DisplayStatus::Stopped: return "Stopped";
+    case DisplayStatus::Eof: return "Eof";
+    case DisplayStatus::InputFailure: return "InputFailure";
+    }
+    return "Unknown";
+}
+} // namespace
 OsdPresenter::OsdPresenter(std::unique_ptr<DisplayBackend> backend, std::chrono::milliseconds stale,
                            std::function<SteadyClock::time_point()> now,
-                           std::function<void(const TimingWindow &)> timing_sink, std::function<void()> before_work)
+                           std::function<void(const TimingWindow &)> timing_sink, std::function<void()> before_work,
+                           std::function<void(const std::string &)> diagnostic_sink)
     : timing_sink_{std::move(timing_sink)}, before_work_{std::move(before_work)},
+      diagnostic_sink_{std::move(diagnostic_sink)},
       backend_{std::move(backend)}, stale_{stale}, now_{std::move(now)} {
     if (!backend_ || !now_ || stale_.count() <= 0) {
         throw std::invalid_argument("OSD requires backend and positive frame timeout");
     }
+}
+void OsdPresenter::emitDiagnostic(const std::string &message) const noexcept {
+    if (!diagnostic_sink_) { return; }
+    try { diagnostic_sink_(message); } catch (...) { /* 诊断失败不影响显示。 */ }
 }
 OsdPresenter::~OsdPresenter() { shutdown(); }
 void OsdPresenter::start() {
@@ -49,20 +71,28 @@ std::uint64_t OsdPresenter::beginRound() {
     std::lock_guard<std::mutex> round_lock{round_mutex_};
     reportTiming();
     std::optional<PresentationPacket> discarded{};
-    std::lock_guard<std::mutex> lock{mutex_};
-    if (!active_ && !stopping_ && failure_.empty()) {
-        ++round_;
-        trigger_.clear();
-        last_display_.reset();
-        ++interval_generation_;
-        ++version_;
-        last_sequence_ = 0;
-        active_ = true;
-        status_ = DisplayStatus::WaitingFirst;
-        discarded.swap(pending_);
-        wake_.notify_all();
+    std::uint64_t round{};
+    DisplayStatus status{};
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (!active_ && !stopping_ && failure_.empty()) {
+            ++round_;
+            trigger_.clear();
+            last_display_.reset();
+            ++interval_generation_;
+            ++version_;
+            last_sequence_ = 0;
+            active_ = true;
+            status_ = DisplayStatus::WaitingFirst;
+            discarded.swap(pending_);
+            wake_.notify_all();
+        }
+        round = round_;
+        status = status_;
     }
-    return round_;
+    emitDiagnostic("OSD control event=begin_round round=" + std::to_string(round)
+        + " status=" + statusName(status));
+    return round;
 }
 void OsdPresenter::showTrigger(std::uint64_t round, bool on) {
     std::lock_guard<std::mutex> lock{mutex_};
@@ -71,6 +101,40 @@ void OsdPresenter::showTrigger(std::uint64_t round, bool on) {
     trigger_until_ = now_() + std::chrono::seconds{2};
     ++version_;
     wake_.notify_all();
+}
+void OsdPresenter::showMission() {
+    std::uint64_t round{};
+    bool accepted{};
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        round = round_;
+        accepted = !stopping_ && failure_.empty();
+        if (accepted) {
+            mission_active_ = true;
+            ++version_;
+            wake_.notify_all();
+        }
+    }
+    emitDiagnostic("OSD control event=mission round=" + std::to_string(round)
+        + " accepted=" + (accepted ? "1" : "0"));
+}
+void OsdPresenter::trackerStatePublished() {
+    std::uint64_t round{};
+    bool cleared{};
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        round = round_;
+        cleared = mission_active_;
+        if (cleared) {
+            mission_active_ = false;
+            ++version_;
+            wake_.notify_all();
+        }
+    }
+    if (cleared) {
+        emitDiagnostic("OSD control event=mission_cleared round=" + std::to_string(round)
+            + " reason=tracker_state_published");
+    }
 }
 void OsdPresenter::endRound(std::uint64_t round, DisplayStatus reason) {
     std::lock_guard<std::mutex> round_lock{round_mutex_};
@@ -91,6 +155,8 @@ void OsdPresenter::endRound(std::uint64_t round, DisplayStatus reason) {
         discarded.swap(pending_);
     }
     wake_.notify_all();
+    emitDiagnostic("OSD control event=end_round round=" + std::to_string(round)
+        + " status=" + statusName(reason));
     reportTiming();
 }
 bool OsdPresenter::submit(PresentationPacket packet) {
@@ -205,6 +271,7 @@ void OsdPresenter::render() noexcept {
                 next.telemetry = telemetry_;
                 next.round = round_;
                 next.trigger = !trigger_.empty() && now_() < trigger_until_ ? trigger_ : "";
+                next.mission_active = mission_active_;
                 next.status = status_;
                 if (active_ && status_ == DisplayStatus::Live && now_() - last_received_ > stale_) {
                     next.status = DisplayStatus::Stale;
@@ -269,6 +336,24 @@ void OsdPresenter::render() noexcept {
                     continue;
                 }
                 finish_timing(TimingResult::Success);
+                if (diagnostic_sink_) {
+                    try {
+                        const std::string hud{statusBarText(next)};
+                        const std::string target{targetLabelText(next)};
+                        if (next.status != last.status || next.has_video != last.has_video
+                            || hud != statusBarText(last) || target != targetLabelText(last)) {
+                            std::ostringstream message{};
+                            message << "OSD display round=" << next.round << " sequence=" << next.sequence
+                                    << " status=" << statusName(next.status)
+                                    << " hud=\"" << hud << "\" target_label=\"" << target << "\""
+                                    << " boxes=" << next.boxes.size() << " has_video=" << next.has_video
+                                    << " new_video=" << next.new_video << " mission=" << next.mission_active;
+                            emitDiagnostic(message.str());
+                        }
+                    } catch (...) {
+                        // 日志构造失败不能中断已提交的 HDMI 画面。
+                    }
+                }
                 last = std::move(next);
                 {
                     std::lock_guard<std::mutex> lock{mutex_};

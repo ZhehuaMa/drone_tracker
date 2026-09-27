@@ -3,20 +3,26 @@
 set -euo pipefail
 export LC_ALL=C
 usage() {
-    echo "用法: $0 输出目录 [--without-models] [--cpu-policy /绝对路径/策略.yaml]"
+    echo "用法: $0 输出目录 [--without-models] [--cpu-policy /绝对路径/策略.yaml] [--release /绝对路径/安装目录]"
 }
 [[ $# -ge 1 ]] || { usage; exit 2; }
 output_argument=$1
 shift
 include_models=1
 cpu_policy=
+release_source=
 while (($#)); do
     case "$1" in
         --without-models) include_models=0; shift ;;
         --cpu-policy) [[ $# -ge 2 ]] || { usage; exit 2; }; cpu_policy=$2; shift 2 ;;
+        --release) [[ $# -ge 2 ]] || { usage; exit 2; }; release_source=$2; shift 2 ;;
         *) usage; exit 2 ;;
     esac
 done
+if [[ -n $release_source ]]; then
+    [[ $release_source == /* && -d $release_source ]] || { echo '显式安装目录必须是存在的绝对路径' >&2; exit 2; }
+    release_source=$(cd -- "$release_source" && pwd -P)
+fi
 if [[ -n $cpu_policy ]]; then
     [[ $cpu_policy == /* && -f $cpu_policy ]] || { echo '显式策略必须是存在的绝对路径' >&2; exit 2; }
 else
@@ -40,7 +46,7 @@ set +u
 source /opt/ros/humble/setup.bash
 set -u
 # PyYAML 是 ROS 2 launch 的已有依赖；只解析数据，不执行配置内容。
-python3 - "$bundle" "$include_models" "$cpu_policy" <<'PY'
+python3 - "$bundle" "$include_models" "$cpu_policy" "$release_source" <<'PY'
 import hashlib
 import json
 import pathlib
@@ -54,7 +60,7 @@ bundle = pathlib.Path(sys.argv[1])
 include_models = sys.argv[2] == '1'
 policy_source = pathlib.Path(sys.argv[3])
 root = pathlib.Path('/opt/drone_tracker')
-release = (root / 'current').resolve(strict=True)
+release = pathlib.Path(sys.argv[4]) if sys.argv[4] else (root / 'current').resolve(strict=True)
 tracked = {}
 
 def digest(path):
@@ -148,7 +154,7 @@ for device in devices:
 recording_dir = params.get('recording', {}).get('directory', '/var/lib/drone_tracker/recordings')
 if recording_dir != '/var/lib/drone_tracker/recordings':
     raise RuntimeError('需核对非标准录像目录后扩展部署脚本')
-if (root / 'current').resolve(strict=True) != release:
+if not sys.argv[4] and (root / 'current').resolve(strict=True) != release:
     raise RuntimeError('打包期间 current 版本发生变化')
 for source, expected in tracked.items():
     if digest(pathlib.Path(source)) != expected:
