@@ -52,6 +52,8 @@ assert "cpu-policy.py" in runner and "DRONE_TRACKER_CPU_CONFIG" in runner
 assert "taskset -c \"$cpus\"" in runner
 assert "taskset -c 4-7" not in runner
 packager = (deployment / "package.sh").read_text()
+package_core = (deployment / "package_core.py").read_text()
 installer = (deployment / "deploy.sh").read_text()
-assert "--cpu-policy" in packager and "cpu_policy_sha256" in packager
+assert "--cpu-policy" in packager and "deployment/cpu-affinity.yaml" in packager
+assert "config/cpu-affinity.yaml" in package_core and "'cpu_policy': policy_record" in package_core
 assert "config/cpu-affinity.yaml" in installer and "cpu-policy.py" in installer

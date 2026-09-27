@@ -1,6 +1,6 @@
 # RK3576 生产部署包
 
-部署包来自生产板已安装版本。包含主节点、录像工作进程、录像检查器、ROS 包发现文件、原样配置及配置引用的 RKNN 模型。随包包含程序依赖的 ROS 共享库和 vision_msgs 非 Python 类型支持库，存放在版本目录的 `lib/bundled-ros`。预检和启动优先使用这些库，不覆盖系统 ROS。没有源码、基准测试程序、RKNN Runtime 或基础系统共享库。
+部署包由本机 ARM64 构建容器生成，不读取生产源板的已安装文件。它包含主节点、录像工作进程、录像检查器、ROS 包发现文件、明确选定的原样配置及配置引用的 RKNN 模型。随包包含程序依赖的 ROS 共享库和 vision_msgs 非 Python 类型支持库，存放在版本目录的 `lib/bundled-ros`。预检和启动优先使用这些库，不覆盖系统 ROS。包内没有源码、基准测试程序、RKNN Runtime 或基础系统共享库。
 
 ## 从开发机校时
 
@@ -46,7 +46,7 @@
 
 ## 配置和 CPU
 
-相机配置安装到 `/opt/drone_tracker/config/camera.yaml`，CPU 策略安装到 `/opt/drone_tracker/config/cpu-affinity.yaml`。两者均与打包时的源文件逐字节一致。`SOURCE.json` 记录源版本和源文件 SHA-256 指纹，`SHA256SUMS` 校验包内文件，`MODELS.sha256` 校验所用模型。
+相机配置安装到 `/opt/drone_tracker/config/camera.yaml`，CPU 策略安装到 `/opt/drone_tracker/config/cpu-affinity.yaml`。这里及模型配置中的 `/opt/drone_tracker/...` 均是目标板运行路径，不是本机或容器中的输入路径。两份配置与打包时的源文件逐字节一致。`SOURCE.json` 记录宿主机所选输入路径、文件 SHA-256 指纹、Git 状态和容器镜像身份；`SHA256SUMS` 校验包内文件，`MODELS.sha256` 校验所用模型。
 
 本次生产配置启用 HDMI 与录像，使用 `/dev/video22`、`/dev/media2`、`/dev/dri/card0`，录像目录为 `/var/lib/drone_tracker/recordings`。这些设备编号依赖接线和驱动，不保证其他板相同。采集前执行 `v4l2-ctl --list-devices` 和 `media-ctl -p` 核对实际拓扑。设备存在仅是预检，不证明接入了正确传感器或显示设备。
 
@@ -93,20 +93,29 @@ sudo systemctl daemon-reload
 
 首次安装没有旧内容时可能不存在 `installation.tar`。此时禁用并删除服务文件，再移走本次安装的 `config/camera.yaml`、`config/cpu-affinity.yaml`、`bin/run-camera`、`bin/cpu-policy.py`、`bin/prepare-display.py` 和 `current` 链接；最后执行 `sudo systemctl daemon-reload`。保留模型、录像和 release 目录供检查，确认后再清理。
 
-## 重新打包
+## 在本机重新打包
 
-在生产源板放置整个 `deployment/` 目录，执行：
+先启动 Docker，并用仓库的 `./build.sh --clean --test` 在 `drone-tracker-rk3576:humble-arm64-rknn2.3.2` 镜像中生成 ARM64 安装目录。把四个已批准的模型放到本机目录。例如，若生产配置引用 `/opt/drone_tracker/models/fp16/head.rknn`，则本机文件应为 `<模型目录>/fp16/head.rknn`。该目录还须包含 YOLO、模板 Backbone 和搜索 Backbone 文件。共享 `nano_backbone` 保持空值。
+
+在仓库根目录运行：
 
 ```bash
-source /opt/ros/humble/setup.bash
-bash deployment/package.sh /tmp/drone-tracker-packages --cpu-policy /绝对路径/cpu-affinity.yaml
+./deployment/package.sh .docker-artifacts/packages --model-root "$PWD/.docker-artifacts/production-models"
 ```
 
-默认包含当前配置引用的模型。目标板已具有相同模型时可追加 `--without-models`；安装仍会检查模型内容与源板一致。旧源安装没有 CPU 策略时，必须显式传入 `--cpu-policy`，例如使用已核对的 `deployment/cpu-affinity.yaml`。脚本不会自行生成策略。`SOURCE.json` 会记录策略来源和 SHA-256 指纹。已有策略且未传该选项时，脚本复制当前安装的策略。打包不重新编译、不启动相机、不更改服务。打包期间若源配置、模型、二进制或当前版本链接变化，会终止生成。
+默认相机配置是 `parameters/rk3576_sc233hgs_production_params.yaml`；默认安装目录是 `.docker-artifacts/install/drone_tracker`；默认 CPU 策略是 `deployment/cpu-affinity.yaml`。三个路径可分别用 `--camera-config`、`--install-root`、`--cpu-policy` 指定存在的绝对路径。例如，切换到 AR0234 时先在该模板中填好四个目标板模型路径，再执行：
 
-若程序已在本机 ARM64 容器编译并上传到源板的临时安装目录，可增加 `--release /绝对路径/安装目录`。脚本从该目录读取程序和 ROS 包文件，仍从 `/opt/drone_tracker/config` 与 `/opt/drone_tracker/models` 读取生产配置和模型。这样可在切换服务前打包并执行 `deploy.sh --check`。
+```bash
+./deployment/package.sh .docker-artifacts/packages \
+  --model-root "$PWD/.docker-artifacts/production-models" \
+  --camera-config "$PWD/parameters/rk3576_ar0234_camera_params.yaml"
+```
 
-包内有源程序附带的许可证文件。模型和生成的部署包应存放于忽略的本地产物目录，不提交到源码仓库。
+默认随包携带模型。若目标板已有逐字节相同的四个模型，可追加 `--without-models`。此选项仍要求完整本地模型目录，仍生成 `MODELS.sha256`；目标板 `deploy.sh --check` 会对已有模型核对指纹。缺少配置、策略、安装程序或模型时，打包失败。打包检查输入复制前后是否变化，不会留下成功命名的半成品归档。
+
+旧板端 `--release /绝对路径/安装目录` 用法已改为本机 `--install-root /绝对路径/安装目录`。脚本不再读取板上的 `/opt/drone_tracker/current`、相机配置、模型或 CPU 策略，也不需要 SSH。打包不重新编译、不启动相机、不更改服务。生成包后仍须在目标生产板核对设备拓扑和运行条件，再执行 `sudo ./deploy.sh --check`；容器检查不能替代相机或 NPU 实机验收。
+
+模型和生成的部署包应放入 Git 忽略的本地产物目录，不提交到源码仓库。
 
 ### 显示计时诊断版本
 

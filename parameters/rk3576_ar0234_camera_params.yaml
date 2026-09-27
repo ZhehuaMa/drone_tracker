@@ -1,4 +1,6 @@
-# RK3576 相机入口：启动后等待 ON；必须先填写模型路径。内参暂用模拟值。
+# AR0234 软件触发相机模板：启动后等待 ON；必须先填写模型路径。
+# camera 内参是模拟值，并非镜头实测标定；部署前须用 v4l2-ctl --list-devices
+# 和 media-ctl -p 复核目标板的 /dev 设备、传感器实体及采集格式。
 drone_tracker_node:
   ros__parameters:
     # ROS bag（按话题保存消息）开关；支持 RK3576 相机和视频，故障只影响本轮 bag。
@@ -10,7 +12,7 @@ drone_tracker_node:
     # SC233HGS 独立 H.264/TS 录像；与 need_save/ROS bag、ROS 图像及 HDMI 开关独立。
     # 生产启用示例：复核本地 ext4 挂载及目录权限，使用 SC233HGS 连续模式后设 enabled: true。
     recording:
-      enabled: true
+      enabled: false
       directory: /var/lib/drone_tracker/recordings
       bitrate_bps: 12000000
       segment_seconds: 60

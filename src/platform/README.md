@@ -508,10 +508,10 @@ fuser "$VIDEO_DEVICE"
 
 ### 填写配置并启动
 
-1. 复制 `parameters/rk3576_camera_params.yaml` 到部署目录。
+1. AR0234 软件触发入口复制 `parameters/rk3576_ar0234_camera_params.yaml`；SC233HGS 连续采集入口复制 `parameters/rk3576_sc233hgs_production_params.yaml`。通用 `rk3576_camera.launch.py` 未指定 `params_file` 时只默认选择 AR0234 模板；仍须显式提供 `video_source`。生产部署包默认选择 SC233HGS 模板。
 2. 根据 `media-ctl -p` 核对媒体设备、传感器实体、采集设备与尺寸。示例实体来自历史连接，重新接线后须复核。
-3. 填写四个模型文件路径：YOLO、模板 Backbone、搜索 Backbone、Head。Backbone 提取图像特征，Head 匹配模板和搜索特征。共享 `nano_backbone` 留空。
-4. 核对 `camera.fx/fy/cx/cy`，分别为像素焦距和主点坐标。当前按用户确认，对 1920×1200 图像暂用模拟值 `1000.0/1000.0/960.0/600.0`：焦距人为选定，主点暂取图像中心。可用来继续接入测试，但不代表镜头标定或旋转补偿精度通过。正式标定后替换四值并重启节点。节点不会再次缩放这些值；缺失或 `.nan` 仍会被拒绝。
+3. 在所选配置中填写四个模型文件路径：YOLO、模板 Backbone、搜索 Backbone、Head。Backbone 提取图像特征，Head 匹配模板和搜索特征。共享 `nano_backbone` 留空。本机打包时，配置路径写目标板的 `/opt/drone_tracker/models/<相对路径>`，本地 `--model-root` 下放相同的相对路径；例如 `fp16/head.rknn`。SC233HGS 生产模板已填写当前生产模型路径，打包前仍须核对本地模型文件和指纹。
+4. 核对 `camera.fx/fy/cx/cy`，分别为像素焦距和主点坐标。两份相机模板当前均使用模拟内参，具体数值以各自文件为准，不代表镜头实测标定或旋转补偿精度通过。正式标定后替换四值并重启节点。节点不会再次缩放这些值；缺失或 `.nan` 仍会被拒绝。
 5. 在已构建和加载 ROS 包环境的目标系统执行以下命令。首次启动完成初始化后等待 ON。
 
 ```bash
@@ -519,6 +519,13 @@ ros2 launch drone_tracker rk3576_camera.launch.py \
   params_file:=/absolute/path/camera.yaml video_source:=video0
 ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: ON}'
 ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: OFF}'
+```
+
+选择 SC233HGS 时，将 `params_file` 指向已核对的生产模板副本，并把 `video_source` 设为当前板上实际采集节点。例如：
+
+```bash
+ros2 launch drone_tracker rk3576_camera.launch.py \
+  params_file:=/absolute/path/sc233hgs-camera.yaml video_source:=/dev/video22
 ```
 
 `video_source` 支持 `video10` 等多位设备号和 `/dev/video10` 等绝对设备路径。launch 只覆盖输入路径，算法与模式来自参数文件。初始化核验采集能力；设备恢复后，再次 ON 会重新打开和核验设备。

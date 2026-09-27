@@ -1,0 +1,84 @@
+# SC233HGS 生产模板：以 HZ-RK3576_WuKong Board 当前 camera.yaml 为参数基线。
+# /opt/drone_tracker/... 是目标生产板运行路径，不是本机或打包容器路径。
+# camera 内参是模拟值，并非镜头实测标定；正式使用前须标定并替换。
+# 部署前须用 v4l2-ctl --list-devices 和 media-ctl -p 复核 /dev 设备及采集格式。
+drone_tracker_node:
+  ros__parameters:
+    need_save: true
+    save_path: /var/lib/drone_tracker/recordings
+    visualized_result: false
+    osd:
+      render_path: cached-overlay
+      timing_enabled: true
+      enabled: true
+      drm_device: /dev/dri/card0
+      connector: HDMI-A-1
+      width: 720
+      height: 480
+      refresh_hz: 60.0
+      frame_stale_ms: 1000
+      telemetry_timeout_ms: 2000
+      craft_name: FPV
+      battery_cells: 0
+    use_history_timestamp: false
+    use_sim_time: false
+    camera:
+      fx: 1333.3
+      fy: 1333.3
+      cx: 960.0
+      cy: 600.0
+    tracker:
+      yolo_engine: /opt/drone_tracker/models/balloon_best_zoo6_int8_fp16_cls.rknn
+      nano_backbone: ''
+      nano_template_backbone: /opt/drone_tracker/models/fp16/template_backbone.rknn
+      nano_search_backbone: /opt/drone_tracker/models/fp16/search_backbone.rknn
+      nano_head: /opt/drone_tracker/models/fp16/head.rknn
+      yolo_target_class_id: 0
+      yolo_conf_threshold: 0.5
+      yolo_nms_threshold: 0.45
+      yolo_interval: 4
+      yolo_recall_relax_ratio: 1.0
+      iou_reset_threshold: 0.4
+      iou_calibrate_threshold: 0.8
+      max_position_jump: 150.0
+      max_size_jump_ratio: 2.0
+      max_box_area_ratio: 0.8
+      tracking_roi_scale_factor: 2.0
+      lost_max_count: 5
+      frame_buffer_size: 30
+      jump_tolerance: 3
+      enable_dcf: false
+      dcf_fixed_template: true
+      dcf_learning_rate: 0.01
+      dcf_lambda: 0.0001
+      dcf_psr_thresh: 5.0
+      dcf_max_div_factor: 0.5
+      kf_r_pos: 4.0
+      kf_r_size: 4.0
+      kf_q_a: 50000.0
+      kf_q_size: 1000.0
+    mv_camera:
+      sensor_model: sc233hgs
+      capture_mode: continuous
+      trigger_rate_hz: 0.0
+      media_device: /dev/media2
+      sensor_entity: m00_b_sc233hgs 0-0030
+      buffer_count: 4
+      width_px: 1920
+      height_px: 1200
+      fps: 60
+      output_width_px: 0
+      output_height_px: 0
+      flip: false
+      mirror: false
+      pixel_size_um: 3.0
+      focal_length_mm: 4.0
+    video_source: /dev/video22
+    recording:
+      enabled: true
+      directory: /var/lib/drone_tracker/recordings
+      bitrate_bps: 12000000
+      segment_seconds: 60
+      sync_interval_ms: 1000
+      max_total_bytes: 21474836480
+      min_free_bytes: 5368709120

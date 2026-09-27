@@ -50,7 +50,7 @@ ctest --test-dir /tmp/drone-osd-tests --output-on-failure
 
 访问 `/dev/dri/card0`、`/dev/dma_heap/system` 以及系统 RGA 所需设备必须具备相应权限。权限分配由部署环境负责。默认不会提升程序权限。
 
-`parameters/rk3576_camera_params.yaml` 和 `parameters/rk3576_video_params.yaml` 包含如下启动参数：
+`parameters/rk3576_ar0234_camera_params.yaml`、`parameters/rk3576_sc233hgs_production_params.yaml` 和 `parameters/rk3576_video_params.yaml` 包含如下启动参数：
 
 | 参数 | 默认值 | 含义 |
 |---|---|---|
