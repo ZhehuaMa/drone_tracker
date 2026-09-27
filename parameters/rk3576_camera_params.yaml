@@ -10,7 +10,7 @@ drone_tracker_node:
     # SC233HGS 独立 H.264/TS 录像；与 need_save/ROS bag、ROS 图像及 HDMI 开关独立。
     # 生产启用示例：复核本地 ext4 挂载及目录权限，使用 SC233HGS 连续模式后设 enabled: true。
     recording:
-      enabled: false
+      enabled: true
       directory: /var/lib/drone_tracker/recordings
       bitrate_bps: 12000000
       segment_seconds: 60
@@ -37,8 +37,8 @@ drone_tracker_node:
     # fx/fy=1000 是人为选定的测试值；cx/cy 暂取图像中心，不是实测标定。
     # 仅用于集成测试，不据此验收旋转补偿精度；正式标定后替换以下四值并重启节点。
     camera:
-      fx: 1000.0
-      fy: 1000.0
+      fx: 1333.3
+      fy: 1333.3
       cx: 960.0
       cy: 600.0
     tracker:
@@ -66,7 +66,7 @@ drone_tracker_node:
                                      # x yolo_interval(4) ≈ 20 帧 (~0.67s)；持续误检不会再无限重初始化
       frame_buffer_size: 30
       jump_tolerance: 3
-      enable_dcf: true               # DCF 融合开关（A/B 对比用）；false 时由 kf_r_pos/kf_q_a
+      enable_dcf: false              # DCF 融合开关（A/B 对比用）；false 时由 kf_r_pos/kf_q_a
                                      # 驱动的中心平滑 KF 承担稳心角色
       dcf_fixed_template: true
       dcf_learning_rate: 0.01
@@ -105,5 +105,5 @@ drone_tracker_node:
       output_height_px: 0
       flip: false
       mirror: false
-      pixel_size_um: 3.45  # RK3576 不据此推导 camera 内参。
-      focal_length_mm: 12.0
+      pixel_size_um: 3.0  # RK3576 不据此推导 camera 内参。
+      focal_length_mm: 4.0
