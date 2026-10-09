@@ -185,24 +185,16 @@ void addTarget(Elements &elements, const PresentationState &state, const VideoGe
         geometry.destination.width, geometry.destination.height};
     const cv::Rect canvas{0, 0, width, height};
     if ((box & video & canvas).empty()) { return; }
-    const std::string label{targetLabelText(state)};
-    const int label_width{static_cast<int>(label.size()) * FONT_W + 12};
-    int plate_x{box.x};
-    if (plate_x + label_width > width) { plate_x = box.x + box.width - label_width; }
-    plate_x = std::max(0, plate_x);
-    const int plate_y{box.y >= FONT_H + 8 ? box.y - FONT_H - 8 : box.y + box.height + 2};
-    const cv::Rect plate{plate_x, plate_y, label_width, FONT_H + 6};
     const bool locked{state.tracker_state == 2};
-    const cv::Rect footprint{(box | plate) + cv::Size{16, 16} + cv::Point{-8, -8}};
+    const cv::Rect footprint{box + cv::Size{16, 16} + cv::Point{-8, -8}};
     const cv::Rect clipped{footprint & video & canvas};
     const cv::Scalar color{stateColor(state.tracker_state)};
     const std::string key{std::to_string(box.x) + "/" + std::to_string(box.y) + "/"
         + std::to_string(box.width) + "/" + std::to_string(box.height) + "/"
-        + label + "/" + std::to_string(state.tracker_state)};
+        + std::to_string(state.tracker_state)};
     addGraphic(elements, "target", key, clipped,
-        [box, plate, label, color, locked](cv::Mat &image, cv::Point origin) {
+        [box, color, locked](cv::Mat &image, cv::Point origin) {
             const cv::Rect b{box - origin};
-            const cv::Rect p{plate - origin};
             const int thickness{locked ? 3 : 2};
             const int length{std::clamp(std::min(box.width, box.height) / 3, 10, 36)};
             corner(image, b.x, b.y, 1, 1, length, thickness, color);
@@ -222,12 +214,6 @@ void addTarget(Elements &elements, const PresentationState &state, const VideoGe
                 line(image, center + cv::Point{8, 0}, center + cv::Point{0, 8}, color, 2);
                 line(image, center + cv::Point{0, 8}, center + cv::Point{-8, 0}, color, 2);
             }
-            fill(image, p, {color[0] / 2, color[1] / 2, color[2] / 2, 255});
-            fill(image, {p.x, p.y, p.width, 2}, color);
-            fill(image, {p.x, p.y + p.height - 2, p.width, 2}, color);
-            fill(image, {p.x, p.y, 2, p.height}, color);
-            fill(image, {p.x + p.width - 2, p.y, 2, p.height}, color);
-            bitmapText(image, p.x + 6, p.y + 3, label, WHITE);
         }, true);
 }
 Elements scene(const PresentationState &state, const VideoGeometry &geometry, int width, int height,
@@ -399,10 +385,8 @@ std::string statusBarText(const PresentationState &state) {
     return state.mission_active ? "ON MISSION" : stateText(state.tracker_state);
 }
 
-std::string targetLabelText(const PresentationState &state) {
-    if (state.status != DisplayStatus::Live || state.boxes.empty()) { return {}; }
-    return state.boxes.front().label.empty() ? stateText(state.tracker_state)
-        : state.boxes.front().label.substr(0, 24);
+std::string targetLabelText(const PresentationState &) {
+    return {};
 }
 
 OsdLayout::OsdLayout(std::string craft_name) : craft_name_{std::move(craft_name)} {}

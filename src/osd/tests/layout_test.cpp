@@ -62,6 +62,16 @@ int main(int argc, char **argv) {
             osd::CachedOsdLayout reference{};
             const auto &actual{cached.draw(state, geom, width, height, wall)};
             const auto &expected{reference.draw(state, geom, width, height, wall)};
+            const auto layers{layout.draw(state, geom, width, height, wall)};
+            cv::Mat combined{layers.hud.clone()};
+            for (int y{0}; y < height; ++y) {
+                for (int x{0}; x < width; ++x) {
+                    const auto pixel{layers.target.at<cv::Vec4b>(y, x)};
+                    if (pixel[3]) { combined.at<cv::Vec4b>(y, x) = pixel; }
+                }
+            }
+            require(cv::norm(actual, combined, cv::NORM_INF) == 0,
+                "dirty update differs from full legacy redraw");
             if (cv::norm(actual, expected, cv::NORM_INF) != 0) {
                 std::cerr << "cached comparison=" << comparison << "\n";
                 if (argc > 1) {
@@ -102,18 +112,47 @@ int main(int argc, char **argv) {
         state.boxes = {{100, 200, 220, 160, "TARGET"}}; state.tracker_state = 2; compare(720, 480);
         state.boxes = {{400, 350, 110, 80, "A"}}; compare(720, 480);
         state.boxes = {{100, 200, 2, 2, "WWWWWWWWWWWWWWWWWWWWWWWW"}}; compare(720, 480);
-        const auto labeled{layout.draw(state, geometry, 720, 480, wall)};
-        const auto &cached_labeled{cached.draw(state, geometry, 720, 480, wall)};
-        for (int y{0}; y < labeled.target.rows; ++y) {
-            for (int x{0}; x < labeled.target.cols; ++x) {
-                const auto pixel{labeled.target.at<cv::Vec4b>(y, x)};
-                if (pixel[3]) { require(cached_labeled.at<cv::Vec4b>(y, x) == pixel, "long target label clipped"); }
+        for (const cv::Size size : {cv::Size{720, 480}, cv::Size{1280, 720}}) {
+            const auto geom{osd::fitVideo(1920, 1200, size.width, size.height)};
+            for (const osd::DisplayBox box : {osd::DisplayBox{100, 200, 220, 160, {}},
+                     {0, 0, 2, 2, {}}, {1918, 1198, 2, 2, {}}}) {
+                state.boxes = {box};
+                for (int tracker{0}; tracker < 4; ++tracker) {
+                    state.tracker_state = static_cast<std::int8_t>(tracker);
+                    state.boxes.front().label.clear();
+                    compare(size.width, size.height);
+                    const auto unlabeled{layout.draw(state, geom, size.width, size.height, wall)};
+                    const cv::Mat cached_unlabeled{cached.draw(state, geom, size.width, size.height, wall).clone()};
+                    const auto unchanged{cached.work()};
+                    for (const std::string label : {std::string{}, std::string{"A"},
+                             std::string(80, 'W')}) {
+                        state.boxes.front().label = label;
+                        const auto layers{layout.draw(state, geom, size.width, size.height, wall)};
+                        require(cv::norm(layers.target, unlabeled.target, cv::NORM_INF) == 0,
+                            "input label changed target pixels");
+                        require(cv::norm(cached.draw(state, geom, size.width, size.height, wall),
+                            cached_unlabeled, cv::NORM_INF) == 0, "input label changed cached pixels");
+                        require(cached.work().fields == unchanged.fields
+                            && cached.work().dirty_pixels == unchanged.dirty_pixels,
+                            "input label repainted target");
+                        require(osd::targetLabelText(state).empty(), "invisible label reported");
+                        compare(size.width, size.height);
+                    }
+                }
             }
         }
         state.boxes.clear(); compare(720, 480);
         state.telemetry.attitude.value = osd::Attitude{45, 15, 180}; compare(720, 480);
         state.telemetry.attitude.value.reset(); compare(720, 480);
-        state.status = osd::DisplayStatus::Stopped; compare(720, 480);
+        for (const auto status : {osd::DisplayStatus::WaitingInput, osd::DisplayStatus::WaitingFirst,
+                 osd::DisplayStatus::Stale, osd::DisplayStatus::Stopped, osd::DisplayStatus::Eof,
+                 osd::DisplayStatus::InputFailure}) {
+            state.boxes = {{100, 200, 220, 160, "TARGET"}};
+            state.status = status;
+            compare(720, 480);
+            require(osd::targetLabelText(state).empty(), "non-live label reported");
+        }
+        state.status = osd::DisplayStatus::Stopped;
         const auto legacy_status{layout.draw(state, geometry, 720, 480, wall)};
         const auto &cached_status{cached.draw(state, geometry, 720, 480, wall)};
         require(cv::norm(cached_status(cv::Rect{0, 386, 720, 32}),

@@ -8,8 +8,9 @@
 #include "osd/geometry.h"
 
 namespace osd {
-/** @brief 与 HDMI 布局一致的状态栏和目标框标签，供提交日志使用。 */
+/** @brief 与 HDMI 布局一致的状态栏文字，供提交日志使用。 */
 std::string statusBarText(const PresentationState &state);
+/** @brief 目标标签面板已移除，始终返回空字符串以保留提交日志字段格式。 */
 std::string targetLabelText(const PresentationState &state);
 /** @brief 两个独立的 BGRA 画布：信息层合入视频，目标层供显示控制器叠加。 */
 struct DisplayLayers {

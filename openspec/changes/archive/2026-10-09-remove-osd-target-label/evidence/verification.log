@@ -1,0 +1,29 @@
+[ 20%] Building CXX object src/osd/CMakeFiles/drone_osd_core.dir/presenter.cpp.o
+[ 20%] Building CXX object src/osd/CMakeFiles/drone_osd_core.dir/layout.cpp.o
+[ 40%] Linking CXX static library libdrone_osd_core.a
+[ 60%] Built target drone_osd_core
+[ 80%] Building CXX object src/osd/CMakeFiles/osd_layout_tests.dir/tests/layout_test.cpp.o
+[100%] Linking CXX executable osd_layout_tests
+[100%] Built target osd_layout_tests
+Consolidate compiler generated dependencies of target drone_osd_core
+[ 75%] Built target drone_osd_core
+[100%] Building CXX object src/osd/CMakeFiles/osd_hud_style_tests.dir/tests/hud_style_test.cpp.o
+[100%] Linking CXX executable osd_hud_style_tests
+[100%] Built target osd_hud_style_tests
+[ 75%] Built target drone_osd_core
+[ 75%] Building CXX object src/osd/CMakeFiles/osd_presenter_tests.dir/tests/presenter_test.cpp.o
+[100%] Linking CXX executable osd_presenter_tests
+[100%] Built target osd_presenter_tests
+OSD reference HUD style contracts passed
+Internal ctest changing into directory: /work/ros2_ws/build/drone_tracker
+Test project /work/ros2_ws/build/drone_tracker
+    Start 21: osd_presenter_tests
+1/3 Test #21: osd_presenter_tests ..............   Passed    0.59 sec
+    Start 23: osd_layout_tests
+2/3 Test #23: osd_layout_tests .................   Passed    1.20 sec
+    Start 25: osd_hud_style_tests
+3/3 Test #25: osd_hud_style_tests ..............   Passed    0.10 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   1.90 sec

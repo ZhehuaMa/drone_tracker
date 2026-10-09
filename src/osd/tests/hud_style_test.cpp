@@ -16,17 +16,43 @@ int opaque(const cv::Mat &image, cv::Rect area) {
     cv::split(image(area), channels);
     return cv::countNonZero(channels[3]);
 }
-void equivalent(osd::OsdLayout &legacy, osd::CachedOsdLayout &cached, const osd::PresentationState &state,
-                const osd::VideoGeometry &geometry, int width, int height,
-                std::chrono::system_clock::time_point time) {
-    const auto layers{legacy.draw(state, geometry, width, height, time)};
+cv::Mat combinedOverlay(const osd::DisplayLayers &layers) {
     cv::Mat combined{layers.hud.clone()};
-    for (int y{0}; y < height; ++y) {
-        for (int x{0}; x < width; ++x) {
+    for (int y{0}; y < combined.rows; ++y) {
+        for (int x{0}; x < combined.cols; ++x) {
             const auto pixel{layers.target.at<cv::Vec4b>(y, x)};
             if (pixel[3]) { combined.at<cv::Vec4b>(y, x) = pixel; }
         }
     }
+    return combined;
+}
+void compareBaseline(const osd::DisplayLayers &layers, const std::string &directory,
+                     const std::string &hud_name, const std::string &target_name, cv::Rect old_plate) {
+    const cv::Mat hud{cv::imread(directory + "/" + hud_name, cv::IMREAD_UNCHANGED)};
+    require(!hud.empty(), "baseline HUD missing");
+    require(cv::norm(hud, layers.hud, cv::NORM_INF) == 0, "unrelated HUD changed from baseline");
+    if (target_name.empty()) { return; }
+    const cv::Mat target{cv::imread(directory + "/" + target_name, cv::IMREAD_UNCHANGED)};
+    require(!target.empty(), "baseline target missing");
+    const cv::Mat before{combinedOverlay({hud, target})};
+    const cv::Mat after{combinedOverlay(layers)};
+    require(cv::norm(before, after, cv::NORM_INF) > 0, "baseline label was not removed");
+    for (int y{0}; y < after.rows; ++y) {
+        for (int x{0}; x < after.cols; ++x) {
+            if (!old_plate.contains({x, y})) {
+                require(target.at<cv::Vec4b>(y, x) == layers.target.at<cv::Vec4b>(y, x),
+                    "target decoration changed outside original label");
+                require(before.at<cv::Vec4b>(y, x) == after.at<cv::Vec4b>(y, x),
+                    "visible pixels changed outside original label");
+            }
+        }
+    }
+}
+void equivalent(osd::OsdLayout &legacy, osd::CachedOsdLayout &cached, const osd::PresentationState &state,
+                const osd::VideoGeometry &geometry, int width, int height,
+                std::chrono::system_clock::time_point time) {
+    const auto layers{legacy.draw(state, geometry, width, height, time)};
+    const cv::Mat combined{combinedOverlay(layers)};
     require(cv::norm(combined, cached.draw(state, geometry, width, height, time), cv::NORM_INF) == 0,
         "legacy and cached HUD differ");
 }
@@ -63,9 +89,20 @@ int main(int argc, char **argv) {
         const cv::Vec4b tracking{normal.target.at<cv::Vec4b>(269, 459)};
         require(tracking[0] == 90 && tracking[1] == 230 && tracking[2] == 90,
             "tracking green corner color");
+        // 原面板位于 (459, 229, 140, 38)，下沿曾遮住锁定外角框。
+        const cv::Rect cleared_plate{459, 229, 140, 34};
+        require(opaque(normal.target, cleared_plate) == 0, "target label text or plate remains");
+        require(cv::norm(combinedOverlay(normal)(cleared_plate), normal.hud(cleared_plate),
+            cv::NORM_INF) == 0, "former label region did not restore underlying HUD");
+        require(normal.target.at<cv::Vec4b>(263, 453) == tracking, "locked outer corner missing");
+        require(normal.target.at<cv::Vec4b>(307, 521) == tracking, "locked center diamond missing");
+        if (argc > 2) {
+            compareBaseline(normal, argv[2], "hud-normal.png", "target-normal.png", {459, 229, 140, 38});
+        }
         state.mission_active = true;
         equivalent(legacy, cached, state, geometry, 720, 480, time);
         const auto mission{legacy.draw(state, geometry, 720, 480, time)};
+        require(osd::statusBarText(state) == "ON MISSION", "mission banner text changed");
         require(cv::norm(mission.hud(cv::Rect{500, 45, 190, 40}),
             normal.hud(cv::Rect{500, 45, 190, 40}), cv::NORM_INF) > 0,
             "mission banner did not replace tracking text");
@@ -79,6 +116,7 @@ int main(int argc, char **argv) {
             equivalent(legacy, cached, state, geometry, 720, 480, time);
             const auto layer{legacy.draw(state, geometry, 720, 480, time)};
             require(layer.target.at<cv::Vec4b>(269, 459) == expected, "tracker corner palette");
+            require(opaque(layer.target, cleared_plate) == 0, "non-tracking label plate remains");
         }
         state.tracker_state = 2;
         equivalent(legacy, cached, state, geometry, 720, 480, time);
@@ -98,6 +136,10 @@ int main(int argc, char **argv) {
         alert.trigger = "TRIG ON";
         alert.boxes = {{1366, 480, 340, 242, "TRACKING"}};
         equivalent(legacy, cached, alert, geometry, 720, 480, time);
+        if (argc > 2) {
+            compareBaseline(legacy.draw(alert, geometry, 720, 480, time), argv[2],
+                "hud-alert.png", "target-moved.png", {512, 154, 140, 38});
+        }
         if (argc > 1) {
             const auto alert_layers{legacy.draw(alert, geometry, 720, 480, time)};
             require(cv::imwrite(std::string{argv[1]} + "/hud-alert.png", alert_layers.hud), "alert HUD snapshot");
@@ -136,6 +178,7 @@ int main(int argc, char **argv) {
         require(opaque(frozen.target, {0, 0, 720, 480}) == 0, "frozen target decoration remains");
         require(opaque(frozen.hud, {190, 385, 350, 40}) > 100, "Chinese freeze prompt missing");
         require(opaque(frozen.hud, {570, 425, 128, 38}) > 30, "warning hidden by freeze prompt");
+        if (argc > 2) { compareBaseline(frozen, argv[2], "hud-frozen.png", {}, {}); }
         if (argc > 1) {
             require(cv::imwrite(std::string{argv[1]} + "/hud-frozen.png", frozen.hud), "frozen snapshot");
         }

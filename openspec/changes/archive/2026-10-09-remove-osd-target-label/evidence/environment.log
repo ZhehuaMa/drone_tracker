@@ -1,0 +1,6 @@
+aarch64
+g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+cmake version 3.22.1
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /opt/rknn-runtime/lib/librknnrt.so
+clang-tidy unavailable
+clangd unavailable

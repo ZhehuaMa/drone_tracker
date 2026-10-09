@@ -408,12 +408,12 @@ void missionLifetime(bool cached) {
     first.boxes.front().label.clear();
     require(presenter.submit(std::move(first)), "mission initial packet rejected");
     waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().new_video; });
-    require(diagnostics.waitFor("hud=\"TRK TRACKING\" target_label=\"TRK TRACKING\""),
-        "initial displayed labels missing from diagnostics");
+    require(diagnostics.waitFor("hud=\"TRK TRACKING\" target_label=\"\""),
+        "initial display did not report empty target label");
     presenter.showMission();
     waitFor(state, [&] { return state.outputs.back().mission_active; });
     require(diagnostics.contains("event=mission round="), "mission receipt missing from diagnostics");
-    require(diagnostics.waitFor("hud=\"ON MISSION\" target_label=\"TRK TRACKING\""),
+    require(diagnostics.waitFor("hud=\"ON MISSION\" target_label=\"\""),
         "mission display missing from diagnostics");
     const std::size_t display_logs_before_following{diagnostics.countDisplay()};
     time_ms = 3000;
@@ -449,6 +449,40 @@ void missionLifetime(bool cached) {
     presenter.shutdown();
     require(resources.frames == 0 && resources.views == 0, "mission test leaked frames");
 }
+void labelChangesDoNotLog(bool cached) {
+    BackendState state{};
+    DiagnosticCapture diagnostics{};
+    Resources resources{};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms,
+        [] { return osd::SteadyClock::time_point{}; }, {}, {},
+        [&](const std::string &line) { diagnostics.record(line); }};
+    presenter.start();
+    const auto round{presenter.beginRound()};
+    int sequence{0};
+    std::size_t initial_logs{};
+    for (const std::string label : {std::string{"TRACKING"}, std::string{"OTHER TARGET"},
+             std::string{}, std::string(80, 'W')}) {
+        auto frame{packet(round, ++sequence, resources)};
+        frame.boxes = {{1, 0, 1, 1, label}};
+        require(presenter.submit(std::move(frame)), "label-only packet rejected");
+        waitFor(state, [&] { return !state.outputs.empty()
+            && state.outputs.back().sequence == static_cast<std::uint64_t>(sequence); });
+        const auto deadline{osd::SteadyClock::now() + 2s};
+        while (presenter.counters().displayed < static_cast<std::uint64_t>(sequence)
+               && osd::SteadyClock::now() < deadline) { std::this_thread::yield(); }
+        require(presenter.counters().displayed == static_cast<std::uint64_t>(sequence),
+            "label-only frame not committed");
+        if (sequence == 1) {
+            require(diagnostics.waitFor("status=Live hud=\"TRK TRACKING\" target_label=\"\""),
+                "named target reported visible label");
+            initial_logs = diagnostics.countDisplay();
+        } else {
+            require(diagnostics.countDisplay() == initial_logs, "input label emitted display log");
+        }
+    }
+    presenter.shutdown();
+    require(resources.frames == 0 && resources.views == 0, "label test leaked frames");
+}
 } // namespace
 int main() {
     try {
@@ -460,6 +494,7 @@ int main() {
             failureAndExit(cached);
             triggerLifetime(cached);
             missionLifetime(cached);
+            labelChangesDoNotLog(cached);
         }
         std::cout << "OSD pairing, lifetime, stop and restart tests passed\n";
         return 0;

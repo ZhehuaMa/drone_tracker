@@ -1,0 +1,3 @@
+[ 75%] Built target drone_osd_core
+[100%] Built target osd_hud_style_tests
+OSD reference HUD style contracts passed
