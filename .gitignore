@@ -1,5 +1,6 @@
 .agents/
 .docker-artifacts/
+.github/
 .vscode/
 build/
 *.engine
