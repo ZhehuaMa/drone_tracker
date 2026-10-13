@@ -1,0 +1,32 @@
+{
+  "files_checked": 1120,
+  "source_files_verified_against_archive": 355,
+  "binary_archive_sha_matches": {
+    "fixed_workload_probe": "f2ebfdb733a8e10119ec9bec85dc19d7f40df51db8324923f052e8356929a733",
+    "rk3576_diagnostic_worker": "99e71c0ea9341f0340a4a05f31a89aeba34628b075e3c3a291fbff4b43c69372",
+    "storage_switch_test": "e131793ec37407999dacbae49efbcd0ae94d44dac7e25c33214717d9bc0862a0",
+    "rk3576_diagnostic_inspect": "bc00627919b9e60ea3f95b9ab17a9aad11103f6348c8bffd22850543179a8970"
+  },
+  "prior_manifest_entries_verified": 688,
+  "mismatches": [],
+  "relative_markdown_links_checked": [
+    "design.md",
+    "storage.patch",
+    "final-production-check.txt",
+    "raw-files-manifest.json",
+    "artifact-manifest.json"
+  ],
+  "native_scanner_files": 135,
+  "strict_validate_exit": 0,
+  "git_diff_check_exit": 0,
+  "task_progress": {
+    "total": 40,
+    "complete": 39,
+    "remaining": 1
+  },
+  "formal_final_pid": "44741",
+  "tmpfs_originals_durably_verified": 152,
+  "tmpfs_exact_mount_cleaned": true,
+  "report_sha256": "9311976e893684b7d5ff1de836e0efddc098c98655e445066bf259fc3b97fabc",
+  "design_sha256": "ee69409f1a1aa2b96aaeb3ec98996914023335f268e878b2e8243d237eee27fc"
+}

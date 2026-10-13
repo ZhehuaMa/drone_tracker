@@ -1,0 +1,25 @@
+{
+  "captured_ns": 71550406039868,
+  "results": [
+    {
+      "path": "/dev/shm/window02-pair3-1",
+      "preserved_copy": "/home/hzhy/drone-performance-investigation-20261013/window02/evidence/pair3/diagnostics-1",
+      "files": {
+        "65356622126505/identity.json": "af8fab4db094d7236d541729a4f1e6f963357e84338b380169f9b9d1d4670aab",
+        "65356622126505/segment-31683-71141943604743-0.dtd": "3ea3a5a1eedcbc13144e4fe6c0956637db566e5f903e7471e5158bf3eb56b3b0"
+      },
+      "sha256_matches": true,
+      "removed": true
+    },
+    {
+      "path": "/dev/shm/window02-pair4-0",
+      "preserved_copy": "/home/hzhy/drone-performance-investigation-20261013/window02/evidence/pair4/diagnostics-0",
+      "files": {
+        "66045511880568/identity.json": "92f3281bbc9d066b0c6b88a94ad234b405ef6ded06faa6c38018b7f67ec6f7c5",
+        "66045511880568/segment-31912-71173703381195-0.dtd": "b556c11db5494db3c41b8f5b0dd97aa1a474db5b6beb52274e7ac1552b3a0932"
+      },
+      "sha256_matches": true,
+      "removed": true
+    }
+  ]
+}

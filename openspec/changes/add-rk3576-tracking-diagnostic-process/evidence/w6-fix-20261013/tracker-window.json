@@ -1,0 +1,23 @@
+{
+  "command": [
+    "bin/diagnostic_tracker_tests",
+    "/home/hzhy/drone-diagnostic-w6-fix-20261013/bin/rk3576_diagnostic_inspect"
+  ],
+  "budget_seconds": 30.0,
+  "elapsed_seconds": 0.4493667279893998,
+  "phase_budgets": {
+    "prepare": 0,
+    "warmup": 0,
+    "measurement": 27.0,
+    "cleanup": 3.0
+  },
+  "timeout": false,
+  "returncode": 0,
+  "observed_pids": [
+    29511
+  ],
+  "remaining_pids": [],
+  "unit_members": {},
+  "resources_recovered": true,
+  "passed": true
+}

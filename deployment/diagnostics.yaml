@@ -1,0 +1,9 @@
+# 独立诊断收集器的启动配置；模式由 camera.yaml 的 diagnostics.mode 决定。
+version: 1
+protocol_version: 1
+socket: /run/drone_tracker/diagnostics.sock
+directory: /var/lib/drone_tracker/diagnostics
+sync_ms: 100
+segment_bytes: 67108864
+total_bytes: 1073741824
+minimum_free_bytes: 5368709120

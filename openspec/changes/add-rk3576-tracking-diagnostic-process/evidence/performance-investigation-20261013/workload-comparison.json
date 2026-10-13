@@ -1,0 +1,1564 @@
+[
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair3",
+    "modes": [
+      {
+        "label": "disk",
+        "init_call_count": 30,
+        "slope_ms_per_step": 12.580643339445437,
+        "r2": 0.9850747901173892,
+        "p99_call": {
+          "start_ns": 71130703256670,
+          "duration_ns": 259849543,
+          "round": 1,
+          "frame_time_us": 1791856302060239,
+          "consumed": 1,
+          "cpu_ns": 196389022,
+          "update_id": 564,
+          "initializations": 1,
+          "steps": 21,
+          "init_ns": 7836069,
+          "step_ns": 251733883,
+          "submit_ns": 111964,
+          "sync_overlap_ns": 24929119,
+          "results": [
+            {
+              "request_id": 105,
+              "source_update_id": 543,
+              "source_tracker_frame_id": 543,
+              "tracker_frame_id": 564,
+              "has_target": true,
+              "source_frame_age": 21,
+              "source_to_read_ns": 350236810,
+              "accepted_to_start_ns": 299320407,
+              "detect_ns": 41874067,
+              "end_to_read_ns": 9015104
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 18.939192182,
+        "calls_in_schedstat_interval": 717,
+        "tracking_cpu_seconds_per_second": 0.7304064226745276,
+        "tracking_runnable_wait_ms_per_second": 40.87778209124464,
+        "tracking_runnable_wait_ms_per_call": 1.079765928870293,
+        "selected_count_window": 760,
+        "skipped_count_window": 451,
+        "p99_request_stages": [
+          [
+            0,
+            40732950
+          ]
+        ]
+      },
+      {
+        "label": "ram",
+        "init_call_count": 42,
+        "slope_ms_per_step": 13.051985138222918,
+        "r2": 0.9939535040510245,
+        "p99_call": {
+          "start_ns": 71153705804215,
+          "duration_ns": 291840334,
+          "round": 1,
+          "frame_time_us": 1791856325059277,
+          "consumed": 1,
+          "cpu_ns": 223433416,
+          "update_id": 412,
+          "initializations": 1,
+          "steps": 20,
+          "init_ns": 24159449,
+          "step_ns": 254307416,
+          "submit_ns": 154080,
+          "sync_overlap_ns": 4508,
+          "results": [
+            {
+              "request_id": 80,
+              "source_update_id": 392,
+              "source_tracker_frame_id": 392,
+              "tracker_frame_id": 412,
+              "has_target": true,
+              "source_frame_age": 20,
+              "source_to_read_ns": 423922982,
+              "accepted_to_start_ns": 236549645,
+              "detect_ns": 159862576,
+              "end_to_read_ns": 15816318
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 18.935309259,
+        "calls_in_schedstat_interval": 650,
+        "tracking_cpu_seconds_per_second": 0.7671680256870105,
+        "tracking_runnable_wait_ms_per_second": 42.811349099814564,
+        "tracking_runnable_wait_ms_per_call": 1.2471479,
+        "selected_count_window": 689,
+        "skipped_count_window": 511,
+        "p99_request_stages": [
+          [
+            0,
+            39397804
+          ],
+          [
+            1,
+            41023541
+          ],
+          [
+            2,
+            40810425
+          ],
+          [
+            2,
+            37655752
+          ]
+        ]
+      }
+    ],
+    "matched_step_counts": [
+      {
+        "steps": 2,
+        "left_n": 2,
+        "right_n": 4,
+        "left_median_ns": 31535259,
+        "right_median_ns": 58542186,
+        "median_delta_ns": 27006927,
+        "left_p99_ns": 42076373,
+        "right_p99_ns": 58611828,
+        "p99_delta_ns": 16535455
+      },
+      {
+        "steps": 3,
+        "left_n": 2,
+        "right_n": 2,
+        "left_median_ns": 53802581,
+        "right_median_ns": 61090235,
+        "median_delta_ns": 7287654,
+        "left_p99_ns": 54718437,
+        "right_p99_ns": 71082717,
+        "p99_delta_ns": 16364280
+      },
+      {
+        "steps": 5,
+        "left_n": 1,
+        "right_n": 5,
+        "left_median_ns": 95379880,
+        "right_median_ns": 93253708,
+        "median_delta_ns": -2126172,
+        "left_p99_ns": 95379880,
+        "right_p99_ns": 93706980,
+        "p99_delta_ns": -1672900
+      },
+      {
+        "steps": 6,
+        "left_n": 1,
+        "right_n": 3,
+        "left_median_ns": 105404454,
+        "right_median_ns": 105108204,
+        "median_delta_ns": -296250,
+        "left_p99_ns": 105404454,
+        "right_p99_ns": 105482546,
+        "p99_delta_ns": 78092
+      },
+      {
+        "steps": 8,
+        "left_n": 6,
+        "right_n": 9,
+        "left_median_ns": 122581616,
+        "right_median_ns": 139843141,
+        "median_delta_ns": 17261525,
+        "left_p99_ns": 141791939,
+        "right_p99_ns": 142182009,
+        "p99_delta_ns": 390070
+      },
+      {
+        "steps": 11,
+        "left_n": 1,
+        "right_n": 4,
+        "left_median_ns": 163358601,
+        "right_median_ns": 163101168,
+        "median_delta_ns": -257433,
+        "left_p99_ns": 163358601,
+        "right_p99_ns": 166675610,
+        "p99_delta_ns": 3317009
+      },
+      {
+        "steps": 12,
+        "left_n": 1,
+        "right_n": 2,
+        "left_median_ns": 179853833,
+        "right_median_ns": 179449417,
+        "median_delta_ns": -404416,
+        "left_p99_ns": 179853833,
+        "right_p99_ns": 187280079,
+        "p99_delta_ns": 7426246
+      },
+      {
+        "steps": 13,
+        "left_n": 1,
+        "right_n": 3,
+        "left_median_ns": 188182940,
+        "right_median_ns": 198010416,
+        "median_delta_ns": 9827476,
+        "left_p99_ns": 188182940,
+        "right_p99_ns": 203931634,
+        "p99_delta_ns": 15748694
+      },
+      {
+        "steps": 14,
+        "left_n": 3,
+        "right_n": 1,
+        "left_median_ns": 200941317,
+        "right_median_ns": 200567577,
+        "median_delta_ns": -373740,
+        "left_p99_ns": 201603975,
+        "right_p99_ns": 200567577,
+        "p99_delta_ns": -1036398
+      },
+      {
+        "steps": 20,
+        "left_n": 3,
+        "right_n": 6,
+        "left_median_ns": 277714305,
+        "right_median_ns": 292312140,
+        "median_delta_ns": 14597835,
+        "left_p99_ns": 279384316,
+        "right_p99_ns": 297123708,
+        "p99_delta_ns": 17739392
+      }
+    ],
+    "p99_difference_ns": 31990791,
+    "p99_work_difference_ns": 18896913,
+    "p99_remaining_difference_ns": 13093878
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair4",
+    "modes": [
+      {
+        "label": "ram",
+        "init_call_count": 42,
+        "slope_ms_per_step": 12.314722320818387,
+        "r2": 0.9934319890207457,
+        "p99_call": {
+          "start_ns": 71188338219298,
+          "duration_ns": 205671206,
+          "round": 1,
+          "frame_time_us": 1791856359695327,
+          "consumed": 1,
+          "cpu_ns": 156726739,
+          "update_id": 508,
+          "initializations": 1,
+          "steps": 16,
+          "init_ns": 8044158,
+          "step_ns": 197368661,
+          "submit_ns": 114174,
+          "sync_overlap_ns": 3980,
+          "results": [
+            {
+              "request_id": 96,
+              "source_update_id": 492,
+              "source_tracker_frame_id": 492,
+              "tracker_frame_id": 508,
+              "has_target": true,
+              "source_frame_age": 16,
+              "source_to_read_ns": 305324668,
+              "accepted_to_start_ns": 240365654,
+              "detect_ns": 42311760,
+              "end_to_read_ns": 11071973
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 18.944451657,
+        "calls_in_schedstat_interval": 688,
+        "tracking_cpu_seconds_per_second": 0.7535832060742133,
+        "tracking_runnable_wait_ms_per_second": 40.50546956403785,
+        "tracking_runnable_wait_ms_per_call": 1.1153399854651163,
+        "selected_count_window": 725,
+        "skipped_count_window": 474,
+        "p99_request_stages": [
+          [
+            0,
+            41555644
+          ]
+        ]
+      },
+      {
+        "label": "disk",
+        "init_call_count": 34,
+        "slope_ms_per_step": 12.706303174310582,
+        "r2": 0.9925492606587806,
+        "p99_call": {
+          "start_ns": 71215237599967,
+          "duration_ns": 208132926,
+          "round": 1,
+          "frame_time_us": 1791856386589804,
+          "consumed": 1,
+          "cpu_ns": 158610798,
+          "update_id": 514,
+          "initializations": 1,
+          "steps": 14,
+          "init_ns": 23852238,
+          "step_ns": 171985372,
+          "submit_ns": 88001,
+          "sync_overlap_ns": 37779069,
+          "results": [
+            {
+              "request_id": 100,
+              "source_update_id": 500,
+              "source_tracker_frame_id": 500,
+              "tracker_frame_id": 514,
+              "has_target": true,
+              "source_frame_age": 14,
+              "source_to_read_ns": 308749385,
+              "accepted_to_start_ns": 245302525,
+              "detect_ns": 42996131,
+              "end_to_read_ns": 8516599
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 19.164700897,
+        "calls_in_schedstat_interval": 682,
+        "tracking_cpu_seconds_per_second": 0.7392024786683525,
+        "tracking_runnable_wait_ms_per_second": 43.50646401846634,
+        "tracking_runnable_wait_ms_per_call": 1.2225635923753666,
+        "selected_count_window": 713,
+        "skipped_count_window": 487,
+        "p99_request_stages": [
+          [
+            0,
+            42069262
+          ]
+        ]
+      }
+    ],
+    "matched_step_counts": [
+      {
+        "steps": 2,
+        "left_n": 2,
+        "right_n": 1,
+        "left_median_ns": 42366804,
+        "right_median_ns": 59543789,
+        "median_delta_ns": 17176985,
+        "left_p99_ns": 42406929,
+        "right_p99_ns": 59543789,
+        "p99_delta_ns": 17136860
+      },
+      {
+        "steps": 5,
+        "left_n": 2,
+        "right_n": 2,
+        "left_median_ns": 77424660,
+        "right_median_ns": 95979119,
+        "median_delta_ns": 18554459,
+        "left_p99_ns": 77967193,
+        "right_p99_ns": 96144959,
+        "p99_delta_ns": 18177766
+      },
+      {
+        "steps": 6,
+        "left_n": 1,
+        "right_n": 3,
+        "left_median_ns": 88627810,
+        "right_median_ns": 105613668,
+        "median_delta_ns": 16985858,
+        "left_p99_ns": 88627810,
+        "right_p99_ns": 107569216,
+        "p99_delta_ns": 18941406
+      },
+      {
+        "steps": 8,
+        "left_n": 9,
+        "right_n": 8,
+        "left_median_ns": 121685482,
+        "right_median_ns": 141382112,
+        "median_delta_ns": 19696630,
+        "left_p99_ns": 125287406,
+        "right_p99_ns": 146553374,
+        "p99_delta_ns": 21265968
+      },
+      {
+        "steps": 9,
+        "left_n": 2,
+        "right_n": 2,
+        "left_median_ns": 134142922,
+        "right_median_ns": 153549764,
+        "median_delta_ns": 19406842,
+        "left_p99_ns": 134721459,
+        "right_p99_ns": 154973268,
+        "p99_delta_ns": 20251809
+      },
+      {
+        "steps": 10,
+        "left_n": 3,
+        "right_n": 2,
+        "left_median_ns": 136675774,
+        "right_median_ns": 143812703,
+        "median_delta_ns": 7136929,
+        "left_p99_ns": 137160850,
+        "right_p99_ns": 154408450,
+        "p99_delta_ns": 17247600
+      },
+      {
+        "steps": 12,
+        "left_n": 1,
+        "right_n": 3,
+        "left_median_ns": 173345223,
+        "right_median_ns": 190984139,
+        "median_delta_ns": 17638916,
+        "left_p99_ns": 173345223,
+        "right_p99_ns": 196084251,
+        "p99_delta_ns": 22739028
+      },
+      {
+        "steps": 13,
+        "left_n": 1,
+        "right_n": 1,
+        "left_median_ns": 171498271,
+        "right_median_ns": 193087698,
+        "median_delta_ns": 21589427,
+        "left_p99_ns": 171498271,
+        "right_p99_ns": 193087698,
+        "p99_delta_ns": 21589427
+      },
+      {
+        "steps": 14,
+        "left_n": 4,
+        "right_n": 3,
+        "left_median_ns": 184401785,
+        "right_median_ns": 202256017,
+        "median_delta_ns": 17854232,
+        "left_p99_ns": 188506847,
+        "right_p99_ns": 208132926,
+        "p99_delta_ns": 19626079
+      },
+      {
+        "steps": 20,
+        "left_n": 2,
+        "right_n": 4,
+        "left_median_ns": 269938507,
+        "right_median_ns": 293264571,
+        "median_delta_ns": 23326064,
+        "left_p99_ns": 279500871,
+        "right_p99_ns": 293814061,
+        "p99_delta_ns": 14313190
+      }
+    ],
+    "p99_difference_ns": 2461720,
+    "p99_work_difference_ns": -9575209,
+    "p99_remaining_difference_ns": 12036929
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair7",
+    "modes": [
+      {
+        "label": "off-a",
+        "init_call_count": 43,
+        "slope_ms_per_step": 12.736629890796706,
+        "r2": 0.9925100705569894,
+        "p99_call": {
+          "start_ns": 71250548314732,
+          "duration_ns": 247831642,
+          "round": 1,
+          "frame_time_us": 1791856421898923,
+          "consumed": 1,
+          "cpu_ns": 184436337,
+          "update_id": 609,
+          "initializations": 1,
+          "steps": 17,
+          "init_ns": 25567067,
+          "step_ns": 209650968,
+          "submit_ns": 0,
+          "sync_overlap_ns": 0,
+          "results": [
+            {
+              "request_id": 126,
+              "source_update_id": 592,
+              "source_tracker_frame_id": 592,
+              "tracker_frame_id": 609,
+              "has_target": true,
+              "source_frame_age": 17,
+              "source_to_read_ns": 378214613,
+              "accepted_to_start_ns": 211976013,
+              "detect_ns": 148108701,
+              "end_to_read_ns": 5021192
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 19.979612059,
+        "calls_in_schedstat_interval": 688,
+        "tracking_cpu_seconds_per_second": 0.7303073512094163,
+        "tracking_runnable_wait_ms_per_second": 71.55094442166816,
+        "tracking_runnable_wait_ms_per_call": 2.077849,
+        "selected_count_window": 695,
+        "skipped_count_window": 512,
+        "p99_request_stages": [
+          [
+            0,
+            35797722
+          ],
+          [
+            1,
+            36750475
+          ],
+          [
+            2,
+            37529718
+          ],
+          [
+            2,
+            36873911
+          ]
+        ]
+      },
+      {
+        "label": "off-b",
+        "init_call_count": 46,
+        "slope_ms_per_step": 12.931561519123298,
+        "r2": 0.9914321096608358,
+        "p99_call": {
+          "start_ns": 71273711217178,
+          "duration_ns": 202639786,
+          "round": 1,
+          "frame_time_us": 1791856445058733,
+          "consumed": 1,
+          "cpu_ns": 154574384,
+          "update_id": 469,
+          "initializations": 1,
+          "steps": 13,
+          "init_ns": 23615063,
+          "step_ns": 166465687,
+          "submit_ns": 0,
+          "sync_overlap_ns": 0,
+          "results": [
+            {
+              "request_id": 86,
+              "source_update_id": 456,
+              "source_tracker_frame_id": 456,
+              "tracker_frame_id": 469,
+              "has_target": true,
+              "source_frame_age": 13,
+              "source_to_read_ns": 292908533,
+              "accepted_to_start_ns": 220046261,
+              "detect_ns": 42190167,
+              "end_to_read_ns": 17139085
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 18.892954659,
+        "calls_in_schedstat_interval": 640,
+        "tracking_cpu_seconds_per_second": 0.7563868338715627,
+        "tracking_runnable_wait_ms_per_second": 74.18369234969538,
+        "tracking_runnable_wait_ms_per_call": 2.1899205250000002,
+        "selected_count_window": 681,
+        "skipped_count_window": 520,
+        "p99_request_stages": [
+          [
+            0,
+            41016040
+          ]
+        ]
+      }
+    ],
+    "matched_step_counts": [
+      {
+        "steps": 2,
+        "left_n": 6,
+        "right_n": 5,
+        "left_median_ns": 58436736,
+        "right_median_ns": 58408586,
+        "median_delta_ns": -28150,
+        "left_p99_ns": 59714215,
+        "right_p99_ns": 59432150,
+        "p99_delta_ns": -282065
+      },
+      {
+        "steps": 4,
+        "left_n": 3,
+        "right_n": 3,
+        "left_median_ns": 82436746,
+        "right_median_ns": 82769782,
+        "median_delta_ns": 333036,
+        "left_p99_ns": 84767322,
+        "right_p99_ns": 83341086,
+        "p99_delta_ns": -1426236
+      },
+      {
+        "steps": 5,
+        "left_n": 4,
+        "right_n": 4,
+        "left_median_ns": 95579960,
+        "right_median_ns": 94967643,
+        "median_delta_ns": -612317,
+        "left_p99_ns": 95971483,
+        "right_p99_ns": 97229696,
+        "p99_delta_ns": 1258213
+      },
+      {
+        "steps": 6,
+        "left_n": 2,
+        "right_n": 2,
+        "left_median_ns": 105927527,
+        "right_median_ns": 94867184,
+        "median_delta_ns": -11060343,
+        "left_p99_ns": 107656237,
+        "right_p99_ns": 106950927,
+        "p99_delta_ns": -705310
+      },
+      {
+        "steps": 7,
+        "left_n": 6,
+        "right_n": 9,
+        "left_median_ns": 127435947,
+        "right_median_ns": 126728137,
+        "median_delta_ns": -707810,
+        "left_p99_ns": 129381271,
+        "right_p99_ns": 128701062,
+        "p99_delta_ns": -680209
+      },
+      {
+        "steps": 8,
+        "left_n": 8,
+        "right_n": 7,
+        "left_median_ns": 141413418,
+        "right_median_ns": 139644207,
+        "median_delta_ns": -1769211,
+        "left_p99_ns": 144390986,
+        "right_p99_ns": 142954210,
+        "p99_delta_ns": -1436776
+      },
+      {
+        "steps": 11,
+        "left_n": 1,
+        "right_n": 2,
+        "left_median_ns": 166933164,
+        "right_median_ns": 179224342,
+        "median_delta_ns": 12291178,
+        "left_p99_ns": 166933164,
+        "right_p99_ns": 183312366,
+        "p99_delta_ns": 16379202
+      },
+      {
+        "steps": 12,
+        "left_n": 2,
+        "right_n": 3,
+        "left_median_ns": 180615636,
+        "right_median_ns": 180298114,
+        "median_delta_ns": -317522,
+        "left_p99_ns": 183377915,
+        "right_p99_ns": 193313828,
+        "p99_delta_ns": 9935913
+      },
+      {
+        "steps": 13,
+        "left_n": 2,
+        "right_n": 2,
+        "left_median_ns": 203040883,
+        "right_median_ns": 190847971,
+        "median_delta_ns": -12192912,
+        "left_p99_ns": 204332834,
+        "right_p99_ns": 202639786,
+        "p99_delta_ns": -1693048
+      },
+      {
+        "steps": 17,
+        "left_n": 3,
+        "right_n": 2,
+        "left_median_ns": 252807716,
+        "right_median_ns": 249978562,
+        "median_delta_ns": -2829154,
+        "left_p99_ns": 256966267,
+        "right_p99_ns": 251228986,
+        "p99_delta_ns": -5737281
+      },
+      {
+        "steps": 18,
+        "left_n": 1,
+        "right_n": 2,
+        "left_median_ns": 243465087,
+        "right_median_ns": 254994392,
+        "median_delta_ns": 11529305,
+        "left_p99_ns": 243465087,
+        "right_p99_ns": 264056373,
+        "p99_delta_ns": 20591286
+      },
+      {
+        "steps": 19,
+        "left_n": 1,
+        "right_n": 1,
+        "left_median_ns": 281436030,
+        "right_median_ns": 284030091,
+        "median_delta_ns": 2594061,
+        "left_p99_ns": 281436030,
+        "right_p99_ns": 284030091,
+        "p99_delta_ns": 2594061
+      }
+    ],
+    "p99_difference_ns": -45191856,
+    "p99_work_difference_ns": -45137285,
+    "p99_remaining_difference_ns": -54571
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window03/evidence/pair5",
+    "modes": [
+      {
+        "label": "shared",
+        "init_call_count": 32,
+        "slope_ms_per_step": 11.980715126814964,
+        "r2": 0.9855136108449251,
+        "p99_call": {
+          "start_ns": 71369782460702,
+          "duration_ns": 214195864,
+          "round": 1,
+          "frame_time_us": 1791856541137987,
+          "consumed": 1,
+          "cpu_ns": 164252205,
+          "update_id": 763,
+          "initializations": 1,
+          "steps": 15,
+          "init_ns": 22816551,
+          "step_ns": 179834120,
+          "submit_ns": 81673,
+          "sync_overlap_ns": 36909566,
+          "results": [
+            {
+              "request_id": 136,
+              "source_update_id": 748,
+              "source_tracker_frame_id": 748,
+              "tracker_frame_id": 763,
+              "has_target": true,
+              "source_frame_age": 15,
+              "source_to_read_ns": 319581084,
+              "accepted_to_start_ns": 249207539,
+              "detect_ns": 40502301,
+              "end_to_read_ns": 17641461
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 18.920371263,
+        "calls_in_schedstat_interval": 717,
+        "tracking_cpu_seconds_per_second": 0.751219908871193,
+        "tracking_runnable_wait_ms_per_second": 42.682896850933744,
+        "tracking_runnable_wait_ms_per_call": 1.1263267154811716,
+        "selected_count_window": 750,
+        "skipped_count_window": 450,
+        "p99_request_stages": [
+          [
+            0,
+            39771092
+          ]
+        ]
+      },
+      {
+        "label": "isolated",
+        "init_call_count": 38,
+        "slope_ms_per_step": 12.93112631547414,
+        "r2": 0.9913790968090408,
+        "p99_call": {
+          "start_ns": 71385005701470,
+          "duration_ns": 200380666,
+          "round": 1,
+          "frame_time_us": 1791856556356598,
+          "consumed": 1,
+          "cpu_ns": 152016057,
+          "update_id": 301,
+          "initializations": 1,
+          "steps": 13,
+          "init_ns": 22731759,
+          "step_ns": 165290508,
+          "submit_ns": 107941,
+          "sync_overlap_ns": 7938143,
+          "results": [
+            {
+              "request_id": 63,
+              "source_update_id": 288,
+              "source_tracker_frame_id": 288,
+              "tracker_frame_id": 301,
+              "has_target": true,
+              "source_frame_age": 13,
+              "source_to_read_ns": 295263569,
+              "accepted_to_start_ns": 234829066,
+              "detect_ns": 40190855,
+              "end_to_read_ns": 7270381
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 19.059467214,
+        "calls_in_schedstat_interval": 682,
+        "tracking_cpu_seconds_per_second": 0.722515178487507,
+        "tracking_runnable_wait_ms_per_second": 70.59011759844674,
+        "tracking_runnable_wait_ms_per_call": 1.9727419824046921,
+        "selected_count_window": 714,
+        "skipped_count_window": 486,
+        "p99_request_stages": [
+          [
+            0,
+            39494513
+          ]
+        ]
+      }
+    ],
+    "matched_step_counts": [
+      {
+        "steps": 2,
+        "left_n": 2,
+        "right_n": 5,
+        "left_median_ns": 58473495,
+        "right_median_ns": 56961925,
+        "median_delta_ns": -1511570,
+        "left_p99_ns": 60244910,
+        "right_p99_ns": 59535388,
+        "p99_delta_ns": -709522
+      },
+      {
+        "steps": 5,
+        "left_n": 3,
+        "right_n": 2,
+        "left_median_ns": 93311003,
+        "right_median_ns": 93280541,
+        "median_delta_ns": -30462,
+        "left_p99_ns": 93903685,
+        "right_p99_ns": 93770867,
+        "p99_delta_ns": -132818
+      },
+      {
+        "steps": 6,
+        "left_n": 1,
+        "right_n": 2,
+        "left_median_ns": 105939150,
+        "right_median_ns": 104299560,
+        "median_delta_ns": -1639590,
+        "left_p99_ns": 105939150,
+        "right_p99_ns": 104313685,
+        "p99_delta_ns": -1625465
+      },
+      {
+        "steps": 8,
+        "left_n": 8,
+        "right_n": 8,
+        "left_median_ns": 137874922,
+        "right_median_ns": 140364276,
+        "median_delta_ns": 2489354,
+        "left_p99_ns": 142081622,
+        "right_p99_ns": 143699913,
+        "p99_delta_ns": 1618291
+      },
+      {
+        "steps": 11,
+        "left_n": 1,
+        "right_n": 3,
+        "left_median_ns": 179775149,
+        "right_median_ns": 169644292,
+        "median_delta_ns": -10130857,
+        "left_p99_ns": 179775149,
+        "right_p99_ns": 182859332,
+        "p99_delta_ns": 3084183
+      },
+      {
+        "steps": 12,
+        "left_n": 1,
+        "right_n": 1,
+        "left_median_ns": 190326996,
+        "right_median_ns": 180458201,
+        "median_delta_ns": -9868795,
+        "left_p99_ns": 190326996,
+        "right_p99_ns": 180458201,
+        "p99_delta_ns": -9868795
+      },
+      {
+        "steps": 13,
+        "left_n": 3,
+        "right_n": 3,
+        "left_median_ns": 200437284,
+        "right_median_ns": 191654667,
+        "median_delta_ns": -8782617,
+        "left_p99_ns": 206331831,
+        "right_p99_ns": 200380666,
+        "p99_delta_ns": -5951165
+      },
+      {
+        "steps": 14,
+        "left_n": 2,
+        "right_n": 2,
+        "left_median_ns": 202120572,
+        "right_median_ns": 193515298,
+        "median_delta_ns": -8605274,
+        "left_p99_ns": 217001928,
+        "right_p99_ns": 202471236,
+        "p99_delta_ns": -14530692
+      },
+      {
+        "steps": 18,
+        "left_n": 1,
+        "right_n": 2,
+        "left_median_ns": 250029120,
+        "right_median_ns": 260803946,
+        "median_delta_ns": 10774826,
+        "left_p99_ns": 250029120,
+        "right_p99_ns": 261389835,
+        "p99_delta_ns": 11360715
+      }
+    ],
+    "p99_difference_ns": -13815198,
+    "p99_work_difference_ns": -14628404,
+    "p99_remaining_difference_ns": 813206
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window03/evidence/pair6",
+    "modes": [
+      {
+        "label": "isolated",
+        "init_call_count": 42,
+        "slope_ms_per_step": 12.57020227736686,
+        "r2": 0.9914874250788587,
+        "p99_call": {
+          "start_ns": 71428182665780,
+          "duration_ns": 263769715,
+          "round": 1,
+          "frame_time_us": 1791856599536058,
+          "consumed": 1,
+          "cpu_ns": 199932996,
+          "update_id": 678,
+          "initializations": 1,
+          "steps": 18,
+          "init_ns": 24964708,
+          "step_ns": 225994211,
+          "submit_ns": 130044,
+          "sync_overlap_ns": 6311129,
+          "results": [
+            {
+              "request_id": 132,
+              "source_update_id": 660,
+              "source_tracker_frame_id": 660,
+              "tracker_frame_id": 678,
+              "has_target": true,
+              "source_frame_age": 18,
+              "source_to_read_ns": 401301366,
+              "accepted_to_start_ns": 230179478,
+              "detect_ns": 157279284,
+              "end_to_read_ns": 1670984
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 18.958024894,
+        "calls_in_schedstat_interval": 635,
+        "tracking_cpu_seconds_per_second": 0.7412365666556023,
+        "tracking_runnable_wait_ms_per_second": 73.22140195307625,
+        "tracking_runnable_wait_ms_per_call": 2.186036474015748,
+        "selected_count_window": 671,
+        "skipped_count_window": 526,
+        "p99_request_stages": [
+          [
+            0,
+            35993229
+          ],
+          [
+            1,
+            40646126
+          ],
+          [
+            2,
+            39876549
+          ],
+          [
+            2,
+            39985590
+          ]
+        ]
+      },
+      {
+        "label": "shared",
+        "init_call_count": 44,
+        "slope_ms_per_step": 12.89626926070398,
+        "r2": 0.9896922802873285,
+        "p99_call": {
+          "start_ns": 71458770374634,
+          "duration_ns": 201955505,
+          "round": 1,
+          "frame_time_us": 1791856630112422,
+          "consumed": 1,
+          "cpu_ns": 156031447,
+          "update_id": 818,
+          "initializations": 1,
+          "steps": 14,
+          "init_ns": 22698446,
+          "step_ns": 167047557,
+          "submit_ns": 113142,
+          "sync_overlap_ns": 23072327,
+          "results": [
+            {
+              "request_id": 167,
+              "source_update_id": 804,
+              "source_tracker_frame_id": 804,
+              "tracker_frame_id": 818,
+              "has_target": true,
+              "source_frame_age": 14,
+              "source_to_read_ns": 303545283,
+              "accepted_to_start_ns": 241979953,
+              "detect_ns": 39765278,
+              "end_to_read_ns": 9686632
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 19.135445003,
+        "calls_in_schedstat_interval": 660,
+        "tracking_cpu_seconds_per_second": 0.7792282235747491,
+        "tracking_runnable_wait_ms_per_second": 44.90532082558226,
+        "tracking_runnable_wait_ms_per_call": 1.3019443893939393,
+        "selected_count_window": 682,
+        "skipped_count_window": 513,
+        "p99_request_stages": [
+          [
+            0,
+            39052858
+          ]
+        ]
+      }
+    ],
+    "matched_step_counts": [
+      {
+        "steps": 2,
+        "left_n": 2,
+        "right_n": 3,
+        "left_median_ns": 47261525,
+        "right_median_ns": 56496622,
+        "median_delta_ns": 9235097,
+        "left_p99_ns": 58392817,
+        "right_p99_ns": 56973443,
+        "p99_delta_ns": -1419374
+      },
+      {
+        "steps": 3,
+        "left_n": 3,
+        "right_n": 3,
+        "left_median_ns": 70270879,
+        "right_median_ns": 68435779,
+        "median_delta_ns": -1835100,
+        "left_p99_ns": 70683658,
+        "right_p99_ns": 72677289,
+        "p99_delta_ns": 1993631
+      },
+      {
+        "steps": 5,
+        "left_n": 5,
+        "right_n": 4,
+        "left_median_ns": 94180782,
+        "right_median_ns": 92197760,
+        "median_delta_ns": -1983022,
+        "left_p99_ns": 97522228,
+        "right_p99_ns": 93492272,
+        "p99_delta_ns": -4029956
+      },
+      {
+        "steps": 8,
+        "left_n": 10,
+        "right_n": 12,
+        "left_median_ns": 140903937,
+        "right_median_ns": 140377996,
+        "median_delta_ns": -525941,
+        "left_p99_ns": 145669669,
+        "right_p99_ns": 143992194,
+        "p99_delta_ns": -1677475
+      },
+      {
+        "steps": 11,
+        "left_n": 1,
+        "right_n": 3,
+        "left_median_ns": 177985685,
+        "right_median_ns": 175374489,
+        "median_delta_ns": -2611196,
+        "left_p99_ns": 177985685,
+        "right_p99_ns": 177873902,
+        "p99_delta_ns": -111783
+      },
+      {
+        "steps": 12,
+        "left_n": 2,
+        "right_n": 1,
+        "left_median_ns": 180033940,
+        "right_median_ns": 174456634,
+        "median_delta_ns": -5577306,
+        "left_p99_ns": 181527017,
+        "right_p99_ns": 174456634,
+        "p99_delta_ns": -7070383
+      },
+      {
+        "steps": 13,
+        "left_n": 2,
+        "right_n": 4,
+        "left_median_ns": 200269442,
+        "right_median_ns": 197397279,
+        "median_delta_ns": -2872163,
+        "left_p99_ns": 200940412,
+        "right_p99_ns": 199257240,
+        "p99_delta_ns": -1683172
+      },
+      {
+        "steps": 14,
+        "left_n": 1,
+        "right_n": 3,
+        "left_median_ns": 204167632,
+        "right_median_ns": 201955505,
+        "median_delta_ns": -2212127,
+        "left_p99_ns": 204167632,
+        "right_p99_ns": 207877217,
+        "p99_delta_ns": 3709585
+      },
+      {
+        "steps": 18,
+        "left_n": 3,
+        "right_n": 2,
+        "left_median_ns": 263769715,
+        "right_median_ns": 250010939,
+        "median_delta_ns": -13758776,
+        "left_p99_ns": 265028197,
+        "right_p99_ns": 259099983,
+        "p99_delta_ns": -5928214
+      }
+    ],
+    "p99_difference_ns": -61814210,
+    "p99_work_difference_ns": -61212916,
+    "p99_remaining_difference_ns": -601294
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window01/evidence/pair1",
+    "modes": [
+      {
+        "label": "off",
+        "init_call_count": 48,
+        "slope_ms_per_step": 12.514131676860123,
+        "r2": 0.9954450060119632,
+        "p99_call": {
+          "start_ns": 70949744503927,
+          "duration_ns": 261964382,
+          "round": 1,
+          "frame_time_us": 1791856121095916,
+          "consumed": 1,
+          "cpu_ns": 197251102,
+          "update_id": 550,
+          "initializations": 1,
+          "steps": 18,
+          "init_ns": 23130173,
+          "step_ns": 226241511,
+          "submit_ns": 0,
+          "sync_overlap_ns": 0,
+          "results": [
+            {
+              "request_id": 103,
+              "source_update_id": 532,
+              "source_tracker_frame_id": 532,
+              "tracker_frame_id": 550,
+              "has_target": true,
+              "source_frame_age": 18,
+              "source_to_read_ns": 401712763,
+              "accepted_to_start_ns": 238074355,
+              "detect_ns": 148283981,
+              "end_to_read_ns": 3038416
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 19.958602806,
+        "calls_in_schedstat_interval": 652,
+        "tracking_cpu_seconds_per_second": 0.7259898488808075,
+        "tracking_runnable_wait_ms_per_second": 72.04750998740829,
+        "tracking_runnable_wait_ms_per_call": 2.2054718328220857,
+        "selected_count_window": 658,
+        "skipped_count_window": 547,
+        "p99_request_stages": [
+          [
+            0,
+            35753245
+          ],
+          [
+            1,
+            36848235
+          ],
+          [
+            2,
+            37495031
+          ],
+          [
+            2,
+            37575313
+          ]
+        ]
+      },
+      {
+        "label": "basic",
+        "init_call_count": 36,
+        "slope_ms_per_step": 12.20527606863745,
+        "r2": 0.9925709576986145,
+        "p99_call": {
+          "start_ns": 70965069228799,
+          "duration_ns": 291852916,
+          "round": 1,
+          "frame_time_us": 1791856136418965,
+          "consumed": 1,
+          "cpu_ns": 222693261,
+          "update_id": 180,
+          "initializations": 1,
+          "steps": 20,
+          "init_ns": 22103164,
+          "step_ns": 256151014,
+          "submit_ns": 136070,
+          "sync_overlap_ns": 30410340,
+          "results": [
+            {
+              "request_id": 36,
+              "source_update_id": 160,
+              "source_tracker_frame_id": 160,
+              "tracker_frame_id": 180,
+              "has_target": true,
+              "source_frame_age": 20,
+              "source_to_read_ns": 431917458,
+              "accepted_to_start_ns": 239773079,
+              "detect_ns": 166628202,
+              "end_to_read_ns": 13451602
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 19.191117397,
+        "calls_in_schedstat_interval": 711,
+        "tracking_cpu_seconds_per_second": 0.679240445375928,
+        "tracking_runnable_wait_ms_per_second": 39.46746113482701,
+        "tracking_runnable_wait_ms_per_call": 1.0652949085794654,
+        "selected_count_window": 737,
+        "skipped_count_window": 456,
+        "p99_request_stages": [
+          [
+            0,
+            40330605
+          ],
+          [
+            1,
+            42823088
+          ],
+          [
+            2,
+            40779052
+          ],
+          [
+            2,
+            41840463
+          ]
+        ]
+      }
+    ],
+    "matched_step_counts": [
+      {
+        "steps": 2,
+        "left_n": 4,
+        "right_n": 1,
+        "left_median_ns": 56398926,
+        "right_median_ns": 56373699,
+        "median_delta_ns": -25227,
+        "left_p99_ns": 57467303,
+        "right_p99_ns": 56373699,
+        "p99_delta_ns": -1093604
+      },
+      {
+        "steps": 3,
+        "left_n": 3,
+        "right_n": 2,
+        "left_median_ns": 68216156,
+        "right_median_ns": 59755497,
+        "median_delta_ns": -8460659,
+        "left_p99_ns": 71003952,
+        "right_p99_ns": 69971655,
+        "p99_delta_ns": -1032297
+      },
+      {
+        "steps": 5,
+        "left_n": 6,
+        "right_n": 3,
+        "left_median_ns": 92890506,
+        "right_median_ns": 94399957,
+        "median_delta_ns": 1509451,
+        "left_p99_ns": 95162435,
+        "right_p99_ns": 95558148,
+        "p99_delta_ns": 395713
+      },
+      {
+        "steps": 6,
+        "left_n": 3,
+        "right_n": 3,
+        "left_median_ns": 103335878,
+        "right_median_ns": 104663919,
+        "median_delta_ns": 1328041,
+        "left_p99_ns": 103685382,
+        "right_p99_ns": 104963975,
+        "p99_delta_ns": 1278593
+      },
+      {
+        "steps": 8,
+        "left_n": 12,
+        "right_n": 10,
+        "left_median_ns": 138257877,
+        "right_median_ns": 138882763,
+        "median_delta_ns": 624886,
+        "left_p99_ns": 141988151,
+        "right_p99_ns": 146176084,
+        "p99_delta_ns": 4187933
+      },
+      {
+        "steps": 9,
+        "left_n": 3,
+        "right_n": 3,
+        "left_median_ns": 140944940,
+        "right_median_ns": 141469384,
+        "median_delta_ns": 524444,
+        "left_p99_ns": 150148712,
+        "right_p99_ns": 150405680,
+        "p99_delta_ns": 256968
+      },
+      {
+        "steps": 13,
+        "left_n": 2,
+        "right_n": 1,
+        "left_median_ns": 198096538,
+        "right_median_ns": 197797882,
+        "median_delta_ns": -298656,
+        "left_p99_ns": 199864134,
+        "right_p99_ns": 197797882,
+        "p99_delta_ns": -2066252
+      },
+      {
+        "steps": 14,
+        "left_n": 1,
+        "right_n": 3,
+        "left_median_ns": 200769909,
+        "right_median_ns": 199868208,
+        "median_delta_ns": -901701,
+        "left_p99_ns": 200769909,
+        "right_p99_ns": 206829623,
+        "p99_delta_ns": 6059714
+      },
+      {
+        "steps": 28,
+        "left_n": 2,
+        "right_n": 1,
+        "left_median_ns": 370235824,
+        "right_median_ns": 372742521,
+        "median_delta_ns": 2506697,
+        "left_p99_ns": 371898915,
+        "right_p99_ns": 372742521,
+        "p99_delta_ns": 843606
+      }
+    ],
+    "p99_difference_ns": 29888534,
+    "p99_work_difference_ns": 28882494,
+    "p99_remaining_difference_ns": 1006040
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window01/evidence/pair2",
+    "modes": [
+      {
+        "label": "basic",
+        "init_call_count": 36,
+        "slope_ms_per_step": 12.462955201089372,
+        "r2": 0.9941770379212352,
+        "p99_call": {
+          "start_ns": 70998801482257,
+          "duration_ns": 253317026,
+          "round": 1,
+          "frame_time_us": 1791856170152030,
+          "consumed": 1,
+          "cpu_ns": 194632271,
+          "update_id": 290,
+          "initializations": 1,
+          "steps": 18,
+          "init_ns": 24095992,
+          "step_ns": 216313841,
+          "submit_ns": 113716,
+          "sync_overlap_ns": 26733641,
+          "results": [
+            {
+              "request_id": 51,
+              "source_update_id": 272,
+              "source_tracker_frame_id": 272,
+              "tracker_frame_id": 290,
+              "has_target": true,
+              "source_frame_age": 18,
+              "source_to_read_ns": 394530902,
+              "accepted_to_start_ns": 215095900,
+              "detect_ns": 151753486,
+              "end_to_read_ns": 15320603
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 19.205348516,
+        "calls_in_schedstat_interval": 710,
+        "tracking_cpu_seconds_per_second": 0.7230184936988622,
+        "tracking_runnable_wait_ms_per_second": 41.22422534224841,
+        "tracking_runnable_wait_ms_per_call": 1.1151065,
+        "selected_count_window": 733,
+        "skipped_count_window": 477,
+        "p99_request_stages": [
+          [
+            0,
+            37625066
+          ],
+          [
+            1,
+            37918243
+          ],
+          [
+            2,
+            37087997
+          ],
+          [
+            2,
+            38260003
+          ]
+        ]
+      },
+      {
+        "label": "off",
+        "init_call_count": 42,
+        "slope_ms_per_step": 12.556720426321851,
+        "r2": 0.9894135609362232,
+        "p99_call": {
+          "start_ns": 71030591601897,
+          "duration_ns": 182549180,
+          "round": 1,
+          "frame_time_us": 1791856201941751,
+          "consumed": 1,
+          "cpu_ns": 137598226,
+          "update_id": 448,
+          "initializations": 1,
+          "steps": 12,
+          "init_ns": 25252622,
+          "step_ns": 145383705,
+          "submit_ns": 0,
+          "sync_overlap_ns": 0,
+          "results": [
+            {
+              "request_id": 85,
+              "source_update_id": 436,
+              "source_tracker_frame_id": 436,
+              "tracker_frame_id": 448,
+              "has_target": true,
+              "source_frame_age": 12,
+              "source_to_read_ns": 268277902,
+              "accepted_to_start_ns": 206392341,
+              "detect_ns": 40261866,
+              "end_to_read_ns": 8655224
+            }
+          ]
+        },
+        "schedstat_sample_seconds": 19.996621749,
+        "calls_in_schedstat_interval": 684,
+        "tracking_cpu_seconds_per_second": 0.7476045568420878,
+        "tracking_runnable_wait_ms_per_second": 73.80916569439081,
+        "tracking_runnable_wait_ms_per_call": 2.1577981988304096,
+        "selected_count_window": 684,
+        "skipped_count_window": 525,
+        "p99_request_stages": [
+          [
+            0,
+            39567483
+          ]
+        ]
+      }
+    ],
+    "matched_step_counts": [
+      {
+        "steps": 2,
+        "left_n": 5,
+        "right_n": 1,
+        "left_median_ns": 59101098,
+        "right_median_ns": 59068122,
+        "median_delta_ns": -32976,
+        "left_p99_ns": 62197672,
+        "right_p99_ns": 59068122,
+        "p99_delta_ns": -3129550
+      },
+      {
+        "steps": 3,
+        "left_n": 3,
+        "right_n": 1,
+        "left_median_ns": 67770256,
+        "right_median_ns": 71844848,
+        "median_delta_ns": 4074592,
+        "left_p99_ns": 73809752,
+        "right_p99_ns": 71844848,
+        "p99_delta_ns": -1964904
+      },
+      {
+        "steps": 5,
+        "left_n": 5,
+        "right_n": 8,
+        "left_median_ns": 94249274,
+        "right_median_ns": 95645782,
+        "median_delta_ns": 1396508,
+        "left_p99_ns": 96719933,
+        "right_p99_ns": 97141013,
+        "p99_delta_ns": 421080
+      },
+      {
+        "steps": 8,
+        "left_n": 5,
+        "right_n": 11,
+        "left_median_ns": 142734563,
+        "right_median_ns": 142589065,
+        "median_delta_ns": -145498,
+        "left_p99_ns": 147812133,
+        "right_p99_ns": 148065412,
+        "p99_delta_ns": 253279
+      },
+      {
+        "steps": 9,
+        "left_n": 1,
+        "right_n": 1,
+        "left_median_ns": 143077512,
+        "right_median_ns": 155465382,
+        "median_delta_ns": 12387870,
+        "left_p99_ns": 143077512,
+        "right_p99_ns": 155465382,
+        "p99_delta_ns": 12387870
+      },
+      {
+        "steps": 11,
+        "left_n": 1,
+        "right_n": 4,
+        "left_median_ns": 181975434,
+        "right_median_ns": 164114400,
+        "median_delta_ns": -17861034,
+        "left_p99_ns": 181975434,
+        "right_p99_ns": 172469994,
+        "p99_delta_ns": -9505440
+      },
+      {
+        "steps": 12,
+        "left_n": 1,
+        "right_n": 3,
+        "left_median_ns": 184667805,
+        "right_median_ns": 182057996,
+        "median_delta_ns": -2609809,
+        "left_p99_ns": 184667805,
+        "right_p99_ns": 182549180,
+        "p99_delta_ns": -2118625
+      },
+      {
+        "steps": 14,
+        "left_n": 3,
+        "right_n": 1,
+        "left_median_ns": 203639112,
+        "right_median_ns": 204588115,
+        "median_delta_ns": 949003,
+        "left_p99_ns": 208779927,
+        "right_p99_ns": 204588115,
+        "p99_delta_ns": -4191812
+      },
+      {
+        "steps": 18,
+        "left_n": 1,
+        "right_n": 4,
+        "left_median_ns": 253317026,
+        "right_median_ns": 263932926,
+        "median_delta_ns": 10615900,
+        "left_p99_ns": 253317026,
+        "right_p99_ns": 267975452,
+        "p99_delta_ns": 14658426
+      }
+    ],
+    "p99_difference_ns": -70767846,
+    "p99_work_difference_ns": -69773506,
+    "p99_remaining_difference_ns": -994340
+  }
+]

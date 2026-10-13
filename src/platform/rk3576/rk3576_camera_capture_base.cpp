@@ -1,4 +1,5 @@
 #include "rk3576_camera_capture_base.h"
+#include "diagnostics/recorder.h"
 
 #include <fcntl.h>
 #include <linux/videodev2.h>
@@ -295,6 +296,7 @@ void Rk3576CameraCaptureBase::start() {
         stop_requested_.store(false);
         capture_status_ = {};
         have_sequence_ = false;
+        capture_id_ = 0;
         sequence_gaps_ = 0;
         cleanup_failed_ = false;
         warmup_.reset();
@@ -393,6 +395,7 @@ CameraSample Rk3576CameraCaptureBase::next(int timeout_ms, bool compare_pixels, 
         sample.microseconds = dequeued.buffer.timestamp.tv_usec;
         sample.flags = dequeued.buffer.flags;
         sample.sequence = dequeued.buffer.sequence;
+        sample.capture_id = ++capture_id_;
         if (observing) {
             ++capture_status_.warmup_examined;
             capture_status_.evidence.push_back({sample.seconds, sample.microseconds, 0, sample.flags,
@@ -403,7 +406,12 @@ CameraSample Rk3576CameraCaptureBase::next(int timeout_ms, bool compare_pixels, 
             capture_status_.evidence.back().dequeue_us = sample.dequeue_us;
             capture_status_.warmup_us = sample.dequeue_us - stream_started_us_;
         }
-        if (stop_requested_.load()) { return {}; }
+        if (stop_requested_.load()) {
+            auto terminal{diagnostics::event(diagnostics::Type::Capture, diagnostics::Reason::Termination)};
+            terminal.frame = {sample.capture_id, diagnostics::current_round.load(), sample.sequence,
+                diagnostics::CaptureKnown | diagnostics::DriverKnown}; diagnostics::emit(terminal);
+            return {};
+        }
         // 仅保留当前时钟偏移与轮次固定偏移的差，不用它重标帧时间。
         const auto realtime{system_->clockUs(CLOCK_REALTIME)};
         const auto offset_delta{static_cast<__int128>(realtime) - sample.dequeue_us - pair_.offset_us};
@@ -469,7 +477,16 @@ CameraSample Rk3576CameraCaptureBase::next(int timeout_ms, bool compare_pixels, 
         // 无论驱动协商的是 GREY 还是 NV12，取出的都只是紧邻缓冲区起始的 Y（亮度）平面字节。
         const cv::Mat gray{config_.height, config_.width, CV_8UC1, const_cast<unsigned char *>(pixels), format_.stride};
         const auto before{system_->clockUs(CLOCK_MONOTONIC)};
-        sample.frame = copyGrayFrame(gray, static_cast<std::uint64_t>(timestamp));
+        diagnostics::FrameIdentity identity{};
+        identity.capture_id = capture_id_;
+        identity.driver_sequence = sample.sequence;
+        identity.flags = diagnostics::CaptureKnown | diagnostics::DriverKnown;
+        if (auto *recorder = diagnostics::active.load(std::memory_order_acquire)) {
+            (void)recorder;
+            // 轮次由节点在采集启动之前固定。
+            identity.round_id = diagnostics::current_round.load(std::memory_order_acquire);
+        }
+        sample.frame = copyGrayFrame(gray, static_cast<std::uint64_t>(timestamp), identity);
         sample.copy_us = system_->clockUs(CLOCK_MONOTONIC) - before;
         if (sample.copy_us < 0) { throw std::runtime_error("Copy clock moved backwards"); }
         if (compare_pixels) {

@@ -1,0 +1,166 @@
+{
+  "pair2": {
+    "frequency_values": {
+      "cpu": {
+        "/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq": [
+          "2016000"
+        ],
+        "/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq": [
+          "2208000"
+        ]
+      },
+      "devfreq": {
+        "/sys/class/devfreq/27800000.gpu/cur_freq": [
+          "900000000"
+        ],
+        "/sys/class/devfreq/27d00000.vop/cur_freq": [
+          "702000000"
+        ],
+        "/sys/class/devfreq/27700000.npu/cur_freq": [
+          "950000000"
+        ]
+      }
+    },
+    "temperature_millidegrees": {
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "minimum": 36076,
+        "maximum": 40692
+      },
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "minimum": 38846,
+        "maximum": 44384
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "minimum": 38846,
+        "maximum": 43461
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "minimum": 36076,
+        "maximum": 40692
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "minimum": 36999,
+        "maximum": 42538
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "minimum": 36999,
+        "maximum": 41615
+      }
+    },
+    "fully_inside_block_interval_scheduling": {
+      "emmc": {
+        "intervals": 0,
+        "observed_seconds": 0,
+        "run_and_runnable_wait_ms_per_second": {}
+      },
+      "tmpfs": {
+        "intervals": 0,
+        "observed_seconds": 0,
+        "run_and_runnable_wait_ms_per_second": {}
+      }
+    },
+    "worker_last_cpu_counts": {
+      "4": 81
+    },
+    "sample_count": 81,
+    "combined_measured_schedule_including_boundaries": {
+      "seconds": 76.487213128,
+      "scope": "\u4e24\u4ecb\u8d28\u6df7\u5408\uff0c\u5305\u542b\u6bb5\u8fb9\u754c\uff1b1 Hz \u4e0d\u80fd\u9010\u6bb5\u5f52\u56e0",
+      "run_and_runnable_wait_ms_per_second": {
+        "business_run": 726.2229523259459,
+        "business_runnable_wait": 21.028508089428637,
+        "worker_run": 11.374075187497267,
+        "worker_runnable_wait": 490.43091276217433
+      }
+    },
+    "minimum_mem_available_kib": 3615124,
+    "worker_fd_counts": [
+      11
+    ],
+    "business_fd_counts": [
+      35
+    ]
+  },
+  "pair3": {
+    "frequency_values": {
+      "cpu": {
+        "/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq": [
+          "2016000"
+        ],
+        "/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq": [
+          "2208000"
+        ]
+      },
+      "devfreq": {
+        "/sys/class/devfreq/27800000.gpu/cur_freq": [
+          "900000000"
+        ],
+        "/sys/class/devfreq/27d00000.vop/cur_freq": [
+          "702000000"
+        ],
+        "/sys/class/devfreq/27700000.npu/cur_freq": [
+          "950000000"
+        ]
+      }
+    },
+    "temperature_millidegrees": {
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "minimum": 39769,
+        "maximum": 41615
+      },
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "minimum": 41615,
+        "maximum": 45307
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "minimum": 41615,
+        "maximum": 44384
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "minimum": 39769,
+        "maximum": 41615
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "minimum": 40692,
+        "maximum": 43461
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "minimum": 40692,
+        "maximum": 41615
+      }
+    },
+    "fully_inside_block_interval_scheduling": {
+      "emmc": {
+        "intervals": 0,
+        "observed_seconds": 0,
+        "run_and_runnable_wait_ms_per_second": {}
+      },
+      "tmpfs": {
+        "intervals": 0,
+        "observed_seconds": 0,
+        "run_and_runnable_wait_ms_per_second": {}
+      }
+    },
+    "worker_last_cpu_counts": {
+      "4": 79
+    },
+    "sample_count": 79,
+    "combined_measured_schedule_including_boundaries": {
+      "seconds": 75.468416594,
+      "scope": "\u4e24\u4ecb\u8d28\u6df7\u5408\uff0c\u5305\u542b\u6bb5\u8fb9\u754c\uff1b1 Hz \u4e0d\u80fd\u9010\u6bb5\u5f52\u56e0",
+      "run_and_runnable_wait_ms_per_second": {
+        "business_run": 722.6550589022949,
+        "business_runnable_wait": 21.041468811288784,
+        "worker_run": 11.488930749196792,
+        "worker_runnable_wait": 484.0433042543026
+      }
+    },
+    "minimum_mem_available_kib": 3613872,
+    "worker_fd_counts": [
+      11
+    ],
+    "business_fd_counts": [
+      35
+    ]
+  }
+}

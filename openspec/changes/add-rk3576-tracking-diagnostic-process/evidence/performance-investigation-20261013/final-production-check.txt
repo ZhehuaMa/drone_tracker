@@ -1,0 +1,35 @@
+{
+  "captured_ns": 71551473292873,
+  "formal": {
+    "MainPID": "33645",
+    "Result": "success",
+    "ExecMainStatus": "0",
+    "ControlGroup": "/system.slice/drone-tracker.service",
+    "ActiveState": "active",
+    "SubState": "running",
+    "UnitFileState": "enabled"
+  },
+  "protected_match": true,
+  "protected": {
+    "current": "/opt/drone_tracker/releases/bundle-20260927T070059Z-2281",
+    "files": {
+      "/usr/lib/librknnrt.so": "d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8",
+      "/opt/drone_tracker/config/camera.yaml": "f909ec82c2c3c45a82b1c85fb616e2f1f7a97b2da4159c7755af195f2e05298c",
+      "/opt/drone_tracker/config/camera.yaml.before-balloon-20260924": "4ff697fbed84b8a5885a5490c0e4b70c3c1641f1a4bb054cc08764330ebcddbb",
+      "/opt/drone_tracker/config/camera.yaml.before-need-save-20260927T1451": "f2bce1721f722c13da08677682827378a625e9d31bd99b5ae828e8ae156cedbf",
+      "/opt/drone_tracker/config/cpu-affinity.yaml": "4f46293201355131c1e72c8a72cdfaafa2c3121eaa48fe0b5ad69ac442e4f01b",
+      "/opt/drone_tracker/models/balloon_best_zoo6_int8_fp16_cls.rknn": "002b1b0a5e7476a5cc62f495997f05d2550e44697fb89c8d48913fb1ee5e06f7",
+      "/opt/drone_tracker/models/fp16/head.rknn": "2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889",
+      "/opt/drone_tracker/models/fp16/search_backbone.rknn": "9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44",
+      "/opt/drone_tracker/models/fp16/template_backbone.rknn": "622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2",
+      "/opt/drone_tracker/models/int8/head.rknn": "f4fc6259eaeb83860515773df49391c860a3be31507f613b2c15fcde6430e736",
+      "/opt/drone_tracker/models/int8/search_backbone.rknn": "ecabaefdeadba721b466d942f76195bb9a5184e8e0a7d2a8262cc2d86e38ccdd",
+      "/opt/drone_tracker/models/int8/template_backbone.rknn": "848ec40a659b5a3484c0d76ba6ded353250f524c7f384fec95a0f85cf2682bdf",
+      "/opt/drone_tracker/models/yolo.rknn": "4d8a22bc8da9fbbc43f190b7ea90c27d9980f77e3e27064ec32cf6566c2680f3"
+    }
+  },
+  "isolated_processes": [],
+  "formal_hdmi_pid_present": true,
+  "passed": true
+}
+2026-10-13T09:58:42+08:00

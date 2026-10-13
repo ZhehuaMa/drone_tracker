@@ -14,6 +14,7 @@
 #include "preprocess/image_preprocessor.h"
 #include "model/model_backend.h"
 #include "frame/frame.h"
+#include "diagnostics/event.h"
 #include "detection_thread.h"
 #include "preprocess/preprocess_geometry.h"
 
@@ -38,6 +39,9 @@ struct YoloResult
     uint64_t frame_id = 0;
     bool has_target = false;
     Detection best{};
+    std::uint64_t request_id{}, source_update_id{};
+    diagnostics::FrameIdentity source_identity{};
+    diagnostics::Reason reason{};
 };
 
 class YoloV8Detector
@@ -82,6 +86,7 @@ public:
     static std::vector<cv::Rect> createOverlappingTiles(int width, int height, float overlap_ratio);
 
 private:
+    friend struct HybridTrackerDiagnosticTestAccess;
     /** @brief 工作线程的主循环 */
     void workerThreadLoop();
 
@@ -125,8 +130,15 @@ private:
         FrameRef frame;
         uint64_t frame_id = 0;
         cv::Rect roi;
+        std::uint64_t request_id{}, source_update_id{};
+        diagnostics::FrameIdentity identity{};
     } m_next_request;
 
+    void publishResult(const Request &request, bool has_target, const Detection &best, diagnostics::Reason reason);
+    std::uint64_t m_request_counter{}, m_inflight_id{};
+    diagnostics::Event m_stage{};
+    std::uint32_t m_stage_index{}, m_stage_kind{};
+    diagnostics::Reason m_execution_reason{};
     bool m_new_request = false;
     std::atomic<bool> m_result_ready;
     std::atomic<bool> m_stop_requested;

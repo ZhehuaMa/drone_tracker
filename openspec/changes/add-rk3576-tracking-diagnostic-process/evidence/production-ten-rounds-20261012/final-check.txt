@@ -1,0 +1,29 @@
+True
+3 False
+[{'name': 'pair1', 'call_p99_increment_ms': 68.87392200000002, 'consumption_decline_percent': -7.086856232480221, 'passed': False}, {'name': 'pair2', 'call_p99_increment_ms': 10.867100999999991, 'consumption_decline_percent': -7.946217314018722, 'passed': False}, {'name': 'pair3', 'call_p99_increment_ms': 12.108024, 'consumption_decline_percent': -9.329650461257044, 'passed': False}, {'name': 'pair4', 'call_p99_increment_ms': 80.62581500000002, 'consumption_decline_percent': -5.397127343709651, 'passed': False}, {'name': 'pair5', 'call_p99_increment_ms': 36.476110000000006, 'consumption_decline_percent': -5.643332395968637, 'passed': False}, {'name': 'pair6', 'call_p99_increment_ms': -42.63632499999997, 'consumption_decline_percent': -3.4649904349606686, 'passed': True}, {'name': 'pair7', 'call_p99_increment_ms': 4.333079999999995, 'consumption_decline_percent': -3.9510805382391156, 'passed': False}, {'name': 'pair8', 'call_p99_increment_ms': -0.7333419999999933, 'consumption_decline_percent': -6.829550733108225, 'passed': True}, {'name': 'pair9', 'call_p99_increment_ms': 73.87968600000002, 'consumption_decline_percent': -4.698661278858096, 'passed': False}, {'name': 'pair10', 'call_p99_increment_ms': -18.670699999999982, 'consumption_decline_percent': -7.567689375409814, 'passed': True}]
+MainPID=18544
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+             command   pid dev master a   uid      magic
+     drone_tracker_n 18577   0   y    y     0          0
+             command   pid dev master a   uid      magic
+     drone_tracker_n 18544   1   y    y     0          0
+  UNIT                                  LOAD   ACTIVE SUB    DESCRIPTION
+● drone-diag-ten-batch01-pair1.service  loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch01/board_acceptance.py pair1
+● drone-diag-ten-batch01-pair10.service loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch01/board_acceptance.py pair10
+● drone-diag-ten-batch01-pair2.service  loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch01/board_acceptance.py pair2
+● drone-diag-ten-batch01-pair3.service  loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch01/board_acceptance.py pair3
+● drone-diag-ten-batch01-pair4.service  loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch01/board_acceptance.py pair4
+● drone-diag-ten-batch01-pair5.service  loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch01/board_acceptance.py pair5
+● drone-diag-ten-batch01-pair6.service  loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch01/board_acceptance.py pair6
+● drone-diag-ten-batch01-pair7.service  loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch01/board_acceptance.py pair7
+● drone-diag-ten-batch01-pair8.service  loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch01/board_acceptance.py pair8
+● drone-diag-ten-batch01-pair9.service  loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch01/board_acceptance.py pair9
+● drone-diag-ten-batch02-pair3.service  loaded failed failed /bin/bash -c source /opt/ros/humble/setup.bash; source "$DRONE_DIAGNOSTIC_ACCEPTANCE_ROOT/drone_tracker/share/drone_tracker/local_setup.bash"; exec taskset -c 0-3 python3 "$1" "$2" ten-round /home/hzhy/drone-diagnostic-ten-rounds-20261012-batch02/board_acceptance.py pair3
+
+LOAD   = Reflects whether the unit definition was properly loaded.
+ACTIVE = The high-level unit activation state, i.e. generalization of SUB.
+SUB    = The low-level unit activation state, values depend on unit type.
+11 loaded units listed.
+To show all installed unit files use 'systemctl list-unit-files'.

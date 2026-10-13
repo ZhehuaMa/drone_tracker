@@ -1,0 +1,3689 @@
+[
+  {
+    "pair": "pair1",
+    "conditions": [
+      {
+        "record": {
+          "mode": "off",
+          "observer": 1,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 59971120675,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair1/0-off"
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 26.2489415,
+              "p99": 527.093897,
+              "max": 532.067816
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 23.1711335,
+              "p99": 465.651468,
+              "max": 467.868081
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.805,
+              "p99": 12.811,
+              "max": 19.665
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 2.6255990000000002,
+              "p99": 52.438079,
+              "max": 53.059755
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 20.671476,
+              "max": 21.164595
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 506.298964,
+              "max": 511.258022
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 526.703583,
+              "p99": 532.067816,
+              "max": 532.067816
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 465.159049,
+              "p99": 467.868081,
+              "max": 467.868081
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 12.742,
+              "p99": 19.665,
+              "max": 19.665
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 52.264833499999995,
+              "p99": 53.059755,
+              "max": 53.059755
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 20.637082,
+              "p99": 21.164595,
+              "max": 21.164595
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 505.8247175,
+              "p99": 511.258022,
+              "max": 511.258022
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 26.5983045,
+              "p99": 28.400443,
+              "max": 28.643906
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.444778,
+              "p99": 23.865671,
+              "max": 24.609809
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 1.196,
+              "p99": 1.863,
+              "max": 5.934
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 2.6442170000000003,
+              "p99": 2.943246,
+              "max": 3.170173
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.005589,
+              "p99": 0.010558,
+              "max": 0.011201
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.006279,
+              "p99": 0.011477,
+              "max": 0.012719
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.529,
+              "p99": 0.874,
+              "max": 1.081
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 46,
+            "max": 2601
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1173.0,
+            "p99": 1288,
+            "max": 271657
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 115,
+            "max": 368
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 154471
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 138,
+            "max": 4347
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=1\naudit=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "call_overflow=0\nproducer_0_overflow=0\nproducer_1_overflow=0\nproducer_2_overflow=0\nproducer_3_overflow=0\n"
+      },
+      {
+        "record": {
+          "mode": "basic",
+          "observer": 1,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 60476875642,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair1/1-basic",
+          "worker_returncode": 0,
+          "inspect_returncode": 0
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 26.267001999999998,
+              "p99": 528.230731,
+              "max": 541.626946
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 22.9095095,
+              "p99": 460.786379,
+              "max": 472.933258
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 5.7965,
+              "p99": 98.511,
+              "max": 353.195
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.805,
+              "p99": 13.018,
+              "max": 18.171
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 2.6244965,
+              "p99": 52.81017,
+              "max": 53.583546
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 21.087102,
+              "max": 22.098198
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 507.089941,
+              "max": 519.417513
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 527.1022125,
+              "p99": 541.626946,
+              "max": 541.626946
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 459.70056950000003,
+              "p99": 472.933258,
+              "max": 472.933258
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 96.834,
+              "p99": 353.195,
+              "max": 353.195
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 12.811499999999999,
+              "p99": 18.171,
+              "max": 18.171
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 52.7296125,
+              "p99": 53.583546,
+              "max": 53.583546
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 20.91826,
+              "p99": 22.098198,
+              "max": 22.098198
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 506.22131049999996,
+              "p99": 519.417513,
+              "max": 519.417513
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 26.794656,
+              "p99": 29.063762,
+              "max": 30.654989
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.2401075,
+              "p99": 25.006982,
+              "max": 26.973769
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 7.084,
+              "p99": 8.395,
+              "max": 20.839
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 1.196,
+              "p99": 1.886,
+              "max": 6.765
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 2.648796,
+              "p99": 3.168949,
+              "max": 3.338071
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.007567,
+              "p99": 0.012765,
+              "max": 0.025554
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.00828,
+              "p99": 0.013869,
+              "max": 0.019136
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 1.541,
+              "p99": 1.68,
+              "max": 14.998
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.552,
+              "p99": 0.874,
+              "max": 5.98
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 14852,
+          "median": 299.0,
+          "p99": 5612,
+          "max": 260089
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 70
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1196.0,
+            "p99": 1311,
+            "max": 279179
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 138,
+            "max": 437
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 18193
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 138,
+            "max": 3657
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=1\naudit=0\ndropped_0=0\ndropped_1=0\ndropped_2=0\ndropped_3=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "call_overflow=0\nproducer_0_overflow=0\nproducer_1_overflow=0\nproducer_2_overflow=0\nproducer_3_overflow=0\n"
+      }
+    ],
+    "audit_only": false,
+    "behavior_differences": [],
+    "quantile_differences_ms": {
+      "all": {
+        "second_minus_first": 1.1368340000000217,
+        "bootstrap_95_conditional": [
+          -0.22835999999995238,
+          2.639243799999998
+        ],
+        "n_each": 2160,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 2160,
+          "median": 0.0021149999999999997,
+          "p99": 3.6918490000000475,
+          "max": 16.22214699999995
+        }
+      },
+      "catchup": {
+        "second_minus_first": 9.559129999999982,
+        "bootstrap_95_conditional": [
+          8.681403000000046,
+          12.566067999999973
+        ],
+        "n_each": 54,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 54,
+          "median": 0.4515039999999999,
+          "p99": 16.22214699999995,
+          "max": 16.22214699999995
+        }
+      },
+      "ordinary": {
+        "second_minus_first": 0.6633190000000013,
+        "bootstrap_95_conditional": [
+          0.09876699999999872,
+          2.4022320000000015
+        ],
+        "n_each": 1080,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1080,
+          "median": 0.22825050000000147,
+          "p99": 2.4390110000000007,
+          "max": 4.261334999999999
+        }
+      },
+      "waiting": {
+        "second_minus_first": 0.0022070000000000006,
+        "bootstrap_95_conditional": [
+          0.001861449999999999,
+          0.006302999999999998
+        ],
+        "n_each": 1026,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1026,
+          "median": 0.002,
+          "p99": 0.002806000000000001,
+          "max": 0.01578
+        }
+      }
+    }
+  },
+  {
+    "pair": "pair2",
+    "conditions": [
+      {
+        "record": {
+          "mode": "basic",
+          "observer": 1,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 61779856605,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair2/0-basic",
+          "worker_returncode": 0,
+          "inspect_returncode": 0
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 26.958882000000003,
+              "p99": 541.672254,
+              "max": 554.105391
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 23.604781000000003,
+              "p99": 473.156375,
+              "max": 482.562103
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 5.8075,
+              "p99": 96.832,
+              "max": 780.452
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.8165,
+              "p99": 12.627,
+              "max": 13.34
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 2.624886,
+              "p99": 52.955044,
+              "max": 54.229925
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 21.798264,
+              "max": 22.385267
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 519.700498,
+              "max": 532.041062
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 540.9082980000001,
+              "p99": 554.105391,
+              "max": 554.105391
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 472.8500905,
+              "p99": 482.562103,
+              "max": 482.562103
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 95.58,
+              "p99": 780.452,
+              "max": 780.452
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 12.4315,
+              "p99": 13.34,
+              "max": 13.34
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 52.8773025,
+              "p99": 54.229925,
+              "max": 54.229925
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 21.7488315,
+              "p99": 22.385267,
+              "max": 22.385267
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 519.0208755,
+              "p99": 532.041062,
+              "max": 532.041062
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 27.449281,
+              "p99": 29.471369,
+              "max": 33.356702
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.8672105,
+              "p99": 25.379176,
+              "max": 28.84295
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 7.0035,
+              "p99": 11.569,
+              "max": 20.954
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 1.265,
+              "p99": 2.001,
+              "max": 6.877
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 2.6527830000000003,
+              "p99": 3.164301,
+              "max": 4.437053
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.00759,
+              "p99": 0.01265,
+              "max": 0.276628
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.008257,
+              "p99": 0.013616,
+              "max": 0.024567
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 1.587,
+              "p99": 1.794,
+              "max": 7.315
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.552,
+              "p99": 0.851,
+              "max": 1.403
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 14852,
+          "median": 322.0,
+          "p99": 5451,
+          "max": 683388
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 207
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1174.0,
+            "p99": 1311,
+            "max": 265886
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 115,
+            "max": 14927
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 782.0,
+            "p99": 782,
+            "max": 190835
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 138.0,
+            "p99": 184,
+            "max": 3290
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=1\naudit=0\ndropped_0=0\ndropped_1=0\ndropped_2=0\ndropped_3=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "call_overflow=0\nproducer_0_overflow=0\nproducer_1_overflow=0\nproducer_2_overflow=0\nproducer_3_overflow=0\n"
+      },
+      {
+        "record": {
+          "mode": "off",
+          "observer": 1,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 60018686846,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair2/1-off"
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 26.127322999999997,
+              "p99": 525.540125,
+              "max": 542.407482
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 23.077745999999998,
+              "p99": 463.646998,
+              "max": 477.003261
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.828,
+              "p99": 13.087,
+              "max": 14.031
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 2.6240810000000003,
+              "p99": 52.422423,
+              "max": 52.981087
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 20.685775,
+              "max": 21.592745
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 504.614174,
+              "max": 521.215502
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 524.8612605000001,
+              "p99": 542.407482,
+              "max": 542.407482
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 462.895478,
+              "p99": 477.003261,
+              "max": 477.003261
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 12.937999999999999,
+              "p99": 13.892,
+              "max": 13.892
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 52.267140999999995,
+              "p99": 52.981087,
+              "max": 52.981087
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 20.5888965,
+              "p99": 21.592745,
+              "max": 21.592745
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 504.234334,
+              "p99": 521.215502,
+              "max": 521.215502
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 26.527050000000003,
+              "p99": 27.99076,
+              "max": 29.322771
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.3488405,
+              "p99": 24.380158,
+              "max": 24.876836
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 1.196,
+              "p99": 1.886,
+              "max": 14.031
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 2.642446,
+              "p99": 2.963627,
+              "max": 3.129619
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.005451,
+              "p99": 0.010695,
+              "max": 0.017825
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.006118,
+              "p99": 0.011707,
+              "max": 0.0138
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.529,
+              "p99": 0.874,
+              "max": 1.104
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 2139
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1173.0,
+            "p99": 1265,
+            "max": 273039
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 115,
+            "max": 506
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 211927
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 161,
+            "max": 3842
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=1\naudit=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "call_overflow=0\nproducer_0_overflow=0\nproducer_1_overflow=0\nproducer_2_overflow=0\nproducer_3_overflow=0\n"
+      }
+    ],
+    "audit_only": false,
+    "behavior_differences": [],
+    "quantile_differences_ms": {
+      "all": {
+        "second_minus_first": -16.132128999999964,
+        "bootstrap_95_conditional": [
+          -17.756684999999948,
+          -14.694756250000045
+        ],
+        "n_each": 2160,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 2160,
+          "median": -0.007714500000000522,
+          "p99": 0.32656100000000166,
+          "max": 2.000809000000004
+        }
+      },
+      "catchup": {
+        "second_minus_first": -11.697909000000095,
+        "bootstrap_95_conditional": [
+          -15.392952000000037,
+          -5.908984000000032
+        ],
+        "n_each": 54,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 54,
+          "median": -15.172474500000021,
+          "p99": 2.000809000000004,
+          "max": 2.000809000000004
+        }
+      },
+      "ordinary": {
+        "second_minus_first": -1.4806089999999976,
+        "bootstrap_95_conditional": [
+          -2.835737924999999,
+          -0.6378160000000008
+        ],
+        "n_each": 1080,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1080,
+          "median": -0.863374499999999,
+          "p99": 0.7035969999999985,
+          "max": 1.6734019999999994
+        }
+      },
+      "waiting": {
+        "second_minus_first": -0.001955,
+        "bootstrap_95_conditional": [
+          -0.0061189999999999994,
+          -0.0017250000000000008
+        ],
+        "n_each": 1026,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1026,
+          "median": -0.002117,
+          "p99": -0.0012179999999999986,
+          "max": 0.010258
+        }
+      }
+    }
+  },
+  {
+    "pair": "pair3",
+    "conditions": [
+      {
+        "record": {
+          "mode": "off",
+          "observer": 0,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 59066082396,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair3/0-off"
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 25.864445,
+              "p99": 518.296351,
+              "max": 527.437213
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 22.856081500000002,
+              "p99": 457.069093,
+              "max": 463.291226
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 517.802973,
+              "p99": 527.437213,
+              "max": 527.437213
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 456.6753175,
+              "p99": 463.291226,
+              "max": 463.291226
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 26.192172,
+              "p99": 27.067957,
+              "max": 30.23574
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.0303635,
+              "p99": 23.476772,
+              "max": 23.959638
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.001587,
+              "p99": 0.006877,
+              "max": 0.007222
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.002231,
+              "p99": 0.007751,
+              "max": 0.008625
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 69
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1196.0,
+            "p99": 1265,
+            "max": 266943
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 138,
+            "max": 2048
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 185314
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 184,
+            "max": 4004
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=0\naudit=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "disabled"
+      },
+      {
+        "record": {
+          "mode": "basic",
+          "observer": 0,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 60777071779,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair3/1-basic",
+          "worker_returncode": 0,
+          "inspect_returncode": 0
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 26.259555,
+              "p99": 537.171185,
+              "max": 551.59972
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 22.888055,
+              "p99": 470.609801,
+              "max": 476.440911
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 535.5684055,
+              "p99": 551.59972,
+              "max": 551.59972
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 469.242072,
+              "p99": 476.440911,
+              "max": 476.440911
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 27.0753815,
+              "p99": 30.042981,
+              "max": 32.733629
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.669322,
+              "p99": 26.12041,
+              "max": 28.410522
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.002967,
+              "p99": 0.007912,
+              "max": 0.012489
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.003634,
+              "p99": 0.008832,
+              "max": 0.013708
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 2692
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1173.0,
+            "p99": 1288,
+            "max": 263817
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 115,
+            "max": 276
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 187269
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 138,
+            "max": 21505
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=0\naudit=0\ndropped_0=0\ndropped_1=0\ndropped_2=0\ndropped_3=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "disabled"
+      }
+    ],
+    "audit_only": false,
+    "behavior_differences": [],
+    "quantile_differences_ms": {
+      "all": {
+        "second_minus_first": 18.874834000000078,
+        "bootstrap_95_conditional": [
+          16.329192574999993,
+          20.684710999999993
+        ],
+        "n_each": 2160,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 2160,
+          "median": 0.00744700000000087,
+          "p99": 18.13501599999995,
+          "max": 33.8181800000001
+        }
+      },
+      "catchup": {
+        "second_minus_first": 24.162507000000005,
+        "bootstrap_95_conditional": [
+          15.533707999999933,
+          29.621383000000037
+        ],
+        "n_each": 54,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 54,
+          "median": 17.61215450000003,
+          "p99": 33.8181800000001,
+          "max": 33.8181800000001
+        }
+      },
+      "ordinary": {
+        "second_minus_first": 2.9750240000000012,
+        "bootstrap_95_conditional": [
+          0.9312690000000003,
+          5.0061409999999995
+        ],
+        "n_each": 1080,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1080,
+          "median": 0.8141099999999994,
+          "p99": 3.7318110000000004,
+          "max": 6.533418000000001
+        }
+      },
+      "waiting": {
+        "second_minus_first": 0.0010350000000000003,
+        "bootstrap_95_conditional": [
+          0.0008739999999999998,
+          0.00115
+        ],
+        "n_each": 1026,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1026,
+          "median": 0.00138,
+          "p99": 0.0018170000000000003,
+          "max": 0.0054280000000000005
+        }
+      }
+    }
+  },
+  {
+    "pair": "pair4",
+    "conditions": [
+      {
+        "record": {
+          "mode": "basic",
+          "observer": 0,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 61933230961,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair4/0-basic",
+          "worker_returncode": 0,
+          "inspect_returncode": 0
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 26.847564,
+              "p99": 543.866901,
+              "max": 568.231754
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 23.3539175,
+              "p99": 475.6247,
+              "max": 495.49851
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 542.948075,
+              "p99": 568.231754,
+              "max": 568.231754
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 475.326183,
+              "p99": 495.49851,
+              "max": 495.49851
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 27.4934965,
+              "p99": 29.193781,
+              "max": 30.800381
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.9379335,
+              "p99": 25.058243,
+              "max": 26.416087
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.002967,
+              "p99": 0.007613,
+              "max": 0.012765
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.003634,
+              "p99": 0.008487,
+              "max": 0.013915
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 92
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1150.0,
+            "p99": 1288,
+            "max": 259446
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 115,
+            "max": 27348
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 176137
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 161,
+            "max": 230
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=0\naudit=0\ndropped_0=0\ndropped_1=0\ndropped_2=0\ndropped_3=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "disabled"
+      },
+      {
+        "record": {
+          "mode": "off",
+          "observer": 0,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 59969406317,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair4/1-off"
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 26.248781,
+              "p99": 526.594075,
+              "max": 530.01753
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 23.243777,
+              "p99": 464.711979,
+              "max": 468.464948
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 526.1446505,
+              "p99": 530.01753,
+              "max": 530.01753
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 464.5141165,
+              "p99": 468.464948,
+              "max": 468.464948
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 26.581624499999997,
+              "p99": 27.874684,
+              "max": 29.879526
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.4187545,
+              "p99": 23.891858,
+              "max": 24.810268
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.001656,
+              "p99": 0.006762,
+              "max": 0.007291
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.0023,
+              "p99": 0.007636,
+              "max": 0.008556
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 207
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1150.0,
+            "p99": 1242,
+            "max": 269703
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 115,
+            "max": 2507
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 222852
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 115,
+            "max": 161
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=0\naudit=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "disabled"
+      }
+    ],
+    "audit_only": false,
+    "behavior_differences": [],
+    "quantile_differences_ms": {
+      "all": {
+        "second_minus_first": -17.27282600000001,
+        "bootstrap_95_conditional": [
+          -18.673814450000023,
+          -15.648074000000065
+        ],
+        "n_each": 2160,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 2160,
+          "median": -0.12164350000000113,
+          "p99": 0.2118829999999967,
+          "max": 2.7200939999999996
+        }
+      },
+      "catchup": {
+        "second_minus_first": -38.21422400000006,
+        "bootstrap_95_conditional": [
+          -38.53736600000002,
+          -21.706369999999993
+        ],
+        "n_each": 54,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 54,
+          "median": -17.362241499999982,
+          "p99": -2.462113000000045,
+          "max": -2.462113000000045
+        }
+      },
+      "ordinary": {
+        "second_minus_first": -1.3190970000000029,
+        "bootstrap_95_conditional": [
+          -2.329839224999998,
+          -0.471268000000002
+        ],
+        "n_each": 1080,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1080,
+          "median": -0.9324179999999984,
+          "p99": 0.4861609999999992,
+          "max": 2.7200939999999996
+        }
+      },
+      "waiting": {
+        "second_minus_first": -0.0008510000000000002,
+        "bootstrap_95_conditional": [
+          -0.0009890000000000003,
+          -0.000621
+        ],
+        "n_each": 1026,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1026,
+          "median": -0.001288,
+          "p99": -0.000529,
+          "max": 0.003727
+        }
+      }
+    }
+  },
+  {
+    "pair": "pair5",
+    "conditions": [
+      {
+        "record": {
+          "mode": "off",
+          "observer": 1,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 60521457561,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair5/0-off"
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 26.4247595,
+              "p99": 532.061334,
+              "max": 537.466937
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 23.3177135,
+              "p99": 470.470631,
+              "max": 475.308769
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.782,
+              "p99": 13.754,
+              "max": 20.218
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 2.6242175000000003,
+              "p99": 52.42119,
+              "max": 53.966778
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 20.98301,
+              "max": 21.525526
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 510.821859,
+              "max": 515.865975
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 531.600136,
+              "p99": 537.466937,
+              "max": 537.466937
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 470.023421,
+              "p99": 475.308769,
+              "max": 475.308769
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 13.685500000000001,
+              "p99": 20.218,
+              "max": 20.218
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 52.313572,
+              "p99": 53.966778,
+              "max": 53.966778
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 20.9438185,
+              "p99": 21.525526,
+              "max": 21.525526
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 510.450628,
+              "p99": 515.865975,
+              "max": 515.865975
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 26.8463865,
+              "p99": 28.758105,
+              "max": 31.682031
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.6817235,
+              "p99": 24.256775,
+              "max": 28.010254
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 1.196,
+              "p99": 1.863,
+              "max": 7.821
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 2.6454255,
+              "p99": 2.951779,
+              "max": 3.150822
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.005497,
+              "p99": 0.010396,
+              "max": 0.015641
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.006164,
+              "p99": 0.01127,
+              "max": 0.016492
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.529,
+              "p99": 0.851,
+              "max": 1.242
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 72727
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1151.0,
+            "p99": 1265,
+            "max": 272371
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 115,
+            "max": 2001
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 782.0,
+            "p99": 782,
+            "max": 179127
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 184,
+            "max": 4807
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=1\naudit=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "call_overflow=0\nproducer_0_overflow=0\nproducer_1_overflow=0\nproducer_2_overflow=0\nproducer_3_overflow=0\n"
+      },
+      {
+        "record": {
+          "mode": "off",
+          "observer": 0,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 58665370302,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair5/1-off"
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 25.632001000000002,
+              "p99": 515.701747,
+              "max": 523.946403
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 22.6020165,
+              "p99": 454.000023,
+              "max": 460.715593
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 514.629948,
+              "p99": 523.946403,
+              "max": 523.946403
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 453.587616,
+              "p99": 460.715593,
+              "max": 460.715593
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 26.004292,
+              "p99": 27.212502,
+              "max": 29.55426
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 22.8590705,
+              "p99": 23.40305,
+              "max": 24.091459
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.00161,
+              "p99": 0.006808,
+              "max": 0.014744
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.002254,
+              "p99": 0.007636,
+              "max": 0.010443
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 2463
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1173.0,
+            "p99": 1265,
+            "max": 285551
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 115,
+            "max": 345
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 193895
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 138,
+            "max": 3958
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=0\naudit=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "disabled"
+      }
+    ],
+    "audit_only": false,
+    "behavior_differences": [],
+    "quantile_differences_ms": {
+      "all": {
+        "second_minus_first": -16.359587000000033,
+        "bootstrap_95_conditional": [
+          -17.911967000000004,
+          -15.029163999999923
+        ],
+        "n_each": 2160,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 2160,
+          "median": -0.2805219999999995,
+          "p99": -0.003058,
+          "max": 3.271038000000001
+        }
+      },
+      "catchup": {
+        "second_minus_first": -13.520533999999998,
+        "bootstrap_95_conditional": [
+          -16.41614000000004,
+          -11.876397999999995
+        ],
+        "n_each": 54,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 54,
+          "median": -15.99078750000001,
+          "p99": -9.460280000000012,
+          "max": -9.460280000000012
+        }
+      },
+      "ordinary": {
+        "second_minus_first": -1.5456029999999998,
+        "bootstrap_95_conditional": [
+          -3.861815,
+          0.2787860000000002
+        ],
+        "n_each": 1080,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1080,
+          "median": -0.8226980000000008,
+          "p99": 0.27860700000000094,
+          "max": 3.271038000000001
+        }
+      },
+      "waiting": {
+        "second_minus_first": -0.003588000000000001,
+        "bootstrap_95_conditional": [
+          -0.003817000000000001,
+          -0.0034269999999999995
+        ],
+        "n_each": 1026,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1026,
+          "median": -0.003864,
+          "p99": -0.003129,
+          "max": 0.008856
+        }
+      }
+    }
+  },
+  {
+    "pair": "pair6",
+    "conditions": [
+      {
+        "record": {
+          "mode": "off",
+          "observer": 0,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 59921154604,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair6/0-off"
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 26.153402999999997,
+              "p99": 526.757167,
+              "max": 534.63333
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 23.1170505,
+              "p99": 465.034093,
+              "max": 469.763715
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 525.5542519999999,
+              "p99": 534.63333,
+              "max": 534.63333
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 463.602033,
+              "p99": 469.763715,
+              "max": 469.763715
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 26.5516485,
+              "p99": 27.504478,
+              "max": 30.702564
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.414413500000002,
+              "p99": 23.994885,
+              "max": 24.457425
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.001564,
+              "p99": 0.006855,
+              "max": 0.007475
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.002231,
+              "p99": 0.007866,
+              "max": 0.008464
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 70
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1196.0,
+            "p99": 1311,
+            "max": 271980
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 138,
+            "max": 345
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 783,
+            "max": 4970
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 207,
+            "max": 3059
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=0\naudit=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "disabled"
+      },
+      {
+        "record": {
+          "mode": "off",
+          "observer": 1,
+          "audit": 0,
+          "cycles": 54,
+          "returncode": 0,
+          "elapsed_ns": 59468049181,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair6/1-off"
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 2160,
+              "median": 26.0109955,
+              "p99": 522.399434,
+              "max": 525.722068
+            },
+            "cpu_ms": {
+              "n": 2160,
+              "median": 22.983621499999998,
+              "p99": 460.72284,
+              "max": 463.60724
+            },
+            "measured_submit_sum_us": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2160,
+              "median": 0.92,
+              "p99": 11.823,
+              "max": 16.953
+            },
+            "model_run_ms": {
+              "n": 2160,
+              "median": 2.6256085000000002,
+              "p99": 52.312261,
+              "max": 53.231722
+            },
+            "init_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 20.48309,
+              "max": 20.754245
+            },
+            "step_sum_ms": {
+              "n": 2160,
+              "median": 0.0,
+              "p99": 501.717376,
+              "max": 505.006503
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 54,
+              "median": 522.1499965,
+              "p99": 525.722068,
+              "max": 525.722068
+            },
+            "cpu_ms": {
+              "n": 54,
+              "median": 460.416975,
+              "p99": 463.60724,
+              "max": 463.60724
+            },
+            "measured_submit_sum_us": {
+              "n": 54,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 54,
+              "median": 11.753,
+              "p99": 16.953,
+              "max": 16.953
+            },
+            "model_run_ms": {
+              "n": 54,
+              "median": 52.287117,
+              "p99": 53.231722,
+              "max": 53.231722
+            },
+            "init_ms": {
+              "n": 54,
+              "median": 20.4660585,
+              "p99": 20.754245,
+              "max": 20.754245
+            },
+            "step_sum_ms": {
+              "n": 54,
+              "median": 501.4758475,
+              "p99": 505.006503,
+              "max": 505.006503
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 1080,
+              "median": 26.353136,
+              "p99": 27.149623,
+              "max": 28.602972
+            },
+            "cpu_ms": {
+              "n": 1080,
+              "median": 23.194264,
+              "p99": 23.713972,
+              "max": 24.029329
+            },
+            "measured_submit_sum_us": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1080,
+              "median": 1.357,
+              "p99": 1.978,
+              "max": 10.373
+            },
+            "model_run_ms": {
+              "n": 1080,
+              "median": 2.645472,
+              "p99": 2.956929,
+              "max": 3.286892
+            },
+            "init_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1080,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 1026,
+              "median": 0.005475,
+              "p99": 0.010466,
+              "max": 0.023278
+            },
+            "cpu_ms": {
+              "n": 1026,
+              "median": 0.006164,
+              "p99": 0.011408,
+              "max": 0.019252
+            },
+            "measured_submit_sum_us": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 1026,
+              "median": 0.529,
+              "p99": 0.92,
+              "max": 1.058
+            },
+            "model_run_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 1026,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 138
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1150.0,
+            "p99": 1265,
+            "max": 271312
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 115,
+            "max": 7845
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 4854
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 138,
+            "max": 181542
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=1\naudit=0\nclock_resolution_ns=1\ncycles=54\n",
+        "sampling_status": "call_overflow=0\nproducer_0_overflow=0\nproducer_1_overflow=0\nproducer_2_overflow=0\nproducer_3_overflow=0\n"
+      }
+    ],
+    "audit_only": false,
+    "behavior_differences": [],
+    "quantile_differences_ms": {
+      "all": {
+        "second_minus_first": -4.357732999999939,
+        "bootstrap_95_conditional": [
+          -5.709873000000016,
+          -3.039828000000057
+        ],
+        "n_each": 2160,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 2160,
+          "median": 0.0037949999999999998,
+          "p99": 0.48858700000000255,
+          "max": 2.9077610000000504
+        }
+      },
+      "catchup": {
+        "second_minus_first": -8.911261999999965,
+        "bootstrap_95_conditional": [
+          -9.748720000000048,
+          -4.752966000000015
+        ],
+        "n_each": 54,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 54,
+          "median": -4.047796000000062,
+          "p99": 2.9077610000000504,
+          "max": 2.9077610000000504
+        }
+      },
+      "ordinary": {
+        "second_minus_first": -0.3548550000000006,
+        "bootstrap_95_conditional": [
+          -0.7298030000000004,
+          0.7728839000000005
+        ],
+        "n_each": 1080,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1080,
+          "median": -0.18862500000000004,
+          "p99": 0.6211890000000011,
+          "max": 2.305676000000002
+        }
+      },
+      "waiting": {
+        "second_minus_first": 0.0036109999999999996,
+        "bootstrap_95_conditional": [
+          0.0034279999999999996,
+          0.0038860000000000006
+        ],
+        "n_each": 1026,
+        "independent_blocks_each": 54,
+        "matched_delta_ms": {
+          "n": 1026,
+          "median": 0.00391,
+          "p99": 0.004439,
+          "max": 0.017253
+        }
+      }
+    }
+  },
+  {
+    "pair": "pair7",
+    "conditions": [
+      {
+        "record": {
+          "mode": "off",
+          "observer": 1,
+          "audit": 1,
+          "cycles": 2,
+          "returncode": 0,
+          "elapsed_ns": 4981935870,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair7/0-off"
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 80,
+              "median": 26.664665,
+              "p99": 535.278195,
+              "max": 535.278195
+            },
+            "cpu_ms": {
+              "n": 80,
+              "median": 23.7063085,
+              "p99": 473.736759,
+              "max": 473.736759
+            },
+            "measured_submit_sum_us": {
+              "n": 80,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 80,
+              "median": 0.8165,
+              "p99": 12.052,
+              "max": 12.052
+            },
+            "model_run_ms": {
+              "n": 80,
+              "median": 2.6190805,
+              "p99": 52.603475,
+              "max": 52.603475
+            },
+            "init_ms": {
+              "n": 80,
+              "median": 0.0,
+              "p99": 20.835213,
+              "max": 20.835213
+            },
+            "step_sum_ms": {
+              "n": 80,
+              "median": 0.0,
+              "p99": 514.309763,
+              "max": 514.309763
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 2,
+              "median": 534.6454715,
+              "p99": 535.278195,
+              "max": 535.278195
+            },
+            "cpu_ms": {
+              "n": 2,
+              "median": 473.185094,
+              "p99": 473.736759,
+              "max": 473.736759
+            },
+            "measured_submit_sum_us": {
+              "n": 2,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 2,
+              "median": 11.9485,
+              "p99": 12.052,
+              "max": 12.052
+            },
+            "model_run_ms": {
+              "n": 2,
+              "median": 52.500456,
+              "p99": 52.603475,
+              "max": 52.603475
+            },
+            "init_ms": {
+              "n": 2,
+              "median": 20.716575,
+              "p99": 20.835213,
+              "max": 20.835213
+            },
+            "step_sum_ms": {
+              "n": 2,
+              "median": 513.8015889999999,
+              "p99": 514.309763,
+              "max": 514.309763
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 40,
+              "median": 27.0767065,
+              "p99": 28.14338,
+              "max": 28.14338
+            },
+            "cpu_ms": {
+              "n": 40,
+              "median": 23.8897215,
+              "p99": 24.579038,
+              "max": 24.579038
+            },
+            "measured_submit_sum_us": {
+              "n": 40,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 40,
+              "median": 1.2189999999999999,
+              "p99": 1.886,
+              "max": 1.886
+            },
+            "model_run_ms": {
+              "n": 40,
+              "median": 2.6399735,
+              "p99": 2.948764,
+              "max": 2.948764
+            },
+            "init_ms": {
+              "n": 40,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 40,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 38,
+              "median": 0.005382,
+              "p99": 0.010649,
+              "max": 0.010649
+            },
+            "cpu_ms": {
+              "n": 38,
+              "median": 0.006095,
+              "p99": 0.01242,
+              "max": 0.01242
+            },
+            "measured_submit_sum_us": {
+              "n": 38,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "preparation_sum_us": {
+              "n": 38,
+              "median": 0.506,
+              "p99": 0.897,
+              "max": 0.897
+            },
+            "model_run_ms": {
+              "n": 38,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 38,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 38,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 0,
+          "median": null,
+          "p99": null,
+          "max": null
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 46,
+            "max": 207
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1173.0,
+            "p99": 1288,
+            "max": 245736
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 69.0,
+            "p99": 92,
+            "max": 9018
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 156196
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 115,
+            "max": 5244
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=1\naudit=1\nclock_resolution_ns=1\ncycles=2\n",
+        "sampling_status": "call_overflow=0\nproducer_0_overflow=0\nproducer_1_overflow=0\nproducer_2_overflow=0\nproducer_3_overflow=0\n"
+      },
+      {
+        "record": {
+          "mode": "basic",
+          "observer": 1,
+          "audit": 1,
+          "cycles": 2,
+          "returncode": 0,
+          "elapsed_ns": 5081820514,
+          "directory": "/home/hzhy/drone-fixed-workload-20261013/window02/evidence/pair7/1-basic",
+          "worker_returncode": 0,
+          "inspect_returncode": 0
+        },
+        "summary": {
+          "all": {
+            "wall_ms": {
+              "n": 80,
+              "median": 27.4424475,
+              "p99": 551.173698,
+              "max": 551.173698
+            },
+            "cpu_ms": {
+              "n": 80,
+              "median": 24.062842,
+              "p99": 479.635067,
+              "max": 479.635067
+            },
+            "measured_submit_sum_us": {
+              "n": 80,
+              "median": 7.1645,
+              "p99": 205.025,
+              "max": 205.025
+            },
+            "preparation_sum_us": {
+              "n": 80,
+              "median": 0.8625,
+              "p99": 12.283,
+              "max": 12.283
+            },
+            "model_run_ms": {
+              "n": 80,
+              "median": 2.615972,
+              "p99": 53.165385,
+              "max": 53.165385
+            },
+            "init_ms": {
+              "n": 80,
+              "median": 0.0,
+              "p99": 21.921957,
+              "max": 21.921957
+            },
+            "step_sum_ms": {
+              "n": 80,
+              "median": 0.0,
+              "p99": 528.982243,
+              "max": 528.982243
+            }
+          },
+          "catchup": {
+            "wall_ms": {
+              "n": 2,
+              "median": 550.4334555,
+              "p99": 551.173698,
+              "max": 551.173698
+            },
+            "cpu_ms": {
+              "n": 2,
+              "median": 479.62590950000003,
+              "p99": 479.635067,
+              "max": 479.635067
+            },
+            "measured_submit_sum_us": {
+              "n": 2,
+              "median": 124.9395,
+              "p99": 126.136,
+              "max": 126.136
+            },
+            "preparation_sum_us": {
+              "n": 2,
+              "median": 11.9835,
+              "p99": 12.283,
+              "max": 12.283
+            },
+            "model_run_ms": {
+              "n": 2,
+              "median": 52.9738855,
+              "p99": 53.165385,
+              "max": 53.165385
+            },
+            "init_ms": {
+              "n": 2,
+              "median": 21.81275,
+              "p99": 21.921957,
+              "max": 21.921957
+            },
+            "step_sum_ms": {
+              "n": 2,
+              "median": 528.3572685,
+              "p99": 528.982243,
+              "max": 528.982243
+            }
+          },
+          "ordinary": {
+            "wall_ms": {
+              "n": 40,
+              "median": 27.793882,
+              "p99": 28.371491,
+              "max": 28.371491
+            },
+            "cpu_ms": {
+              "n": 40,
+              "median": 24.198184,
+              "p99": 24.44041,
+              "max": 24.44041
+            },
+            "measured_submit_sum_us": {
+              "n": 40,
+              "median": 8.463999999999999,
+              "p99": 205.025,
+              "max": 205.025
+            },
+            "preparation_sum_us": {
+              "n": 40,
+              "median": 1.2765,
+              "p99": 1.932,
+              "max": 1.932
+            },
+            "model_run_ms": {
+              "n": 40,
+              "median": 2.663112,
+              "p99": 3.310126,
+              "max": 3.310126
+            },
+            "init_ms": {
+              "n": 40,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 40,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          },
+          "waiting": {
+            "wall_ms": {
+              "n": 38,
+              "median": 0.007521,
+              "p99": 0.020495,
+              "max": 0.020495
+            },
+            "cpu_ms": {
+              "n": 38,
+              "median": 0.008211,
+              "p99": 0.02024,
+              "max": 0.02024
+            },
+            "measured_submit_sum_us": {
+              "n": 38,
+              "median": 1.541,
+              "p99": 14.538,
+              "max": 14.538
+            },
+            "preparation_sum_us": {
+              "n": 38,
+              "median": 0.552,
+              "p99": 1.311,
+              "max": 1.311
+            },
+            "model_run_ms": {
+              "n": 38,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "init_ms": {
+              "n": 38,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            },
+            "step_sum_ms": {
+              "n": 38,
+              "median": 0.0,
+              "p99": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        "submit_ns": {
+          "n": 552,
+          "median": 299.0,
+          "p99": 7130,
+          "max": 202541
+        },
+        "calibration_ns": {
+          "clock_ns": {
+            "n": 10000,
+            "median": 46.0,
+            "p99": 69,
+            "max": 70
+          },
+          "two_thread_clock_ns": {
+            "n": 10000,
+            "median": 1173.0,
+            "p99": 1288,
+            "max": 287735
+          },
+          "observer_span_ns": {
+            "n": 10000,
+            "median": 92.0,
+            "p99": 115,
+            "max": 3910
+          },
+          "event_hook_ns": {
+            "n": 10000,
+            "median": 759.0,
+            "p99": 782,
+            "max": 212639
+          },
+          "preparation_empty_ns": {
+            "n": 10000,
+            "median": 115.0,
+            "p99": 184,
+            "max": 195436
+          }
+        },
+        "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=1\naudit=1\ndropped_0=0\ndropped_1=0\ndropped_2=0\ndropped_3=0\nclock_resolution_ns=1\ncycles=2\n",
+        "sampling_status": "call_overflow=0\nproducer_0_overflow=0\nproducer_1_overflow=0\nproducer_2_overflow=0\nproducer_3_overflow=0\n"
+      }
+    ],
+    "audit_only": true,
+    "behavior_differences": [],
+    "quantile_differences_ms": {
+      "all": {
+        "second_minus_first": 15.895502999999962,
+        "bootstrap_95_conditional": null,
+        "n_each": 80,
+        "independent_blocks_each": 2,
+        "matched_delta_ms": {
+          "n": 80,
+          "median": 0.13031900000000007,
+          "p99": 17.160949999999957,
+          "max": 17.160949999999957
+        }
+      },
+      "catchup": {
+        "second_minus_first": 15.895502999999962,
+        "bootstrap_95_conditional": null,
+        "n_each": 2,
+        "independent_blocks_each": 2,
+        "matched_delta_ms": {
+          "n": 2,
+          "median": 15.787983999999994,
+          "p99": 17.160949999999957,
+          "max": 17.160949999999957
+        }
+      },
+      "ordinary": {
+        "second_minus_first": 0.2281109999999984,
+        "bootstrap_95_conditional": null,
+        "n_each": 40,
+        "independent_blocks_each": 2,
+        "matched_delta_ms": {
+          "n": 40,
+          "median": 0.7647075000000001,
+          "p99": 1.496465999999998,
+          "max": 1.496465999999998
+        }
+      },
+      "waiting": {
+        "second_minus_first": 0.009845999999999999,
+        "bootstrap_95_conditional": null,
+        "n_each": 38,
+        "independent_blocks_each": 2,
+        "matched_delta_ms": {
+          "n": 38,
+          "median": 0.0021620000000000003,
+          "p99": 0.014928,
+          "max": 0.014928
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,2939 @@
+{
+  "pair1": {
+    "blocks": 4,
+    "calls": 160,
+    "each_storage_calls": 80,
+    "templates": 4,
+    "searches": 156,
+    "partial_exact_equal": true,
+    "all_behavior_same": true,
+    "business_events_each_block": [
+      275,
+      275,
+      275,
+      275
+    ],
+    "normalized_business_sha256": [
+      "cb349262796f4cb80d522dc0a22da1a04eb59a0a8e63259f5e968cb46d1bfc05"
+    ],
+    "normalized_different_blocks": [],
+    "serialization_equivalent": true,
+    "native_file_crc_end_commit_valid": true,
+    "cumulative_sequences_no_gaps": true,
+    "all_drains_complete": true,
+    "all_health_no_error_or_drops_or_late_sync": true,
+    "worker_single_tid": [
+      "43706"
+    ],
+    "tracking_main_pid": [
+      "43707"
+    ],
+    "drain_max_ns": 105351920,
+    "switch_and_settling_max_ns": 114084452,
+    "files": [
+      {
+        "path": "pair1/0-mixed/emmc/253018976328940/segment-43706-84274009630245-0.dtd",
+        "block": -1,
+        "events": 6,
+        "health": 4,
+        "commits": 3,
+        "bytes": 1900,
+        "last_written": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair1/0-mixed/emmc/block-3/253018976328940/segment-43706-84278021035875-0.dtd",
+        "block": 3,
+        "events": 284,
+        "health": 8,
+        "commits": 11,
+        "bytes": 74528,
+        "last_written": [
+          1101,
+          0,
+          0,
+          2
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair1/0-mixed/emmc/block-0/253018976328940/segment-43706-84274128332629-0.dtd",
+        "block": 0,
+        "events": 279,
+        "health": 4,
+        "commits": 14,
+        "bytes": 73688,
+        "last_written": [
+          276,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair1/0-mixed/tmpfs-originals/tmpfs/block-2/253018976328940/segment-43706-84276732365677-0.dtd",
+        "block": 2,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          826,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair1/0-mixed/tmpfs-originals/tmpfs/block-1/253018976328940/segment-43706-84275435588412-0.dtd",
+        "block": 1,
+        "events": 279,
+        "health": 4,
+        "commits": 14,
+        "bytes": 73668,
+        "last_written": [
+          551,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "audit_rows": 240,
+    "all_model_input_and_final_head_sha_same": true
+  },
+  "pair2": {
+    "blocks": 64,
+    "calls": 2560,
+    "each_storage_calls": 1280,
+    "templates": 64,
+    "searches": 2496,
+    "partial_exact_equal": true,
+    "all_behavior_same": true,
+    "business_events_each_block": [
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275
+    ],
+    "normalized_business_sha256": [
+      "cb349262796f4cb80d522dc0a22da1a04eb59a0a8e63259f5e968cb46d1bfc05"
+    ],
+    "normalized_different_blocks": [],
+    "serialization_equivalent": true,
+    "native_file_crc_end_commit_valid": true,
+    "cumulative_sequences_no_gaps": true,
+    "all_drains_complete": true,
+    "all_health_no_error_or_drops_or_late_sync": true,
+    "worker_single_tid": [
+      "43769"
+    ],
+    "tracking_main_pid": [
+      "43770"
+    ],
+    "drain_max_ns": 107463272,
+    "switch_and_settling_max_ns": 119548949,
+    "files": [
+      {
+        "path": "pair2/0-mixed/emmc/block-52/253290242125244/segment-43769-84346738346765-0.dtd",
+        "block": 52,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73328,
+        "last_written": [
+          14576,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-39/253290242125244/segment-43769-84330859389713-0.dtd",
+        "block": 39,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          11001,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-62/253290242125244/segment-43769-84358953044955-0.dtd",
+        "block": 62,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          17326,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-54/253290242125244/segment-43769-84349189227213-0.dtd",
+        "block": 54,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73428,
+        "last_written": [
+          15126,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-36/253290242125244/segment-43769-84327215681633-0.dtd",
+        "block": 36,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          10176,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-31/253290242125244/segment-43769-84321090728341-0.dtd",
+        "block": 31,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73368,
+        "last_written": [
+          8801,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-2/253290242125244/segment-43769-84285835475485-0.dtd",
+        "block": 2,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73248,
+        "last_written": [
+          826,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-5/253290242125244/segment-43769-84289467390410-0.dtd",
+        "block": 5,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73228,
+        "last_written": [
+          1651,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-22/253290242125244/segment-43769-84310110991349-0.dtd",
+        "block": 22,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          6326,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-25/253290242125244/segment-43769-84313750319134-0.dtd",
+        "block": 25,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          7151,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-47/253290242125244/segment-43769-84340593667674-0.dtd",
+        "block": 47,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          13201,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-15/253290242125244/segment-43769-84301600351122-0.dtd",
+        "block": 15,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          4401,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-12/253290242125244/segment-43769-84297971845718-0.dtd",
+        "block": 12,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73328,
+        "last_written": [
+          3576,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-41/253290242125244/segment-43769-84333290960915-0.dtd",
+        "block": 41,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          11551,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-48/253290242125244/segment-43769-84341827239243-0.dtd",
+        "block": 48,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73428,
+        "last_written": [
+          13476,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-34/253290242125244/segment-43769-84324767381893-0.dtd",
+        "block": 34,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          9626,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-51/253290242125244/segment-43769-84345514220227-0.dtd",
+        "block": 51,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          14301,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-58/253290242125244/segment-43769-84354095345341-0.dtd",
+        "block": 58,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          16226,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-32/253290242125244/segment-43769-84322324774107-0.dtd",
+        "block": 32,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          9076,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-61/253290242125244/segment-43769-84357734304892-0.dtd",
+        "block": 61,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73328,
+        "last_written": [
+          17051,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-57/253290242125244/segment-43769-84352878645351-0.dtd",
+        "block": 57,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73328,
+        "last_written": [
+          15951,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-8/253290242125244/segment-43769-84293115552861-0.dtd",
+        "block": 8,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          2476,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-6/253290242125244/segment-43769-84290685767949-0.dtd",
+        "block": 6,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          1926,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-0/253290242125244/segment-43769-84283401298282-0.dtd",
+        "block": 0,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73608,
+        "last_written": [
+          276,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/253290242125244/segment-43769-84283282643468-0.dtd",
+        "block": -1,
+        "events": 6,
+        "health": 4,
+        "commits": 3,
+        "bytes": 1900,
+        "last_written": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-44/253290242125244/segment-43769-84336937269915-0.dtd",
+        "block": 44,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          12376,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-17/253290242125244/segment-43769-84304024476232-0.dtd",
+        "block": 17,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          4951,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-28/253290242125244/segment-43769-84317419291798-0.dtd",
+        "block": 28,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          7976,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-26/253290242125244/segment-43769-84314972513536-0.dtd",
+        "block": 26,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          7426,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-19/253290242125244/segment-43769-84306452448695-0.dtd",
+        "block": 19,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          5501,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-42/253290242125244/segment-43769-84334515224658-0.dtd",
+        "block": 42,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73328,
+        "last_written": [
+          11826,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-20/253290242125244/segment-43769-84307676516024-0.dtd",
+        "block": 20,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          5776,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/emmc/block-11/253290242125244/segment-43769-84296763098290-0.dtd",
+        "block": 11,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          3301,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-55/253290242125244/segment-43769-84350428142895-0.dtd",
+        "block": 55,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          15401,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-63/253290242125244/segment-43769-84360165502696-0.dtd",
+        "block": 63,
+        "events": 284,
+        "health": 8,
+        "commits": 12,
+        "bytes": 74728,
+        "last_written": [
+          17601,
+          0,
+          0,
+          2
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-30/253290242125244/segment-43769-84319863637169-0.dtd",
+        "block": 30,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          8526,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-37/253290242125244/segment-43769-84328431111040-0.dtd",
+        "block": 37,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73468,
+        "last_written": [
+          10451,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-53/253290242125244/segment-43769-84347956604636-0.dtd",
+        "block": 53,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          14851,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-38/253290242125244/segment-43769-84329636380525-0.dtd",
+        "block": 38,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          10726,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-4/253290242125244/segment-43769-84288259263845-0.dtd",
+        "block": 4,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73468,
+        "last_written": [
+          1376,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-3/253290242125244/segment-43769-84287050692067-0.dtd",
+        "block": 3,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          1101,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-13/253290242125244/segment-43769-84299180681964-0.dtd",
+        "block": 13,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          3851,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-14/253290242125244/segment-43769-84300392621051-0.dtd",
+        "block": 14,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          4126,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-49/253290242125244/segment-43769-84343060778509-0.dtd",
+        "block": 49,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          13751,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-40/253290242125244/segment-43769-84332070332034-0.dtd",
+        "block": 40,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          11276,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-24/253290242125244/segment-43769-84312541080864-0.dtd",
+        "block": 24,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          6876,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-23/253290242125244/segment-43769-84311327609744-0.dtd",
+        "block": 23,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          6601,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-46/253290242125244/segment-43769-84339362083238-0.dtd",
+        "block": 46,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          12926,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-33/253290242125244/segment-43769-84323541223714-0.dtd",
+        "block": 33,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          9351,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-56/253290242125244/segment-43769-84351653999813-0.dtd",
+        "block": 56,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          15676,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-60/253290242125244/segment-43769-84356517578829-0.dtd",
+        "block": 60,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          16776,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-35/253290242125244/segment-43769-84325992821959-0.dtd",
+        "block": 35,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          9901,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-59/253290242125244/segment-43769-84355306249582-0.dtd",
+        "block": 59,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          16501,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-50/253290242125244/segment-43769-84344283944275-0.dtd",
+        "block": 50,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          14026,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-1/253290242125244/segment-43769-84284628791271-0.dtd",
+        "block": 1,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73588,
+        "last_written": [
+          551,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-7/253290242125244/segment-43769-84291902985182-0.dtd",
+        "block": 7,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          2201,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-9/253290242125244/segment-43769-84294334792881-0.dtd",
+        "block": 9,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          2751,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-43/253290242125244/segment-43769-84335720597604-0.dtd",
+        "block": 43,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          12101,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-10/253290242125244/segment-43769-84295547595632-0.dtd",
+        "block": 10,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          3026,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-21/253290242125244/segment-43769-84308895030234-0.dtd",
+        "block": 21,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          6051,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-45/253290242125244/segment-43769-84338146435445-0.dtd",
+        "block": 45,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          12651,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-27/253290242125244/segment-43769-84316192860756-0.dtd",
+        "block": 27,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          7701,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-18/253290242125244/segment-43769-84305235441740-0.dtd",
+        "block": 18,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          5226,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-16/253290242125244/segment-43769-84302816608022-0.dtd",
+        "block": 16,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          4676,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair2/0-mixed/tmpfs-originals/tmpfs/block-29/253290242125244/segment-43769-84318640178813-0.dtd",
+        "block": 29,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          8251,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "pair3": {
+    "blocks": 64,
+    "calls": 2560,
+    "each_storage_calls": 1280,
+    "templates": 64,
+    "searches": 2496,
+    "partial_exact_equal": true,
+    "all_behavior_same": true,
+    "business_events_each_block": [
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275,
+      275
+    ],
+    "normalized_business_sha256": [
+      "cb349262796f4cb80d522dc0a22da1a04eb59a0a8e63259f5e968cb46d1bfc05"
+    ],
+    "normalized_different_blocks": [],
+    "serialization_equivalent": true,
+    "native_file_crc_end_commit_valid": true,
+    "cumulative_sequences_no_gaps": true,
+    "all_drains_complete": true,
+    "all_health_no_error_or_drops_or_late_sync": true,
+    "worker_single_tid": [
+      "44325"
+    ],
+    "tracking_main_pid": [
+      "44326"
+    ],
+    "drain_max_ns": 106375939,
+    "switch_and_settling_max_ns": 118469498,
+    "files": [
+      {
+        "path": "pair3/0-mixed/emmc/block-55/248063770163410/segment-44325-84431261463730-0.dtd",
+        "block": 55,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          15401,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-63/248063770163410/segment-44325-84441045690549-0.dtd",
+        "block": 63,
+        "events": 284,
+        "health": 8,
+        "commits": 11,
+        "bytes": 74568,
+        "last_written": [
+          17601,
+          0,
+          0,
+          2
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-30/248063770163410/segment-44325-84401251649136-0.dtd",
+        "block": 30,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          8526,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-53/248063770163410/segment-44325-84428849657010-0.dtd",
+        "block": 53,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          14851,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-38/248063770163410/segment-44325-84410823844632-0.dtd",
+        "block": 38,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73328,
+        "last_written": [
+          10726,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-36/248063770163410/segment-44325-84408418404871-0.dtd",
+        "block": 36,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          10176,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-4/248063770163410/segment-44325-84370274920275-0.dtd",
+        "block": 4,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          1376,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-3/248063770163410/segment-44325-84369084804197-0.dtd",
+        "block": 3,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73328,
+        "last_written": [
+          1101,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-13/248063770163410/segment-44325-84380970855875-0.dtd",
+        "block": 13,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          3851,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-25/248063770163410/segment-44325-84395298837342-0.dtd",
+        "block": 25,
+        "events": 279,
+        "health": 4,
+        "commits": 10,
+        "bytes": 73168,
+        "last_written": [
+          7151,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-49/248063770163410/segment-44325-84424025375795-0.dtd",
+        "block": 49,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          13751,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-40/248063770163410/segment-44325-84413215996473-0.dtd",
+        "block": 40,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          11276,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/248063770163410/segment-44325-84365394069582-0.dtd",
+        "block": -1,
+        "events": 6,
+        "health": 4,
+        "commits": 3,
+        "bytes": 1900,
+        "last_written": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-23/248063770163410/segment-44325-84392910822760-0.dtd",
+        "block": 23,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          6601,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-15/248063770163410/segment-44325-84383356247513-0.dtd",
+        "block": 15,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          4401,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-46/248063770163410/segment-44325-84420420157846-0.dtd",
+        "block": 46,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          12926,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-33/248063770163410/segment-44325-84404817432163-0.dtd",
+        "block": 33,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          9351,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-56/248063770163410/segment-44325-84432459241902-0.dtd",
+        "block": 56,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          15676,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-60/248063770163410/segment-44325-84437359365829-0.dtd",
+        "block": 60,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          16776,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-35/248063770163410/segment-44325-84407214690336-0.dtd",
+        "block": 35,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73328,
+        "last_written": [
+          9901,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-59/248063770163410/segment-44325-84436118519740-0.dtd",
+        "block": 59,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73388,
+        "last_written": [
+          16501,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-50/248063770163410/segment-44325-84425238496690-0.dtd",
+        "block": 50,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          14026,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-8/248063770163410/segment-44325-84375011745730-0.dtd",
+        "block": 8,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          2476,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-0/248063770163410/segment-44325-84365511708454-0.dtd",
+        "block": 0,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73588,
+        "last_written": [
+          276,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-7/248063770163410/segment-44325-84373821155470-0.dtd",
+        "block": 7,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73328,
+        "last_written": [
+          2201,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-17/248063770163410/segment-44325-84385738074332-0.dtd",
+        "block": 17,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          4951,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-28/248063770163410/segment-44325-84398871505268-0.dtd",
+        "block": 28,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          7976,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-26/248063770163410/segment-44325-84396493808627-0.dtd",
+        "block": 26,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73328,
+        "last_written": [
+          7426,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-19/248063770163410/segment-44325-84388123341242-0.dtd",
+        "block": 19,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73288,
+        "last_written": [
+          5501,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-42/248063770163410/segment-44325-84415622278159-0.dtd",
+        "block": 42,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          11826,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-45/248063770163410/segment-44325-84419214301551-0.dtd",
+        "block": 45,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73268,
+        "last_written": [
+          12651,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-20/248063770163410/segment-44325-84389322146647-0.dtd",
+        "block": 20,
+        "events": 279,
+        "health": 4,
+        "commits": 10,
+        "bytes": 73148,
+        "last_written": [
+          5776,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/emmc/block-11/248063770163410/segment-44325-84378582055977-0.dtd",
+        "block": 11,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73308,
+        "last_written": [
+          3301,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-52/248063770163410/segment-44325-84427642989575-0.dtd",
+        "block": 52,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73448,
+        "last_written": [
+          14576,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-37/248063770163410/segment-44325-84409623672085-0.dtd",
+        "block": 37,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73368,
+        "last_written": [
+          10451,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-39/248063770163410/segment-44325-84412014228713-0.dtd",
+        "block": 39,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          11001,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-62/248063770163410/segment-44325-84439810319579-0.dtd",
+        "block": 62,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          17326,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-54/248063770163410/segment-44325-84430055215104-0.dtd",
+        "block": 54,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73448,
+        "last_written": [
+          15126,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-31/248063770163410/segment-44325-84402436250878-0.dtd",
+        "block": 31,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          8801,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-2/248063770163410/segment-44325-84367897310504-0.dtd",
+        "block": 2,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73468,
+        "last_written": [
+          826,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-5/248063770163410/segment-44325-84371453600064-0.dtd",
+        "block": 5,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73368,
+        "last_written": [
+          1651,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-14/248063770163410/segment-44325-84382163642623-0.dtd",
+        "block": 14,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          4126,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-22/248063770163410/segment-44325-84391714598681-0.dtd",
+        "block": 22,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          6326,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-47/248063770163410/segment-44325-84421617752728-0.dtd",
+        "block": 47,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73448,
+        "last_written": [
+          13201,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-24/248063770163410/segment-44325-84394106837990-0.dtd",
+        "block": 24,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73368,
+        "last_written": [
+          6876,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-12/248063770163410/segment-44325-84379778605295-0.dtd",
+        "block": 12,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          3576,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-41/248063770163410/segment-44325-84414424973477-0.dtd",
+        "block": 41,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          11551,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-48/248063770163410/segment-44325-84422822258098-0.dtd",
+        "block": 48,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73468,
+        "last_written": [
+          13476,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-34/248063770163410/segment-44325-84406016441224-0.dtd",
+        "block": 34,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          9626,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-51/248063770163410/segment-44325-84426443377666-0.dtd",
+        "block": 51,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73448,
+        "last_written": [
+          14301,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-58/248063770163410/segment-44325-84434888009111-0.dtd",
+        "block": 58,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73568,
+        "last_written": [
+          16226,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-32/248063770163410/segment-44325-84403626705844-0.dtd",
+        "block": 32,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          9076,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-61/248063770163410/segment-44325-84438584939065-0.dtd",
+        "block": 61,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          17051,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-57/248063770163410/segment-44325-84433666102873-0.dtd",
+        "block": 57,
+        "events": 279,
+        "health": 4,
+        "commits": 13,
+        "bytes": 73548,
+        "last_written": [
+          15951,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-6/248063770163410/segment-44325-84372634482454-0.dtd",
+        "block": 6,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73368,
+        "last_written": [
+          1926,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-1/248063770163410/segment-44325-84366710048789-0.dtd",
+        "block": 1,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73448,
+        "last_written": [
+          551,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-9/248063770163410/segment-44325-84376197301162-0.dtd",
+        "block": 9,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          2751,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-44/248063770163410/segment-44325-84418010906769-0.dtd",
+        "block": 44,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73468,
+        "last_written": [
+          12376,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-43/248063770163410/segment-44325-84416814922758-0.dtd",
+        "block": 43,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          12101,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-10/248063770163410/segment-44325-84377386664734-0.dtd",
+        "block": 10,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          3026,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-21/248063770163410/segment-44325-84390523206122-0.dtd",
+        "block": 21,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          6051,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-27/248063770163410/segment-44325-84397682634760-0.dtd",
+        "block": 27,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          7701,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-18/248063770163410/segment-44325-84386925977192-0.dtd",
+        "block": 18,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          5226,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-16/248063770163410/segment-44325-84384550452619-0.dtd",
+        "block": 16,
+        "events": 279,
+        "health": 4,
+        "commits": 11,
+        "bytes": 73348,
+        "last_written": [
+          4676,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "path": "pair3/0-mixed/tmpfs-originals/tmpfs/block-29/248063770163410/segment-44325-84400054868872-0.dtd",
+        "block": 29,
+        "events": 279,
+        "health": 4,
+        "commits": 12,
+        "bytes": 73448,
+        "last_written": [
+          8251,
+          0,
+          0,
+          1
+        ],
+        "dropped": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "maintenance": {
+    "seconds": 173.91435724,
+    "formal_pid": "44741",
+    "protected_equal": true,
+    "hdmi_formal": true,
+    "remaining": [],
+    "groups_seconds": [
+      9.203379032,
+      81.97388193,
+      80.627030613
+    ]
+  },
+  "all_serialization_equivalent": true
+}

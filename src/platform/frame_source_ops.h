@@ -2,6 +2,7 @@
 #define PLATFORM_FRAME_SOURCE_OPS_H
 
 #include <functional>
+#include "diagnostics/recorder.h"
 
 #include "platform/platform_factory.h"
 
@@ -32,8 +33,14 @@ inline bool waitForLatestFrame(FrameSource &source, FrameRef &frame, std::chrono
     }
     FrameRef newer{};
     while (source.tryFrame(newer)) {
+        auto skipped{diagnostics::event(diagnostics::Type::FrameSkip, diagnostics::Reason::LatestSkip)};
+        if (frame) { skipped.frame = frame->diagnosticIdentity(); skipped.frame_time_us = frame->timestampUs(); skipped.flags |= diagnostics::FrameTimeKnown; }
+        diagnostics::emit(skipped);
         frame = std::move(newer);
     }
+    auto selected{diagnostics::event(diagnostics::Type::FrameSelect)};
+    if (frame) { selected.frame = frame->diagnosticIdentity(); selected.frame_time_us = frame->timestampUs(); selected.flags |= diagnostics::FrameTimeKnown; }
+    diagnostics::emit(selected);
     return true;
 }
 

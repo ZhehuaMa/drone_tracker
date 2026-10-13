@@ -1,0 +1,2416 @@
+[
+  {
+    "pair": 1,
+    "modes": {
+      "off": {
+        "calls": 1696,
+        "p99_ns": 207485888,
+        "slow_calls": 17,
+        "fps": 37.62831209858476,
+        "stdout_whole_run_initial_catchups": [
+          10,
+          20,
+          3,
+          11,
+          3,
+          4
+        ]
+      },
+      "basic": {
+        "calls": 1733,
+        "p99_ns": 189098003,
+        "slow_calls": 18,
+        "fps": 38.49163125695553,
+        "workload_histogram": {
+          "0:0": 1660,
+          "1:2": 8,
+          "1:8": 15,
+          "1:12": 6,
+          "1:20": 1,
+          "1:14": 5,
+          "1:28": 1,
+          "1:13": 3,
+          "1:9": 11,
+          "1:6": 4,
+          "1:15": 3,
+          "1:5": 5,
+          "1:21": 2,
+          "1:26": 1,
+          "1:3": 2,
+          "1:7": 1,
+          "1:19": 1,
+          "1:4": 1,
+          "1:10": 1,
+          "1:18": 1,
+          "1:11": 1
+        },
+        "slow_workload": [
+          {
+            "start_ns": 22052324935292,
+            "duration_ns": 291737996,
+            "round": 1,
+            "frame_time_us": 1791807223671249,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 278836815
+          },
+          {
+            "start_ns": 22054047393673,
+            "duration_ns": 377754384,
+            "round": 1,
+            "frame_time_us": 1791807225404582,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 28,
+            "work_ns": 377443738
+          },
+          {
+            "start_ns": 22056413956946,
+            "duration_ns": 198964160,
+            "round": 1,
+            "frame_time_us": 1791807227754582,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 13,
+            "work_ns": 185700611
+          },
+          {
+            "start_ns": 22057643602688,
+            "duration_ns": 210287119,
+            "round": 1,
+            "frame_time_us": 1791807228987916,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 197924312
+          },
+          {
+            "start_ns": 22061923617698,
+            "duration_ns": 301185068,
+            "round": 1,
+            "frame_time_us": 1791807233271249,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 288249839
+          },
+          {
+            "start_ns": 22062644568464,
+            "duration_ns": 198594834,
+            "round": 1,
+            "frame_time_us": 1791807233987916,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 14,
+            "work_ns": 186253332
+          },
+          {
+            "start_ns": 22063614389214,
+            "duration_ns": 358697609,
+            "round": 1,
+            "frame_time_us": 1791807234971249,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 26,
+            "work_ns": 358367134
+          },
+          {
+            "start_ns": 22066769989871,
+            "duration_ns": 226995608,
+            "round": 1,
+            "frame_time_us": 1791807238121249,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 214704081
+          },
+          {
+            "start_ns": 22067877330169,
+            "duration_ns": 204354229,
+            "round": 1,
+            "frame_time_us": 1791807239221249,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 14,
+            "work_ns": 191397918
+          },
+          {
+            "start_ns": 22070083588756,
+            "duration_ns": 203134551,
+            "round": 1,
+            "frame_time_us": 1791807241437916,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 13,
+            "work_ns": 190973891
+          },
+          {
+            "start_ns": 22071269062939,
+            "duration_ns": 304904728,
+            "round": 1,
+            "frame_time_us": 1791807242621249,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 292607567
+          },
+          {
+            "start_ns": 22074778822860,
+            "duration_ns": 273143438,
+            "round": 1,
+            "frame_time_us": 1791807246121249,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 259778237
+          },
+          {
+            "start_ns": 22081632461045,
+            "duration_ns": 191450615,
+            "round": 1,
+            "frame_time_us": 1791807252987916,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 12,
+            "work_ns": 179465282
+          },
+          {
+            "start_ns": 22083271451961,
+            "duration_ns": 189098003,
+            "round": 1,
+            "frame_time_us": 1791807254621249,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 13,
+            "work_ns": 177111288
+          },
+          {
+            "start_ns": 22087766046393,
+            "duration_ns": 203339711,
+            "round": 1,
+            "frame_time_us": 1791807259121249,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 14,
+            "work_ns": 191754376
+          },
+          {
+            "start_ns": 22090265992243,
+            "duration_ns": 201619458,
+            "round": 1,
+            "frame_time_us": 1791807261621249,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 14,
+            "work_ns": 189825568
+          },
+          {
+            "start_ns": 22091681104667,
+            "duration_ns": 237781642,
+            "round": 1,
+            "frame_time_us": 1791807263037916,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 18,
+            "work_ns": 237564747
+          },
+          {
+            "start_ns": 22093205826491,
+            "duration_ns": 212490855,
+            "round": 1,
+            "frame_time_us": 1791807264554582,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 200744998
+          }
+        ],
+        "all_init_calls": 73,
+        "total_steps": 701,
+        "no_init_p99_ns": 15208563,
+        "slow_min_work_fraction": 0.9333369939591131,
+        "stdout_whole_run_initial_catchups": [
+          8,
+          23,
+          28,
+          26,
+          10,
+          12,
+          18
+        ]
+      }
+    },
+    "increment_ns": -18387885
+  },
+  {
+    "pair": 2,
+    "modes": {
+      "basic": {
+        "calls": 1618,
+        "p99_ns": 198399711,
+        "slow_calls": 17,
+        "fps": 35.944822980969846,
+        "workload_histogram": {
+          "0:0": 1530,
+          "1:8": 25,
+          "1:5": 13,
+          "1:12": 6,
+          "1:13": 5,
+          "1:9": 2,
+          "1:6": 5,
+          "1:2": 5,
+          "1:22": 1,
+          "1:19": 5,
+          "1:4": 1,
+          "1:7": 2,
+          "1:20": 4,
+          "1:27": 2,
+          "1:14": 6,
+          "1:3": 1,
+          "1:10": 3,
+          "1:11": 1,
+          "1:15": 1
+        },
+        "slow_workload": [
+          {
+            "start_ns": 22109541518548,
+            "duration_ns": 203287274,
+            "round": 1,
+            "frame_time_us": 1791807280882359,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 13,
+            "work_ns": 190071071
+          },
+          {
+            "start_ns": 22111341901240,
+            "duration_ns": 301426673,
+            "round": 1,
+            "frame_time_us": 1791807282699025,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 301118552
+          },
+          {
+            "start_ns": 22113720958301,
+            "duration_ns": 269965532,
+            "round": 1,
+            "frame_time_us": 1791807285065692,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 257233820
+          },
+          {
+            "start_ns": 22115402856407,
+            "duration_ns": 282292637,
+            "round": 1,
+            "frame_time_us": 1791807286749025,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 270313335
+          },
+          {
+            "start_ns": 22117098175631,
+            "duration_ns": 289773618,
+            "round": 1,
+            "frame_time_us": 1791807288449025,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 276070498
+          },
+          {
+            "start_ns": 22118175258930,
+            "duration_ns": 342506897,
+            "round": 1,
+            "frame_time_us": 1791807289532359,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 27,
+            "work_ns": 342203914
+          },
+          {
+            "start_ns": 22128185145606,
+            "duration_ns": 201389259,
+            "round": 1,
+            "frame_time_us": 1791807299532359,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 14,
+            "work_ns": 188842256
+          },
+          {
+            "start_ns": 22129980100286,
+            "duration_ns": 275465821,
+            "round": 1,
+            "frame_time_us": 1791807301332359,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 261535662
+          },
+          {
+            "start_ns": 22131659433099,
+            "duration_ns": 289137906,
+            "round": 1,
+            "frame_time_us": 1791807303015692,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 277140346
+          },
+          {
+            "start_ns": 22133375243530,
+            "duration_ns": 363414964,
+            "round": 1,
+            "frame_time_us": 1791807304732359,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 27,
+            "work_ns": 363084233
+          },
+          {
+            "start_ns": 22136245563007,
+            "duration_ns": 291986525,
+            "round": 1,
+            "frame_time_us": 1791807307599025,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 278937861
+          },
+          {
+            "start_ns": 22138727858281,
+            "duration_ns": 268851818,
+            "round": 1,
+            "frame_time_us": 1791807310082359,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 256017990
+          },
+          {
+            "start_ns": 22139557208343,
+            "duration_ns": 277941835,
+            "round": 1,
+            "frame_time_us": 1791807310899025,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 264316518
+          },
+          {
+            "start_ns": 22141083978445,
+            "duration_ns": 198399711,
+            "round": 1,
+            "frame_time_us": 1791807312432359,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 13,
+            "work_ns": 185773695
+          },
+          {
+            "start_ns": 22144675083456,
+            "duration_ns": 209412425,
+            "round": 1,
+            "frame_time_us": 1791807316032359,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 209199068
+          },
+          {
+            "start_ns": 22146226303554,
+            "duration_ns": 260858204,
+            "round": 1,
+            "frame_time_us": 1791807317582359,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 248125657
+          },
+          {
+            "start_ns": 22147398975171,
+            "duration_ns": 199244583,
+            "round": 1,
+            "frame_time_us": 1791807318749025,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 14,
+            "work_ns": 187166043
+          }
+        ],
+        "all_init_calls": 88,
+        "total_steps": 872,
+        "no_init_p99_ns": 14510465,
+        "slow_min_work_fraction": 0.9349875536232534,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          4,
+          8,
+          22,
+          7,
+          27,
+          10,
+          12,
+          27,
+          10,
+          15
+        ]
+      },
+      "off": {
+        "calls": 1569,
+        "p99_ns": 208128106,
+        "slow_calls": 16,
+        "fps": 34.86083585023452,
+        "stdout_whole_run_initial_catchups": [
+          8,
+          16,
+          3,
+          14,
+          21,
+          17,
+          20,
+          10,
+          21,
+          16,
+          10,
+          10
+        ]
+      }
+    },
+    "increment_ns": -9728395
+  },
+  {
+    "pair": 3,
+    "modes": {
+      "off": {
+        "calls": 1581,
+        "p99_ns": 202601851,
+        "slow_calls": 16,
+        "fps": 35.036899236417405,
+        "stdout_whole_run_initial_catchups": [
+          8,
+          26,
+          7,
+          9,
+          8,
+          14,
+          12,
+          3,
+          4,
+          18,
+          10
+        ]
+      },
+      "basic": {
+        "calls": 1639,
+        "p99_ns": 198512746,
+        "slow_calls": 17,
+        "fps": 36.406173450585214,
+        "workload_histogram": {
+          "0:0": 1556,
+          "1:8": 20,
+          "1:2": 5,
+          "1:6": 7,
+          "1:14": 2,
+          "1:9": 12,
+          "1:5": 7,
+          "1:3": 2,
+          "1:18": 3,
+          "1:11": 4,
+          "1:21": 3,
+          "1:15": 1,
+          "1:13": 2,
+          "1:12": 1,
+          "1:28": 1,
+          "1:20": 2,
+          "1:29": 1,
+          "1:10": 2,
+          "1:17": 1,
+          "1:22": 1,
+          "1:19": 2,
+          "1:7": 2,
+          "1:4": 1,
+          "1:26": 1
+        },
+        "slow_workload": [
+          {
+            "start_ns": 22269219437634,
+            "duration_ns": 198512746,
+            "round": 1,
+            "frame_time_us": 1791807440564752,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 14,
+            "work_ns": 186791795
+          },
+          {
+            "start_ns": 22275959654099,
+            "duration_ns": 249456549,
+            "round": 1,
+            "frame_time_us": 1791807447314752,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 18,
+            "work_ns": 235544023
+          },
+          {
+            "start_ns": 22278002813403,
+            "duration_ns": 295031073,
+            "round": 1,
+            "frame_time_us": 1791807449348085,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 281656632
+          },
+          {
+            "start_ns": 22280115944704,
+            "duration_ns": 258169062,
+            "round": 1,
+            "frame_time_us": 1791807451464752,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 18,
+            "work_ns": 246031070
+          },
+          {
+            "start_ns": 22282288895243,
+            "duration_ns": 212040980,
+            "round": 1,
+            "frame_time_us": 1791807453631418,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 199856126
+          },
+          {
+            "start_ns": 22291038049986,
+            "duration_ns": 303065796,
+            "round": 1,
+            "frame_time_us": 1791807462381418,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 289213838
+          },
+          {
+            "start_ns": 22291840986328,
+            "duration_ns": 362597837,
+            "round": 1,
+            "frame_time_us": 1791807463198085,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 28,
+            "work_ns": 362246845
+          },
+          {
+            "start_ns": 22293513933196,
+            "duration_ns": 291579431,
+            "round": 1,
+            "frame_time_us": 1791807464864752,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 278790347
+          },
+          {
+            "start_ns": 22294674265612,
+            "duration_ns": 375094566,
+            "round": 1,
+            "frame_time_us": 1791807466031418,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 29,
+            "work_ns": 374780148
+          },
+          {
+            "start_ns": 22296473524527,
+            "duration_ns": 280412941,
+            "round": 1,
+            "frame_time_us": 1791807467814752,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 267401794
+          },
+          {
+            "start_ns": 22297307549107,
+            "duration_ns": 225538345,
+            "round": 1,
+            "frame_time_us": 1791807468664752,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 225297367
+          },
+          {
+            "start_ns": 22299377491336,
+            "duration_ns": 317535843,
+            "round": 1,
+            "frame_time_us": 1791807470731418,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 303426745
+          },
+          {
+            "start_ns": 22302240984428,
+            "duration_ns": 282507480,
+            "round": 1,
+            "frame_time_us": 1791807473598085,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 282223323
+          },
+          {
+            "start_ns": 22304749677058,
+            "duration_ns": 268865709,
+            "round": 1,
+            "frame_time_us": 1791807476098085,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 255319597
+          },
+          {
+            "start_ns": 22309307102188,
+            "duration_ns": 258354801,
+            "round": 1,
+            "frame_time_us": 1791807480648085,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 18,
+            "work_ns": 245552778
+          },
+          {
+            "start_ns": 22310141133879,
+            "duration_ns": 340023912,
+            "round": 1,
+            "frame_time_us": 1791807481498085,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 26,
+            "work_ns": 339707402
+          },
+          {
+            "start_ns": 22312225922719,
+            "duration_ns": 259098978,
+            "round": 1,
+            "frame_time_us": 1791807483581418,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 246549898
+          }
+        ],
+        "all_init_calls": 83,
+        "total_steps": 841,
+        "no_init_p99_ns": 14582312,
+        "slow_min_work_fraction": 0.9409561792067498,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          27,
+          28,
+          29,
+          17,
+          9,
+          21,
+          26
+        ]
+      }
+    },
+    "increment_ns": -4089105
+  },
+  {
+    "pair": 4,
+    "modes": {
+      "basic": {
+        "calls": 1613,
+        "p99_ns": 253550023,
+        "slow_calls": 17,
+        "fps": 35.83590462971452,
+        "workload_histogram": {
+          "0:0": 1515,
+          "1:8": 26,
+          "1:2": 5,
+          "1:9": 10,
+          "1:7": 7,
+          "1:19": 3,
+          "1:16": 2,
+          "1:20": 9,
+          "1:14": 4,
+          "1:5": 7,
+          "1:6": 9,
+          "1:15": 2,
+          "1:3": 2,
+          "1:11": 1,
+          "1:4": 1,
+          "1:27": 2,
+          "1:10": 1,
+          "1:21": 3,
+          "1:13": 2,
+          "1:26": 1,
+          "1:12": 1
+        },
+        "slow_workload": [
+          {
+            "start_ns": 22327074611992,
+            "duration_ns": 260053753,
+            "round": 1,
+            "frame_time_us": 1791807498416376,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 247359997
+          },
+          {
+            "start_ns": 22328761934161,
+            "duration_ns": 276643505,
+            "round": 1,
+            "frame_time_us": 1791807500116376,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 263027351
+          },
+          {
+            "start_ns": 22329602975641,
+            "duration_ns": 273189440,
+            "round": 1,
+            "frame_time_us": 1791807500949710,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 261040798
+          },
+          {
+            "start_ns": 22338242781983,
+            "duration_ns": 341784164,
+            "round": 1,
+            "frame_time_us": 1791807509599710,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 27,
+            "work_ns": 341466387
+          },
+          {
+            "start_ns": 22340442934491,
+            "duration_ns": 277004433,
+            "round": 1,
+            "frame_time_us": 1791807511799710,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 264478072
+          },
+          {
+            "start_ns": 22341592457183,
+            "duration_ns": 333137416,
+            "round": 1,
+            "frame_time_us": 1791807512949710,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 27,
+            "work_ns": 332741413
+          },
+          {
+            "start_ns": 22345826720814,
+            "duration_ns": 267980013,
+            "round": 1,
+            "frame_time_us": 1791807517183043,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 255085673
+          },
+          {
+            "start_ns": 22348347790026,
+            "duration_ns": 275088002,
+            "round": 1,
+            "frame_time_us": 1791807519699710,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 262156662
+          },
+          {
+            "start_ns": 22349191555557,
+            "duration_ns": 280757262,
+            "round": 1,
+            "frame_time_us": 1791807520533043,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 267242115
+          },
+          {
+            "start_ns": 22352535218943,
+            "duration_ns": 289121103,
+            "round": 1,
+            "frame_time_us": 1791807523883043,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 276565939
+          },
+          {
+            "start_ns": 22355436625624,
+            "duration_ns": 273149837,
+            "round": 1,
+            "frame_time_us": 1791807526783043,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 260762732
+          },
+          {
+            "start_ns": 22356280970533,
+            "duration_ns": 281089830,
+            "round": 1,
+            "frame_time_us": 1791807527633043,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 267627950
+          },
+          {
+            "start_ns": 22359142581425,
+            "duration_ns": 277552659,
+            "round": 1,
+            "frame_time_us": 1791807530499710,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 277267771
+          },
+          {
+            "start_ns": 22362918551058,
+            "duration_ns": 253550023,
+            "round": 1,
+            "frame_time_us": 1791807534266376,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 240380355
+          },
+          {
+            "start_ns": 22364180854181,
+            "duration_ns": 275565932,
+            "round": 1,
+            "frame_time_us": 1791807535533043,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 261823298
+          },
+          {
+            "start_ns": 22365292438447,
+            "duration_ns": 342455108,
+            "round": 1,
+            "frame_time_us": 1791807536649710,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 26,
+            "work_ns": 342142845
+          },
+          {
+            "start_ns": 22369142613952,
+            "duration_ns": 276227443,
+            "round": 1,
+            "frame_time_us": 1791807540499710,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 275866234
+          }
+        ],
+        "all_init_calls": 98,
+        "total_steps": 1013,
+        "no_init_p99_ns": 14588013,
+        "slow_min_work_fraction": 0.9480588964490057,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          27,
+          14,
+          15,
+          11,
+          27,
+          27,
+          9,
+          5,
+          10,
+          2,
+          14,
+          21,
+          26,
+          21
+        ]
+      },
+      "off": {
+        "calls": 1583,
+        "p99_ns": 278613049,
+        "slow_calls": 16,
+        "fps": 35.121775549398755,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          27,
+          11,
+          27,
+          2,
+          27,
+          17,
+          26,
+          3,
+          28,
+          11,
+          26,
+          27
+        ]
+      }
+    },
+    "increment_ns": -25063026
+  },
+  {
+    "pair": 5,
+    "modes": {
+      "off": {
+        "calls": 1547,
+        "p99_ns": 253561811,
+        "slow_calls": 16,
+        "fps": 34.31440450120285,
+        "stdout_whole_run_initial_catchups": [
+          8,
+          3,
+          14,
+          10,
+          8,
+          9,
+          10,
+          3,
+          26,
+          12,
+          10,
+          27
+        ]
+      },
+      "basic": {
+        "calls": 1639,
+        "p99_ns": 225184188,
+        "slow_calls": 17,
+        "fps": 36.411148590224784,
+        "workload_histogram": {
+          "0:0": 1560,
+          "1:10": 14,
+          "1:17": 7,
+          "1:6": 5,
+          "1:14": 3,
+          "1:9": 13,
+          "1:7": 6,
+          "1:4": 2,
+          "1:8": 5,
+          "1:3": 5,
+          "1:16": 1,
+          "1:15": 6,
+          "1:18": 1,
+          "1:22": 2,
+          "1:23": 2,
+          "1:25": 1,
+          "1:21": 1,
+          "1:20": 1,
+          "1:12": 1,
+          "1:2": 2,
+          "1:13": 1
+        },
+        "slow_workload": [
+          {
+            "start_ns": 22485865046038,
+            "duration_ns": 238729873,
+            "round": 1,
+            "frame_time_us": 1791807657220887,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 225930104
+          },
+          {
+            "start_ns": 22489805498456,
+            "duration_ns": 248693762,
+            "round": 1,
+            "frame_time_us": 1791807661154221,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 235826033
+          },
+          {
+            "start_ns": 22492880406628,
+            "duration_ns": 226448604,
+            "round": 1,
+            "frame_time_us": 1791807664237554,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 226219815
+          },
+          {
+            "start_ns": 22495056534207,
+            "duration_ns": 232342391,
+            "round": 1,
+            "frame_time_us": 1791807666404221,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 16,
+            "work_ns": 219126842
+          },
+          {
+            "start_ns": 22498695037580,
+            "duration_ns": 246333124,
+            "round": 1,
+            "frame_time_us": 1791807670037554,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 18,
+            "work_ns": 233942568
+          },
+          {
+            "start_ns": 22500454313906,
+            "duration_ns": 240407610,
+            "round": 1,
+            "frame_time_us": 1791807671804221,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 226081872
+          },
+          {
+            "start_ns": 22504206659318,
+            "duration_ns": 248807948,
+            "round": 1,
+            "frame_time_us": 1791807675554221,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 236488733
+          },
+          {
+            "start_ns": 22505280925110,
+            "duration_ns": 304863309,
+            "round": 1,
+            "frame_time_us": 1791807676637554,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 292731936
+          },
+          {
+            "start_ns": 22509049806111,
+            "duration_ns": 316443068,
+            "round": 1,
+            "frame_time_us": 1791807680404221,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 23,
+            "work_ns": 304292956
+          },
+          {
+            "start_ns": 22510759595480,
+            "duration_ns": 326125466,
+            "round": 1,
+            "frame_time_us": 1791807682104221,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 23,
+            "work_ns": 313433265
+          },
+          {
+            "start_ns": 22513043876952,
+            "duration_ns": 225184188,
+            "round": 1,
+            "frame_time_us": 1791807684387554,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 211347582
+          },
+          {
+            "start_ns": 22515184654797,
+            "duration_ns": 342783517,
+            "round": 1,
+            "frame_time_us": 1791807686537554,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 25,
+            "work_ns": 329141839
+          },
+          {
+            "start_ns": 22518183640694,
+            "duration_ns": 306829427,
+            "round": 1,
+            "frame_time_us": 1791807689537554,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 293821850
+          },
+          {
+            "start_ns": 22520597547384,
+            "duration_ns": 270616001,
+            "round": 1,
+            "frame_time_us": 1791807691954221,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 270346065
+          },
+          {
+            "start_ns": 22523973338605,
+            "duration_ns": 251944576,
+            "round": 1,
+            "frame_time_us": 1791807695320887,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 238291798
+          },
+          {
+            "start_ns": 22525280391974,
+            "duration_ns": 294293682,
+            "round": 1,
+            "frame_time_us": 1791807696637554,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 294033035
+          },
+          {
+            "start_ns": 22528576107447,
+            "duration_ns": 248168385,
+            "round": 1,
+            "frame_time_us": 1791807699920887,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 234587706
+          }
+        ],
+        "all_init_calls": 79,
+        "total_steps": 862,
+        "no_init_p99_ns": 14627410,
+        "slow_min_work_fraction": 0.938554273624221,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          12,
+          4,
+          17,
+          15,
+          15,
+          6,
+          20,
+          22,
+          13
+        ]
+      }
+    },
+    "increment_ns": -28377623
+  },
+  {
+    "pair": 6,
+    "modes": {
+      "basic": {
+        "calls": 1696,
+        "p99_ns": 200479514,
+        "slow_calls": 17,
+        "fps": 37.6877005655399,
+        "workload_histogram": {
+          "0:0": 1617,
+          "1:3": 8,
+          "1:22": 3,
+          "1:13": 3,
+          "1:11": 2,
+          "1:8": 9,
+          "1:9": 12,
+          "1:16": 2,
+          "1:23": 2,
+          "1:5": 1,
+          "1:10": 10,
+          "1:7": 5,
+          "1:14": 3,
+          "1:15": 3,
+          "1:6": 5,
+          "1:17": 2,
+          "1:25": 2,
+          "1:4": 3,
+          "1:26": 2,
+          "1:2": 1,
+          "1:18": 1
+        },
+        "slow_workload": [
+          {
+            "start_ns": 22542876637042,
+            "duration_ns": 306456932,
+            "round": 1,
+            "frame_time_us": 1791807714219799,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 292351065
+          },
+          {
+            "start_ns": 22546567430201,
+            "duration_ns": 209467047,
+            "round": 1,
+            "frame_time_us": 1791807717919799,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 16,
+            "work_ns": 197770210
+          },
+          {
+            "start_ns": 22549200507641,
+            "duration_ns": 304204739,
+            "round": 1,
+            "frame_time_us": 1791807720553133,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 23,
+            "work_ns": 291679961
+          },
+          {
+            "start_ns": 22550373741493,
+            "duration_ns": 301422956,
+            "round": 1,
+            "frame_time_us": 1791807721719799,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 289021924
+          },
+          {
+            "start_ns": 22553278334310,
+            "duration_ns": 290862819,
+            "round": 1,
+            "frame_time_us": 1791807724619799,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 278309267
+          },
+          {
+            "start_ns": 22556799678459,
+            "duration_ns": 211124039,
+            "round": 1,
+            "frame_time_us": 1791807728153133,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 198428272
+          },
+          {
+            "start_ns": 22558720428300,
+            "duration_ns": 303016135,
+            "round": 1,
+            "frame_time_us": 1791807730069799,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 23,
+            "work_ns": 290002176
+          },
+          {
+            "start_ns": 22560936059832,
+            "duration_ns": 200479514,
+            "round": 1,
+            "frame_time_us": 1791807732286466,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 14,
+            "work_ns": 187535389
+          },
+          {
+            "start_ns": 22564053506384,
+            "duration_ns": 235832874,
+            "round": 1,
+            "frame_time_us": 1791807735403133,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 222123228
+          },
+          {
+            "start_ns": 22565016289411,
+            "duration_ns": 328824069,
+            "round": 1,
+            "frame_time_us": 1791807736369799,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 25,
+            "work_ns": 315389238
+          },
+          {
+            "start_ns": 22568882434618,
+            "duration_ns": 211038210,
+            "round": 1,
+            "frame_time_us": 1791807740236466,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 199279134
+          },
+          {
+            "start_ns": 22572095501448,
+            "duration_ns": 339977747,
+            "round": 1,
+            "frame_time_us": 1791807743436466,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 26,
+            "work_ns": 326394681
+          },
+          {
+            "start_ns": 22574050047136,
+            "duration_ns": 236295263,
+            "round": 1,
+            "frame_time_us": 1791807745403133,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 222952202
+          },
+          {
+            "start_ns": 22575262842504,
+            "duration_ns": 208561019,
+            "round": 1,
+            "frame_time_us": 1791807746619799,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 16,
+            "work_ns": 197238142
+          },
+          {
+            "start_ns": 22582113322944,
+            "duration_ns": 327179702,
+            "round": 1,
+            "frame_time_us": 1791807753469799,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 25,
+            "work_ns": 314346980
+          },
+          {
+            "start_ns": 22584923725448,
+            "duration_ns": 233688101,
+            "round": 1,
+            "frame_time_us": 1791807756269799,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 18,
+            "work_ns": 221956665
+          },
+          {
+            "start_ns": 22585929244094,
+            "duration_ns": 330167851,
+            "round": 1,
+            "frame_time_us": 1791807757286466,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 26,
+            "work_ns": 329878890
+          }
+        ],
+        "all_init_calls": 79,
+        "total_steps": 834,
+        "no_init_p99_ns": 14380290,
+        "slow_min_work_fraction": 0.93543417608245,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          3,
+          5,
+          4,
+          10,
+          6,
+          26
+        ]
+      },
+      "off": {
+        "calls": 1582,
+        "p99_ns": 201659807,
+        "slow_calls": 16,
+        "fps": 35.146671881989626,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          27,
+          11,
+          10,
+          2,
+          3,
+          15,
+          10,
+          11,
+          21,
+          29
+        ]
+      }
+    },
+    "increment_ns": -1180293
+  },
+  {
+    "pair": 7,
+    "modes": {
+      "off": {
+        "calls": 1537,
+        "p99_ns": 203680321,
+        "slow_calls": 16,
+        "fps": 34.101785055957436,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          14,
+          10,
+          11,
+          3,
+          10,
+          11,
+          21,
+          10,
+          9,
+          2,
+          11
+        ]
+      },
+      "basic": {
+        "calls": 1614,
+        "p99_ns": 262621478,
+        "slow_calls": 17,
+        "fps": 35.84346297317899,
+        "workload_histogram": {
+          "0:0": 1529,
+          "1:23": 1,
+          "1:11": 2,
+          "1:2": 6,
+          "1:21": 3,
+          "1:13": 3,
+          "1:25": 2,
+          "1:9": 6,
+          "1:8": 16,
+          "1:12": 2,
+          "1:5": 11,
+          "1:19": 2,
+          "1:7": 5,
+          "1:6": 6,
+          "1:22": 1,
+          "1:20": 7,
+          "1:15": 3,
+          "1:4": 2,
+          "1:14": 3,
+          "1:16": 1,
+          "1:3": 2,
+          "1:26": 1
+        },
+        "slow_workload": [
+          {
+            "start_ns": 22703111360155,
+            "duration_ns": 304596334,
+            "round": 1,
+            "frame_time_us": 1791807874468494,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 23,
+            "work_ns": 304329850
+          },
+          {
+            "start_ns": 22705186985048,
+            "duration_ns": 303399615,
+            "round": 1,
+            "frame_time_us": 1791807876535160,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 291023010
+          },
+          {
+            "start_ns": 22706811347849,
+            "duration_ns": 331347167,
+            "round": 1,
+            "frame_time_us": 1791807878168494,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 25,
+            "work_ns": 331083278
+          },
+          {
+            "start_ns": 22709731163070,
+            "duration_ns": 262621478,
+            "round": 1,
+            "frame_time_us": 1791807881085160,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 249589848
+          },
+          {
+            "start_ns": 22713520071380,
+            "duration_ns": 306886938,
+            "round": 1,
+            "frame_time_us": 1791807884868494,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 293527488
+          },
+          {
+            "start_ns": 22719327786899,
+            "duration_ns": 279885682,
+            "round": 1,
+            "frame_time_us": 1791807890668494,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 267419485
+          },
+          {
+            "start_ns": 22721852903314,
+            "duration_ns": 290530625,
+            "round": 1,
+            "frame_time_us": 1791807893201827,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 277260242
+          },
+          {
+            "start_ns": 22722928085523,
+            "duration_ns": 340649722,
+            "round": 1,
+            "frame_time_us": 1791807894285160,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 25,
+            "work_ns": 340351611
+          },
+          {
+            "start_ns": 22724328733003,
+            "duration_ns": 294521932,
+            "round": 1,
+            "frame_time_us": 1791807895685160,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 281359771
+          },
+          {
+            "start_ns": 22725980607209,
+            "duration_ns": 281900027,
+            "round": 1,
+            "frame_time_us": 1791807897335160,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 268356124
+          },
+          {
+            "start_ns": 22726841042558,
+            "duration_ns": 291130181,
+            "round": 1,
+            "frame_time_us": 1791807898185160,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 278272841
+          },
+          {
+            "start_ns": 22729768507967,
+            "duration_ns": 305137659,
+            "round": 1,
+            "frame_time_us": 1791807901118494,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 291128380
+          },
+          {
+            "start_ns": 22736406737716,
+            "duration_ns": 282078897,
+            "round": 1,
+            "frame_time_us": 1791807907751827,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 270031500
+          },
+          {
+            "start_ns": 22739544673156,
+            "duration_ns": 270388422,
+            "round": 1,
+            "frame_time_us": 1791807910901827,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 270136681
+          },
+          {
+            "start_ns": 22741818284209,
+            "duration_ns": 280958427,
+            "round": 1,
+            "frame_time_us": 1791807913168494,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 268469553
+          },
+          {
+            "start_ns": 22743503207123,
+            "duration_ns": 291687235,
+            "round": 1,
+            "frame_time_us": 1791807914851827,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 278841311
+          },
+          {
+            "start_ns": 22744611695306,
+            "duration_ns": 334992265,
+            "round": 1,
+            "frame_time_us": 1791807915968494,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 26,
+            "work_ns": 334715638
+          }
+        ],
+        "all_init_calls": 85,
+        "total_steps": 884,
+        "no_init_p99_ns": 14678153,
+        "slow_min_work_fraction": 0.9503786586716262,
+        "stdout_whole_run_initial_catchups": [
+          8,
+          23,
+          25,
+          25,
+          15,
+          14,
+          16,
+          3,
+          21,
+          5,
+          26
+        ]
+      }
+    },
+    "increment_ns": 58941157
+  },
+  {
+    "pair": 8,
+    "modes": {
+      "basic": {
+        "calls": 1667,
+        "p99_ns": 212979245,
+        "slow_calls": 17,
+        "fps": 37.02842392074441,
+        "workload_histogram": {
+          "0:0": 1586,
+          "1:8": 12,
+          "1:5": 8,
+          "1:12": 5,
+          "1:9": 11,
+          "1:2": 5,
+          "1:20": 6,
+          "1:6": 8,
+          "1:11": 1,
+          "1:14": 5,
+          "1:16": 2,
+          "1:28": 1,
+          "1:10": 3,
+          "1:3": 2,
+          "1:13": 1,
+          "1:22": 2,
+          "1:26": 1,
+          "1:4": 1,
+          "1:17": 2,
+          "1:7": 2,
+          "1:15": 2,
+          "1:18": 1
+        },
+        "slow_workload": [
+          {
+            "start_ns": 22763988715337,
+            "duration_ns": 280960521,
+            "round": 1,
+            "frame_time_us": 1791807935329097,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 267433523
+          },
+          {
+            "start_ns": 22765679242202,
+            "duration_ns": 291286055,
+            "round": 1,
+            "frame_time_us": 1791807937029097,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 278268192
+          },
+          {
+            "start_ns": 22770548641734,
+            "duration_ns": 225693314,
+            "round": 1,
+            "frame_time_us": 1791807941895764,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 16,
+            "work_ns": 213786372
+          },
+          {
+            "start_ns": 22775252354089,
+            "duration_ns": 287692969,
+            "round": 1,
+            "frame_time_us": 1791807946595764,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 275168425
+          },
+          {
+            "start_ns": 22776405222517,
+            "duration_ns": 357289680,
+            "round": 1,
+            "frame_time_us": 1791807947762431,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 28,
+            "work_ns": 356977447
+          },
+          {
+            "start_ns": 22779394053633,
+            "duration_ns": 279451829,
+            "round": 1,
+            "frame_time_us": 1791807950745764,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 267265193
+          },
+          {
+            "start_ns": 22782309343368,
+            "duration_ns": 281102942,
+            "round": 1,
+            "frame_time_us": 1791807953662431,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 267796853
+          },
+          {
+            "start_ns": 22783605268830,
+            "duration_ns": 285926404,
+            "round": 1,
+            "frame_time_us": 1791807954962431,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 285664866
+          },
+          {
+            "start_ns": 22788586093913,
+            "duration_ns": 290084569,
+            "round": 1,
+            "frame_time_us": 1791807959929097,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 276795263
+          },
+          {
+            "start_ns": 22789705239236,
+            "duration_ns": 337662918,
+            "round": 1,
+            "frame_time_us": 1791807961062431,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 26,
+            "work_ns": 337360156
+          },
+          {
+            "start_ns": 22792838494379,
+            "duration_ns": 221982043,
+            "round": 1,
+            "frame_time_us": 1791807964195764,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 16,
+            "work_ns": 221685607
+          },
+          {
+            "start_ns": 22794261558628,
+            "duration_ns": 214967318,
+            "round": 1,
+            "frame_time_us": 1791807965612431,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 14,
+            "work_ns": 200930837
+          },
+          {
+            "start_ns": 22794935952283,
+            "duration_ns": 238135411,
+            "round": 1,
+            "frame_time_us": 1791807966279097,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 224615425
+          },
+          {
+            "start_ns": 22798905635210,
+            "duration_ns": 212979245,
+            "round": 1,
+            "frame_time_us": 1791807970262431,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 200493352
+          },
+          {
+            "start_ns": 22800947355561,
+            "duration_ns": 246851422,
+            "round": 1,
+            "frame_time_us": 1791807972295764,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 18,
+            "work_ns": 234718531
+          },
+          {
+            "start_ns": 22801638608967,
+            "duration_ns": 240573634,
+            "round": 1,
+            "frame_time_us": 1791807972995764,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 240321264
+          },
+          {
+            "start_ns": 22803194075526,
+            "duration_ns": 305671959,
+            "round": 1,
+            "frame_time_us": 1791807974545764,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 293349111
+          }
+        ],
+        "all_init_calls": 81,
+        "total_steps": 833,
+        "no_init_p99_ns": 14623916,
+        "slow_min_work_fraction": 0.934704116278736,
+        "stdout_whole_run_initial_catchups": [
+          8,
+          11,
+          28,
+          22,
+          26,
+          16,
+          10,
+          17
+        ]
+      },
+      "off": {
+        "calls": 1661,
+        "p99_ns": 201949763,
+        "slow_calls": 17,
+        "fps": 36.83229939410301,
+        "stdout_whole_run_initial_catchups": [
+          10,
+          25,
+          12,
+          17,
+          4,
+          20,
+          19,
+          25
+        ]
+      }
+    },
+    "increment_ns": 11029482
+  },
+  {
+    "pair": 9,
+    "modes": {
+      "off": {
+        "calls": 1565,
+        "p99_ns": 215987702,
+        "slow_calls": 16,
+        "fps": 34.77278575338222,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          15,
+          16,
+          27,
+          11,
+          10,
+          20,
+          10,
+          29,
+          4
+        ]
+      },
+      "basic": {
+        "calls": 1615,
+        "p99_ns": 221273653,
+        "slow_calls": 17,
+        "fps": 35.86976904017171,
+        "workload_histogram": {
+          "0:0": 1527,
+          "1:22": 1,
+          "1:2": 2,
+          "1:10": 21,
+          "1:3": 12,
+          "1:15": 3,
+          "1:7": 8,
+          "1:9": 9,
+          "1:8": 8,
+          "1:24": 2,
+          "1:25": 1,
+          "1:6": 2,
+          "1:14": 2,
+          "1:16": 1,
+          "1:13": 2,
+          "1:19": 1,
+          "1:18": 3,
+          "1:17": 4,
+          "1:4": 4,
+          "1:23": 2
+        },
+        "slow_workload": [
+          {
+            "start_ns": 22920360893225,
+            "duration_ns": 284972566,
+            "round": 1,
+            "frame_time_us": 1791808091718163,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 284684877
+          },
+          {
+            "start_ns": 22929628388309,
+            "duration_ns": 221273653,
+            "round": 1,
+            "frame_time_us": 1791808100984830,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 208015191
+          },
+          {
+            "start_ns": 22930394693440,
+            "duration_ns": 310991949,
+            "round": 1,
+            "frame_time_us": 1791808101751497,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 24,
+            "work_ns": 310700460
+          },
+          {
+            "start_ns": 22932057540342,
+            "duration_ns": 343064994,
+            "round": 1,
+            "frame_time_us": 1791808103401497,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 25,
+            "work_ns": 330037482
+          },
+          {
+            "start_ns": 22935246055882,
+            "duration_ns": 221815066,
+            "round": 1,
+            "frame_time_us": 1791808106601497,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 16,
+            "work_ns": 210016867
+          },
+          {
+            "start_ns": 22939270154373,
+            "duration_ns": 224069524,
+            "round": 1,
+            "frame_time_us": 1791808110618163,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 15,
+            "work_ns": 212110879
+          },
+          {
+            "start_ns": 22941373113605,
+            "duration_ns": 262670740,
+            "round": 1,
+            "frame_time_us": 1791808112718163,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 248318415
+          },
+          {
+            "start_ns": 22942880558678,
+            "duration_ns": 341406919,
+            "round": 1,
+            "frame_time_us": 1791808114234830,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 24,
+            "work_ns": 328108756
+          },
+          {
+            "start_ns": 22945813896701,
+            "duration_ns": 248361247,
+            "round": 1,
+            "frame_time_us": 1791808117168163,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 18,
+            "work_ns": 235636389
+          },
+          {
+            "start_ns": 22948299884969,
+            "duration_ns": 251177523,
+            "round": 1,
+            "frame_time_us": 1791808119651497,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 239382834
+          },
+          {
+            "start_ns": 22949455455883,
+            "duration_ns": 264237257,
+            "round": 1,
+            "frame_time_us": 1791808120801497,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 18,
+            "work_ns": 251077460
+          },
+          {
+            "start_ns": 22951184299097,
+            "duration_ns": 317366571,
+            "round": 1,
+            "frame_time_us": 1791808122534830,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 23,
+            "work_ns": 304225734
+          },
+          {
+            "start_ns": 22952127741588,
+            "duration_ns": 237819210,
+            "round": 1,
+            "frame_time_us": 1791808123484830,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 18,
+            "work_ns": 237602933
+          },
+          {
+            "start_ns": 22958827239278,
+            "duration_ns": 244795178,
+            "round": 1,
+            "frame_time_us": 1791808130168163,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 232052933
+          },
+          {
+            "start_ns": 22960397040526,
+            "duration_ns": 237402743,
+            "round": 1,
+            "frame_time_us": 1791808131751497,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 224726421
+          },
+          {
+            "start_ns": 22961892048162,
+            "duration_ns": 246450491,
+            "round": 1,
+            "frame_time_us": 1791808133234830,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 233587165
+          },
+          {
+            "start_ns": 22964117952551,
+            "duration_ns": 325984454,
+            "round": 1,
+            "frame_time_us": 1791808135468163,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 23,
+            "work_ns": 312786614
+          }
+        ],
+        "all_init_calls": 88,
+        "total_steps": 876,
+        "no_init_p99_ns": 14935609,
+        "slow_min_work_fraction": 0.9400811537196433,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          15,
+          22,
+          24,
+          3,
+          4,
+          18,
+          13
+        ]
+      }
+    },
+    "increment_ns": 5285951
+  },
+  {
+    "pair": 10,
+    "modes": {
+      "basic": {
+        "calls": 1593,
+        "p99_ns": 234033556,
+        "slow_calls": 16,
+        "fps": 35.3343098808532,
+        "workload_histogram": {
+          "0:0": 1506,
+          "1:15": 7,
+          "1:3": 1,
+          "1:13": 7,
+          "1:21": 5,
+          "1:6": 12,
+          "1:27": 1,
+          "1:8": 14,
+          "1:22": 1,
+          "1:7": 5,
+          "1:2": 5,
+          "1:20": 4,
+          "1:5": 2,
+          "1:11": 2,
+          "1:9": 7,
+          "1:14": 4,
+          "1:26": 2,
+          "1:4": 2,
+          "1:19": 2,
+          "1:17": 1,
+          "1:10": 1,
+          "1:12": 2
+        },
+        "slow_workload": [
+          {
+            "start_ns": 22978895167611,
+            "duration_ns": 290911412,
+            "round": 1,
+            "frame_time_us": 1791808150238333,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 277749612
+          },
+          {
+            "start_ns": 22980153337699,
+            "duration_ns": 301846347,
+            "round": 1,
+            "frame_time_us": 1791808151505000,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 288669621
+          },
+          {
+            "start_ns": 22981881282424,
+            "duration_ns": 360790043,
+            "round": 1,
+            "frame_time_us": 1791808153238333,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 27,
+            "work_ns": 360463802
+          },
+          {
+            "start_ns": 22984331808374,
+            "duration_ns": 305541834,
+            "round": 1,
+            "frame_time_us": 1791808155688333,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 22,
+            "work_ns": 292458314
+          },
+          {
+            "start_ns": 22986795713572,
+            "duration_ns": 281993477,
+            "round": 1,
+            "frame_time_us": 1791808158138333,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 268493743
+          },
+          {
+            "start_ns": 22990155492726,
+            "duration_ns": 295412651,
+            "round": 1,
+            "frame_time_us": 1791808161505000,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 280507203
+          },
+          {
+            "start_ns": 22992211963814,
+            "duration_ns": 281685140,
+            "round": 1,
+            "frame_time_us": 1791808163555000,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 268146381
+          },
+          {
+            "start_ns": 22994397786571,
+            "duration_ns": 272656372,
+            "round": 1,
+            "frame_time_us": 1791808165755000,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 272418522
+          },
+          {
+            "start_ns": 22996824523922,
+            "duration_ns": 302423390,
+            "round": 1,
+            "frame_time_us": 1791808168171667,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 21,
+            "work_ns": 289043159
+          },
+          {
+            "start_ns": 22998897888729,
+            "duration_ns": 340394352,
+            "round": 1,
+            "frame_time_us": 1791808170255000,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 26,
+            "work_ns": 340089452
+          },
+          {
+            "start_ns": 23007619747742,
+            "duration_ns": 279877117,
+            "round": 1,
+            "frame_time_us": 1791808178971667,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 267481658
+          },
+          {
+            "start_ns": 23008597882271,
+            "duration_ns": 234033556,
+            "round": 1,
+            "frame_time_us": 1791808179955000,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 17,
+            "work_ns": 233780915
+          },
+          {
+            "start_ns": 23012626495118,
+            "duration_ns": 261328027,
+            "round": 1,
+            "frame_time_us": 1791808183971667,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 19,
+            "work_ns": 249175010
+          },
+          {
+            "start_ns": 23013747811125,
+            "duration_ns": 350328066,
+            "round": 1,
+            "frame_time_us": 1791808185105000,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 26,
+            "work_ns": 350017327
+          },
+          {
+            "start_ns": 23016805227668,
+            "duration_ns": 289093978,
+            "round": 1,
+            "frame_time_us": 1791808188155000,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 275856353
+          },
+          {
+            "start_ns": 23017656421996,
+            "duration_ns": 293795500,
+            "round": 1,
+            "frame_time_us": 1791808189005000,
+            "consumed": 1,
+            "initializations": 1,
+            "steps": 20,
+            "work_ns": 281448801
+          }
+        ],
+        "all_init_calls": 87,
+        "total_steps": 962,
+        "no_init_p99_ns": 14815032,
+        "slow_min_work_fraction": 0.9495436368430952,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          17,
+          15,
+          27,
+          11,
+          21,
+          26,
+          17,
+          26,
+          12
+        ]
+      },
+      "off": {
+        "calls": 1538,
+        "p99_ns": 239585568,
+        "slow_calls": 16,
+        "fps": 34.16952970434494,
+        "stdout_whole_run_initial_catchups": [
+          9,
+          12,
+          21,
+          4,
+          12,
+          24,
+          13,
+          18,
+          12,
+          11,
+          3
+        ]
+      }
+    },
+    "increment_ns": -5552012
+  }
+]

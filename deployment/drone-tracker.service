@@ -1,7 +1,7 @@
 [Unit]
 Description=Drone tracker production camera node
-Wants=network-online.target
-After=local-fs.target network-online.target display-manager.service lightdm.service
+Wants=network-online.target drone-tracker-diagnostics.service
+After=drone-tracker-diagnostics.service local-fs.target network-online.target display-manager.service lightdm.service
 StartLimitIntervalSec=60
 StartLimitBurst=5
 

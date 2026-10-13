@@ -1,4 +1,7 @@
 #include "drone_tracker_node.h"
+#include "diagnostics/recorder.h"
+#include "diagnostics/publication.h"
+#include "diagnostics/measurement.h"
 
 #include <unordered_map>
 #include <algorithm>
@@ -40,11 +43,78 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
     declare_parameters();
     setupDisplay(std::move(display_backend));
     setup(*factory);
+    const auto diagnostic_mode{get_parameter("diagnostics.mode").as_string()};
+    if (diagnostic_mode != "off" && diagnostic_mode != "basic" && diagnostic_mode != "detail") {
+        throw std::invalid_argument("diagnostics.mode must be off/basic/detail");
+    }
+#ifdef DRONE_TRACKER_RK3576
+    if (diagnostic_mode != "off") {
+        diagnostic_client_ = std::make_unique<diagnostics::Client>();
+        std::ostringstream identity{};
+        identity << "{\"mode\":" << std::quoted(diagnostic_mode);
+        auto fingerprint{[](const std::string &path) {
+            try { return recordingFileIdentity(path); } catch (...) { return std::string{"unknown"}; }
+        }};
+        identity << ",\"program_sha256\":" << std::quoted(fingerprint("/proc/self/exe"));
+        std::ifstream board_file{"/proc/device-tree/model", std::ios::binary};
+        std::string board{std::istreambuf_iterator<char>{board_file}, {}};
+        board.erase(std::remove(board.begin(), board.end(), '\0'), board.end());
+        identity << ",\"board\":" << std::quoted(board.empty() ? "unknown" : board);
+        identity << ",\"config\":{";
+        bool first{true};
+        for (const auto &name : list_parameters({}, 10).names) {
+            if (!first) { identity << ','; } first = false;
+            identity << std::quoted(name) << ':' << std::quoted(get_parameter(name).value_to_string());
+        }
+        identity << "},\"models\":{";
+        first = true;
+        for (const char *name : {"tracker.yolo_engine", "tracker.nano_template_backbone", "tracker.nano_search_backbone", "tracker.nano_head"}) {
+            if (!first) { identity << ','; } first = false;
+            auto path{std::filesystem::path{get_parameter(name).as_string()}};
+            if (path.is_relative()) { path = std::filesystem::path{ament_index_cpp::get_package_share_directory("drone_tracker")} / "models" / path; }
+            identity << std::quoted(name) << ":{\"path\":" << std::quoted(path.string())
+                << ",\"sha256\":" << std::quoted(fingerprint(path.string())) << '}';
+        }
+        identity << "}}";
+        const bool prepared{diagnostic_client_->prepare(diagnostic_mode == "detail" ? diagnostics::Mode::Detail
+            : diagnostics::Mode::Basic, get_parameter("diagnostics.socket").as_string(), 0, identity.str())};
+        if (!prepared) { RCLCPP_WARN(get_logger(), "Diagnostics unavailable; healthy tracking continues"); }
+        diagnostic_timer_ = create_wall_timer(std::chrono::seconds{1}, [this] {
+            diagnostic_client_->reconnect();
+            const auto *region{diagnostic_client_->region()};
+            if (!region) { return; }
+            const auto now{diagnostics::monotonicNs()};
+            const auto oldest{region->oldest_unsynced_ns.load(std::memory_order_acquire)};
+            const auto sync_start{region->sync_started_ns.load(std::memory_order_acquire)};
+            const auto sync_end{region->sync_finished_ns.load(std::memory_order_acquire)};
+            const auto lag{oldest ? now - oldest : (sync_start > sync_end ? now - sync_start : 0)};
+            std::array<std::uint64_t, diagnostics::PRODUCERS> generated{}, written{}, synced{}, dropped{};
+            for (std::size_t index{}; index < diagnostics::PRODUCERS; ++index) {
+                const auto &position{region->producers[index].position};
+                generated[index] = position.generated.load(); written[index] = position.written.load();
+                synced[index] = position.synced.load(); dropped[index] = position.dropped.load();
+            }
+            RCLCPP_INFO(get_logger(),
+                "Diagnostics degraded=%d error=%u unsynced_age_ns=%lu synced_known=%d "
+                "generated=%lu,%lu,%lu,%lu written=%lu,%lu,%lu,%lu synced=%lu,%lu,%lu,%lu dropped=%lu,%lu,%lu,%lu",
+                region->error.load() != 0 || lag > 500000000 || region->consumer_pid.load() == 0,
+                region->error.load(), static_cast<unsigned long>(lag), sync_end != 0,
+                generated[0], generated[1], generated[2], generated[3], written[0], written[1], written[2], written[3],
+                synced[0], synced[1], synced[2], synced[3], dropped[0], dropped[1], dropped[2], dropped[3]);
+        });
+    }
+#else
+    if (diagnostic_mode != "off") { throw std::invalid_argument("Diagnostics backend requires rk3576"); }
+#endif
     parameter_guard_ = add_on_set_parameters_callback([](const std::vector<rclcpp::Parameter> &parameters) {
         rcl_interfaces::msg::SetParametersResult result{};
         result.successful = true;
         for (const auto &parameter : parameters) {
             const auto &name{parameter.get_name()};
+            if (name.rfind("diagnostics.", 0) == 0) {
+                result.successful = false; result.reason = "Diagnostics startup configuration cannot change at runtime";
+                break;
+            }
             if (name.rfind("recording.", 0) == 0) {
                 result.successful = false;
                 result.reason = "Recording startup parameters cannot change at runtime; restart the node: " + name;
@@ -85,6 +155,12 @@ DroneTrackerNode::~DroneTrackerNode() {
     if (mv_camera_) { mv_camera_->stop(); }
     tracker_.reset();
     closeRecording();
+#ifdef DRONE_TRACKER_RK3576
+    diagnostic_timer_.reset();
+    if (diagnostic_client_ && !diagnostic_client_->finish()) {
+        RCLCPP_WARN(get_logger(), "Diagnostics finalization incomplete after bounded wait");
+    }
+#endif
 }
 
 void DroneTrackerNode::run() { run(static_cast<builtin_interfaces::msg::Time>(now())); }
@@ -122,6 +198,12 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
             osd_sequence_ = 0;
         }
         openRecording(stamp);
+        diagnostics::current_round.store(round_number_ + 1, std::memory_order_release);
+#ifdef DRONE_TRACKER_RK3576
+        if (diagnostic_client_ && diagnostic_client_->region()) {
+            diagnostic_client_->region()->round_id.store(round_number_ + 1, std::memory_order_release);
+        }
+#endif
         worker_thread_ = cpu_affinity::start(cpu_affinity::Role::Tracking, [this] { worker(); },
             launcher_, ++round_number_);
         if (!worker_thread_.joinable()) { throw std::runtime_error("Thread launcher returned no worker"); }
@@ -577,6 +659,10 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
 }
 
 void DroneTrackerNode::worker() {
+    diagnostics::current_producer = diagnostics::Producer::Node;
+    auto round{diagnostics::event(diagnostics::Type::RoundStart)};
+    round.prediction_us = now().nanoseconds() / 1000; round.flags |= diagnostics::PredictionKnown;
+    diagnostics::emit(round); round.type = diagnostics::Type::ClockRelation; diagnostics::emit(round);
     try {
         if (running) {
             if (!mv_camera_->start()) {
@@ -609,6 +695,7 @@ void DroneTrackerNode::worker() {
         osd_presenter_->endRound(osd_round_, osd::DisplayStatus::Stopped);
     }
     status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1, "Drone Tracker Stopped", true);
+    diagnostics::emit(diagnostics::event(diagnostics::Type::RoundEnd));
     run_state_ = RunState::Idle;
 }
 
@@ -729,9 +816,22 @@ void DroneTrackerNode::processFrames() {
                 break;
             }
             FrameRef newer{};
-            while (mv_camera_->tryFrame(newer)) { frame_buffer = std::move(newer); }
+            while (mv_camera_->tryFrame(newer)) {
+                auto skipped{diagnostics::event(diagnostics::Type::FrameSkip, diagnostics::Reason::LatestSkip)};
+                skipped.frame = frame_buffer->diagnosticIdentity(); skipped.frame_time_us = frame_buffer->timestampUs();
+                skipped.flags |= diagnostics::FrameTimeKnown;
+                diagnostics::emit(skipped); frame_buffer = std::move(newer);
+            }
+            auto selected{diagnostics::event(diagnostics::Type::FrameSelect)};
+            selected.frame = frame_buffer->diagnosticIdentity(); selected.frame_time_us = frame_buffer->timestampUs();
+            selected.flags |= diagnostics::FrameTimeKnown;
+            diagnostics::emit(selected);
         }
-        if (!running) { break; }
+        if (!running) {
+            auto stopped{diagnostics::event(diagnostics::Type::PublishSkipped, diagnostics::Reason::Stopped)};
+            if (frame_buffer) { stopped.frame = frame_buffer->diagnosticIdentity(); }
+            diagnostics::emit(stopped); break;
+        }
 
         // 构造帧上下文：帧时刻与当前时刻的相机旋转（无云台数据时保持单位阵）
         FrameContext ctx;
@@ -747,9 +847,14 @@ void DroneTrackerNode::processFrames() {
                 ctx.R_cam_now = R;
         }
 
+        const auto sample_begin{diagnostics::measurement ? diagnostics::monotonicNs() : 0};
         const auto update_begin{update_timing_observer_ ? std::chrono::steady_clock::now()
             : std::chrono::steady_clock::time_point{}};
         TrackerOutput out = tracker_->update(ctx);
+        if (diagnostics::measurement) {
+            diagnostics::measureCall(sample_begin, diagnostics::monotonicNs() - sample_begin,
+                frame_timestamp_us, out.consumed);
+        }
         if (update_timing_observer_) {
             const auto update_end{std::chrono::steady_clock::now()};
             update_timing_observer_(
@@ -757,6 +862,11 @@ void DroneTrackerNode::processFrames() {
                 std::chrono::duration_cast<std::chrono::microseconds>(update_end - update_begin).count(), out.consumed);
         }
 
+        if (!out.consumed) {
+            auto skipped{diagnostics::event(diagnostics::Type::PublishSkipped, diagnostics::Reason::NotConsumed)};
+            skipped.frame = frame_buffer->diagnosticIdentity(); skipped.prediction_us = ctx.now_us;
+            diagnostics::emit(skipped);
+        }
         auto elapsed = this->now() - start_time;
         double cost_ms = elapsed.seconds() * 1000;
 
@@ -795,7 +905,11 @@ void DroneTrackerNode::processFrames() {
             detection_msg->bbox.size_x = out.realtime_box.width;
             detection_msg->bbox.size_y = out.realtime_box.height;
             record(detection_msg, TOPIC_TARGET_BBOX, detection_msg->header.stamp);
-            detection_pub_->publish(*detection_msg);
+            auto publication{diagnostics::event(diagnostics::Type::PublishStart)};
+            publication.frame = frame_buffer->diagnosticIdentity(); publication.prediction_us = ctx.now_us;
+            publication.frame_time_us = frame_buffer->timestampUs(); publication.values[0] = this->now().nanoseconds();
+            publication.flags |= diagnostics::PredictionKnown | diagnostics::FrameTimeKnown;
+            diagnostics::observePublication(publication, [&] { detection_pub_->publish(*detection_msg); });
 
             // 状态仅变化时发布
             int8_t tracker_state_int = static_cast<int8_t>(out.state);

@@ -1,0 +1,54 @@
+Starting >>> drone_tracker
+--- stderr: drone_tracker
+/work/ros2_ws/src/drone_tracker/src/platform/rk3576/rk3576_camera_capture_base.cpp: In member function ‘rk3576::CameraSample rk3576::Rk3576CameraCaptureBase::next(int, bool, rk3576::CameraNv12Sink*)’:
+/work/ros2_ws/src/drone_tracker/src/platform/rk3576/rk3576_camera_capture_base.cpp:417:45: warning: ISO C++ does not support ‘__int128’ for ‘type name’ [-Wpedantic]
+  417 |         const auto offset_delta{static_cast<__int128>(realtime) - sample.dequeue_us - pair_.offset_us};
+      |                                             ^~~~~~~~
+/work/ros2_ws/src/drone_tracker/src/platform/rk3576/rk3576_camera_capture_base.cpp: In member function ‘rk3576::CameraSample rk3576::Rk3576CameraCaptureBase::next(int, bool, rk3576::CameraNv12Sink*)’:
+/work/ros2_ws/src/drone_tracker/src/platform/rk3576/rk3576_camera_capture_base.cpp:417:45: warning: ISO C++ does not support ‘__int128’ for ‘type name’ [-Wpedantic]
+  417 |         const auto offset_delta{static_cast<__int128>(realtime) - sample.dequeue_us - pair_.offset_us};
+      |                                             ^~~~~~~~
+gmake[2]: Warning: File 'src/osd/rk3576_backend/libdrone_osd_rk3576.a' has modification time 0.015 s in the future
+gmake[2]: Warning: File 'src/osd/rk3576_backend/libdrone_osd_rk3576.a' has modification time 0.015 s in the future
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: Warning: File 'src/diagnostics/libdrone_diagnostics.a' has modification time 0.014 s in the future
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: Warning: File 'src/hybrid_tracker/libhybrid_tracker.a' has modification time 0.0097 s in the future
+gmake[2]: Warning: File 'src/hybrid_tracker/libhybrid_tracker.a' has modification time 0.0095 s in the future
+gmake[2]: Warning: File 'src/hybrid_tracker/libhybrid_tracker.a' has modification time 0.0088 s in the future
+gmake[2]: Warning: File 'src/hybrid_tracker/libhybrid_tracker.a' has modification time 0.0082 s in the future
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: Warning: File 'src/platform/production/librk3576_video.a' has modification time 0.0076 s in the future
+gmake[2]: Warning: File 'src/platform/production/librk3576_video.a' has modification time 0.0053 s in the future
+gmake[2]: Warning: File 'src/platform/production/librk3576_video.a' has modification time 0.0049 s in the future
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: Warning: File 'src/platform/production/librk3576_yolo_runtime.a' has modification time 0.0083 s in the future
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: Warning: File 'src/platform/production/librk3576_tracker_assembly.a' has modification time 0.0071 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/baseline/libnanotrack_baseline_runner.a' has modification time 0.0056 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/baseline/libnanotrack_baseline_runner.a' has modification time 0.0049 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/search_direct/libnanotrack_search_direct_backend.a' has modification time 0.0084 s in the future
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: Warning: File 'libdrone_tracker_jetson_config.a' has modification time 0.0085 s in the future
+gmake[2]: Warning: File 'libdrone_tracker_ros.a' has modification time 0.007 s in the future
+gmake[2]: Warning: File 'libdrone_tracker_ros.a' has modification time 0.006 s in the future
+gmake[2]: Warning: File 'libdrone_tracker_ros.a' has modification time 0.0054 s in the future
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+---
+[Processing: drone_tracker]
+Finished <<< drone_tracker [46.8s]
+
+Summary: 1 package finished [46.9s]
+  1 package had stderr output: drone_tracker

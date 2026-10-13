@@ -12,6 +12,7 @@
 // 测试不链接生产平台，因此没有真实 RKNN 推理或运行期假模型参数。
 std::unique_ptr<PlatformFactory> CreatePlatformFactory() { throw std::logic_error("Test must inject factory"); }
 struct DroneTrackerNodeTestAccess {
+    static const diagnostics::SharedRegion *diagnostics(const DroneTrackerNode &node) { return node.diagnostic_client_ ? node.diagnostic_client_->region() : nullptr; }
     static bool idle(const DroneTrackerNode &node) { return node.run_state_ == DroneTrackerNode::RunState::Idle; }
     static CameraIntrinsics intrinsics(const DroneTrackerNode &node) { return node.cam_intrinsics_; }
     static BagSession::Status bagStatus(DroneTrackerNode &node) {
@@ -43,6 +44,7 @@ struct SourceTrace {
     std::atomic<int> starts{}, stops{}, delivered{};
     std::atomic_bool active{}, eof{}, fail_start{}, fail_input{}, tail_race{}, long_gap{};
     std::atomic<int> limit{10000};
+    std::atomic<std::uint64_t> fixed_timestamp{};
     std::atomic_bool warming_up{};
     std::atomic_bool recording_failed{};
     std::atomic<int> legacy_recording_requests{};
@@ -84,7 +86,10 @@ public:
     }
     bool tryFrame(FrameRef &frame) override {
         frame.reset();
-        if (trace_->tail_race.exchange(false)) { return next(frame); }
+        if (trace_->tail_race) {
+            if (trace_->delivered < trace_->limit) { return next(frame); }
+            trace_->tail_race = false;
+        }
         return false;
     }
     void configureRecording(bool enabled, const std::string &, const std::string &) override {
@@ -92,8 +97,9 @@ public:
     }
 private:
     bool next(FrameRef &frame) {
-        const auto timestamp{std::chrono::duration_cast<std::chrono::microseconds>(
+        const auto generated_timestamp{std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() - 20000};
+        const auto timestamp{trace_->fixed_timestamp.load() ? trace_->fixed_timestamp.load() : static_cast<std::uint64_t>(generated_timestamp)};
         frame = std::make_shared<TestFrame<1>>(cv::Mat{80, 100, CV_8UC1, cv::Scalar{42}}, timestamp);
         ++trace_->delivered;
         std::lock_guard<std::mutex> lock{trace_->mutex};
@@ -944,10 +950,71 @@ void recording() {
     }
     std::filesystem::remove_all(root);
 }
+void diagnosticBoundaries() {
+    for (const char *mode : {"basic", "detail"}) {
+        Harness h{options({{"diagnostics.mode", mode}})};
+        const auto changed{h.node->set_parameter(rclcpp::Parameter{"diagnostics.mode", "off"})};
+        require(!changed.successful, "诊断模式运行期未拒绝");
+        h.source->limit = 2; h.source->fixed_timestamp = 1000000;
+        const auto before{h.source->stops.load()}; h.node->run();
+        h.until([&] { return h.source->stops > before; }, "diagnostic repeated EOF"); h.pump(50ms);
+        require(h.detections.size() == 1, "重复时间改变发布规则");
+        const auto *region{DroneTrackerNodeTestAccess::diagnostics(*h.node)};
+        require(region, "diagnostic region missing");
+        const auto &ring{region->producers[0].normal};
+        bool early{}, skipped{}, published{};
+        for (std::uint64_t index{}; index < ring.write.load(); ++index) {
+            const auto &value{ring.events[index % diagnostics::NORMAL_CAPACITY]};
+            early = early || (value.type == diagnostics::Type::UpdateEnd && value.reason == diagnostics::Reason::RepeatedTime);
+            skipped = skipped || value.type == diagnostics::Type::PublishSkipped;
+            published = published || (value.type == diagnostics::Type::PublishEnd && (value.flags & diagnostics::Complete));
+        }
+        require(early && skipped && published, "节点未消费/发布边界证据缺失");
+        // 使等待超时后 EOF 队列仍含三帧，实际覆盖节点补取的跳过和选择事件。
+        const auto first_tail_event{ring.write.load()};
+        std::size_t first_tail_frame{};
+        {
+            std::lock_guard<std::mutex> lock{h.source->mutex};
+            first_tail_frame = h.source->timestamps.size();
+        }
+        h.source->fixed_timestamp = 0; h.source->tail_race = true; h.source->limit = 3;
+        const auto before_tail{h.source->stops.load()}; h.node->run();
+        h.until([&] { return h.source->stops > before_tail; }, "diagnostic tail EOF"); h.pump(50ms);
+        require(h.detections.size() == 2, "EOF 补取末帧丢失");
+        std::vector<std::uint64_t> tail_times{};
+        {
+            std::lock_guard<std::mutex> lock{h.source->mutex};
+            tail_times.assign(h.source->timestamps.begin() + first_tail_frame, h.source->timestamps.end());
+        }
+        require(tail_times.size() == 3, "EOF 补取未取得三帧测试输入");
+        std::size_t tail_index{};
+        for (auto index{first_tail_event}; index < ring.write.load(); ++index) {
+            const auto &value{ring.events[index % diagnostics::NORMAL_CAPACITY]};
+            if (value.type != diagnostics::Type::FrameSkip && value.type != diagnostics::Type::FrameSelect) {
+                continue;
+            }
+            require(tail_index < tail_times.size(), "EOF 补取重复记录帧去向");
+            require(value.type == (tail_index < 2 ? diagnostics::Type::FrameSkip : diagnostics::Type::FrameSelect),
+                    "EOF 补取跳过与选择顺序不符");
+            require(value.frame_time_us == tail_times[tail_index] && (value.flags & diagnostics::FrameTimeKnown),
+                    "EOF 补取帧时间数值或已知有效位不符");
+            ++tail_index;
+        }
+        require(tail_index == 3, "EOF 补取缺少实际帧去向记录");
+    }
+}
 } // namespace
 int main(int argc, char **argv) {
+    const bool diagnostic_only{argc == 2 && std::string{argv[1]} == "--diagnostic-boundaries"};
+    if (diagnostic_only) { argc = 1; }
     rclcpp::init(argc, argv);
     try {
+        diagnosticBoundaries();
+        if (diagnostic_only) {
+            std::cout << "真实节点重复时间与 EOF 三帧补取的时间有效位检查通过\n";
+            rclcpp::shutdown();
+            return 0;
+        }
         configuration();
         osdCompatibility();
         messagesAndRestart();

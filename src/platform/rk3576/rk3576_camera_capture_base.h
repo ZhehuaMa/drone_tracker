@@ -58,6 +58,7 @@ struct CameraSample {
     std::int64_t clock_offset_delta_us{};
     std::uint32_t flags{};
     std::uint32_t sequence{};
+    std::uint64_t capture_id{};
     std::string strategy{};
     // 验收可选：驱动持有期内逐项比较已复制的同帧像素，不是两次采集画面对照。
     bool pixels_checked{};
@@ -73,6 +74,7 @@ struct CameraNv12View {
     std::int64_t driver_microseconds{};
     std::uint32_t flags{};
     std::uint32_t sequence{};
+    std::uint64_t capture_id{};
 };
 /**
  * @brief 录像的两步提交边界。所有方法必须非阻塞，并在内部隔离录像错误。
@@ -171,6 +173,7 @@ private:
     bool have_sequence_{};
     std::uint32_t previous_sequence_{};
     std::uint64_t sequence_gaps_{};
+    std::uint64_t capture_id_{};
     bool cleanup_failed_{};
     std::vector<Mapping> mappings_{};
 };

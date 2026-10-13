@@ -1,0 +1,19 @@
+{
+  "node_submissions": {
+    "ordinary": {
+      "count": 174470,
+      "p99_ns": 9086,
+      "duration_ge_10us_count": 1367
+    },
+    "critical": {
+      "count": 97,
+      "p99_ns": 3726,
+      "duration_ge_10us_count": 0
+    }
+  },
+  "same_update_step_intervals": 8025,
+  "intervals_less_than_10ms": 0,
+  "median_step_interval_ns": 12185035,
+  "actual_notification_count": null,
+  "limitation": "提交样本没有empty及实际eventfd调用标志，不能从提交耗时判定通知次数。"
+}

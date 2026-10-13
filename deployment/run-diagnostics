@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# 服务与直接入口共用同一 CPU 策略及普通调度。
+set -euo pipefail
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+policy=/opt/drone_tracker/config/cpu-affinity.yaml
+cpus=$(python3 "$script_dir/cpu-policy.py" "$policy")
+exec python3 "$script_dir/diagnostic-launch.py" /opt/drone_tracker/config/diagnostics.yaml "$cpus" "$@"

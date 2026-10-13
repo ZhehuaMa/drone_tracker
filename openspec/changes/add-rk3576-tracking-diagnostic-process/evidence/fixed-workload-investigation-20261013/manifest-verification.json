@@ -1,0 +1,20 @@
+{
+  "files_checked": 688,
+  "mismatches": [],
+  "binary_archive_sha_matches": {
+    "install-precise.tar.gz/fixed_workload_probe": "00138708b8e81ea661f63d19592477ecdeb660a76bebb6a683e8fa5173afa3b8",
+    "install-precise.tar.gz/rk3576_diagnostic_worker": "780b2cd710714a9f71ac83512da164a6365839b8f62511dc61f721fe9b85aaa5",
+    "install-precise.tar.gz/rk3576_diagnostic_inspect": "bc00627919b9e60ea3f95b9ab17a9aad11103f6348c8bffd22850543179a8970",
+    "install-mixed.tar.gz/fixed_workload_probe": "e5277f8d21e732d602d9ba775c0c455e93ee069f0850e5d1a90911bb91992b8c",
+    "install-mixed.tar.gz/rk3576_diagnostic_worker": "780b2cd710714a9f71ac83512da164a6365839b8f62511dc61f721fe9b85aaa5",
+    "install-mixed.tar.gz/rk3576_diagnostic_inspect": "bc00627919b9e60ea3f95b9ab17a9aad11103f6348c8bffd22850543179a8970"
+  },
+  "relative_markdown_links": "all exist",
+  "strict_validation_exit": 0,
+  "diff_check_exit": 0,
+  "task_progress": {
+    "total": 40,
+    "complete": 39,
+    "remaining": 1
+  }
+}

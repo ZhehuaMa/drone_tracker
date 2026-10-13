@@ -1,0 +1,455 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -182,3 +182,6 @@
+ target_link_libraries(fixed_workload_probe PRIVATE hybrid_tracker platform_rk3576 OpenSSL::Crypto)
+ install(TARGETS fixed_workload_probe DESTINATION lib/${PROJECT_NAME})
+ ament_package()
++add_executable(storage_switch_test src/storage_switch_test.cpp)
++target_link_libraries(storage_switch_test PRIVATE drone_diagnostics pthread)
++install(TARGETS storage_switch_test DESTINATION lib/${PROJECT_NAME})
+--- a/src/fixed_workload_probe.cpp
++++ b/src/fixed_workload_probe.cpp
+@@ -3,6 +3,7 @@
+ #include <chrono>
+ #include <cstdlib>
+ #include <ctime>
++#include <filesystem>
+ #include <fstream>
+ #include <iomanip>
+ #include <iostream>
+@@ -20,8 +21,8 @@
+ #include "platform/rk3576/mjpeg_video_reader.h"
+ #include "platform/rk3576/nanotrack_preprocessor.h"
+ 
++#include <opencv2/opencv.hpp>
+ #include <openssl/sha.h>
+-#include <opencv2/opencv.hpp>
+ 
+ /** @brief 隔离归因程序；正式节点不会调用本文件的模式切换或工作量计数。 */
+ namespace {
+@@ -110,15 +111,10 @@
+ class AuditNano final : public model::NanoTrackBackend {
+   public:
+     AuditNano(std::unique_ptr<model::NanoTrackBackend> backend, std::ofstream &out, bool enabled = true)
+-        : backend_{std::move(backend)}, out_{out}, enabled_{enabled} {
+-    }
++        : backend_{std::move(backend)}, out_{out}, enabled_{enabled} {}
+     std::uint64_t templates_{}, searches_{};
+-    ModelInputContract templateContract() const override {
+-        return backend_->templateContract();
+-    }
+-    ModelInputContract searchContract() const override {
+-        return backend_->searchContract();
+-    }
++    ModelInputContract templateContract() const override { return backend_->templateContract(); }
++    ModelInputContract searchContract() const override { return backend_->searchContract(); }
+     model::Status setTemplate(const PreparedInputRef &input) override {
+         ++templates_;
+         auto value{backend_->setTemplate(input)};
+@@ -132,9 +128,7 @@
+                value ? value.value.location : model::Tensor{}, bool(value));
+         return value;
+     }
+-    void reset() noexcept override {
+-        backend_->reset();
+-    }
++    void reset() noexcept override { backend_->reset(); }
+ 
+   private:
+     void record(const char *kind, const PreparedInputRef &input, const model::Tensor &a, const model::Tensor &b,
+@@ -170,7 +164,7 @@
+                                 ? static_cast<unsigned>(std::strtoul(std::getenv("DRONE_MIXED_SEED"), nullptr, 10))
+                                 : 20261013U};
+         const int cycles{std::atoi(argv[5])};
+-        if (mixed && (observed || audit || cycles % 2)) {
++        if (mixed && (observed || cycles % 2)) {
+             throw std::runtime_error("Mixed mode requires unobserved even complete blocks");
+         }
+         if (cycles < 1 || cycles * 40 > static_cast<int>(MAX_CALLS)) {
+@@ -232,7 +226,8 @@
+             throw std::runtime_error(components.error.describe());
+         }
+         std::ofstream audit_file{std::string{argv[4]} + "/model-audit.csv"};
+-        audit_file << "update,kind,input_sha256,classification_sha256,location_sha256,ok\n";
++        audit_file << "update,kind,input_sha256,classification_sha256,location_"
++                      "sha256,ok\n";
+         AuditNano *counted{};
+         if (audit || mixed) {
+             auto counter{std::make_unique<AuditNano>(std::move(components.value.nano), audit_file, audit)};
+@@ -271,7 +266,8 @@
+             observer_cost[i] = diagnostics::monotonicNs() - start;
+         }
+         std::ofstream calibration{std::string{argv[4]} + "/calibration.csv"};
+-        calibration << "clock_ns,two_thread_clock_ns,observer_span_ns,event_hook_ns,preparation_empty_ns\n";
++        calibration << "clock_ns,two_thread_clock_ns,observer_span_ns,event_hook_"
++                       "ns,preparation_empty_ns\n";
+         for (std::size_t i{}; i < clock_cost.size(); ++i) {
+             calibration << clock_cost[i] << ',' << cpu_cost[i] << ',' << observer_cost[i] << ',';
+             Sample calibration_sample{};
+@@ -286,11 +282,20 @@
+             sample = nullptr;
+         }
+         // 两个完整固定块预热；测量样本不删慢值。
++        std::ofstream warmups{std::string{argv[4]} + "/warmups.csv"};
++        warmups << "block,position,duration_ns,cpu_ns,state,score,x,y,w,h\n";
++        warmups << std::setprecision(9);
+         for (int block{}; block < 2; ++block) {
+             tracker->finishRound();
+             tracker->reset();
+             for (auto &frame : frames) {
+-                tracker->update(frame);
++                const auto cpu_begin{cpuNs()}, wall_begin{diagnostics::monotonicNs()};
++                const auto output{tracker->update(frame)};
++                const auto wall{diagnostics::monotonicNs() - wall_begin}, cpu{cpuNs() - cpu_begin};
++                const auto box{tracker->lastNanoBox()};
++                warmups << block << ',' << (&frame - frames.data() + 1) << ',' << wall << ',' << cpu << ','
++                        << static_cast<int>(output.state) << ',' << tracker->lastNanoScore() << ',' << box.x << ','
++                        << box.y << ',' << box.width << ',' << box.height << '\n';
+             }
+         }
+         diagnostics::Client client{};
+@@ -309,13 +314,29 @@
+         } else {
+             assignment.fill(mode == diagnostics::Mode::Basic ? 1 : 0);
+         }
++        std::ofstream positions{std::string{argv[4]} + "/positions.csv"};
++        positions << "block,boundary,producer,generated,written,synced,dropped,"
++                     "normal_write,normal_read,critical_write,critical_read\n";
++        auto snapshot = [&](int block, const char *boundary) {
++            for (std::size_t index{}; index < diagnostics::PRODUCERS; ++index) {
++                const auto &p{client.region()->producers[index]};
++                positions << block << ',' << boundary << ',' << index << ',' << p.position.generated.load() << ','
++                          << p.position.written.load() << ',' << p.position.synced.load() << ','
++                          << p.position.dropped.load() << ',' << p.normal.write.load() << ',' << p.normal.read.load()
++                          << ',' << p.critical.write.load() << ',' << p.critical.read.load() << '\n';
++            }
++            positions.flush();
++        };
+         std::ofstream blocks{std::string{argv[4]} + "/blocks.csv"};
+-        blocks << "block,pair,mode,templates,searches,drain_wait_ns,drain_complete,behavior_same\n";
++        blocks << "block,pair,mode,templates,searches,drain_wait_ns,drain_complete,"
++                  "behavior_same\n";
+         std::ofstream partial{std::string{argv[4]} + "/partial-calls.csv"};
+-        partial << "index,block,pair,mode,position,start_ns,duration_ns,cpu_ns,state,tracking,consumed,score,x,y,w,h\n";
++        partial << "index,block,pair,mode,position,start_ns,duration_ns,cpu_ns,"
++                   "state,tracking,consumed,score,x,y,w,h\n";
+         partial << std::setprecision(9);
+         metadata << "mixed=" << mixed << "\nseed=" << seed
+-                 << "\nboundary_minimum_wait_ns=100000000\nboundary_maximum_wait_ns=250000000\n";
++                 << "\nboundary_minimum_wait_ns=100000000\nboundary_maximum_wait_"
++                    "ns=250000000\n";
+         diagnostics::measurement = observed ? measured.get() : nullptr;
+         diagnostics::fixed_hook = observed || audit ? hook : nullptr;
+         diagnostics::fixed_preparation_hook = observed ? preparationHook : nullptr;
+@@ -346,7 +367,32 @@
+                 if (!complete || client.region()->error.load()) {
+                     throw std::runtime_error("Mixed boundary not fully drained and synced");
+                 }
+-                diagnostics::active.store(assignment[block] ? basic_recorder : nullptr, std::memory_order_release);
++                snapshot(block, "drained-old");
++                const auto control{std::filesystem::path{std::getenv("DRONE_STORAGE_CONTROL")}};
++                {
++                    std::ofstream request{control / "request.tmp"};
++                    request << block << ' ' << assignment[block] << '\n';
++                }
++                std::filesystem::rename(control / "request.tmp", control / "request");
++                const auto switch_begin{diagnostics::monotonicNs()};
++                bool acknowledged{};
++                while (diagnostics::monotonicNs() - switch_begin < 500000000ULL) {
++                    std::ifstream ack{control / "ack"};
++                    int sequence{-1}, destination{-1};
++                    if (ack >> sequence >> destination && sequence == block && destination == assignment[block]) {
++                        acknowledged = true;
++                        break;
++                    }
++                    std::this_thread::sleep_for(std::chrono::milliseconds{1});
++                }
++                if (!acknowledged) {
++                    throw std::runtime_error("Storage switch acknowledgement timeout");
++                }
++                std::this_thread::sleep_for(std::chrono::milliseconds{100});
++                metadata << "switch_" << block << "_ns=" << diagnostics::monotonicNs() - switch_begin << '\n';
++                metadata.flush();
++                snapshot(block, "opened-new");
++                diagnostics::active.store(basic_recorder, std::memory_order_release);
+             }
+             tracker->reset();
+             diagnostics::current_round = block + 1;
+@@ -367,6 +413,7 @@
+                 sample = nullptr;
+             }
+             if (mixed) {
++                snapshot(block, "generated");
+                 const auto same_box = [](const BBoxRect &a, const BBoxRect &b) {
+                     return a.cx == b.cx && a.cy == b.cy && a.width == b.width && a.height == b.height &&
+                            a.is_valid == b.is_valid;
+@@ -407,8 +454,11 @@
+         if (mixed) {
+             diagnostics::active.store(basic_recorder, std::memory_order_release);
+         }
+-        client.finish();
++        if (!client.finish()) {
++            throw std::runtime_error("Final client drain failed");
++        }
+         if (client.region()) {
++            snapshot(cycles, "final-drained");
+             for (std::size_t i{}; i < diagnostics::PRODUCERS; ++i) {
+                 metadata << "dropped_" << i << '=' << client.region()->producers[i].position.dropped.load() << '\n';
+             }
+@@ -416,8 +466,10 @@
+         diagnostics::exportMeasurement(argv[4]);
+         diagnostics::measurement = nullptr;
+         std::ofstream out{std::string{argv[4]} + "/fixed-calls.csv"};
+-        out << "index,block,position,start_ns,duration_ns,cpu_ns,events,event_hash,init,steps,init_ns,step_ns,state,"
+-               "tracking,consumed,score,x,y,w,h,dcx,dcy,dw,dh,dvalid,rcx,rcy,rw,rh,rvalid,preparation_ns,preparation_"
++        out << "index,block,position,start_ns,duration_ns,cpu_ns,events,event_hash,"
++               "init,steps,init_ns,step_ns,state,"
++               "tracking,consumed,score,x,y,w,h,dcx,dcy,dw,dh,dvalid,rcx,rcy,rw,rh,"
++               "rvalid,preparation_ns,preparation_"
+                "count,mode";
+         for (std::size_t i{}; i < timing::stageCount; ++i) {
+             out << ",stage_" << i << "_ns,stage_" << i << "_count";
+--- a/src/diagnostics/worker.cpp
++++ b/src/diagnostics/worker.cpp
+@@ -5,11 +5,12 @@
+ #include <csignal>
+ #include <cstring>
+ #include <fcntl.h>
++#include <fstream>
+ #include <iostream>
+ #include <memory>
+ #include <poll.h>
++#include <sys/file.h>
+ #include <sys/mman.h>
+-#include <sys/file.h>
+ #include <sys/socket.h>
+ #include <sys/stat.h>
+ #include <sys/syscall.h>
+@@ -30,6 +31,7 @@
+     std::array<std::uint64_t, PRODUCERS> drops{};
+     bool disconnected{};
+     std::uint64_t last_health_ns{};
++    std::string identity{};
+     ~Session() {
+         if (region) {
+             region->consumer_pid.store(0, std::memory_order_release);
+@@ -94,9 +96,8 @@
+     const bool notification_valid{
+         link_size > 0 && std::string(link.data(), static_cast<std::size_t>(link_size)) == "anon_inode:[eventfd]" &&
+         (notify_flags & O_NONBLOCK) != 0};
+-    if (received == sizeof(control) && (message.msg_flags & (MSG_TRUNC | MSG_CTRUNC)) == 0 && found == 2
+-        && received_descriptors == 2 &&
+-        valid(control) && control.pid == static_cast<std::uint32_t>(peer.pid) &&
++    if (received == sizeof(control) && (message.msg_flags & (MSG_TRUNC | MSG_CTRUNC)) == 0 && found == 2 &&
++        received_descriptors == 2 && valid(control) && control.pid == static_cast<std::uint32_t>(peer.pid) &&
+         ::fstat(session->memory, &information) == 0 && information.st_size == sizeof(SharedRegion) && seals >= 0 &&
+         (seals & (F_SEAL_SHRINK | F_SEAL_GROW)) == (F_SEAL_SHRINK | F_SEAL_GROW) && notification_valid && !full) {
+         void *mapping{::mmap(nullptr, sizeof(SharedRegion), PROT_READ | PROT_WRITE, MAP_SHARED, session->memory, 0)};
+@@ -113,6 +114,8 @@
+                 if (session->pidfd >= 0 && session->storage->open() &&
+                     session->storage->identity(control.identity.data(),
+                                                strnlen(control.identity.data(), control.identity.size()))) {
++                    session->identity =
++                        std::string(control.identity.data(), strnlen(control.identity.data(), control.identity.size()));
+                     control.result = 0;
+                 }
+             } else {
+@@ -237,6 +240,15 @@
+     }
+     std::string endpoint{"/run/drone_tracker/diagnostics.sock"};
+     StorageConfig config{};
++    std::filesystem::path switch_control{}, tmpfs_directory{};
++    int switched{-1};
++    struct SyncSample {
++        int block;
++        std::uint64_t start, end;
++        bool okay;
++    };
++    std::vector<SyncSample> sync_samples{};
++    sync_samples.reserve(5000);
+     try {
+         for (int index{1}; index < argc; ++index) {
+             const std::string option{argv[index]};
+@@ -244,7 +256,11 @@
+                 throw std::runtime_error{"缺少参数值"};
+             }
+             const std::string value{argv[++index]};
+-            if (option == "--socket") {
++            if (option == "--test-switch-control") {
++                switch_control = value;
++            } else if (option == "--test-tmpfs-directory") {
++                tmpfs_directory = value;
++            } else if (option == "--socket") {
+                 endpoint = value;
+             } else if (option == "--directory") {
+                 config.directory = value;
+@@ -263,6 +279,9 @@
+         if (endpoint.size() >= sizeof(sockaddr_un::sun_path) || (config.sync_ms != 100 && config.sync_ms != 200)) {
+             throw std::runtime_error{"端点或同步周期无效"};
+         }
++        if (switch_control.empty() != tmpfs_directory.empty()) {
++            throw std::runtime_error("Incomplete test switch arguments");
++        }
+         ::signal(SIGINT, stop);
+         ::signal(SIGTERM, stop);
+         const std::string lock_path{endpoint + ".lock"};
+@@ -302,6 +321,48 @@
+                 if (!session) {
+                     continue;
+                 }
++                // Test-only handoff: the producer is stopped; keep its region,
++                // recorder, consumer and positions.
++                if (!switch_control.empty()) {
++                    std::ifstream request{switch_control / "request"};
++                    int sequence{-1}, destination{-1};
++                    if (request >> sequence >> destination && sequence != switched) {
++                        bool drained{empty(*session->region) && session->region->error.load() == 0 &&
++                                     session->region->oldest_unsynced_ns.load() == 0 &&
++                                     session->region->sync_finished_ns.load() >=
++                                         session->region->sync_started_ns.load()};
++                        for (const auto &producer : session->region->producers) {
++                            drained = drained &&
++                                      producer.position.generated.load() == producer.position.written.load() &&
++                                      producer.position.generated.load() == producer.position.synced.load() &&
++                                      producer.position.dropped.load() == 0;
++                        }
++                        if (sequence != switched + 1 || destination < 0 || destination > 1 || !drained) {
++                            throw std::runtime_error("Unsafe test storage switch");
++                        }
++                        if (!session->storage->finish(true)) {
++                            throw std::runtime_error("Old test segment finish failed");
++                        }
++                        session->storage.reset();
++                        StorageConfig next{config};
++                        next.directory =
++                            (destination ? tmpfs_directory : config.directory) / ("block-" + std::to_string(sequence));
++                        session->storage = std::make_unique<Storage>(next, *session->region);
++                        if (!session->storage->open() ||
++                            !session->storage->identity(session->identity.data(), session->identity.size()) ||
++                            !session->storage->synchronize()) {
++                            throw std::runtime_error("New test segment open failed");
++                        }
++                        session->last_health_ns = monotonicNs();
++                        switched = sequence;
++                        std::ofstream acknowledgement{switch_control / "ack.tmp"};
++                        acknowledgement << sequence << ' ' << destination << '\n';
++                        acknowledgement.close();
++                        std::filesystem::rename(switch_control / "ack.tmp", switch_control / "ack");
++                        std::cout << "switch " << sequence << ' ' << destination << ' ' << session->storage->path()
++                                  << std::endl;
++                    }
++                }
+                 std::uint64_t notification{};
+                 const auto ignored{::read(session->notification, &notification, sizeof(notification))};
+                 (void)ignored;
+@@ -311,7 +372,11 @@
+                     session->disconnected || (lifetime[0].revents & POLLHUP) || (lifetime[1].revents & POLLIN);
+                 collect(*session, batch);
+                 if (session->storage->due(monotonicNs())) {
+-                    session->storage->synchronize();
++                    const auto begin{monotonicNs()};
++                    const bool okay{session->storage->synchronize()};
++                    if (!switch_control.empty()) {
++                        sync_samples.push_back({switched, begin, monotonicNs(), okay});
++                    }
+                 }
+                 const bool closing{session->region->closing.load(std::memory_order_acquire) != 0};
+                 if ((closing || session->disconnected) && (empty(*session->region) || session->storage->error())) {
+@@ -333,6 +398,13 @@
+                 session->storage->finish(false);
+             }
+         }
++        if (!switch_control.empty()) {
++            std::ofstream sync{switch_control / "sync.csv"};
++            sync << "block,start_ns,end_ns,okay\n";
++            for (const auto &entry : sync_samples) {
++                sync << entry.block << ',' << entry.start << ',' << entry.end << ',' << entry.okay << '\n';
++            }
++        }
+         ::close(listener);
+         ::unlink(endpoint.c_str());
+         ::close(ownership);
+--- a/src/storage_switch_test.cpp
++++ b/src/storage_switch_test.cpp
+@@ -0,0 +1,81 @@
++#include "diagnostics/client.h"
++#include "diagnostics/storage.h"
++#include <chrono>
++#include <filesystem>
++#include <fstream>
++#include <iostream>
++#include <thread>
++
++int main(int argc, char **argv) {
++    using namespace diagnostics;
++    try {
++        if (argc != 4) {
++            throw std::runtime_error("socket control blocks required");
++        }
++        Client client{};
++        if (!client.prepare(Mode::Basic, argv[1])) {
++            throw std::runtime_error("prepare");
++        }
++        auto *const recorder{active.load()};
++        auto drain = [&] {
++            active.store(nullptr);
++            const auto begin{monotonicNs()};
++            while (monotonicNs() - begin < 500000000ULL) {
++                bool complete{client.region()->oldest_unsynced_ns.load() == 0};
++                for (const auto &p : client.region()->producers) {
++                    complete = complete && p.position.generated.load() == p.position.synced.load() &&
++                               p.position.generated.load() == p.position.written.load() &&
++                               p.normal.write.load() == p.normal.read.load() &&
++                               p.critical.write.load() == p.critical.read.load();
++                }
++                if (complete && !client.region()->error.load()) {
++                    return;
++                }
++                std::this_thread::sleep_for(std::chrono::milliseconds{1});
++            }
++            throw std::runtime_error("drain");
++        };
++        const auto control{std::filesystem::path{argv[2]}};
++        for (int block{}; block < std::stoi(argv[3]); ++block) {
++            drain();
++            {
++                std::ofstream out{control / "request.tmp"};
++                out << block << ' ' << block % 2 << '\n';
++            }
++            std::filesystem::rename(control / "request.tmp", control / "request");
++            const auto begin{monotonicNs()};
++            bool acknowledged{};
++            while (monotonicNs() - begin < 500000000ULL) {
++                std::ifstream ack{control / "ack"};
++                int sequence{-1}, mode{-1};
++                if (ack >> sequence >> mode && sequence == block && mode == block % 2) {
++                    acknowledged = true;
++                    break;
++                }
++                std::this_thread::sleep_for(std::chrono::milliseconds{1});
++            }
++            if (!acknowledged) {
++                throw std::runtime_error("ack");
++            }
++            active.store(recorder);
++            for (int i{}; i < 20; ++i) {
++                auto value{event(Type::Capture, Reason::None, i == 19)};
++                value.update_id = i + 1;
++                value.round_id = block + 1;
++                if (!recorder->submit(Producer::Node, value)) {
++                    throw std::runtime_error("submit");
++                }
++            }
++        }
++        drain();
++        active.store(recorder);
++        if (!client.finish()) {
++            throw std::runtime_error("finish");
++        }
++        std::cout << "switch protocol passed\n";
++        return 0;
++    } catch (const std::exception &e) {
++        std::cerr << e.what() << '\n';
++        return 1;
++    }
++}

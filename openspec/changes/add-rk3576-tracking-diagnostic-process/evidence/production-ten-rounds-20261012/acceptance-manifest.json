@@ -1,0 +1,76 @@
+{
+  "captured_mono_ns": 18987186709556,
+  "hostname": "hzhy",
+  "uname": [
+    "Linux",
+    "hzhy",
+    "6.1.141-rt36",
+    "#21 SMP PREEMPT_RT Fri Sep 18 13:23:33 CST 2026",
+    "aarch64",
+    "aarch64"
+  ],
+  "board_model": "HZ-RK3576_WuKong Board",
+  "protected": {
+    "current": "/opt/drone_tracker/releases/bundle-20260927T070059Z-2281",
+    "files": {
+      "/opt/drone_tracker/config/camera.yaml": "f909ec82c2c3c45a82b1c85fb616e2f1f7a97b2da4159c7755af195f2e05298c",
+      "/opt/drone_tracker/config/cpu-affinity.yaml": "4f46293201355131c1e72c8a72cdfaafa2c3121eaa48fe0b5ad69ac442e4f01b",
+      "/usr/lib/librknnrt.so": "d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8",
+      "/opt/drone_tracker/models/balloon_best_zoo6_int8_fp16_cls.rknn": "002b1b0a5e7476a5cc62f495997f05d2550e44697fb89c8d48913fb1ee5e06f7",
+      "/opt/drone_tracker/models/fp16/head.rknn": "2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889",
+      "/opt/drone_tracker/models/fp16/search_backbone.rknn": "9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44",
+      "/opt/drone_tracker/models/fp16/template_backbone.rknn": "622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2",
+      "/opt/drone_tracker/models/int8/head.rknn": "f4fc6259eaeb83860515773df49391c860a3be31507f613b2c15fcde6430e736",
+      "/opt/drone_tracker/models/int8/search_backbone.rknn": "ecabaefdeadba721b466d942f76195bb9a5184e8e0a7d2a8262cc2d86e38ccdd",
+      "/opt/drone_tracker/models/int8/template_backbone.rknn": "848ec40a659b5a3484c0d76ba6ded353250f524c7f384fec95a0f85cf2682bdf",
+      "/opt/drone_tracker/models/yolo.rknn": "4d8a22bc8da9fbbc43f190b7ea90c27d9980f77e3e27064ec32cf6566c2680f3"
+    }
+  },
+  "files": {
+    "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/fixed-balloon.avi": "c25aec33208f5dfca315eb9c2c4fb86b04d98883ec5d74b68f5ac7746a669a95",
+    "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/analyze_board_acceptance.py": "42c55849fba319f896a497e1a8b687a064dd7aafae51ac456ad6681e07fea2f0",
+    "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/board_acceptance.py": "56da9ed389d86e3ed1df1995f0d635899e1eb65585fbc78693db1755161ffa97",
+    "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/capture_manifest.py": "340034a9e2b9af08ca0e2418fe2ab78b4bc940bcd071d2ac87ac64025d2a03a5",
+    "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/preflight_business.py": "a23274923238b3a0a0636c1420b6220b358c95642ea8f99e3930b72e4bbddd62",
+    "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/ten_round_restore_guard.py": "3f98ef3512902ba8487d4d622b35ff51737fab1fccb6eb86d685af130e19cd73",
+    "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/ten_round_window.py": "622b4c5744924d6f2e3402c2713c0b9ae1e8b8b1c6ff53443f58292cab72923a",
+    "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/drone_tracker/lib/drone_tracker/drone_tracker_node": "f0699dcceedadd2237d323f6c5c097a2c122f941da6e993028dca4e08e727497",
+    "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/drone_tracker/lib/drone_tracker/rk3576_diagnostic_worker": "2cd398014cd5991d36eb6f457e1bea44d2a2e919195fbdffa73dd539a6a75e38",
+    "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/drone_tracker/lib/drone_tracker/rk3576_diagnostic_inspect": "06592db4db093c830c43634c672b8eb78342393bb3528206b4eb5f1aa5f72be6"
+  },
+  "input": {
+    "frames": 3900,
+    "fps": 60,
+    "width": 1920,
+    "height": 1200
+  },
+  "selected_models": [
+    "balloon_best_zoo6_int8_fp16_cls.rknn",
+    "fp16/template_backbone.rknn",
+    "fp16/search_backbone.rknn",
+    "fp16/head.rknn"
+  ],
+  "cpu_policy": "# RK3576 生产板已验证的职责映射。修改后重启节点生效。\nversion: 1\nmode: role-pinned\nallowed_cpus: [4, 5, 6, 7]\nroles:\n  control: 4\n  tracking: 4\n  yolo: 5\n  display: 6\n  capture: 7\n  recording: 7\n",
+  "preflight_environment": {
+    "ROS_DOMAIN_ID": "198",
+    "ROS_LOCALHOST_ONLY": "1",
+    "AMENT_PREFIX_PATH": "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/drone_tracker:/opt/ros/humble",
+    "LD_LIBRARY_PATH": "/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib",
+    "PYTHONPATH": "/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages",
+    "DRONE_TRACKER_CPU_CONFIG": "/opt/drone_tracker/config/cpu-affinity.yaml",
+    "DRONE_DIAGNOSTIC_ACCEPTANCE_ROOT": "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03",
+    "ROS_LOG_DIR": "/home/hzhy/drone-diagnostic-ten-rounds-20261012-batch03/evidence/preflight/control-ros"
+  },
+  "prefix": "drone-diag-ten-batch03",
+  "acceptance": {
+    "pairs": 10,
+    "required_passes": 8,
+    "pair_seconds": 150,
+    "submission_p99_us": 20,
+    "call_p99_increment_ms": 0.2,
+    "consumption_decline_percent": 1,
+    "warmup_seconds": 4,
+    "measurement_seconds": 45,
+    "healthy_gap_count": 0
+  }
+}

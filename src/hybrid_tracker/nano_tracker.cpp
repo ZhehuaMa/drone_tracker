@@ -1,4 +1,5 @@
 #include "nano_tracker.h"
+#include "diagnostics/recorder.h"
 #include <numeric>
 #include <algorithm>
 #include <cstring>
@@ -60,12 +61,20 @@ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
 
     preprocessor_->reset();
     model_->reset();
-    if (!frame) { return; }
+    auto failure{diagnostics::event(diagnostics::Type::InitializeEnd, diagnostics::Reason::InitFailed, true)};
+    auto report_failure{[&failure](std::uint64_t stage, std::uint64_t domain = 0,
+                                   std::uint64_t code = 0, bool known = false) {
+        failure.values[0] = stage;
+        failure.values[1] = domain;
+        failure.values[2] = code;
+        if (known) { failure.flags |= diagnostics::ErrorCodeKnown; }
+        diagnostics::emit(failure);
+    }};
+    if (!frame) { report_failure(1); return; }
 
     const int w = frame->width();
     const int h = frame->height();
-    if (w <= 0 || h <= 0)
-        return;
+    if (w <= 0 || h <= 0) { report_failure(1); return; }
 
     // 与 Python 端一致：不裁剪输入框本身。目标处于 FOV 边缘时检测框会部分
     // 越界——按图像裁剪会产生狭长的退化模板（边缘跟踪抖动），完全越界时甚至
@@ -87,6 +96,7 @@ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
     geometry.finish();
     auto prepared{preprocessor_->prepareTemplate(frame, center_pos, static_cast<int>(round(s_z)), contract)};
     if (!prepared || !prepared.value) {
+        report_failure(2, 1, static_cast<std::uint64_t>(prepared.error), prepared.error != PreprocessError::None);
         preprocessing.finish(false);
         std::cerr << "NanoTrack template failed: " << prepared.message << std::endl;
         return;
@@ -97,6 +107,8 @@ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
         const auto initialized{model_->setTemplate(prepared.value)};
         inference.finish(static_cast<bool>(initialized));
         if (!initialized) {
+            report_failure(3, 2, static_cast<std::uint64_t>(initialized.error.code),
+                           initialized.error.code != model::ModelError::None);
             preprocessor_->reset();
             model_->reset();
             std::cerr << model::describe(initialized.error) << std::endl;
@@ -106,6 +118,7 @@ void NanoTracker::init(const FrameRef& frame, const cv::Rect2f& bbox) {
     } catch (const std::exception &error) {
         preprocessor_->reset();
         model_->reset();
+        report_failure(4);
         std::cerr << "NanoTrack template inference failed: " << error.what() << std::endl;
     }
 }

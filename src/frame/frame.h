@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include "diagnostics/event.h"
 
 #include <opencv2/core/mat.hpp>
 
@@ -70,6 +71,9 @@ public:
    * 该值是采集时刻的唯一权威来源，与处理或实时外推时刻分开保存。
    */
   virtual std::uint64_t timestampUs() const noexcept = 0;
+
+  /** @brief 可选采集身份；视频和参考后端默认未知，数值不持有图像资源。 */
+  virtual diagnostics::FrameIdentity diagnosticIdentity() const noexcept { return {}; }
 
   /**
    * @brief 创建 CPU 可读的只读借用视图。

@@ -1,0 +1,296 @@
+[
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window01/evidence/pair1",
+    "elapsed": 57.741412672,
+    "execution_passed": true,
+    "all_exit_zero": true,
+    "recovered": true,
+    "sampling_status": {
+      "1-basic/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "1454",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "511",
+        "producer_3_overflow": "0",
+        "notifications_3": "2"
+      },
+      "0-off/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "0",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "0",
+        "producer_3_overflow": "0",
+        "notifications_3": "0"
+      }
+    },
+    "gaps": 0,
+    "dropped": 0,
+    "health_error": 0,
+    "sync_trace_overflow": [
+      0,
+      0
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window01/evidence/pair2",
+    "elapsed": 57.774637562,
+    "execution_passed": true,
+    "all_exit_zero": true,
+    "recovered": true,
+    "sampling_status": {
+      "0-basic/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "1399",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "512",
+        "producer_3_overflow": "0",
+        "notifications_3": "2"
+      },
+      "1-off/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "0",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "0",
+        "producer_3_overflow": "0",
+        "notifications_3": "0"
+      }
+    },
+    "gaps": 0,
+    "dropped": 0,
+    "health_error": 0,
+    "sync_trace_overflow": [
+      0,
+      0
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair3",
+    "elapsed": 58.636259737,
+    "execution_passed": true,
+    "all_exit_zero": true,
+    "recovered": true,
+    "sampling_status": {
+      "0-disk/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "1449",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "531",
+        "producer_3_overflow": "0",
+        "notifications_3": "2"
+      },
+      "1-ram/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "1678",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "541",
+        "producer_3_overflow": "0",
+        "notifications_3": "2"
+      }
+    },
+    "gaps": 0,
+    "dropped": 0,
+    "health_error": 0,
+    "sync_trace_overflow": [
+      0,
+      0
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair4",
+    "elapsed": 58.679057345,
+    "execution_passed": true,
+    "all_exit_zero": true,
+    "recovered": true,
+    "sampling_status": {
+      "1-disk/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "1458",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "535",
+        "producer_3_overflow": "0",
+        "notifications_3": "2"
+      },
+      "0-ram/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "1700",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "519",
+        "producer_3_overflow": "0",
+        "notifications_3": "2"
+      }
+    },
+    "gaps": 0,
+    "dropped": 0,
+    "health_error": 0,
+    "sync_trace_overflow": [
+      0,
+      0
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair7",
+    "elapsed": 56.974391032,
+    "execution_passed": true,
+    "all_exit_zero": true,
+    "recovered": true,
+    "sampling_status": {
+      "1-off-b/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "0",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "0",
+        "producer_3_overflow": "0",
+        "notifications_3": "0"
+      },
+      "0-off-a/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "0",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "0",
+        "producer_3_overflow": "0",
+        "notifications_3": "0"
+      }
+    },
+    "gaps": 0,
+    "dropped": 0,
+    "health_error": 0,
+    "sync_trace_overflow": [
+      0,
+      0
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window03/evidence/pair5",
+    "elapsed": 58.628178699,
+    "execution_passed": true,
+    "all_exit_zero": true,
+    "recovered": true,
+    "sampling_status": {
+      "1-isolated/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "1871",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "530",
+        "producer_3_overflow": "0",
+        "notifications_3": "2"
+      },
+      "0-shared/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "1451",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "527",
+        "producer_3_overflow": "0",
+        "notifications_3": "2"
+      }
+    },
+    "gaps": 0,
+    "dropped": 0,
+    "health_error": 0,
+    "sync_trace_overflow": [
+      0,
+      0
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window03/evidence/pair6",
+    "elapsed": 58.675468286,
+    "execution_passed": true,
+    "all_exit_zero": true,
+    "recovered": true,
+    "sampling_status": {
+      "0-isolated/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "1873",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "507",
+        "producer_3_overflow": "0",
+        "notifications_3": "2"
+      },
+      "1-shared/sampling-status.txt": {
+        "trace_0_overflow": "0",
+        "trace_1_overflow": "0",
+        "call_overflow": "0",
+        "producer_0_overflow": "0",
+        "notifications_0": "1453",
+        "producer_1_overflow": "0",
+        "notifications_1": "0",
+        "producer_2_overflow": "0",
+        "notifications_2": "510",
+        "producer_3_overflow": "0",
+        "notifications_3": "2"
+      }
+    },
+    "gaps": 0,
+    "dropped": 0,
+    "health_error": 0,
+    "sync_trace_overflow": [
+      0,
+      0
+    ]
+  }
+]

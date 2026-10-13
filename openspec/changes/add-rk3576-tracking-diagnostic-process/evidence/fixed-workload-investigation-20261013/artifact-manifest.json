@@ -1,0 +1,21 @@
+{
+  "formal_candidate": {
+    "drone_tracker_node": "85131a03ff49e2711623e7edca8dda57298ea05aa5afe883df388de6cb16339b",
+    "rk3576_diagnostic_worker": "780b2cd710714a9f71ac83512da164a6365839b8f62511dc61f721fe9b85aaa5",
+    "rk3576_diagnostic_inspect": "bc00627919b9e60ea3f95b9ab17a9aad11103f6348c8bffd22850543179a8970"
+  },
+  "analysis_probe": "00138708b8e81ea661f63d19592477ecdeb660a76bebb6a683e8fa5173afa3b8",
+  "old_different_input_probe": "3471b56f099de7f3ee4213d9d6913431293064b20f43d2830982d21de05df7d2",
+  "archives": {
+    "source-observed.tar.gz": "93803543769d9ed269699873eb07bd809f5c8ab488586503f6ddfc415ae41a8a",
+    "install-precise.tar.gz": "f10073f8f1a6be919b792dd95971c763b7427cb8f7b72a6f92345f5246b24188",
+    "install-final.tar.gz": "b15399410409a2e922b5490f9cc5ba9a5538860c8c505071850e9f1bf0e3a4ca",
+    "install.tar.gz": "9e57b2958fe29c746703cd232d0cff859b7587976050a315361258c373e2e635",
+    "source-precise.tar.gz": "82734ccc28ac111731888d38a3a1c143fe0f365868e288111fcd9ac9c116a95f",
+    "executed-scripts.tar.gz": "a5ee4200cd99ec5da7b91408ac1c4cebbf288324a5f4569a059d889e36ff8713",
+    "install-mixed.tar.gz": "cf170f381fda885054d5c1054c86c0919f38af8f4fd4e276d1eb8c0cf6b5f187",
+    "source-mixed.tar.gz": "322f1363efbc8260e933f5f650676eb75c418bec81b8aae0fece31669b8174a7"
+  },
+  "mixed_analysis_probe": "e5277f8d21e732d602d9ba775c0c455e93ee069f0850e5d1a90911bb91992b8c",
+  "mixed_source_cpp_sha256": "f6aee7d242eb2f86668c595290a71610061db60d164184ba671bb301c71980d0"
+}

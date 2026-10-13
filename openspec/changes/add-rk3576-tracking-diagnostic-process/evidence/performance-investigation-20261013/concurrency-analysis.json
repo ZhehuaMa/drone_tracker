@@ -1,0 +1,3583 @@
+[
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window01/evidence/pair1",
+    "label": "off",
+    "idle_n": 20,
+    "idle_median_ns": 20633761.0,
+    "yolo_overlap_n": 28,
+    "yolo_overlap_median_ns": 22590738.0,
+    "initializations": [
+      {
+        "update_id": 152,
+        "init_ns": 8838825,
+        "concurrent_yolo_requests": [
+          27
+        ]
+      },
+      {
+        "update_id": 154,
+        "init_ns": 20466580,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 179,
+        "init_ns": 22714637,
+        "concurrent_yolo_requests": [
+          32
+        ]
+      },
+      {
+        "update_id": 191,
+        "init_ns": 22556482,
+        "concurrent_yolo_requests": [
+          34
+        ]
+      },
+      {
+        "update_id": 206,
+        "init_ns": 20240762,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 220,
+        "init_ns": 23083841,
+        "concurrent_yolo_requests": [
+          41
+        ]
+      },
+      {
+        "update_id": 240,
+        "init_ns": 22247064,
+        "concurrent_yolo_requests": [
+          45
+        ]
+      },
+      {
+        "update_id": 267,
+        "init_ns": 23327293,
+        "concurrent_yolo_requests": [
+          50
+        ]
+      },
+      {
+        "update_id": 269,
+        "init_ns": 21997691,
+        "concurrent_yolo_requests": [
+          51
+        ]
+      },
+      {
+        "update_id": 295,
+        "init_ns": 22262816,
+        "concurrent_yolo_requests": [
+          55
+        ]
+      },
+      {
+        "update_id": 305,
+        "init_ns": 22130158,
+        "concurrent_yolo_requests": [
+          57
+        ]
+      },
+      {
+        "update_id": 316,
+        "init_ns": 23486678,
+        "concurrent_yolo_requests": [
+          59
+        ]
+      },
+      {
+        "update_id": 318,
+        "init_ns": 20641802,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 332,
+        "init_ns": 21583127,
+        "concurrent_yolo_requests": [
+          63
+        ]
+      },
+      {
+        "update_id": 333,
+        "init_ns": 21243566,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 354,
+        "init_ns": 20765051,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 372,
+        "init_ns": 21629038,
+        "concurrent_yolo_requests": [
+          71
+        ]
+      },
+      {
+        "update_id": 373,
+        "init_ns": 20807699,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 393,
+        "init_ns": 23298969,
+        "concurrent_yolo_requests": [
+          75
+        ]
+      },
+      {
+        "update_id": 394,
+        "init_ns": 20487676,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 398,
+        "init_ns": 22662551,
+        "concurrent_yolo_requests": [
+          77
+        ]
+      },
+      {
+        "update_id": 399,
+        "init_ns": 20820785,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 423,
+        "init_ns": 21630223,
+        "concurrent_yolo_requests": [
+          81
+        ]
+      },
+      {
+        "update_id": 424,
+        "init_ns": 20457080,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 448,
+        "init_ns": 22256377,
+        "concurrent_yolo_requests": [
+          87
+        ]
+      },
+      {
+        "update_id": 449,
+        "init_ns": 20625720,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 474,
+        "init_ns": 21930095,
+        "concurrent_yolo_requests": [
+          91
+        ]
+      },
+      {
+        "update_id": 475,
+        "init_ns": 20448958,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 505,
+        "init_ns": 27849065,
+        "concurrent_yolo_requests": [
+          95
+        ]
+      },
+      {
+        "update_id": 506,
+        "init_ns": 20714738,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 524,
+        "init_ns": 22559284,
+        "concurrent_yolo_requests": [
+          100
+        ]
+      },
+      {
+        "update_id": 525,
+        "init_ns": 20252823,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 550,
+        "init_ns": 23130173,
+        "concurrent_yolo_requests": [
+          104
+        ]
+      },
+      {
+        "update_id": 551,
+        "init_ns": 20607008,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 581,
+        "init_ns": 23012771,
+        "concurrent_yolo_requests": [
+          108
+        ]
+      },
+      {
+        "update_id": 582,
+        "init_ns": 20643258,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 600,
+        "init_ns": 22622192,
+        "concurrent_yolo_requests": [
+          113
+        ]
+      },
+      {
+        "update_id": 602,
+        "init_ns": 20599251,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 621,
+        "init_ns": 22072278,
+        "concurrent_yolo_requests": [
+          117
+        ]
+      },
+      {
+        "update_id": 622,
+        "init_ns": 20967042,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 645,
+        "init_ns": 22465976,
+        "concurrent_yolo_requests": [
+          121
+        ]
+      },
+      {
+        "update_id": 668,
+        "init_ns": 23057842,
+        "concurrent_yolo_requests": [
+          127
+        ]
+      },
+      {
+        "update_id": 691,
+        "init_ns": 23674076,
+        "concurrent_yolo_requests": [
+          132
+        ]
+      },
+      {
+        "update_id": 713,
+        "init_ns": 22263814,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 745,
+        "init_ns": 22943990,
+        "concurrent_yolo_requests": [
+          143
+        ]
+      },
+      {
+        "update_id": 746,
+        "init_ns": 20030485,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 750,
+        "init_ns": 21624873,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 772,
+        "init_ns": 22973300,
+        "concurrent_yolo_requests": [
+          149
+        ]
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window01/evidence/pair1",
+    "label": "basic",
+    "idle_n": 15,
+    "idle_median_ns": 21438875,
+    "yolo_overlap_n": 21,
+    "yolo_overlap_median_ns": 22973009,
+    "initializations": [
+      {
+        "update_id": 152,
+        "init_ns": 22247782,
+        "concurrent_yolo_requests": [
+          33
+        ]
+      },
+      {
+        "update_id": 153,
+        "init_ns": 20418367,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 180,
+        "init_ns": 22103164,
+        "concurrent_yolo_requests": [
+          38
+        ]
+      },
+      {
+        "update_id": 228,
+        "init_ns": 22898023,
+        "concurrent_yolo_requests": [
+          45
+        ]
+      },
+      {
+        "update_id": 229,
+        "init_ns": 20704189,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 257,
+        "init_ns": 22660183,
+        "concurrent_yolo_requests": [
+          50
+        ]
+      },
+      {
+        "update_id": 276,
+        "init_ns": 23881916,
+        "concurrent_yolo_requests": [
+          53
+        ]
+      },
+      {
+        "update_id": 304,
+        "init_ns": 22973009,
+        "concurrent_yolo_requests": [
+          60
+        ]
+      },
+      {
+        "update_id": 305,
+        "init_ns": 22425545,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 325,
+        "init_ns": 23065295,
+        "concurrent_yolo_requests": [
+          64
+        ]
+      },
+      {
+        "update_id": 326,
+        "init_ns": 21055586,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 330,
+        "init_ns": 23690891,
+        "concurrent_yolo_requests": [
+          66
+        ]
+      },
+      {
+        "update_id": 331,
+        "init_ns": 21736017,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 340,
+        "init_ns": 24371461,
+        "concurrent_yolo_requests": [
+          69
+        ]
+      },
+      {
+        "update_id": 342,
+        "init_ns": 21488977,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 362,
+        "init_ns": 20577928,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 411,
+        "init_ns": 22027370,
+        "concurrent_yolo_requests": [
+          79
+        ]
+      },
+      {
+        "update_id": 432,
+        "init_ns": 21674368,
+        "concurrent_yolo_requests": [
+          85
+        ]
+      },
+      {
+        "update_id": 452,
+        "init_ns": 22918999,
+        "concurrent_yolo_requests": [
+          90
+        ]
+      },
+      {
+        "update_id": 454,
+        "init_ns": 20643429,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 496,
+        "init_ns": 22892119,
+        "concurrent_yolo_requests": [
+          99
+        ]
+      },
+      {
+        "update_id": 518,
+        "init_ns": 22449713,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 601,
+        "init_ns": 23143903,
+        "concurrent_yolo_requests": [
+          113
+        ]
+      },
+      {
+        "update_id": 616,
+        "init_ns": 23765275,
+        "concurrent_yolo_requests": [
+          117
+        ]
+      },
+      {
+        "update_id": 636,
+        "init_ns": 22744776,
+        "concurrent_yolo_requests": [
+          121
+        ]
+      },
+      {
+        "update_id": 679,
+        "init_ns": 21505870,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 747,
+        "init_ns": 22361824,
+        "concurrent_yolo_requests": [
+          133
+        ]
+      },
+      {
+        "update_id": 748,
+        "init_ns": 21829635,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 768,
+        "init_ns": 24512329,
+        "concurrent_yolo_requests": [
+          139
+        ]
+      },
+      {
+        "update_id": 769,
+        "init_ns": 21739057,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 796,
+        "init_ns": 23272195,
+        "concurrent_yolo_requests": [
+          144
+        ]
+      },
+      {
+        "update_id": 828,
+        "init_ns": 23511245,
+        "concurrent_yolo_requests": [
+          149
+        ]
+      },
+      {
+        "update_id": 829,
+        "init_ns": 21438875,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 848,
+        "init_ns": 23003696,
+        "concurrent_yolo_requests": [
+          154
+        ]
+      },
+      {
+        "update_id": 850,
+        "init_ns": 21397543,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 870,
+        "init_ns": 21211616,
+        "concurrent_yolo_requests": []
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window01/evidence/pair2",
+    "label": "basic",
+    "idle_n": 17,
+    "idle_median_ns": 23478522,
+    "yolo_overlap_n": 19,
+    "yolo_overlap_median_ns": 25078049,
+    "initializations": [
+      {
+        "update_id": 132,
+        "init_ns": 20650059,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 164,
+        "init_ns": 23199301,
+        "concurrent_yolo_requests": [
+          33
+        ]
+      },
+      {
+        "update_id": 186,
+        "init_ns": 23714793,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 254,
+        "init_ns": 25078049,
+        "concurrent_yolo_requests": [
+          45
+        ]
+      },
+      {
+        "update_id": 255,
+        "init_ns": 23527973,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 290,
+        "init_ns": 24095992,
+        "concurrent_yolo_requests": [
+          52
+        ]
+      },
+      {
+        "update_id": 302,
+        "init_ns": 22953067,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 336,
+        "init_ns": 24205773,
+        "concurrent_yolo_requests": [
+          61
+        ]
+      },
+      {
+        "update_id": 358,
+        "init_ns": 23478522,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 407,
+        "init_ns": 26585367,
+        "concurrent_yolo_requests": [
+          71
+        ]
+      },
+      {
+        "update_id": 430,
+        "init_ns": 24461811,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 448,
+        "init_ns": 24127427,
+        "concurrent_yolo_requests": [
+          80
+        ]
+      },
+      {
+        "update_id": 449,
+        "init_ns": 22836164,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 469,
+        "init_ns": 24800901,
+        "concurrent_yolo_requests": [
+          84
+        ]
+      },
+      {
+        "update_id": 489,
+        "init_ns": 24375007,
+        "concurrent_yolo_requests": [
+          87
+        ]
+      },
+      {
+        "update_id": 490,
+        "init_ns": 23248516,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 516,
+        "init_ns": 25168931,
+        "concurrent_yolo_requests": [
+          91
+        ]
+      },
+      {
+        "update_id": 517,
+        "init_ns": 24359961,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 544,
+        "init_ns": 27404123,
+        "concurrent_yolo_requests": [
+          99
+        ]
+      },
+      {
+        "update_id": 545,
+        "init_ns": 23982880,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 565,
+        "init_ns": 25455821,
+        "concurrent_yolo_requests": [
+          103
+        ]
+      },
+      {
+        "update_id": 566,
+        "init_ns": 25112957,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 570,
+        "init_ns": 27134903,
+        "concurrent_yolo_requests": [
+          105
+        ]
+      },
+      {
+        "update_id": 571,
+        "init_ns": 24471303,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 580,
+        "init_ns": 25172361,
+        "concurrent_yolo_requests": [
+          108
+        ]
+      },
+      {
+        "update_id": 581,
+        "init_ns": 23520539,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 611,
+        "init_ns": 25031407,
+        "concurrent_yolo_requests": [
+          116
+        ]
+      },
+      {
+        "update_id": 644,
+        "init_ns": 25749097,
+        "concurrent_yolo_requests": [
+          120
+        ]
+      },
+      {
+        "update_id": 678,
+        "init_ns": 23332738,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 696,
+        "init_ns": 24575300,
+        "concurrent_yolo_requests": [
+          129
+        ]
+      },
+      {
+        "update_id": 728,
+        "init_ns": 27471356,
+        "concurrent_yolo_requests": [
+          137
+        ]
+      },
+      {
+        "update_id": 729,
+        "init_ns": 23133341,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 772,
+        "init_ns": 26252197,
+        "concurrent_yolo_requests": [
+          146
+        ]
+      },
+      {
+        "update_id": 794,
+        "init_ns": 23349938,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 843,
+        "init_ns": 24473698,
+        "concurrent_yolo_requests": [
+          156
+        ]
+      },
+      {
+        "update_id": 850,
+        "init_ns": 23113537,
+        "concurrent_yolo_requests": []
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window01/evidence/pair2",
+    "label": "off",
+    "idle_n": 16,
+    "idle_median_ns": 23625264.5,
+    "yolo_overlap_n": 26,
+    "yolo_overlap_median_ns": 24603582.5,
+    "initializations": [
+      {
+        "update_id": 140,
+        "init_ns": 23067768,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 164,
+        "init_ns": 23839634,
+        "concurrent_yolo_requests": [
+          34
+        ]
+      },
+      {
+        "update_id": 165,
+        "init_ns": 23790346,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 190,
+        "init_ns": 25038805,
+        "concurrent_yolo_requests": [
+          38
+        ]
+      },
+      {
+        "update_id": 191,
+        "init_ns": 23601053,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 203,
+        "init_ns": 25073912,
+        "concurrent_yolo_requests": [
+          40
+        ]
+      },
+      {
+        "update_id": 238,
+        "init_ns": 23530441,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 247,
+        "init_ns": 25634440,
+        "concurrent_yolo_requests": [
+          50
+        ]
+      },
+      {
+        "update_id": 268,
+        "init_ns": 25081012,
+        "concurrent_yolo_requests": [
+          53
+        ]
+      },
+      {
+        "update_id": 269,
+        "init_ns": 23806216,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 292,
+        "init_ns": 28467536,
+        "concurrent_yolo_requests": [
+          59
+        ]
+      },
+      {
+        "update_id": 316,
+        "init_ns": 24509647,
+        "concurrent_yolo_requests": [
+          64
+        ]
+      },
+      {
+        "update_id": 317,
+        "init_ns": 23335320,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 371,
+        "init_ns": 24006844,
+        "concurrent_yolo_requests": [
+          73
+        ]
+      },
+      {
+        "update_id": 372,
+        "init_ns": 23479763,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 401,
+        "init_ns": 24318821,
+        "concurrent_yolo_requests": [
+          78
+        ]
+      },
+      {
+        "update_id": 427,
+        "init_ns": 25136812,
+        "concurrent_yolo_requests": [
+          82
+        ]
+      },
+      {
+        "update_id": 429,
+        "init_ns": 23898328,
+        "concurrent_yolo_requests": [
+          83
+        ]
+      },
+      {
+        "update_id": 448,
+        "init_ns": 25252622,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 468,
+        "init_ns": 24464769,
+        "concurrent_yolo_requests": [
+          90
+        ]
+      },
+      {
+        "update_id": 488,
+        "init_ns": 25785334,
+        "concurrent_yolo_requests": [
+          94
+        ]
+      },
+      {
+        "update_id": 516,
+        "init_ns": 25222732,
+        "concurrent_yolo_requests": [
+          100
+        ]
+      },
+      {
+        "update_id": 517,
+        "init_ns": 23649476,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 542,
+        "init_ns": 23181887,
+        "concurrent_yolo_requests": [
+          104
+        ]
+      },
+      {
+        "update_id": 543,
+        "init_ns": 21835836,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 555,
+        "init_ns": 22715877,
+        "concurrent_yolo_requests": [
+          106
+        ]
+      },
+      {
+        "update_id": 580,
+        "init_ns": 23750891,
+        "concurrent_yolo_requests": [
+          113
+        ]
+      },
+      {
+        "update_id": 603,
+        "init_ns": 24580509,
+        "concurrent_yolo_requests": [
+          119
+        ]
+      },
+      {
+        "update_id": 627,
+        "init_ns": 25360274,
+        "concurrent_yolo_requests": [
+          125
+        ]
+      },
+      {
+        "update_id": 629,
+        "init_ns": 23678289,
+        "concurrent_yolo_requests": [
+          126
+        ]
+      },
+      {
+        "update_id": 654,
+        "init_ns": 24283305,
+        "concurrent_yolo_requests": [
+          129
+        ]
+      },
+      {
+        "update_id": 655,
+        "init_ns": 23388761,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 680,
+        "init_ns": 24626656,
+        "concurrent_yolo_requests": [
+          135
+        ]
+      },
+      {
+        "update_id": 681,
+        "init_ns": 23693358,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 706,
+        "init_ns": 24658013,
+        "concurrent_yolo_requests": [
+          139
+        ]
+      },
+      {
+        "update_id": 707,
+        "init_ns": 23840419,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 719,
+        "init_ns": 24966029,
+        "concurrent_yolo_requests": [
+          141
+        ]
+      },
+      {
+        "update_id": 748,
+        "init_ns": 25180776,
+        "concurrent_yolo_requests": [
+          149
+        ]
+      },
+      {
+        "update_id": 749,
+        "init_ns": 23451591,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 770,
+        "init_ns": 23813542,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 792,
+        "init_ns": 24060243,
+        "concurrent_yolo_requests": [
+          158
+        ]
+      },
+      {
+        "update_id": 823,
+        "init_ns": 23717046,
+        "concurrent_yolo_requests": []
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair3",
+    "label": "disk",
+    "idle_n": 10,
+    "idle_median_ns": 7395857.0,
+    "yolo_overlap_n": 20,
+    "yolo_overlap_median_ns": 8843369.5,
+    "initializations": [
+      {
+        "update_id": 155,
+        "init_ns": 24250175,
+        "concurrent_yolo_requests": [
+          31
+        ]
+      },
+      {
+        "update_id": 201,
+        "init_ns": 23806060,
+        "concurrent_yolo_requests": [
+          38
+        ]
+      },
+      {
+        "update_id": 222,
+        "init_ns": 22178671,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 271,
+        "init_ns": 25096126,
+        "concurrent_yolo_requests": [
+          47
+        ]
+      },
+      {
+        "update_id": 292,
+        "init_ns": 24314407,
+        "concurrent_yolo_requests": [
+          53
+        ]
+      },
+      {
+        "update_id": 316,
+        "init_ns": 24467364,
+        "concurrent_yolo_requests": [
+          58
+        ]
+      },
+      {
+        "update_id": 317,
+        "init_ns": 22624409,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 344,
+        "init_ns": 23899027,
+        "concurrent_yolo_requests": [
+          65
+        ]
+      },
+      {
+        "update_id": 372,
+        "init_ns": 25550135,
+        "concurrent_yolo_requests": [
+          71
+        ]
+      },
+      {
+        "update_id": 374,
+        "init_ns": 22758209,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 394,
+        "init_ns": 22935830,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 415,
+        "init_ns": 7447647,
+        "concurrent_yolo_requests": [
+          79
+        ]
+      },
+      {
+        "update_id": 416,
+        "init_ns": 6520057,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 476,
+        "init_ns": 8464163,
+        "concurrent_yolo_requests": [
+          91
+        ]
+      },
+      {
+        "update_id": 492,
+        "init_ns": 8647071,
+        "concurrent_yolo_requests": [
+          95
+        ]
+      },
+      {
+        "update_id": 495,
+        "init_ns": 6526634,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 520,
+        "init_ns": 9351681,
+        "concurrent_yolo_requests": [
+          100
+        ]
+      },
+      {
+        "update_id": 564,
+        "init_ns": 7836069,
+        "concurrent_yolo_requests": [
+          107
+        ]
+      },
+      {
+        "update_id": 565,
+        "init_ns": 6574871,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 584,
+        "init_ns": 8479432,
+        "concurrent_yolo_requests": [
+          112
+        ]
+      },
+      {
+        "update_id": 605,
+        "init_ns": 7994407,
+        "concurrent_yolo_requests": [
+          116
+        ]
+      },
+      {
+        "update_id": 653,
+        "init_ns": 7943461,
+        "concurrent_yolo_requests": [
+          120
+        ]
+      },
+      {
+        "update_id": 700,
+        "init_ns": 7351913,
+        "concurrent_yolo_requests": [
+          127
+        ]
+      },
+      {
+        "update_id": 740,
+        "init_ns": 8877505,
+        "concurrent_yolo_requests": [
+          135
+        ]
+      },
+      {
+        "update_id": 782,
+        "init_ns": 7127334,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 820,
+        "init_ns": 8555638,
+        "concurrent_yolo_requests": [
+          149
+        ]
+      },
+      {
+        "update_id": 841,
+        "init_ns": 8809234,
+        "concurrent_yolo_requests": [
+          153
+        ]
+      },
+      {
+        "update_id": 842,
+        "init_ns": 7664380,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 862,
+        "init_ns": 6456119,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 883,
+        "init_ns": 9051416,
+        "concurrent_yolo_requests": [
+          162
+        ]
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair3",
+    "label": "ram",
+    "idle_n": 15,
+    "idle_median_ns": 22598057,
+    "yolo_overlap_n": 27,
+    "yolo_overlap_median_ns": 24512579,
+    "initializations": [
+      {
+        "update_id": 154,
+        "init_ns": 25477886,
+        "concurrent_yolo_requests": [
+          29
+        ]
+      },
+      {
+        "update_id": 176,
+        "init_ns": 23339101,
+        "concurrent_yolo_requests": [
+          35
+        ]
+      },
+      {
+        "update_id": 177,
+        "init_ns": 21896659,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 200,
+        "init_ns": 25352177,
+        "concurrent_yolo_requests": [
+          41
+        ]
+      },
+      {
+        "update_id": 218,
+        "init_ns": 22734190,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 232,
+        "init_ns": 24519126,
+        "concurrent_yolo_requests": [
+          48
+        ]
+      },
+      {
+        "update_id": 257,
+        "init_ns": 24512579,
+        "concurrent_yolo_requests": [
+          52
+        ]
+      },
+      {
+        "update_id": 258,
+        "init_ns": 22012475,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 300,
+        "init_ns": 23597906,
+        "concurrent_yolo_requests": [
+          60
+        ]
+      },
+      {
+        "update_id": 330,
+        "init_ns": 22781796,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 348,
+        "init_ns": 23819014,
+        "concurrent_yolo_requests": [
+          68
+        ]
+      },
+      {
+        "update_id": 350,
+        "init_ns": 22965316,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 369,
+        "init_ns": 23725974,
+        "concurrent_yolo_requests": [
+          72
+        ]
+      },
+      {
+        "update_id": 370,
+        "init_ns": 22803107,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 374,
+        "init_ns": 24880272,
+        "concurrent_yolo_requests": [
+          74
+        ]
+      },
+      {
+        "update_id": 375,
+        "init_ns": 22504692,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 384,
+        "init_ns": 23700392,
+        "concurrent_yolo_requests": [
+          77
+        ]
+      },
+      {
+        "update_id": 385,
+        "init_ns": 22318452,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 412,
+        "init_ns": 24159449,
+        "concurrent_yolo_requests": [
+          82
+        ]
+      },
+      {
+        "update_id": 423,
+        "init_ns": 24392420,
+        "concurrent_yolo_requests": [
+          86
+        ]
+      },
+      {
+        "update_id": 438,
+        "init_ns": 22450568,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 472,
+        "init_ns": 26233702,
+        "concurrent_yolo_requests": [
+          96
+        ]
+      },
+      {
+        "update_id": 499,
+        "init_ns": 25229820,
+        "concurrent_yolo_requests": [
+          101
+        ]
+      },
+      {
+        "update_id": 511,
+        "init_ns": 23886051,
+        "concurrent_yolo_requests": [
+          104
+        ]
+      },
+      {
+        "update_id": 532,
+        "init_ns": 26551293,
+        "concurrent_yolo_requests": [
+          109
+        ]
+      },
+      {
+        "update_id": 533,
+        "init_ns": 22598057,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 556,
+        "init_ns": 26584104,
+        "concurrent_yolo_requests": [
+          115
+        ]
+      },
+      {
+        "update_id": 558,
+        "init_ns": 22484049,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 578,
+        "init_ns": 22752761,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 596,
+        "init_ns": 24605600,
+        "concurrent_yolo_requests": [
+          123
+        ]
+      },
+      {
+        "update_id": 621,
+        "init_ns": 25989939,
+        "concurrent_yolo_requests": [
+          127
+        ]
+      },
+      {
+        "update_id": 660,
+        "init_ns": 24801279,
+        "concurrent_yolo_requests": [
+          134
+        ]
+      },
+      {
+        "update_id": 688,
+        "init_ns": 24123786,
+        "concurrent_yolo_requests": [
+          139
+        ]
+      },
+      {
+        "update_id": 700,
+        "init_ns": 24390255,
+        "concurrent_yolo_requests": [
+          143
+        ]
+      },
+      {
+        "update_id": 716,
+        "init_ns": 24278717,
+        "concurrent_yolo_requests": [
+          147
+        ]
+      },
+      {
+        "update_id": 717,
+        "init_ns": 22741636,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 740,
+        "init_ns": 24821473,
+        "concurrent_yolo_requests": [
+          153
+        ]
+      },
+      {
+        "update_id": 741,
+        "init_ns": 22591554,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 768,
+        "init_ns": 24693600,
+        "concurrent_yolo_requests": [
+          158
+        ]
+      },
+      {
+        "update_id": 781,
+        "init_ns": 23770534,
+        "concurrent_yolo_requests": [
+          161
+        ]
+      },
+      {
+        "update_id": 782,
+        "init_ns": 23151358,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 824,
+        "init_ns": 23415305,
+        "concurrent_yolo_requests": [
+          170
+        ]
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair4",
+    "label": "ram",
+    "idle_n": 17,
+    "idle_median_ns": 6437683,
+    "yolo_overlap_n": 25,
+    "yolo_overlap_median_ns": 8170922,
+    "initializations": [
+      {
+        "update_id": 140,
+        "init_ns": 7976116,
+        "concurrent_yolo_requests": [
+          28
+        ]
+      },
+      {
+        "update_id": 174,
+        "init_ns": 6163092,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 188,
+        "init_ns": 8226602,
+        "concurrent_yolo_requests": [
+          36
+        ]
+      },
+      {
+        "update_id": 214,
+        "init_ns": 8812874,
+        "concurrent_yolo_requests": [
+          40
+        ]
+      },
+      {
+        "update_id": 215,
+        "init_ns": 6807383,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 218,
+        "init_ns": 6506152,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 228,
+        "init_ns": 7765680,
+        "concurrent_yolo_requests": [
+          43
+        ]
+      },
+      {
+        "update_id": 242,
+        "init_ns": 8060471,
+        "concurrent_yolo_requests": [
+          46
+        ]
+      },
+      {
+        "update_id": 261,
+        "init_ns": 7976619,
+        "concurrent_yolo_requests": [
+          50
+        ]
+      },
+      {
+        "update_id": 262,
+        "init_ns": 7266062,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 286,
+        "init_ns": 8991507,
+        "concurrent_yolo_requests": [
+          53
+        ]
+      },
+      {
+        "update_id": 304,
+        "init_ns": 9329316,
+        "concurrent_yolo_requests": [
+          57
+        ]
+      },
+      {
+        "update_id": 305,
+        "init_ns": 6437683,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 348,
+        "init_ns": 9531807,
+        "concurrent_yolo_requests": [
+          66
+        ]
+      },
+      {
+        "update_id": 349,
+        "init_ns": 6239623,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 376,
+        "init_ns": 8904878,
+        "concurrent_yolo_requests": [
+          73
+        ]
+      },
+      {
+        "update_id": 379,
+        "init_ns": 6410273,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 388,
+        "init_ns": 7651591,
+        "concurrent_yolo_requests": [
+          76
+        ]
+      },
+      {
+        "update_id": 391,
+        "init_ns": 6308116,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 411,
+        "init_ns": 7807697,
+        "concurrent_yolo_requests": [
+          81
+        ]
+      },
+      {
+        "update_id": 412,
+        "init_ns": 6681178,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 429,
+        "init_ns": 7862515,
+        "concurrent_yolo_requests": [
+          86
+        ]
+      },
+      {
+        "update_id": 483,
+        "init_ns": 8685695,
+        "concurrent_yolo_requests": [
+          93
+        ]
+      },
+      {
+        "update_id": 508,
+        "init_ns": 8044158,
+        "concurrent_yolo_requests": [
+          98
+        ]
+      },
+      {
+        "update_id": 509,
+        "init_ns": 6151774,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 539,
+        "init_ns": 9201108,
+        "concurrent_yolo_requests": [
+          104
+        ]
+      },
+      {
+        "update_id": 540,
+        "init_ns": 6812601,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 562,
+        "init_ns": 6488002,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 609,
+        "init_ns": 8062608,
+        "concurrent_yolo_requests": [
+          114
+        ]
+      },
+      {
+        "update_id": 610,
+        "init_ns": 6922382,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 628,
+        "init_ns": 7393118,
+        "concurrent_yolo_requests": [
+          119
+        ]
+      },
+      {
+        "update_id": 678,
+        "init_ns": 6321557,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 696,
+        "init_ns": 8170922,
+        "concurrent_yolo_requests": [
+          129
+        ]
+      },
+      {
+        "update_id": 715,
+        "init_ns": 6171381,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 748,
+        "init_ns": 8965465,
+        "concurrent_yolo_requests": [
+          139
+        ]
+      },
+      {
+        "update_id": 775,
+        "init_ns": 8756396,
+        "concurrent_yolo_requests": [
+          144
+        ]
+      },
+      {
+        "update_id": 789,
+        "init_ns": 8242878,
+        "concurrent_yolo_requests": [
+          147
+        ]
+      },
+      {
+        "update_id": 790,
+        "init_ns": 6315242,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 816,
+        "init_ns": 7654015,
+        "concurrent_yolo_requests": [
+          154
+        ]
+      },
+      {
+        "update_id": 842,
+        "init_ns": 8471674,
+        "concurrent_yolo_requests": [
+          158
+        ]
+      },
+      {
+        "update_id": 843,
+        "init_ns": 6484763,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 860,
+        "init_ns": 7714196,
+        "concurrent_yolo_requests": [
+          162
+        ]
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair4",
+    "label": "disk",
+    "idle_n": 11,
+    "idle_median_ns": 23665278,
+    "yolo_overlap_n": 23,
+    "yolo_overlap_median_ns": 25234844,
+    "initializations": [
+      {
+        "update_id": 160,
+        "init_ns": 26337167,
+        "concurrent_yolo_requests": [
+          34
+        ]
+      },
+      {
+        "update_id": 208,
+        "init_ns": 25100311,
+        "concurrent_yolo_requests": [
+          41
+        ]
+      },
+      {
+        "update_id": 238,
+        "init_ns": 24527027,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 252,
+        "init_ns": 25366076,
+        "concurrent_yolo_requests": [
+          50
+        ]
+      },
+      {
+        "update_id": 272,
+        "init_ns": 24738850,
+        "concurrent_yolo_requests": [
+          54
+        ]
+      },
+      {
+        "update_id": 274,
+        "init_ns": 23351472,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 297,
+        "init_ns": 24864335,
+        "concurrent_yolo_requests": [
+          60
+        ]
+      },
+      {
+        "update_id": 317,
+        "init_ns": 24686139,
+        "concurrent_yolo_requests": [
+          63
+        ]
+      },
+      {
+        "update_id": 346,
+        "init_ns": 23752451,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 368,
+        "init_ns": 25569816,
+        "concurrent_yolo_requests": [
+          71
+        ]
+      },
+      {
+        "update_id": 412,
+        "init_ns": 26479076,
+        "concurrent_yolo_requests": [
+          79
+        ]
+      },
+      {
+        "update_id": 440,
+        "init_ns": 24751926,
+        "concurrent_yolo_requests": [
+          84
+        ]
+      },
+      {
+        "update_id": 452,
+        "init_ns": 25999564,
+        "concurrent_yolo_requests": [
+          88
+        ]
+      },
+      {
+        "update_id": 467,
+        "init_ns": 24856745,
+        "concurrent_yolo_requests": [
+          91
+        ]
+      },
+      {
+        "update_id": 468,
+        "init_ns": 23665278,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 492,
+        "init_ns": 27559070,
+        "concurrent_yolo_requests": [
+          97
+        ]
+      },
+      {
+        "update_id": 493,
+        "init_ns": 24041735,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 514,
+        "init_ns": 23852238,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 536,
+        "init_ns": 25463010,
+        "concurrent_yolo_requests": [
+          106
+        ]
+      },
+      {
+        "update_id": 580,
+        "init_ns": 24824921,
+        "concurrent_yolo_requests": [
+          114
+        ]
+      },
+      {
+        "update_id": 602,
+        "init_ns": 23026728,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 651,
+        "init_ns": 25074862,
+        "concurrent_yolo_requests": [
+          124
+        ]
+      },
+      {
+        "update_id": 672,
+        "init_ns": 24243342,
+        "concurrent_yolo_requests": [
+          130
+        ]
+      },
+      {
+        "update_id": 692,
+        "init_ns": 25234844,
+        "concurrent_yolo_requests": [
+          134
+        ]
+      },
+      {
+        "update_id": 693,
+        "init_ns": 23158886,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 716,
+        "init_ns": 25625683,
+        "concurrent_yolo_requests": [
+          140
+        ]
+      },
+      {
+        "update_id": 741,
+        "init_ns": 25594419,
+        "concurrent_yolo_requests": [
+          144
+        ]
+      },
+      {
+        "update_id": 742,
+        "init_ns": 24114618,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 797,
+        "init_ns": 24299059,
+        "concurrent_yolo_requests": [
+          152
+        ]
+      },
+      {
+        "update_id": 808,
+        "init_ns": 26336016,
+        "concurrent_yolo_requests": [
+          154
+        ]
+      },
+      {
+        "update_id": 810,
+        "init_ns": 22992098,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 821,
+        "init_ns": 25974339,
+        "concurrent_yolo_requests": [
+          157
+        ]
+      },
+      {
+        "update_id": 822,
+        "init_ns": 23560236,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 848,
+        "init_ns": 24762058,
+        "concurrent_yolo_requests": [
+          164
+        ]
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair7",
+    "label": "off-a",
+    "idle_n": 15,
+    "idle_median_ns": 23316789,
+    "yolo_overlap_n": 28,
+    "yolo_overlap_median_ns": 25403935.0,
+    "initializations": [
+      {
+        "update_id": 156,
+        "init_ns": 25386054,
+        "concurrent_yolo_requests": [
+          34
+        ]
+      },
+      {
+        "update_id": 184,
+        "init_ns": 25525911,
+        "concurrent_yolo_requests": [
+          40
+        ]
+      },
+      {
+        "update_id": 185,
+        "init_ns": 23303542,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 211,
+        "init_ns": 24875554,
+        "concurrent_yolo_requests": [
+          45
+        ]
+      },
+      {
+        "update_id": 223,
+        "init_ns": 24800841,
+        "concurrent_yolo_requests": [
+          47
+        ]
+      },
+      {
+        "update_id": 244,
+        "init_ns": 25429469,
+        "concurrent_yolo_requests": [
+          51
+        ]
+      },
+      {
+        "update_id": 245,
+        "init_ns": 23796676,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 277,
+        "init_ns": 25376727,
+        "concurrent_yolo_requests": [
+          58
+        ]
+      },
+      {
+        "update_id": 309,
+        "init_ns": 25421816,
+        "concurrent_yolo_requests": [
+          63
+        ]
+      },
+      {
+        "update_id": 310,
+        "init_ns": 23201616,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 319,
+        "init_ns": 25355774,
+        "concurrent_yolo_requests": [
+          65
+        ]
+      },
+      {
+        "update_id": 321,
+        "init_ns": 23711414,
+        "concurrent_yolo_requests": [
+          66
+        ]
+      },
+      {
+        "update_id": 322,
+        "init_ns": 24837537,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 326,
+        "init_ns": 24039756,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 360,
+        "init_ns": 25013679,
+        "concurrent_yolo_requests": [
+          73
+        ]
+      },
+      {
+        "update_id": 371,
+        "init_ns": 26907069,
+        "concurrent_yolo_requests": [
+          76
+        ]
+      },
+      {
+        "update_id": 372,
+        "init_ns": 23316789,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 410,
+        "init_ns": 25145133,
+        "concurrent_yolo_requests": [
+          83
+        ]
+      },
+      {
+        "update_id": 411,
+        "init_ns": 23885007,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 431,
+        "init_ns": 26568130,
+        "concurrent_yolo_requests": [
+          89
+        ]
+      },
+      {
+        "update_id": 451,
+        "init_ns": 25601724,
+        "concurrent_yolo_requests": [
+          93
+        ]
+      },
+      {
+        "update_id": 480,
+        "init_ns": 24967552,
+        "concurrent_yolo_requests": [
+          99
+        ]
+      },
+      {
+        "update_id": 500,
+        "init_ns": 25015626,
+        "concurrent_yolo_requests": [
+          104
+        ]
+      },
+      {
+        "update_id": 528,
+        "init_ns": 25749340,
+        "concurrent_yolo_requests": [
+          109
+        ]
+      },
+      {
+        "update_id": 529,
+        "init_ns": 23049254,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 549,
+        "init_ns": 25241931,
+        "concurrent_yolo_requests": [
+          113
+        ]
+      },
+      {
+        "update_id": 550,
+        "init_ns": 23143300,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 555,
+        "init_ns": 24806272,
+        "concurrent_yolo_requests": [
+          115
+        ]
+      },
+      {
+        "update_id": 556,
+        "init_ns": 22810305,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 568,
+        "init_ns": 25780948,
+        "concurrent_yolo_requests": [
+          119
+        ]
+      },
+      {
+        "update_id": 609,
+        "init_ns": 25567067,
+        "concurrent_yolo_requests": [
+          127
+        ]
+      },
+      {
+        "update_id": 642,
+        "init_ns": 26595850,
+        "concurrent_yolo_requests": [
+          131
+        ]
+      },
+      {
+        "update_id": 652,
+        "init_ns": 25200955,
+        "concurrent_yolo_requests": [
+          133
+        ]
+      },
+      {
+        "update_id": 680,
+        "init_ns": 24648325,
+        "concurrent_yolo_requests": [
+          138
+        ]
+      },
+      {
+        "update_id": 709,
+        "init_ns": 25577468,
+        "concurrent_yolo_requests": [
+          143
+        ]
+      },
+      {
+        "update_id": 710,
+        "init_ns": 23629827,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 728,
+        "init_ns": 23693831,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 773,
+        "init_ns": 25615969,
+        "concurrent_yolo_requests": [
+          152
+        ]
+      },
+      {
+        "update_id": 774,
+        "init_ns": 23297057,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 778,
+        "init_ns": 22984964,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 791,
+        "init_ns": 25767722,
+        "concurrent_yolo_requests": [
+          157
+        ]
+      },
+      {
+        "update_id": 806,
+        "init_ns": 23531074,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 823,
+        "init_ns": 25899121,
+        "concurrent_yolo_requests": [
+          164
+        ]
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window02/evidence/pair7",
+    "label": "off-b",
+    "idle_n": 18,
+    "idle_median_ns": 22887462.5,
+    "yolo_overlap_n": 27,
+    "yolo_overlap_median_ns": 24423318,
+    "initializations": [
+      {
+        "update_id": 158,
+        "init_ns": 25057651,
+        "concurrent_yolo_requests": [
+          29
+        ]
+      },
+      {
+        "update_id": 159,
+        "init_ns": 22860022,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 167,
+        "init_ns": 25099809,
+        "concurrent_yolo_requests": [
+          31
+        ]
+      },
+      {
+        "update_id": 169,
+        "init_ns": 22851110,
+        "concurrent_yolo_requests": [
+          32
+        ]
+      },
+      {
+        "update_id": 170,
+        "init_ns": 23966169,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 191,
+        "init_ns": 24469535,
+        "concurrent_yolo_requests": [
+          38
+        ]
+      },
+      {
+        "update_id": 222,
+        "init_ns": 23570084,
+        "concurrent_yolo_requests": [
+          42
+        ]
+      },
+      {
+        "update_id": 249,
+        "init_ns": 24729816,
+        "concurrent_yolo_requests": [
+          46
+        ]
+      },
+      {
+        "update_id": 250,
+        "init_ns": 22895492,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 273,
+        "init_ns": 24442794,
+        "concurrent_yolo_requests": [
+          49
+        ]
+      },
+      {
+        "update_id": 274,
+        "init_ns": 23458501,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 292,
+        "init_ns": 22785274,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 318,
+        "init_ns": 22942115,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 335,
+        "init_ns": 24082862,
+        "concurrent_yolo_requests": [
+          61
+        ]
+      },
+      {
+        "update_id": 373,
+        "init_ns": 23038287,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 399,
+        "init_ns": 24283007,
+        "concurrent_yolo_requests": [
+          70
+        ]
+      },
+      {
+        "update_id": 405,
+        "init_ns": 24709027,
+        "concurrent_yolo_requests": [
+          73
+        ]
+      },
+      {
+        "update_id": 424,
+        "init_ns": 23853892,
+        "concurrent_yolo_requests": [
+          77
+        ]
+      },
+      {
+        "update_id": 448,
+        "init_ns": 24751631,
+        "concurrent_yolo_requests": [
+          83
+        ]
+      },
+      {
+        "update_id": 449,
+        "init_ns": 23380668,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 469,
+        "init_ns": 23615063,
+        "concurrent_yolo_requests": [
+          87
+        ]
+      },
+      {
+        "update_id": 470,
+        "init_ns": 22408076,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 474,
+        "init_ns": 24423318,
+        "concurrent_yolo_requests": [
+          89
+        ]
+      },
+      {
+        "update_id": 475,
+        "init_ns": 22984624,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 483,
+        "init_ns": 25489746,
+        "concurrent_yolo_requests": [
+          92
+        ]
+      },
+      {
+        "update_id": 484,
+        "init_ns": 23148560,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 515,
+        "init_ns": 24914599,
+        "concurrent_yolo_requests": [
+          99
+        ]
+      },
+      {
+        "update_id": 544,
+        "init_ns": 24255892,
+        "concurrent_yolo_requests": [
+          103
+        ]
+      },
+      {
+        "update_id": 564,
+        "init_ns": 24102500,
+        "concurrent_yolo_requests": [
+          108
+        ]
+      },
+      {
+        "update_id": 565,
+        "init_ns": 22879433,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 587,
+        "init_ns": 25924534,
+        "concurrent_yolo_requests": [
+          114
+        ]
+      },
+      {
+        "update_id": 608,
+        "init_ns": 24395269,
+        "concurrent_yolo_requests": [
+          117
+        ]
+      },
+      {
+        "update_id": 643,
+        "init_ns": 24410599,
+        "concurrent_yolo_requests": [
+          123
+        ]
+      },
+      {
+        "update_id": 644,
+        "init_ns": 22855345,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 667,
+        "init_ns": 25267947,
+        "concurrent_yolo_requests": [
+          129
+        ]
+      },
+      {
+        "update_id": 669,
+        "init_ns": 23649492,
+        "concurrent_yolo_requests": [
+          130
+        ]
+      },
+      {
+        "update_id": 688,
+        "init_ns": 22721489,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 694,
+        "init_ns": 22717488,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 711,
+        "init_ns": 24006433,
+        "concurrent_yolo_requests": [
+          137
+        ]
+      },
+      {
+        "update_id": 712,
+        "init_ns": 22816789,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 732,
+        "init_ns": 24134700,
+        "concurrent_yolo_requests": [
+          142
+        ]
+      },
+      {
+        "update_id": 756,
+        "init_ns": 24554214,
+        "concurrent_yolo_requests": [
+          147
+        ]
+      },
+      {
+        "update_id": 782,
+        "init_ns": 23598947,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 798,
+        "init_ns": 24456130,
+        "concurrent_yolo_requests": [
+          154
+        ]
+      },
+      {
+        "update_id": 799,
+        "init_ns": 22513301,
+        "concurrent_yolo_requests": []
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window03/evidence/pair5",
+    "label": "shared",
+    "idle_n": 11,
+    "idle_median_ns": 22816551,
+    "yolo_overlap_n": 21,
+    "yolo_overlap_median_ns": 24039998,
+    "initializations": [
+      {
+        "update_id": 153,
+        "init_ns": 7935242,
+        "concurrent_yolo_requests": [
+          30
+        ]
+      },
+      {
+        "update_id": 164,
+        "init_ns": 8798016,
+        "concurrent_yolo_requests": [
+          33
+        ]
+      },
+      {
+        "update_id": 190,
+        "init_ns": 23255398,
+        "concurrent_yolo_requests": [
+          37
+        ]
+      },
+      {
+        "update_id": 245,
+        "init_ns": 23892121,
+        "concurrent_yolo_requests": [
+          46
+        ]
+      },
+      {
+        "update_id": 260,
+        "init_ns": 24521615,
+        "concurrent_yolo_requests": [
+          49
+        ]
+      },
+      {
+        "update_id": 285,
+        "init_ns": 25049624,
+        "concurrent_yolo_requests": [
+          53
+        ]
+      },
+      {
+        "update_id": 286,
+        "init_ns": 23175651,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 320,
+        "init_ns": 24596680,
+        "concurrent_yolo_requests": [
+          59
+        ]
+      },
+      {
+        "update_id": 342,
+        "init_ns": 22809918,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 389,
+        "init_ns": 23467877,
+        "concurrent_yolo_requests": [
+          69
+        ]
+      },
+      {
+        "update_id": 390,
+        "init_ns": 22549561,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 408,
+        "init_ns": 24130516,
+        "concurrent_yolo_requests": [
+          74
+        ]
+      },
+      {
+        "update_id": 428,
+        "init_ns": 24114196,
+        "concurrent_yolo_requests": [
+          78
+        ]
+      },
+      {
+        "update_id": 429,
+        "init_ns": 22194934,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 540,
+        "init_ns": 24732458,
+        "concurrent_yolo_requests": [
+          96
+        ]
+      },
+      {
+        "update_id": 570,
+        "init_ns": 23285989,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 592,
+        "init_ns": 24092667,
+        "concurrent_yolo_requests": [
+          105
+        ]
+      },
+      {
+        "update_id": 620,
+        "init_ns": 23422112,
+        "concurrent_yolo_requests": [
+          111
+        ]
+      },
+      {
+        "update_id": 621,
+        "init_ns": 23230523,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 641,
+        "init_ns": 24300844,
+        "concurrent_yolo_requests": [
+          115
+        ]
+      },
+      {
+        "update_id": 642,
+        "init_ns": 23053783,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 646,
+        "init_ns": 25002487,
+        "concurrent_yolo_requests": [
+          117
+        ]
+      },
+      {
+        "update_id": 647,
+        "init_ns": 22568143,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 670,
+        "init_ns": 23995053,
+        "concurrent_yolo_requests": [
+          121
+        ]
+      },
+      {
+        "update_id": 687,
+        "init_ns": 23969429,
+        "concurrent_yolo_requests": [
+          125
+        ]
+      },
+      {
+        "update_id": 720,
+        "init_ns": 24039998,
+        "concurrent_yolo_requests": [
+          130
+        ]
+      },
+      {
+        "update_id": 763,
+        "init_ns": 22816551,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 800,
+        "init_ns": 23518905,
+        "concurrent_yolo_requests": [
+          143
+        ]
+      },
+      {
+        "update_id": 801,
+        "init_ns": 22925230,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 828,
+        "init_ns": 22912102,
+        "concurrent_yolo_requests": [
+          148
+        ]
+      },
+      {
+        "update_id": 876,
+        "init_ns": 25041665,
+        "concurrent_yolo_requests": [
+          155
+        ]
+      },
+      {
+        "update_id": 877,
+        "init_ns": 22403373,
+        "concurrent_yolo_requests": []
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window03/evidence/pair5",
+    "label": "isolated",
+    "idle_n": 14,
+    "idle_median_ns": 21267195.5,
+    "yolo_overlap_n": 23,
+    "yolo_overlap_median_ns": 22965167,
+    "initializations": [
+      {
+        "update_id": 141,
+        "init_ns": 20764793,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 146,
+        "init_ns": 21257735,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 158,
+        "init_ns": 21015352,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 172,
+        "init_ns": 22889328,
+        "concurrent_yolo_requests": [
+          40
+        ]
+      },
+      {
+        "update_id": 191,
+        "init_ns": 23774386,
+        "concurrent_yolo_requests": [
+          45
+        ]
+      },
+      {
+        "update_id": 220,
+        "init_ns": 22885553,
+        "concurrent_yolo_requests": [
+          50
+        ]
+      },
+      {
+        "update_id": 242,
+        "init_ns": 22833772,
+        "concurrent_yolo_requests": [
+          55
+        ]
+      },
+      {
+        "update_id": 282,
+        "init_ns": 22965167,
+        "concurrent_yolo_requests": [
+          61
+        ]
+      },
+      {
+        "update_id": 283,
+        "init_ns": 21276656,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 301,
+        "init_ns": 22731759,
+        "concurrent_yolo_requests": [
+          64
+        ]
+      },
+      {
+        "update_id": 302,
+        "init_ns": 21670913,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 316,
+        "init_ns": 22178733,
+        "concurrent_yolo_requests": [
+          68
+        ]
+      },
+      {
+        "update_id": 339,
+        "init_ns": 23064749,
+        "concurrent_yolo_requests": [
+          73
+        ]
+      },
+      {
+        "update_id": 340,
+        "init_ns": 21101102,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 360,
+        "init_ns": 22836390,
+        "concurrent_yolo_requests": [
+          78
+        ]
+      },
+      {
+        "update_id": 361,
+        "init_ns": 20957201,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 387,
+        "init_ns": 22996523,
+        "concurrent_yolo_requests": [
+          83
+        ]
+      },
+      {
+        "update_id": 398,
+        "init_ns": 22585739,
+        "concurrent_yolo_requests": [
+          85
+        ]
+      },
+      {
+        "update_id": 414,
+        "init_ns": 20838245,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 428,
+        "init_ns": 22792462,
+        "concurrent_yolo_requests": [
+          92
+        ]
+      },
+      {
+        "update_id": 452,
+        "init_ns": 21902902,
+        "concurrent_yolo_requests": [
+          97
+        ]
+      },
+      {
+        "update_id": 494,
+        "init_ns": 22464432,
+        "concurrent_yolo_requests": [
+          104
+        ]
+      },
+      {
+        "update_id": 504,
+        "init_ns": 23209830,
+        "concurrent_yolo_requests": [
+          106
+        ]
+      },
+      {
+        "update_id": 522,
+        "init_ns": 24259267,
+        "concurrent_yolo_requests": [
+          110
+        ]
+      },
+      {
+        "update_id": 570,
+        "init_ns": 20817040,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 598,
+        "init_ns": 23962684,
+        "concurrent_yolo_requests": [
+          123
+        ]
+      },
+      {
+        "update_id": 599,
+        "init_ns": 21571753,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 618,
+        "init_ns": 21358035,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 700,
+        "init_ns": 22273001,
+        "concurrent_yolo_requests": [
+          136
+        ]
+      },
+      {
+        "update_id": 719,
+        "init_ns": 25762540,
+        "concurrent_yolo_requests": [
+          141
+        ]
+      },
+      {
+        "update_id": 746,
+        "init_ns": 22850900,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 764,
+        "init_ns": 24459070,
+        "concurrent_yolo_requests": [
+          148
+        ]
+      },
+      {
+        "update_id": 765,
+        "init_ns": 23103089,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 791,
+        "init_ns": 24071887,
+        "concurrent_yolo_requests": [
+          153
+        ]
+      },
+      {
+        "update_id": 803,
+        "init_ns": 23648013,
+        "concurrent_yolo_requests": [
+          155
+        ]
+      },
+      {
+        "update_id": 825,
+        "init_ns": 24181837,
+        "concurrent_yolo_requests": [
+          159
+        ]
+      },
+      {
+        "update_id": 826,
+        "init_ns": 22493014,
+        "concurrent_yolo_requests": []
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window03/evidence/pair6",
+    "label": "isolated",
+    "idle_n": 18,
+    "idle_median_ns": 22819382.0,
+    "yolo_overlap_n": 24,
+    "yolo_overlap_median_ns": 24126936.5,
+    "initializations": [
+      {
+        "update_id": 152,
+        "init_ns": 24110213,
+        "concurrent_yolo_requests": [
+          32
+        ]
+      },
+      {
+        "update_id": 153,
+        "init_ns": 23007579,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 178,
+        "init_ns": 23756122,
+        "concurrent_yolo_requests": [
+          36
+        ]
+      },
+      {
+        "update_id": 179,
+        "init_ns": 23089226,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 209,
+        "init_ns": 23962310,
+        "concurrent_yolo_requests": [
+          40
+        ]
+      },
+      {
+        "update_id": 210,
+        "init_ns": 22822003,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 231,
+        "init_ns": 23667871,
+        "concurrent_yolo_requests": [
+          46
+        ]
+      },
+      {
+        "update_id": 275,
+        "init_ns": 24616801,
+        "concurrent_yolo_requests": [
+          53
+        ]
+      },
+      {
+        "update_id": 297,
+        "init_ns": 24661616,
+        "concurrent_yolo_requests": [
+          57
+        ]
+      },
+      {
+        "update_id": 298,
+        "init_ns": 21882283,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 312,
+        "init_ns": 23473760,
+        "concurrent_yolo_requests": [
+          61
+        ]
+      },
+      {
+        "update_id": 336,
+        "init_ns": 23403713,
+        "concurrent_yolo_requests": [
+          66
+        ]
+      },
+      {
+        "update_id": 372,
+        "init_ns": 23206253,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 406,
+        "init_ns": 24433837,
+        "concurrent_yolo_requests": [
+          79
+        ]
+      },
+      {
+        "update_id": 407,
+        "init_ns": 22554898,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 416,
+        "init_ns": 23918408,
+        "concurrent_yolo_requests": [
+          81
+        ]
+      },
+      {
+        "update_id": 417,
+        "init_ns": 22852984,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 428,
+        "init_ns": 24496802,
+        "concurrent_yolo_requests": [
+          84
+        ]
+      },
+      {
+        "update_id": 429,
+        "init_ns": 22381381,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 452,
+        "init_ns": 23331996,
+        "concurrent_yolo_requests": [
+          90
+        ]
+      },
+      {
+        "update_id": 453,
+        "init_ns": 22750383,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 474,
+        "init_ns": 23498599,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 492,
+        "init_ns": 24738710,
+        "concurrent_yolo_requests": [
+          98
+        ]
+      },
+      {
+        "update_id": 493,
+        "init_ns": 22616871,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 519,
+        "init_ns": 23775120,
+        "concurrent_yolo_requests": [
+          102
+        ]
+      },
+      {
+        "update_id": 520,
+        "init_ns": 22628264,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 524,
+        "init_ns": 24776857,
+        "concurrent_yolo_requests": [
+          105
+        ]
+      },
+      {
+        "update_id": 525,
+        "init_ns": 22816761,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 587,
+        "init_ns": 24784596,
+        "concurrent_yolo_requests": [
+          114
+        ]
+      },
+      {
+        "update_id": 604,
+        "init_ns": 23935531,
+        "concurrent_yolo_requests": [
+          118
+        ]
+      },
+      {
+        "update_id": 624,
+        "init_ns": 24115945,
+        "concurrent_yolo_requests": [
+          122
+        ]
+      },
+      {
+        "update_id": 652,
+        "init_ns": 24137928,
+        "concurrent_yolo_requests": [
+          129
+        ]
+      },
+      {
+        "update_id": 653,
+        "init_ns": 22929758,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 678,
+        "init_ns": 24964708,
+        "concurrent_yolo_requests": [
+          133
+        ]
+      },
+      {
+        "update_id": 679,
+        "init_ns": 23105487,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 689,
+        "init_ns": 25604133,
+        "concurrent_yolo_requests": [
+          135
+        ]
+      },
+      {
+        "update_id": 690,
+        "init_ns": 21983408,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 735,
+        "init_ns": 22580561,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 767,
+        "init_ns": 24486603,
+        "concurrent_yolo_requests": [
+          148
+        ]
+      },
+      {
+        "update_id": 789,
+        "init_ns": 23567035,
+        "concurrent_yolo_requests": [
+          152
+        ]
+      },
+      {
+        "update_id": 790,
+        "init_ns": 23007649,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 804,
+        "init_ns": 24433572,
+        "concurrent_yolo_requests": [
+          155
+        ]
+      }
+    ]
+  },
+  {
+    "case": ".docker-artifacts/performance-investigation-20261013/raw/window03/evidence/pair6",
+    "label": "shared",
+    "idle_n": 18,
+    "idle_median_ns": 20947657.5,
+    "yolo_overlap_n": 26,
+    "yolo_overlap_median_ns": 23470686.5,
+    "initializations": [
+      {
+        "update_id": 137,
+        "init_ns": 20118591,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 167,
+        "init_ns": 22903203,
+        "concurrent_yolo_requests": [
+          36
+        ]
+      },
+      {
+        "update_id": 168,
+        "init_ns": 20186761,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 192,
+        "init_ns": 21807489,
+        "concurrent_yolo_requests": [
+          42
+        ]
+      },
+      {
+        "update_id": 212,
+        "init_ns": 21355942,
+        "concurrent_yolo_requests": [
+          47
+        ]
+      },
+      {
+        "update_id": 213,
+        "init_ns": 20433564,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 254,
+        "init_ns": 22631716,
+        "concurrent_yolo_requests": [
+          55
+        ]
+      },
+      {
+        "update_id": 271,
+        "init_ns": 21773241,
+        "concurrent_yolo_requests": [
+          59
+        ]
+      },
+      {
+        "update_id": 300,
+        "init_ns": 24475699,
+        "concurrent_yolo_requests": [
+          65
+        ]
+      },
+      {
+        "update_id": 301,
+        "init_ns": 20654383,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 321,
+        "init_ns": 22621421,
+        "concurrent_yolo_requests": [
+          69
+        ]
+      },
+      {
+        "update_id": 322,
+        "init_ns": 20748040,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 327,
+        "init_ns": 22252140,
+        "concurrent_yolo_requests": [
+          71
+        ]
+      },
+      {
+        "update_id": 328,
+        "init_ns": 20343129,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 340,
+        "init_ns": 22459003,
+        "concurrent_yolo_requests": [
+          75
+        ]
+      },
+      {
+        "update_id": 380,
+        "init_ns": 20666531,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 400,
+        "init_ns": 21812293,
+        "concurrent_yolo_requests": [
+          85
+        ]
+      },
+      {
+        "update_id": 416,
+        "init_ns": 24381201,
+        "concurrent_yolo_requests": [
+          89
+        ]
+      },
+      {
+        "update_id": 417,
+        "init_ns": 20624700,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 437,
+        "init_ns": 22322530,
+        "concurrent_yolo_requests": [
+          93
+        ]
+      },
+      {
+        "update_id": 438,
+        "init_ns": 21147275,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 442,
+        "init_ns": 22219253,
+        "concurrent_yolo_requests": [
+          95
+        ]
+      },
+      {
+        "update_id": 443,
+        "init_ns": 20411029,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 468,
+        "init_ns": 21833384,
+        "concurrent_yolo_requests": [
+          100
+        ]
+      },
+      {
+        "update_id": 491,
+        "init_ns": 24959381,
+        "concurrent_yolo_requests": [
+          105
+        ]
+      },
+      {
+        "update_id": 492,
+        "init_ns": 23853301,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 504,
+        "init_ns": 25190886,
+        "concurrent_yolo_requests": [
+          109
+        ]
+      },
+      {
+        "update_id": 530,
+        "init_ns": 23721525,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 548,
+        "init_ns": 24773706,
+        "concurrent_yolo_requests": [
+          118
+        ]
+      },
+      {
+        "update_id": 550,
+        "init_ns": 22955632,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 570,
+        "init_ns": 22115017,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 588,
+        "init_ns": 25085064,
+        "concurrent_yolo_requests": [
+          126
+        ]
+      },
+      {
+        "update_id": 613,
+        "init_ns": 24837588,
+        "concurrent_yolo_requests": [
+          130
+        ]
+      },
+      {
+        "update_id": 614,
+        "init_ns": 23768038,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 628,
+        "init_ns": 24744005,
+        "concurrent_yolo_requests": [
+          133
+        ]
+      },
+      {
+        "update_id": 652,
+        "init_ns": 24757065,
+        "concurrent_yolo_requests": [
+          138
+        ]
+      },
+      {
+        "update_id": 696,
+        "init_ns": 23962235,
+        "concurrent_yolo_requests": [
+          145
+        ]
+      },
+      {
+        "update_id": 717,
+        "init_ns": 24683590,
+        "concurrent_yolo_requests": [
+          149
+        ]
+      },
+      {
+        "update_id": 718,
+        "init_ns": 22027429,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 750,
+        "init_ns": 23078248,
+        "concurrent_yolo_requests": [
+          155
+        ]
+      },
+      {
+        "update_id": 767,
+        "init_ns": 23863125,
+        "concurrent_yolo_requests": [
+          159
+        ]
+      },
+      {
+        "update_id": 796,
+        "init_ns": 24372013,
+        "concurrent_yolo_requests": [
+          164
+        ]
+      },
+      {
+        "update_id": 798,
+        "init_ns": 22348524,
+        "concurrent_yolo_requests": []
+      },
+      {
+        "update_id": 818,
+        "init_ns": 22698446,
+        "concurrent_yolo_requests": []
+      }
+    ]
+  }
+]

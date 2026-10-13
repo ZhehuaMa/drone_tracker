@@ -1,0 +1,160 @@
+--- W6/src/diagnostics/recorder.h
++++ analysis/src/diagnostics/recorder.h
+@@ -31,7 +31,9 @@
+ inline thread_local std::uint64_t current_update{0};
+ inline thread_local std::uint64_t current_tracker_frame{0};
+ inline thread_local std::uint64_t current_request{0};
++inline void (*investigation_hook)(const Event &) noexcept{};
+ inline void emit(Event event) noexcept {
++    if (investigation_hook) { investigation_hook(event); }
+ #ifdef DRONE_TRACKER_ENABLE_DIAGNOSTICS
+     Recorder *recorder{active.load(std::memory_order_acquire)};
+     if (recorder) {
+--- W6/src/diagnostics/recorder.cpp
++++ analysis/src/diagnostics/recorder.cpp
+@@ -71,6 +71,7 @@
+         const auto ignored{::write(notification_, &one, sizeof(one))};
+         (void)ignored; // EAGAIN 或遗漏不撤销槽；收集器主动轮询。
+         last_notification_[index] = value.mono_ns;
++        if (measurement) { ++measurement->notifications[index]; }
+     }
+     return accepted;
+ }
+--- W6/src/diagnostics/measurement.h
++++ analysis/src/diagnostics/measurement.h
+@@ -5,6 +5,7 @@
+ #include <fstream>
+ #include <stdexcept>
+ #include <string>
++#include <ctime>
+ 
+ namespace diagnostics {
+ /** @brief 验收专用独立数组；启动时预触及，停完业务线程后才导出，不递归记录。 */
+@@ -17,14 +18,51 @@
+         std::uint64_t start_ns{}, duration_ns{}, round{};
+         std::int64_t frame_time_us{};
+         bool consumed{};
++        std::uint64_t cpu_ns{};
+     };
+-    std::array<std::array<Submission, 65536>, PRODUCERS> submissions{};
++    std::array<std::array<Submission, 32768>, PRODUCERS> submissions{};
+     std::array<std::size_t, PRODUCERS> sizes{}, overflow{};
+     std::array<Call, 8192> calls{};
+     std::size_t call_size{}, call_overflow{};
++    struct Trace {
++        std::uint64_t mono_ns{}, update{}, tracker_frame{}, request{}, source_update{}, source_frame{};
++        std::uint64_t duration{}, frame_time{};
++        std::uint32_t type{}, flags{}, reason{}, count{}, success{};
++        std::uint32_t extra{};
++    };
++    std::array<std::array<Trace, 8192>, 2> traces{};
++    std::array<std::size_t, 2> trace_sizes{}, trace_overflow{};
++    std::array<std::uint64_t, PRODUCERS> notifications{};
+ };
+ static_assert(sizeof(Measurement) + sizeof(SharedRegion) + sizeof(Event) * PRODUCERS < 8 * 1024 * 1024);
+ inline Measurement *measurement{};
++inline std::uint64_t threadCpuNs() noexcept {
++    timespec value{};
++    ::clock_gettime(CLOCK_THREAD_CPUTIME_ID, &value);
++    return static_cast<std::uint64_t>(value.tv_sec) * 1000000000 + value.tv_nsec;
++}
++inline void traceInvestigation(const Event &event) noexcept {
++    if (!measurement) { return; }
++    const bool node{current_producer == Producer::Node};
++    const bool yolo{current_producer == Producer::Yolo};
++    if (!node && !yolo) { return; }
++    switch (event.type) {
++    case Type::FrameSelect: case Type::FrameSkip: case Type::InitializeEnd: case Type::CatchupStep:
++    case Type::CatchupEnd: case Type::RequestDecision: case Type::ResultRead: case Type::HistoryLookup:
++    case Type::DetectStart: case Type::DetectEnd: case Type::DetectStage: case Type::ResultOverwrite:
++        break;
++    default: return;
++    }
++    const std::size_t producer{node ? 0U : 1U};
++    auto &size{measurement->trace_sizes[producer]};
++    if (size >= measurement->traces[producer].size()) { ++measurement->trace_overflow[producer]; return; }
++    measurement->traces[producer][size++] = {monotonicNs(), event.update_id ? event.update_id : current_update,
++        event.tracker_frame_id ? event.tracker_frame_id : current_tracker_frame,
++        event.request_id ? event.request_id : current_request, event.source_update_id, event.source_tracker_frame_id,
++        event.duration_ns, event.frame_time_us, static_cast<std::uint32_t>(event.type), event.flags,
++        static_cast<std::uint32_t>(event.reason), event.counts[0], event.counts[1],
++        static_cast<std::uint32_t>(event.values[0])};
++}
+ 
+ /** @brief 测量整个 submit，包括通知系统调用；每个生产者只有一个写者。 */
+ class SubmitMeasurement final {
+@@ -50,10 +88,10 @@
+     std::size_t producer_{};
+     std::uint64_t start_{}, sequence_{};
+ };
+-inline void measureCall(std::uint64_t start, std::uint64_t elapsed, std::int64_t frame, bool consumed) noexcept {
++inline void measureCall(std::uint64_t start, std::uint64_t elapsed, std::int64_t frame, bool consumed, std::uint64_t cpu_ns = 0) noexcept {
+     if (!measurement) { return; }
+     if (measurement->call_size < measurement->calls.size()) {
+-        measurement->calls[measurement->call_size++] = {start, elapsed, current_round.load(), frame, consumed};
++        measurement->calls[measurement->call_size++] = {start, elapsed, current_round.load(), frame, consumed, cpu_ns};
+     } else {
+         ++measurement->call_overflow;
+     }
+@@ -70,16 +108,31 @@
+                     << sample.round << ',' << sample.sequence << '\n';
+         }
+     }
+-    calls << "start_ns,duration_ns,round,frame_time_us,consumed\n";
++    calls << "start_ns,duration_ns,round,frame_time_us,consumed,cpu_ns\n";
+     for (std::size_t index{}; index < measurement->call_size; ++index) {
+         const auto &sample{measurement->calls[index]};
+         calls << sample.start_ns << ',' << sample.duration_ns << ',' << sample.round << ','
+-              << sample.frame_time_us << ',' << sample.consumed << '\n';
++              << sample.frame_time_us << ',' << sample.consumed << ',' << sample.cpu_ns << '\n';
++    }
++    std::ofstream trace{directory + "/investigation.csv"};
++    trace << "producer,mono_ns,update_id,tracker_frame_id,request_id,source_update_id,source_tracker_frame_id,duration_ns,frame_time_us,type,flags,reason,count,success,extra\n";
++    for (std::size_t producer{}; producer < 2; ++producer) {
++        for (std::size_t index{}; index < measurement->trace_sizes[producer]; ++index) {
++            const auto &sample{measurement->traces[producer][index]};
++            trace << producer << ',' << sample.mono_ns << ',' << sample.update << ',' << sample.tracker_frame
++                  << ',' << sample.request << ',' << sample.source_update << ',' << sample.source_frame
++                  << ',' << sample.duration << ',' << sample.frame_time << ',' << sample.type << ',' << sample.flags
++                  << ',' << sample.reason << ',' << sample.count << ',' << sample.success << ',' << sample.extra << '\n';
++        }
+     }
+     std::ofstream status{directory + "/sampling-status.txt"};
++    for (std::size_t producer{}; producer < 2; ++producer) {
++        status << "trace_" << producer << "_overflow=" << measurement->trace_overflow[producer] << '\n';
++    }
+     status << "call_overflow=" << measurement->call_overflow << '\n';
+     for (std::size_t producer{}; producer < PRODUCERS; ++producer) {
+         status << "producer_" << producer << "_overflow=" << measurement->overflow[producer] << '\n';
++        status << "notifications_" << producer << "=" << measurement->notifications[producer] << '\n';
+     }
+     if (!submits || !calls || !status) { throw std::runtime_error("Cannot export acceptance measurements"); }
+ }
+--- W6/src/drone_tracker_main.cpp
++++ analysis/src/drone_tracker_main.cpp
+@@ -16,6 +16,7 @@
+     if (measurement_directory) {
+         measurements = std::make_unique<diagnostics::Measurement>();
+         diagnostics::measurement = measurements.get();
++        if (std::getenv("DRONE_TRACKER_INVESTIGATION")) { diagnostics::investigation_hook = diagnostics::traceInvestigation; }
+     }
+     try {
+         cpu_affinity::initializeControl();
+--- W6/src/drone_tracker_node.cpp
++++ analysis/src/drone_tracker_node.cpp
+@@ -847,13 +847,14 @@
+                 ctx.R_cam_now = R;
+         }
+ 
++        const auto sample_cpu{diagnostics::investigation_hook ? diagnostics::threadCpuNs() : 0};
+         const auto sample_begin{diagnostics::measurement ? diagnostics::monotonicNs() : 0};
+         const auto update_begin{update_timing_observer_ ? std::chrono::steady_clock::now()
+             : std::chrono::steady_clock::time_point{}};
+         TrackerOutput out = tracker_->update(ctx);
+         if (diagnostics::measurement) {
+             diagnostics::measureCall(sample_begin, diagnostics::monotonicNs() - sample_begin,
+-                frame_timestamp_us, out.consumed);
++                frame_timestamp_us, out.consumed, diagnostics::investigation_hook ? diagnostics::threadCpuNs() - sample_cpu : 0);
+         }
+         if (update_timing_observer_) {
+             const auto update_end{std::chrono::steady_clock::now()};

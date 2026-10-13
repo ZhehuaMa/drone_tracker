@@ -1,0 +1,91 @@
+{
+  "date": "2026-10-13",
+  "platform": "linux/arm64",
+  "artifacts": {
+    "drone_tracker_node": {
+      "current_path": ".docker-artifacts/install/drone_tracker/lib/drone_tracker/drone_tracker_node",
+      "preserved_path": ".docker-artifacts/diagnostic-w6-fix-20261013/bin/drone_tracker_node",
+      "sha256": "85131a03ff49e2711623e7edca8dda57298ea05aa5afe883df388de6cb16339b"
+    },
+    "rk3576_diagnostic_worker": {
+      "current_path": ".docker-artifacts/install/drone_tracker/lib/drone_tracker/rk3576_diagnostic_worker",
+      "preserved_path": ".docker-artifacts/diagnostic-w6-fix-20261013/bin/rk3576_diagnostic_worker",
+      "sha256": "780b2cd710714a9f71ac83512da164a6365839b8f62511dc61f721fe9b85aaa5"
+    },
+    "rk3576_diagnostic_inspect": {
+      "current_path": ".docker-artifacts/install/drone_tracker/lib/drone_tracker/rk3576_diagnostic_inspect",
+      "preserved_path": ".docker-artifacts/diagnostic-w6-fix-20261013/bin/rk3576_diagnostic_inspect",
+      "sha256": "bc00627919b9e60ea3f95b9ab17a9aad11103f6348c8bffd22850543179a8970"
+    },
+    "diagnostic_tracker_tests": {
+      "current_path": ".docker-artifacts/build/drone_tracker/src/hybrid_tracker/diagnostic_tracker_tests",
+      "preserved_path": ".docker-artifacts/diagnostic-w6-fix-20261013/bin/diagnostic_tracker_tests",
+      "sha256": "7938bd24790de0cd5a75c48aead6d4a054bece2acd8fc7106a5fe8a70e012444"
+    },
+    "ros_video_tests": {
+      "current_path": ".docker-artifacts/build/drone_tracker/ros_video_tests",
+      "preserved_path": ".docker-artifacts/diagnostic-w6-fix-20261013/bin/ros_video_tests",
+      "sha256": "5f718cccfe5aec0c6fef3cca7f44cb9a84838001f64ea5e1dcd2b030d6af7168"
+    }
+  },
+  "sources": {
+    "src/drone_tracker_node.cpp": "082bd7b79de364b43a31f0aff120b0ec5e39a422f5aa9da13844cc5757efd513",
+    "src/hybrid_tracker/hybrid_tracker.cpp": "f37876b41c0de0081713ef5d68cc74aaac16cc7f64f5cd41cf41c087024ec787",
+    "src/tests/ros_video_test.cpp": "17a3c3517ef021991c5fd079dceab9f599468b35d72ae386ecbc9b04e3f643d5",
+    "src/hybrid_tracker/tests/diagnostic_tracker_test.cpp": "5be2ead0615eac4198f895c425c26b17964ef8ad8387c5eadd10c5c86ff083f4",
+    "src/diagnostics/event.h": "0890547fe3b32a472fba3911ea851cb26c7b3881aae127ef4c671f43d15071a9",
+    "src/diagnostics/protocol.h": "440a2812334b010e25a1e7e253f59eadd291f52ee3635c666fab71002db5bd1c"
+  },
+  "board_test_matches": {
+    "rk3576_diagnostic_inspect": true,
+    "diagnostic_tracker_tests": true,
+    "ros_video_tests": true
+  },
+  "historical_verification_report_sha256": "0dd5eba8892e3467a7effc90f4088058d5d9d7d385e4659cb1814ee53db7f953",
+  "tracker_window": {
+    "command": [
+      "bin/diagnostic_tracker_tests",
+      "/home/hzhy/drone-diagnostic-w6-fix-20261013/bin/rk3576_diagnostic_inspect"
+    ],
+    "budget_seconds": 30.0,
+    "elapsed_seconds": 0.4493667279893998,
+    "phase_budgets": {
+      "prepare": 0,
+      "warmup": 0,
+      "measurement": 27.0,
+      "cleanup": 3.0
+    },
+    "timeout": false,
+    "returncode": 0,
+    "observed_pids": [
+      29511
+    ],
+    "remaining_pids": [],
+    "unit_members": {},
+    "resources_recovered": true,
+    "passed": true
+  },
+  "ros_window": {
+    "command": [
+      "bin/ros_video_tests",
+      "--diagnostic-boundaries"
+    ],
+    "budget_seconds": 30.0,
+    "elapsed_seconds": 6.345034127996769,
+    "phase_budgets": {
+      "prepare": 0,
+      "warmup": 0,
+      "measurement": 27.0,
+      "cleanup": 3.0
+    },
+    "timeout": false,
+    "returncode": 0,
+    "observed_pids": [
+      29536
+    ],
+    "remaining_pids": [],
+    "unit_members": {},
+    "resources_recovered": true,
+    "passed": true
+  }
+}

@@ -4,6 +4,9 @@
 # 部署前须用 v4l2-ctl --list-devices 和 media-ctl -p 复核 /dev 设备及采集格式。
 drone_tracker_node:
   ros__parameters:
+    diagnostics:
+      mode: "basic"
+      socket: /run/drone_tracker/diagnostics.sock
     need_save: true
     save_path: /var/lib/drone_tracker/recordings
     visualized_result: false

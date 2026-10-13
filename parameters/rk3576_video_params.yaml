@@ -1,6 +1,9 @@
 # 仅支持本地 MJPEG（逐帧 JPEG 编码）文件，启动后等待 ON。
 drone_tracker_node:
   ros__parameters:
+    diagnostics:
+      mode: "off"
+      socket: /run/drone_tracker/diagnostics.sock
     need_save: false
     save_path: "/tmp/drone-recordings"
     visualized_result: true

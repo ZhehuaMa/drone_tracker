@@ -1,0 +1,121 @@
+{
+  "windows": {
+    "window01": {
+      "protected_equal": true,
+      "maintenance_seconds": 77.36418514,
+      "formal_restore": "MainPID=34969\nActiveState=active\nSubState=running\nUnitFileState=enabled\n",
+      "all_groups_within150_and_recovered": true,
+      "failed_groups": [
+        "drone-fixed-w01-pair1.service"
+      ],
+      "groups": 2
+    },
+    "window02": {
+      "protected_equal": true,
+      "maintenance_seconds": 747.873826832,
+      "formal_restore": "MainPID=39612\nActiveState=active\nSubState=running\nUnitFileState=enabled\n",
+      "all_groups_within150_and_recovered": true,
+      "failed_groups": [],
+      "groups": 7,
+      "final_sha_equal": true,
+      "final_pid": "39612",
+      "hdmi_formal": true,
+      "remaining": []
+    },
+    "window03": {
+      "protected_equal": true,
+      "maintenance_seconds": 253.809697115,
+      "formal_restore": "MainPID=41302\nActiveState=active\nSubState=running\nUnitFileState=enabled\n",
+      "all_groups_within150_and_recovered": true,
+      "failed_groups": [],
+      "groups": 2,
+      "final_sha_equal": true,
+      "final_pid": "41302",
+      "hdmi_formal": true,
+      "remaining": []
+    },
+    "window04": {
+      "protected_equal": true,
+      "maintenance_seconds": 202.86590496,
+      "formal_restore": "MainPID=42744\nActiveState=active\nSubState=running\nUnitFileState=enabled\n",
+      "all_groups_within150_and_recovered": true,
+      "failed_groups": [],
+      "groups": 2,
+      "final_sha_equal": true,
+      "final_pid": "42744",
+      "hdmi_formal": true,
+      "remaining": []
+    }
+  },
+  "fixed_behavior_differences": {
+    "window02-complete/pair1": 0,
+    "window02-complete/pair2": 0,
+    "window02-complete/pair3": 0,
+    "window02-complete/pair4": 0,
+    "window02-complete/pair5": 0,
+    "window02-complete/pair6": 0,
+    "window02-complete/pair7": 0,
+    "window03-complete/pair1": 0,
+    "window03-complete/pair2": 0
+  },
+  "mixed": {
+    "pair1": {
+      "calls": 3200,
+      "blocks": 80,
+      "each_mode_blocks": 40,
+      "each_mode_calls": 1600,
+      "each_mode_long_calls": 40,
+      "partial_exact_equal": true,
+      "model_calls_templates": 80,
+      "model_calls_searches": 3120,
+      "drain_max_ns": 160326781
+    },
+    "pair2": {
+      "calls": 3200,
+      "blocks": 80,
+      "each_mode_blocks": 40,
+      "each_mode_calls": 1600,
+      "each_mode_long_calls": 40,
+      "partial_exact_equal": true,
+      "model_calls_templates": 80,
+      "model_calls_searches": 3120,
+      "drain_max_ns": 166723857
+    }
+  },
+  "localization": {
+    "pair1": {
+      "nano_intervals_coverage_min": 0.9996057658153575,
+      "nano_intervals_coverage_median": 0.9996478801756405,
+      "outside_intervals_ms_median": 0.19456099999999998,
+      "outside_intervals_ms_max": 0.217604,
+      "long_paired_wall_ms_median": 4.712479999999999,
+      "long_paired_cpu_ms_median": 0.589295,
+      "long_paired_non_cpu_ms_median": 4.4096225,
+      "ordinary_paired_wall_ms_median": 0.2810055,
+      "ordinary_paired_cpu_ms_median": 0.027756000000000003,
+      "ordinary_paired_non_cpu_ms_median": 0.23427050000000005
+    },
+    "pair2": {
+      "nano_intervals_coverage_min": 0.9991552680560973,
+      "nano_intervals_coverage_median": 0.9996401593069861,
+      "outside_intervals_ms_median": 0.1927545,
+      "outside_intervals_ms_max": 0.457892,
+      "long_paired_wall_ms_median": 4.943495499999999,
+      "long_paired_cpu_ms_median": 0.5695209999999999,
+      "long_paired_non_cpu_ms_median": 4.4405395,
+      "ordinary_paired_wall_ms_median": 0.25291600000000003,
+      "ordinary_paired_cpu_ms_median": 0.0275385,
+      "ordinary_paired_non_cpu_ms_median": 0.22062949999999998
+    }
+  },
+  "audits": {
+    "window01": {
+      "model_input_and_final_output_bytes_equal": true,
+      "api_rows_each": 160
+    },
+    "window02-complete": {
+      "model_input_and_final_output_bytes_equal": true,
+      "api_rows_each": 160
+    }
+  }
+}

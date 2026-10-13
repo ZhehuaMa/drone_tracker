@@ -1,0 +1,23 @@
+{
+  "command": [
+    "bin/ros_video_tests",
+    "--diagnostic-boundaries"
+  ],
+  "budget_seconds": 30.0,
+  "elapsed_seconds": 6.345034127996769,
+  "phase_budgets": {
+    "prepare": 0,
+    "warmup": 0,
+    "measurement": 27.0,
+    "cleanup": 3.0
+  },
+  "timeout": false,
+  "returncode": 0,
+  "observed_pids": [
+    29536
+  ],
+  "remaining_pids": [],
+  "unit_members": {},
+  "resources_recovered": true,
+  "passed": true
+}

@@ -1,0 +1,1 @@
+unchanged video frame produced diagnostic log

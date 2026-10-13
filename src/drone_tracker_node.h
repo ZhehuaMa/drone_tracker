@@ -20,6 +20,7 @@
 #include <limits>
 #ifdef DRONE_TRACKER_RK3576
 #include "bag_session.h"
+#include "diagnostics/client.h"
 #else
 #include <rosbag2_cpp/writer.hpp>
 #endif
@@ -71,6 +72,8 @@ private:
         this->declare_parameter<std::string>("save_path", ".");
         this->declare_parameter<bool>("visualized_result", false);
         this->declare_parameter<bool>("use_history_timestamp", false);
+        declare_parameter<std::string>("diagnostics.mode", "off");
+        declare_parameter<std::string>("diagnostics.socket", "/run/drone_tracker/diagnostics.sock");
         declare_parameter<bool>("recording.enabled", false);
         declare_parameter<std::string>("recording.directory", "/var/lib/drone_tracker/recordings");
         declare_parameter<std::int64_t>("recording.bitrate_bps", 12000000);
@@ -220,6 +223,9 @@ private:
 
 #ifdef DRONE_TRACKER_RK3576
     std::unique_ptr<BagSession> bag_session_{};
+    std::unique_ptr<diagnostics::Client> diagnostic_client_{};
+    rclcpp::TimerBase::SharedPtr diagnostic_timer_{};
+    std::uint64_t diagnostic_last_report_{};
 #else
     std::unique_ptr<rosbag2_cpp::Writer> rosbag_writer_{};
 #endif

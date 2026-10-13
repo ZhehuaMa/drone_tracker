@@ -1,0 +1,34 @@
+{
+  "purpose": "\u4ec5\u539f\u56e0\u5206\u6790\uff0c\u4e0d\u662f7.3\u9a8c\u6536",
+  "base_node_sha256": "85131a03ff49e2711623e7edca8dda57298ea05aa5afe883df388de6cb16339b",
+  "current_node_sha256": "85131a03ff49e2711623e7edca8dda57298ea05aa5afe883df388de6cb16339b",
+  "analysis_node_sha256": "70667e36e844de8f79cf9c738577979bec7cf172f724056f78c30810d06601f0",
+  "head": "fde4f350907f60c3c0d9e8c5ac023b6353c3dd62",
+  "jetson_head": "0562c72767c7fec81b798a70b13be8cfdcfe0d63",
+  "patch_sha256": "ac335eddbd70b63be51d0e55404ffce698b91acafd4a84593f5820a54ea3b466",
+  "modified_analysis_sources": {
+    "src/diagnostics/recorder.h": "6d6ea341be9940e0ad8326c320a19714e959f1088cec193445684017adcba544",
+    "src/diagnostics/recorder.cpp": "a81e067f4699e0f666c1aecfc1fb76b4318846460aa589a07c0bf2a3906d4329",
+    "src/diagnostics/measurement.h": "599f9e112ff9f8265d0b8a9f59e089e3ff8b1578dca4c364a761d5f1024582dc",
+    "src/drone_tracker_main.cpp": "817720626965f081a49e5ba674e62bda279b5be01654f3bf73fa7d9d2d0fda37",
+    "src/drone_tracker_node.cpp": "bc72d080b85959b4cbe2029dfd55081a84b462e9a424683c4f594456e1e14c0c"
+  },
+  "retained_archives": {
+    "window03-raw.tar.gz": "ad5b4408a2b6e377187a1ef64a0b50a4b1208473baca4e7ca09f9c7648798b86",
+    "analysis-install.tar.gz": "2ad8d5a3246870b856632b3e4ff41122a9165df2b8905a1e6307761f22167dbb",
+    "analysis-source-first-failed.tar.gz": "7efebd301d3862800e8a5597fb88da63c4fda274fa5e9614cedb6580945f82dc",
+    "scripts.tar.gz": "b235d16b74c72298d5c54800f7fcab1fe86d48be839dc40a2da0881e20c164a5",
+    "window01-raw.tar.gz": "0df7fa17252e3320ef971d848e38793340bfe908c35b774d6a85e5b5fd68a18b",
+    "window02-raw.tar.gz": "83120913a64f117b54c8a0ea202d838a652910b510ec1c3509b2d605907c9a18",
+    "analysis-source.tar.gz": "d936ff4c1be294179da1588f13620ae147d4ca40030f218356ac984c2b3699da"
+  },
+  "raw_file_manifest_sha256": "2f3833e98623f4d87f7101b98c626efe73d4f2f8e5a6717ab10864fc6dad3d17",
+  "final_runtime_state": {
+    "PID": 33645,
+    "active": "running",
+    "enabled": true,
+    "protected_match": true,
+    "HDMI_PID_present": true,
+    "isolated_processes": []
+  }
+}

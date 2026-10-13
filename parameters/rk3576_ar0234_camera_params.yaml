@@ -3,6 +3,9 @@
 # 和 media-ctl -p 复核目标板的 /dev 设备、传感器实体及采集格式。
 drone_tracker_node:
   ros__parameters:
+    diagnostics:
+      mode: "off"
+      socket: /run/drone_tracker/diagnostics.sock
     # ROS bag（按话题保存消息）开关；支持 RK3576 相机和视频，故障只影响本轮 bag。
     need_save: false
     # 每轮 bag 在此目录下新建独立子目录；不会覆盖已有目录。生产启用前确认可写和剩余空间。

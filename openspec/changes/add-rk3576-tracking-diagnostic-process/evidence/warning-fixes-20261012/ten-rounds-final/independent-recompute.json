@@ -1,0 +1,2875 @@
+{
+  "pairs": [
+    {
+      "pair": 1,
+      "metrics": {
+        "off": {
+          "calls": 1696,
+          "call_p99_ns": 207485888,
+          "fps": 37.62831209858476,
+          "sample_overflow": 0
+        },
+        "basic": {
+          "calls": 1733,
+          "call_p99_ns": 189098003,
+          "fps": 38.49163125695553,
+          "sample_overflow": 0,
+          "submit_p99_ns": 14146,
+          "slow_calls": [
+            {
+              "start_ns": 22052324935292,
+              "duration_ns": 291737996,
+              "update_ids": [
+                236
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 278836815,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 146110,
+              "node_submit_max_ns": 11638
+            },
+            {
+              "start_ns": 22054047393673,
+              "duration_ns": 377754384,
+              "update_ids": [
+                308
+              ],
+              "initializations": 1,
+              "catchup_steps": 28,
+              "observed_initialize_and_catchup_ns": 377443738,
+              "node_submit_count": 39,
+              "submission_events_matched": 39,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 159993,
+              "node_submit_max_ns": 8740
+            },
+            {
+              "start_ns": 22056413956946,
+              "duration_ns": 198964160,
+              "update_ids": [
+                397
+              ],
+              "initializations": 1,
+              "catchup_steps": 13,
+              "observed_initialize_and_catchup_ns": 185700611,
+              "node_submit_count": 29,
+              "submission_events_matched": 29,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 85240,
+              "node_submit_max_ns": 8740
+            },
+            {
+              "start_ns": 22057643602688,
+              "duration_ns": 210287119,
+              "update_ids": [
+                435
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 197924312,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 92303,
+              "node_submit_max_ns": 11063
+            },
+            {
+              "start_ns": 22061923617698,
+              "duration_ns": 301185068,
+              "update_ids": [
+                597
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 288249839,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 131679,
+              "node_submit_max_ns": 7728
+            },
+            {
+              "start_ns": 22062644568464,
+              "duration_ns": 198594834,
+              "update_ids": [
+                618
+              ],
+              "initializations": 1,
+              "catchup_steps": 14,
+              "observed_initialize_and_catchup_ns": 186253332,
+              "node_submit_count": 30,
+              "submission_events_matched": 30,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 75901,
+              "node_submit_max_ns": 5520
+            },
+            {
+              "start_ns": 22063614389214,
+              "duration_ns": 358697609,
+              "update_ids": [
+                665
+              ],
+              "initializations": 1,
+              "catchup_steps": 26,
+              "observed_initialize_and_catchup_ns": 358367134,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 150998,
+              "node_submit_max_ns": 8395
+            },
+            {
+              "start_ns": 22066769989871,
+              "duration_ns": 226995608,
+              "update_ids": [
+                771
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 214704081,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 131704,
+              "node_submit_max_ns": 20289
+            },
+            {
+              "start_ns": 22067877330169,
+              "duration_ns": 204354229,
+              "update_ids": [
+                810
+              ],
+              "initializations": 1,
+              "catchup_steps": 14,
+              "observed_initialize_and_catchup_ns": 191397918,
+              "node_submit_count": 30,
+              "submission_events_matched": 30,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 77419,
+              "node_submit_max_ns": 6072
+            },
+            {
+              "start_ns": 22070083588756,
+              "duration_ns": 203134551,
+              "update_ids": [
+                889
+              ],
+              "initializations": 1,
+              "catchup_steps": 13,
+              "observed_initialize_and_catchup_ns": 190973891,
+              "node_submit_count": 29,
+              "submission_events_matched": 29,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 88992,
+              "node_submit_max_ns": 15134
+            },
+            {
+              "start_ns": 22071269062939,
+              "duration_ns": 304904728,
+              "update_ids": [
+                937
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 292607567,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 143460,
+              "node_submit_max_ns": 10994
+            },
+            {
+              "start_ns": 22074778822860,
+              "duration_ns": 273143438,
+              "update_ids": [
+                1087
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 259778237,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 114821,
+              "node_submit_max_ns": 8510
+            },
+            {
+              "start_ns": 22081632461045,
+              "duration_ns": 191450615,
+              "update_ids": [
+                1356
+              ],
+              "initializations": 1,
+              "catchup_steps": 12,
+              "observed_initialize_and_catchup_ns": 179465282,
+              "node_submit_count": 28,
+              "submission_events_matched": 28,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 87931,
+              "node_submit_max_ns": 14352
+            },
+            {
+              "start_ns": 22083271451961,
+              "duration_ns": 189098003,
+              "update_ids": [
+                1417
+              ],
+              "initializations": 1,
+              "catchup_steps": 13,
+              "observed_initialize_and_catchup_ns": 177111288,
+              "node_submit_count": 29,
+              "submission_events_matched": 29,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 76315,
+              "node_submit_max_ns": 5842
+            },
+            {
+              "start_ns": 22087766046393,
+              "duration_ns": 203339711,
+              "update_ids": [
+                1598
+              ],
+              "initializations": 1,
+              "catchup_steps": 14,
+              "observed_initialize_and_catchup_ns": 191754376,
+              "node_submit_count": 30,
+              "submission_events_matched": 30,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 79674,
+              "node_submit_max_ns": 6394
+            },
+            {
+              "start_ns": 22090265992243,
+              "duration_ns": 201619458,
+              "update_ids": [
+                1698
+              ],
+              "initializations": 1,
+              "catchup_steps": 14,
+              "observed_initialize_and_catchup_ns": 189825568,
+              "node_submit_count": 30,
+              "submission_events_matched": 30,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 104194,
+              "node_submit_max_ns": 19482
+            },
+            {
+              "start_ns": 22091681104667,
+              "duration_ns": 237781642,
+              "update_ids": [
+                1754
+              ],
+              "initializations": 1,
+              "catchup_steps": 18,
+              "observed_initialize_and_catchup_ns": 237564747,
+              "node_submit_count": 29,
+              "submission_events_matched": 29,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 94737,
+              "node_submit_max_ns": 6394
+            },
+            {
+              "start_ns": 22093205826491,
+              "duration_ns": 212490855,
+              "update_ids": [
+                1811
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 200744998,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 81353,
+              "node_submit_max_ns": 5957
+            }
+          ],
+          "window_initializations": 72,
+          "window_catchup_steps": 692,
+          "window_detect_stages": 899,
+          "observed_sync_max_ns": 35558712,
+          "observed_unsynced_age_max_ns": 112517565,
+          "health_error_max": 0
+        }
+      },
+      "call_p99_increment_ns": -18387885,
+      "consumption_decline_percent": -2.2943340007091084,
+      "gaps": 0,
+      "complete": true,
+      "passed": true,
+      "elapsed_seconds": 108.609663016
+    },
+    {
+      "pair": 2,
+      "metrics": {
+        "basic": {
+          "calls": 1618,
+          "call_p99_ns": 198399711,
+          "fps": 35.944822980969846,
+          "sample_overflow": 0,
+          "submit_p99_ns": 13731,
+          "slow_calls": [
+            {
+              "start_ns": 22109541518548,
+              "duration_ns": 203287274,
+              "update_ids": [
+                237
+              ],
+              "initializations": 1,
+              "catchup_steps": 13,
+              "observed_initialize_and_catchup_ns": 190071071,
+              "node_submit_count": 29,
+              "submission_events_matched": 29,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 85173,
+              "node_submit_max_ns": 8763
+            },
+            {
+              "start_ns": 22111341901240,
+              "duration_ns": 301426673,
+              "update_ids": [
+                298
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 301118552,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 163423,
+              "node_submit_max_ns": 33997
+            },
+            {
+              "start_ns": 22113720958301,
+              "duration_ns": 269965532,
+              "update_ids": [
+                399
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 257233820,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 117001,
+              "node_submit_max_ns": 13524
+            },
+            {
+              "start_ns": 22115402856407,
+              "duration_ns": 282292637,
+              "update_ids": [
+                452
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 270313335,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 133566,
+              "node_submit_max_ns": 13478
+            },
+            {
+              "start_ns": 22117098175631,
+              "duration_ns": 289773618,
+              "update_ids": [
+                508
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 276070498,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 128138,
+              "node_submit_max_ns": 10281
+            },
+            {
+              "start_ns": 22118175258930,
+              "duration_ns": 342506897,
+              "update_ids": [
+                556
+              ],
+              "initializations": 1,
+              "catchup_steps": 27,
+              "observed_initialize_and_catchup_ns": 342203914,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 152974,
+              "node_submit_max_ns": 12719
+            },
+            {
+              "start_ns": 22128185145606,
+              "duration_ns": 201389259,
+              "update_ids": [
+                910
+              ],
+              "initializations": 1,
+              "catchup_steps": 14,
+              "observed_initialize_and_catchup_ns": 188842256,
+              "node_submit_count": 30,
+              "submission_events_matched": 30,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 84502,
+              "node_submit_max_ns": 7912
+            },
+            {
+              "start_ns": 22129980100286,
+              "duration_ns": 275465821,
+              "update_ids": [
+                963
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 261535662,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 113049,
+              "node_submit_max_ns": 10443
+            },
+            {
+              "start_ns": 22131659433099,
+              "duration_ns": 289137906,
+              "update_ids": [
+                1020
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 277140346,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 127609,
+              "node_submit_max_ns": 15480
+            },
+            {
+              "start_ns": 22133375243530,
+              "duration_ns": 363414964,
+              "update_ids": [
+                1091
+              ],
+              "initializations": 1,
+              "catchup_steps": 27,
+              "observed_initialize_and_catchup_ns": 363084233,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 164045,
+              "node_submit_max_ns": 11432
+            },
+            {
+              "start_ns": 22136245563007,
+              "duration_ns": 291986525,
+              "update_ids": [
+                1188
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 278937861,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 151050,
+              "node_submit_max_ns": 18745
+            },
+            {
+              "start_ns": 22138727858281,
+              "duration_ns": 268851818,
+              "update_ids": [
+                1279
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 256017990,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 129606,
+              "node_submit_max_ns": 11454
+            },
+            {
+              "start_ns": 22139557208343,
+              "duration_ns": 277941835,
+              "update_ids": [
+                1307
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 264316518,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 117304,
+              "node_submit_max_ns": 8832
+            },
+            {
+              "start_ns": 22141083978445,
+              "duration_ns": 198399711,
+              "update_ids": [
+                1361
+              ],
+              "initializations": 1,
+              "catchup_steps": 13,
+              "observed_initialize_and_catchup_ns": 185773695,
+              "node_submit_count": 29,
+              "submission_events_matched": 29,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 86186,
+              "node_submit_max_ns": 9523
+            },
+            {
+              "start_ns": 22144675083456,
+              "duration_ns": 209412425,
+              "update_ids": [
+                1487
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 209199068,
+              "node_submit_count": 26,
+              "submission_events_matched": 26,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 92488,
+              "node_submit_max_ns": 15502
+            },
+            {
+              "start_ns": 22146226303554,
+              "duration_ns": 260858204,
+              "update_ids": [
+                1543
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 248125657,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 114357,
+              "node_submit_max_ns": 11063
+            },
+            {
+              "start_ns": 22147398975171,
+              "duration_ns": 199244583,
+              "update_ids": [
+                1578
+              ],
+              "initializations": 1,
+              "catchup_steps": 14,
+              "observed_initialize_and_catchup_ns": 187166043,
+              "node_submit_count": 30,
+              "submission_events_matched": 30,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 109189,
+              "node_submit_max_ns": 18820
+            }
+          ],
+          "window_initializations": 88,
+          "window_catchup_steps": 872,
+          "window_detect_stages": 881,
+          "observed_sync_max_ns": 32784576,
+          "observed_unsynced_age_max_ns": 115420193,
+          "health_error_max": 0
+        },
+        "off": {
+          "calls": 1569,
+          "call_p99_ns": 208128106,
+          "fps": 34.86083585023452,
+          "sample_overflow": 0
+        }
+      },
+      "call_p99_increment_ns": -9728395,
+      "consumption_decline_percent": -3.1094697080478406,
+      "gaps": 0,
+      "complete": true,
+      "passed": true,
+      "elapsed_seconds": 108.444109587
+    },
+    {
+      "pair": 3,
+      "metrics": {
+        "off": {
+          "calls": 1581,
+          "call_p99_ns": 202601851,
+          "fps": 35.036899236417405,
+          "sample_overflow": 0
+        },
+        "basic": {
+          "calls": 1639,
+          "call_p99_ns": 198512746,
+          "fps": 36.406173450585214,
+          "sample_overflow": 0,
+          "submit_p99_ns": 14377,
+          "slow_calls": [
+            {
+              "start_ns": 22269219437634,
+              "duration_ns": 198512746,
+              "update_ids": [
+                218
+              ],
+              "initializations": 1,
+              "catchup_steps": 14,
+              "observed_initialize_and_catchup_ns": 186791795,
+              "node_submit_count": 30,
+              "submission_events_matched": 30,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 87287,
+              "node_submit_max_ns": 5796
+            },
+            {
+              "start_ns": 22275959654099,
+              "duration_ns": 249456549,
+              "update_ids": [
+                478
+              ],
+              "initializations": 1,
+              "catchup_steps": 18,
+              "observed_initialize_and_catchup_ns": 235544023,
+              "node_submit_count": 34,
+              "submission_events_matched": 34,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 109391,
+              "node_submit_max_ns": 6716
+            },
+            {
+              "start_ns": 22278002813403,
+              "duration_ns": 295031073,
+              "update_ids": [
+                557
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 281656632,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 119587,
+              "node_submit_max_ns": 6648
+            },
+            {
+              "start_ns": 22280115944704,
+              "duration_ns": 258169062,
+              "update_ids": [
+                630
+              ],
+              "initializations": 1,
+              "catchup_steps": 18,
+              "observed_initialize_and_catchup_ns": 246031070,
+              "node_submit_count": 34,
+              "submission_events_matched": 34,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 142927,
+              "node_submit_max_ns": 13801
+            },
+            {
+              "start_ns": 22282288895243,
+              "duration_ns": 212040980,
+              "update_ids": [
+                715
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 199856126,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 87127,
+              "node_submit_max_ns": 6302
+            },
+            {
+              "start_ns": 22291038049986,
+              "duration_ns": 303065796,
+              "update_ids": [
+                1033
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 289213838,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 144008,
+              "node_submit_max_ns": 13662
+            },
+            {
+              "start_ns": 22291840986328,
+              "duration_ns": 362597837,
+              "update_ids": [
+                1064
+              ],
+              "initializations": 1,
+              "catchup_steps": 28,
+              "observed_initialize_and_catchup_ns": 362246845,
+              "node_submit_count": 39,
+              "submission_events_matched": 39,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 176900,
+              "node_submit_max_ns": 13892
+            },
+            {
+              "start_ns": 22293513933196,
+              "duration_ns": 291579431,
+              "update_ids": [
+                1112
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 278790347,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 143912,
+              "node_submit_max_ns": 15065
+            },
+            {
+              "start_ns": 22294674265612,
+              "duration_ns": 375094566,
+              "update_ids": [
+                1165
+              ],
+              "initializations": 1,
+              "catchup_steps": 29,
+              "observed_initialize_and_catchup_ns": 374780148,
+              "node_submit_count": 40,
+              "submission_events_matched": 40,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 169766,
+              "node_submit_max_ns": 7061
+            },
+            {
+              "start_ns": 22296473524527,
+              "duration_ns": 280412941,
+              "update_ids": [
+                1228
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 267401794,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 123237,
+              "node_submit_max_ns": 9062
+            },
+            {
+              "start_ns": 22297307549107,
+              "duration_ns": 225538345,
+              "update_ids": [
+                1253
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 225297367,
+              "node_submit_count": 28,
+              "submission_events_matched": 28,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 95774,
+              "node_submit_max_ns": 5934
+            },
+            {
+              "start_ns": 22299377491336,
+              "duration_ns": 317535843,
+              "update_ids": [
+                1334
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 303426745,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 155374,
+              "node_submit_max_ns": 13226
+            },
+            {
+              "start_ns": 22302240984428,
+              "duration_ns": 282507480,
+              "update_ids": [
+                1421
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 282223323,
+              "node_submit_count": 32,
+              "submission_events_matched": 32,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 137159,
+              "node_submit_max_ns": 13341
+            },
+            {
+              "start_ns": 22304749677058,
+              "duration_ns": 268865709,
+              "update_ids": [
+                1511
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 255319597,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 129954,
+              "node_submit_max_ns": 14950
+            },
+            {
+              "start_ns": 22309307102188,
+              "duration_ns": 258354801,
+              "update_ids": [
+                1682
+              ],
+              "initializations": 1,
+              "catchup_steps": 18,
+              "observed_initialize_and_catchup_ns": 245552778,
+              "node_submit_count": 34,
+              "submission_events_matched": 34,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 112938,
+              "node_submit_max_ns": 7959
+            },
+            {
+              "start_ns": 22310141133879,
+              "duration_ns": 340023912,
+              "update_ids": [
+                1711
+              ],
+              "initializations": 1,
+              "catchup_steps": 26,
+              "observed_initialize_and_catchup_ns": 339707402,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 163534,
+              "node_submit_max_ns": 13732
+            },
+            {
+              "start_ns": 22312225922719,
+              "duration_ns": 259098978,
+              "update_ids": [
+                1783
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 246549898,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 128481,
+              "node_submit_max_ns": 14376
+            }
+          ],
+          "window_initializations": 83,
+          "window_catchup_steps": 830,
+          "window_detect_stages": 892,
+          "observed_sync_max_ns": 41949927,
+          "observed_unsynced_age_max_ns": 117568494,
+          "health_error_max": 0
+        }
+      },
+      "call_p99_increment_ns": -4089105,
+      "consumption_decline_percent": -3.9080918803013898,
+      "gaps": 0,
+      "complete": true,
+      "passed": true,
+      "elapsed_seconds": 108.752636469
+    },
+    {
+      "pair": 4,
+      "metrics": {
+        "basic": {
+          "calls": 1613,
+          "call_p99_ns": 253550023,
+          "fps": 35.83590462971452,
+          "sample_overflow": 0,
+          "submit_p99_ns": 13754,
+          "slow_calls": [
+            {
+              "start_ns": 22327074611992,
+              "duration_ns": 260053753,
+              "update_ids": [
+                259
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 247359997,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 113300,
+              "node_submit_max_ns": 10212
+            },
+            {
+              "start_ns": 22328761934161,
+              "duration_ns": 276643505,
+              "update_ids": [
+                320
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 263027351,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 139089,
+              "node_submit_max_ns": 14490
+            },
+            {
+              "start_ns": 22329602975641,
+              "duration_ns": 273189440,
+              "update_ids": [
+                348
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 261040798,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 146241,
+              "node_submit_max_ns": 15181
+            },
+            {
+              "start_ns": 22338242781983,
+              "duration_ns": 341784164,
+              "update_ids": [
+                657
+              ],
+              "initializations": 1,
+              "catchup_steps": 27,
+              "observed_initialize_and_catchup_ns": 341466387,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 149253,
+              "node_submit_max_ns": 15065
+            },
+            {
+              "start_ns": 22340442934491,
+              "duration_ns": 277004433,
+              "update_ids": [
+                724
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 264478072,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 132256,
+              "node_submit_max_ns": 10925
+            },
+            {
+              "start_ns": 22341592457183,
+              "duration_ns": 333137416,
+              "update_ids": [
+                777
+              ],
+              "initializations": 1,
+              "catchup_steps": 27,
+              "observed_initialize_and_catchup_ns": 332741413,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 153739,
+              "node_submit_max_ns": 15548
+            },
+            {
+              "start_ns": 22345826720814,
+              "duration_ns": 267980013,
+              "update_ids": [
+                924
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 255085673,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 119168,
+              "node_submit_max_ns": 8234
+            },
+            {
+              "start_ns": 22348347790026,
+              "duration_ns": 275088002,
+              "update_ids": [
+                1016
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 262156662,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 136901,
+              "node_submit_max_ns": 14928
+            },
+            {
+              "start_ns": 22349191555557,
+              "duration_ns": 280757262,
+              "update_ids": [
+                1044
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 267242115,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 127194,
+              "node_submit_max_ns": 10925
+            },
+            {
+              "start_ns": 22352535218943,
+              "duration_ns": 289121103,
+              "update_ids": [
+                1161
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 276565939,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 125887,
+              "node_submit_max_ns": 9913
+            },
+            {
+              "start_ns": 22355436625624,
+              "duration_ns": 273149837,
+              "update_ids": [
+                1264
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 260762732,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 129127,
+              "node_submit_max_ns": 19826
+            },
+            {
+              "start_ns": 22356280970533,
+              "duration_ns": 281089830,
+              "update_ids": [
+                1292
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 267627950,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 132517,
+              "node_submit_max_ns": 24152
+            },
+            {
+              "start_ns": 22359142581425,
+              "duration_ns": 277552659,
+              "update_ids": [
+                1401
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 277267771,
+              "node_submit_count": 32,
+              "submission_events_matched": 32,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 121170,
+              "node_submit_max_ns": 7015
+            },
+            {
+              "start_ns": 22362918551058,
+              "duration_ns": 253550023,
+              "update_ids": [
+                1527
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 240380355,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 113787,
+              "node_submit_max_ns": 10604
+            },
+            {
+              "start_ns": 22364180854181,
+              "duration_ns": 275565932,
+              "update_ids": [
+                1568
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 261823298,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 126989,
+              "node_submit_max_ns": 9385
+            },
+            {
+              "start_ns": 22365292438447,
+              "duration_ns": 342455108,
+              "update_ids": [
+                1619
+              ],
+              "initializations": 1,
+              "catchup_steps": 26,
+              "observed_initialize_and_catchup_ns": 342142845,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 166209,
+              "node_submit_max_ns": 16147
+            },
+            {
+              "start_ns": 22369142613952,
+              "duration_ns": 276227443,
+              "update_ids": [
+                1757
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 275866234,
+              "node_submit_count": 32,
+              "submission_events_matched": 32,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 143274,
+              "node_submit_max_ns": 16652
+            }
+          ],
+          "window_initializations": 98,
+          "window_catchup_steps": 1002,
+          "window_detect_stages": 898,
+          "observed_sync_max_ns": 23849750,
+          "observed_unsynced_age_max_ns": 110018683,
+          "health_error_max": 0
+        },
+        "off": {
+          "calls": 1583,
+          "call_p99_ns": 278613049,
+          "fps": 35.121775549398755,
+          "sample_overflow": 0
+        }
+      },
+      "call_p99_increment_ns": -25063026,
+      "consumption_decline_percent": -2.0332943569761897,
+      "gaps": 0,
+      "complete": true,
+      "passed": true,
+      "elapsed_seconds": 108.554546433
+    },
+    {
+      "pair": 5,
+      "metrics": {
+        "off": {
+          "calls": 1547,
+          "call_p99_ns": 253561811,
+          "fps": 34.31440450120285,
+          "sample_overflow": 0
+        },
+        "basic": {
+          "calls": 1639,
+          "call_p99_ns": 225184188,
+          "fps": 36.411148590224784,
+          "sample_overflow": 0,
+          "submit_p99_ns": 13685,
+          "slow_calls": [
+            {
+              "start_ns": 22485865046038,
+              "duration_ns": 238729873,
+              "update_ids": [
+                185
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 225930104,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 115075,
+              "node_submit_max_ns": 13225
+            },
+            {
+              "start_ns": 22489805498456,
+              "duration_ns": 248693762,
+              "update_ids": [
+                325
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 235826033,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 106954,
+              "node_submit_max_ns": 7176
+            },
+            {
+              "start_ns": 22492880406628,
+              "duration_ns": 226448604,
+              "update_ids": [
+                421
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 226219815,
+              "node_submit_count": 28,
+              "submission_events_matched": 28,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 93843,
+              "node_submit_max_ns": 9706
+            },
+            {
+              "start_ns": 22495056534207,
+              "duration_ns": 232342391,
+              "update_ids": [
+                496
+              ],
+              "initializations": 1,
+              "catchup_steps": 16,
+              "observed_initialize_and_catchup_ns": 219126842,
+              "node_submit_count": 32,
+              "submission_events_matched": 32,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 89843,
+              "node_submit_max_ns": 6279
+            },
+            {
+              "start_ns": 22498695037580,
+              "duration_ns": 246333124,
+              "update_ids": [
+                622
+              ],
+              "initializations": 1,
+              "catchup_steps": 18,
+              "observed_initialize_and_catchup_ns": 233942568,
+              "node_submit_count": 34,
+              "submission_events_matched": 34,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 100373,
+              "node_submit_max_ns": 11569
+            },
+            {
+              "start_ns": 22500454313906,
+              "duration_ns": 240407610,
+              "update_ids": [
+                677
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 226081872,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 97267,
+              "node_submit_max_ns": 6417
+            },
+            {
+              "start_ns": 22504206659318,
+              "duration_ns": 248807948,
+              "update_ids": [
+                809
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 236488733,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 110819,
+              "node_submit_max_ns": 12766
+            },
+            {
+              "start_ns": 22505280925110,
+              "duration_ns": 304863309,
+              "update_ids": [
+                850
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 292731936,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 130945,
+              "node_submit_max_ns": 11753
+            },
+            {
+              "start_ns": 22509049806111,
+              "duration_ns": 316443068,
+              "update_ids": [
+                995
+              ],
+              "initializations": 1,
+              "catchup_steps": 23,
+              "observed_initialize_and_catchup_ns": 304292956,
+              "node_submit_count": 39,
+              "submission_events_matched": 39,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 136416,
+              "node_submit_max_ns": 11569
+            },
+            {
+              "start_ns": 22510759595480,
+              "duration_ns": 326125466,
+              "update_ids": [
+                1047
+              ],
+              "initializations": 1,
+              "catchup_steps": 23,
+              "observed_initialize_and_catchup_ns": 313433265,
+              "node_submit_count": 39,
+              "submission_events_matched": 39,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 147919,
+              "node_submit_max_ns": 11822
+            },
+            {
+              "start_ns": 22513043876952,
+              "duration_ns": 225184188,
+              "update_ids": [
+                1127
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 211347582,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 94349,
+              "node_submit_max_ns": 9430
+            },
+            {
+              "start_ns": 22515184654797,
+              "duration_ns": 342783517,
+              "update_ids": [
+                1213
+              ],
+              "initializations": 1,
+              "catchup_steps": 25,
+              "observed_initialize_and_catchup_ns": 329141839,
+              "node_submit_count": 41,
+              "submission_events_matched": 41,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 149000,
+              "node_submit_max_ns": 12811
+            },
+            {
+              "start_ns": 22518183640694,
+              "duration_ns": 306829427,
+              "update_ids": [
+                1329
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 293821850,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 145709,
+              "node_submit_max_ns": 12490
+            },
+            {
+              "start_ns": 22520597547384,
+              "duration_ns": 270616001,
+              "update_ids": [
+                1440
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 270346065,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 120915,
+              "node_submit_max_ns": 11707
+            },
+            {
+              "start_ns": 22523973338605,
+              "duration_ns": 251944576,
+              "update_ids": [
+                1561
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 238291798,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 130923,
+              "node_submit_max_ns": 30525
+            },
+            {
+              "start_ns": 22525280391974,
+              "duration_ns": 294293682,
+              "update_ids": [
+                1609
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 294033035,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 130047,
+              "node_submit_max_ns": 11776
+            },
+            {
+              "start_ns": 22528576107447,
+              "duration_ns": 248168385,
+              "update_ids": [
+                1737
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 234587706,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 112175,
+              "node_submit_max_ns": 14674
+            }
+          ],
+          "window_initializations": 79,
+          "window_catchup_steps": 862,
+          "window_detect_stages": 812,
+          "observed_sync_max_ns": 23172735,
+          "observed_unsynced_age_max_ns": 113336281,
+          "health_error_max": 0
+        }
+      },
+      "call_p99_increment_ns": -28377623,
+      "consumption_decline_percent": -6.110390430783763,
+      "gaps": 0,
+      "complete": true,
+      "passed": true,
+      "elapsed_seconds": 108.525534259
+    },
+    {
+      "pair": 6,
+      "metrics": {
+        "basic": {
+          "calls": 1696,
+          "call_p99_ns": 200479514,
+          "fps": 37.6877005655399,
+          "sample_overflow": 0,
+          "submit_p99_ns": 13685,
+          "slow_calls": [
+            {
+              "start_ns": 22542876637042,
+              "duration_ns": 306456932,
+              "update_ids": [
+                202
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 292351065,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 144604,
+              "node_submit_max_ns": 13064
+            },
+            {
+              "start_ns": 22546567430201,
+              "duration_ns": 209467047,
+              "update_ids": [
+                340
+              ],
+              "initializations": 1,
+              "catchup_steps": 16,
+              "observed_initialize_and_catchup_ns": 197770210,
+              "node_submit_count": 32,
+              "submission_events_matched": 32,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 110402,
+              "node_submit_max_ns": 13478
+            },
+            {
+              "start_ns": 22549200507641,
+              "duration_ns": 304204739,
+              "update_ids": [
+                459
+              ],
+              "initializations": 1,
+              "catchup_steps": 23,
+              "observed_initialize_and_catchup_ns": 291679961,
+              "node_submit_count": 39,
+              "submission_events_matched": 39,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 136669,
+              "node_submit_max_ns": 17596
+            },
+            {
+              "start_ns": 22550373741493,
+              "duration_ns": 301422956,
+              "update_ids": [
+                494
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 289021924,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 143503,
+              "node_submit_max_ns": 13156
+            },
+            {
+              "start_ns": 22553278334310,
+              "duration_ns": 290862819,
+              "update_ids": [
+                602
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 278309267,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 145642,
+              "node_submit_max_ns": 14813
+            },
+            {
+              "start_ns": 22556799678459,
+              "duration_ns": 211124039,
+              "update_ids": [
+                723
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 198428272,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 115976,
+              "node_submit_max_ns": 19576
+            },
+            {
+              "start_ns": 22558720428300,
+              "duration_ns": 303016135,
+              "update_ids": [
+                795
+              ],
+              "initializations": 1,
+              "catchup_steps": 23,
+              "observed_initialize_and_catchup_ns": 290002176,
+              "node_submit_count": 39,
+              "submission_events_matched": 39,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 139455,
+              "node_submit_max_ns": 14492
+            },
+            {
+              "start_ns": 22560936059832,
+              "duration_ns": 200479514,
+              "update_ids": [
+                874
+              ],
+              "initializations": 1,
+              "catchup_steps": 14,
+              "observed_initialize_and_catchup_ns": 187535389,
+              "node_submit_count": 30,
+              "submission_events_matched": 30,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 86276,
+              "node_submit_max_ns": 8165
+            },
+            {
+              "start_ns": 22564053506384,
+              "duration_ns": 235832874,
+              "update_ids": [
+                989
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 222123228,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 103691,
+              "node_submit_max_ns": 8050
+            },
+            {
+              "start_ns": 22565016289411,
+              "duration_ns": 328824069,
+              "update_ids": [
+                1025
+              ],
+              "initializations": 1,
+              "catchup_steps": 25,
+              "observed_initialize_and_catchup_ns": 315389238,
+              "node_submit_count": 41,
+              "submission_events_matched": 41,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 145411,
+              "node_submit_max_ns": 11408
+            },
+            {
+              "start_ns": 22568882434618,
+              "duration_ns": 211038210,
+              "update_ids": [
+                1175
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 199279134,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 100240,
+              "node_submit_max_ns": 12261
+            },
+            {
+              "start_ns": 22572095501448,
+              "duration_ns": 339977747,
+              "update_ids": [
+                1306
+              ],
+              "initializations": 1,
+              "catchup_steps": 26,
+              "observed_initialize_and_catchup_ns": 326394681,
+              "node_submit_count": 42,
+              "submission_events_matched": 42,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 153972,
+              "node_submit_max_ns": 13802
+            },
+            {
+              "start_ns": 22574050047136,
+              "duration_ns": 236295263,
+              "update_ids": [
+                1377
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 222952202,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 114499,
+              "node_submit_max_ns": 13271
+            },
+            {
+              "start_ns": 22575262842504,
+              "duration_ns": 208561019,
+              "update_ids": [
+                1420
+              ],
+              "initializations": 1,
+              "catchup_steps": 16,
+              "observed_initialize_and_catchup_ns": 197238142,
+              "node_submit_count": 32,
+              "submission_events_matched": 32,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 82687,
+              "node_submit_max_ns": 5566
+            },
+            {
+              "start_ns": 22582113322944,
+              "duration_ns": 327179702,
+              "update_ids": [
+                1677
+              ],
+              "initializations": 1,
+              "catchup_steps": 25,
+              "observed_initialize_and_catchup_ns": 314346980,
+              "node_submit_count": 41,
+              "submission_events_matched": 41,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 141063,
+              "node_submit_max_ns": 9039
+            },
+            {
+              "start_ns": 22584923725448,
+              "duration_ns": 233688101,
+              "update_ids": [
+                1790
+              ],
+              "initializations": 1,
+              "catchup_steps": 18,
+              "observed_initialize_and_catchup_ns": 221956665,
+              "node_submit_count": 34,
+              "submission_events_matched": 34,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 119004,
+              "node_submit_max_ns": 24566
+            },
+            {
+              "start_ns": 22585929244094,
+              "duration_ns": 330167851,
+              "update_ids": [
+                1828
+              ],
+              "initializations": 1,
+              "catchup_steps": 26,
+              "observed_initialize_and_catchup_ns": 329878890,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 142355,
+              "node_submit_max_ns": 9384
+            }
+          ],
+          "window_initializations": 79,
+          "window_catchup_steps": 826,
+          "window_detect_stages": 814,
+          "observed_sync_max_ns": 29293121,
+          "observed_unsynced_age_max_ns": 118333335,
+          "health_error_max": 0
+        },
+        "off": {
+          "calls": 1582,
+          "call_p99_ns": 201659807,
+          "fps": 35.146671881989626,
+          "sample_overflow": 0
+        }
+      },
+      "call_p99_increment_ns": -1180293,
+      "consumption_decline_percent": -7.2297846353195805,
+      "gaps": 0,
+      "complete": true,
+      "passed": true,
+      "elapsed_seconds": 108.572213991
+    },
+    {
+      "pair": 7,
+      "metrics": {
+        "off": {
+          "calls": 1537,
+          "call_p99_ns": 203680321,
+          "fps": 34.101785055957436,
+          "sample_overflow": 0
+        },
+        "basic": {
+          "calls": 1614,
+          "call_p99_ns": 262621478,
+          "fps": 35.84346297317899,
+          "sample_overflow": 0,
+          "submit_p99_ns": 13847,
+          "slow_calls": [
+            {
+              "start_ns": 22703111360155,
+              "duration_ns": 304596334,
+              "update_ids": [
+                183
+              ],
+              "initializations": 1,
+              "catchup_steps": 23,
+              "observed_initialize_and_catchup_ns": 304329850,
+              "node_submit_count": 34,
+              "submission_events_matched": 34,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 130963,
+              "node_submit_max_ns": 13547
+            },
+            {
+              "start_ns": 22705186985048,
+              "duration_ns": 303399615,
+              "update_ids": [
+                261
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 291023010,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 141571,
+              "node_submit_max_ns": 12213
+            },
+            {
+              "start_ns": 22706811347849,
+              "duration_ns": 331347167,
+              "update_ids": [
+                326
+              ],
+              "initializations": 1,
+              "catchup_steps": 25,
+              "observed_initialize_and_catchup_ns": 331083278,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 125310,
+              "node_submit_max_ns": 6578
+            },
+            {
+              "start_ns": 22709731163070,
+              "duration_ns": 262621478,
+              "update_ids": [
+                419
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 249589848,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 134621,
+              "node_submit_max_ns": 28406
+            },
+            {
+              "start_ns": 22713520071380,
+              "duration_ns": 306886938,
+              "update_ids": [
+                558
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 293527488,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 132767,
+              "node_submit_max_ns": 8580
+            },
+            {
+              "start_ns": 22719327786899,
+              "duration_ns": 279885682,
+              "update_ids": [
+                780
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 267419485,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 119626,
+              "node_submit_max_ns": 6578
+            },
+            {
+              "start_ns": 22721852903314,
+              "duration_ns": 290530625,
+              "update_ids": [
+                864
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 277260242,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 129178,
+              "node_submit_max_ns": 13110
+            },
+            {
+              "start_ns": 22722928085523,
+              "duration_ns": 340649722,
+              "update_ids": [
+                912
+              ],
+              "initializations": 1,
+              "catchup_steps": 25,
+              "observed_initialize_and_catchup_ns": 340351611,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 148192,
+              "node_submit_max_ns": 11340
+            },
+            {
+              "start_ns": 22724328733003,
+              "duration_ns": 294521932,
+              "update_ids": [
+                964
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 281359771,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 140814,
+              "node_submit_max_ns": 13938
+            },
+            {
+              "start_ns": 22725980607209,
+              "duration_ns": 281900027,
+              "update_ids": [
+                1019
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 268356124,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 124206,
+              "node_submit_max_ns": 11178
+            },
+            {
+              "start_ns": 22726841042558,
+              "duration_ns": 291130181,
+              "update_ids": [
+                1048
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 278272841,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 125123,
+              "node_submit_max_ns": 6762
+            },
+            {
+              "start_ns": 22729768507967,
+              "duration_ns": 305137659,
+              "update_ids": [
+                1161
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 291128380,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 128644,
+              "node_submit_max_ns": 8257
+            },
+            {
+              "start_ns": 22736406737716,
+              "duration_ns": 282078897,
+              "update_ids": [
+                1384
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 270031500,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 121881,
+              "node_submit_max_ns": 14720
+            },
+            {
+              "start_ns": 22739544673156,
+              "duration_ns": 270388422,
+              "update_ids": [
+                1489
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 270136681,
+              "node_submit_count": 32,
+              "submission_events_matched": 32,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 103019,
+              "node_submit_max_ns": 5681
+            },
+            {
+              "start_ns": 22741818284209,
+              "duration_ns": 280958427,
+              "update_ids": [
+                1576
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 268469553,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 112150,
+              "node_submit_max_ns": 6187
+            },
+            {
+              "start_ns": 22743503207123,
+              "duration_ns": 291687235,
+              "update_ids": [
+                1632
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 278841311,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 121604,
+              "node_submit_max_ns": 6923
+            },
+            {
+              "start_ns": 22744611695306,
+              "duration_ns": 334992265,
+              "update_ids": [
+                1682
+              ],
+              "initializations": 1,
+              "catchup_steps": 26,
+              "observed_initialize_and_catchup_ns": 334715638,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 140830,
+              "node_submit_max_ns": 6049
+            }
+          ],
+          "window_initializations": 85,
+          "window_catchup_steps": 897,
+          "window_detect_stages": 858,
+          "observed_sync_max_ns": 23756185,
+          "observed_unsynced_age_max_ns": 110848678,
+          "health_error_max": 0
+        }
+      },
+      "call_p99_increment_ns": 58941157,
+      "consumption_decline_percent": -5.107292519625117,
+      "gaps": 0,
+      "complete": true,
+      "passed": false,
+      "elapsed_seconds": 108.519944008
+    },
+    {
+      "pair": 8,
+      "metrics": {
+        "basic": {
+          "calls": 1667,
+          "call_p99_ns": 212979245,
+          "fps": 37.02842392074441,
+          "sample_overflow": 0,
+          "submit_p99_ns": 14123,
+          "slow_calls": [
+            {
+              "start_ns": 22763988715337,
+              "duration_ns": 280960521,
+              "update_ids": [
+                348
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 267433523,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 119718,
+              "node_submit_max_ns": 13708
+            },
+            {
+              "start_ns": 22765679242202,
+              "duration_ns": 291286055,
+              "update_ids": [
+                404
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 278268192,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 145275,
+              "node_submit_max_ns": 16492
+            },
+            {
+              "start_ns": 22770548641734,
+              "duration_ns": 225693314,
+              "update_ids": [
+                604
+              ],
+              "initializations": 1,
+              "catchup_steps": 16,
+              "observed_initialize_and_catchup_ns": 213786372,
+              "node_submit_count": 32,
+              "submission_events_matched": 32,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 92716,
+              "node_submit_max_ns": 6049
+            },
+            {
+              "start_ns": 22775252354089,
+              "duration_ns": 287692969,
+              "update_ids": [
+                768
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 275168425,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 122523,
+              "node_submit_max_ns": 8464
+            },
+            {
+              "start_ns": 22776405222517,
+              "duration_ns": 357289680,
+              "update_ids": [
+                821
+              ],
+              "initializations": 1,
+              "catchup_steps": 28,
+              "observed_initialize_and_catchup_ns": 356977447,
+              "node_submit_count": 39,
+              "submission_events_matched": 39,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 147710,
+              "node_submit_max_ns": 7429
+            },
+            {
+              "start_ns": 22779394053633,
+              "duration_ns": 279451829,
+              "update_ids": [
+                920
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 267265193,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 123626,
+              "node_submit_max_ns": 10557
+            },
+            {
+              "start_ns": 22782309343368,
+              "duration_ns": 281102942,
+              "update_ids": [
+                1032
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 267796853,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 139067,
+              "node_submit_max_ns": 19783
+            },
+            {
+              "start_ns": 22783605268830,
+              "duration_ns": 285926404,
+              "update_ids": [
+                1089
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 285664866,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 116289,
+              "node_submit_max_ns": 6210
+            },
+            {
+              "start_ns": 22788586093913,
+              "duration_ns": 290084569,
+              "update_ids": [
+                1272
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 276795263,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 118360,
+              "node_submit_max_ns": 6808
+            },
+            {
+              "start_ns": 22789705239236,
+              "duration_ns": 337662918,
+              "update_ids": [
+                1323
+              ],
+              "initializations": 1,
+              "catchup_steps": 26,
+              "observed_initialize_and_catchup_ns": 337360156,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 155693,
+              "node_submit_max_ns": 20772
+            },
+            {
+              "start_ns": 22792838494379,
+              "duration_ns": 221982043,
+              "update_ids": [
+                1424
+              ],
+              "initializations": 1,
+              "catchup_steps": 16,
+              "observed_initialize_and_catchup_ns": 221685607,
+              "node_submit_count": 27,
+              "submission_events_matched": 27,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 101735,
+              "node_submit_max_ns": 14376
+            },
+            {
+              "start_ns": 22794261558628,
+              "duration_ns": 214967318,
+              "update_ids": [
+                1474
+              ],
+              "initializations": 1,
+              "catchup_steps": 14,
+              "observed_initialize_and_catchup_ns": 200930837,
+              "node_submit_count": 30,
+              "submission_events_matched": 30,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 90278,
+              "node_submit_max_ns": 7452
+            },
+            {
+              "start_ns": 22794935952283,
+              "duration_ns": 238135411,
+              "update_ids": [
+                1497
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 224615425,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 92967,
+              "node_submit_max_ns": 6326
+            },
+            {
+              "start_ns": 22798905635210,
+              "duration_ns": 212979245,
+              "update_ids": [
+                1627
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 200493352,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 76614,
+              "node_submit_max_ns": 5658
+            },
+            {
+              "start_ns": 22800947355561,
+              "duration_ns": 246851422,
+              "update_ids": [
+                1710
+              ],
+              "initializations": 1,
+              "catchup_steps": 18,
+              "observed_initialize_and_catchup_ns": 234718531,
+              "node_submit_count": 34,
+              "submission_events_matched": 34,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 103318,
+              "node_submit_max_ns": 12213
+            },
+            {
+              "start_ns": 22801638608967,
+              "duration_ns": 240573634,
+              "update_ids": [
+                1733
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 240321264,
+              "node_submit_count": 28,
+              "submission_events_matched": 28,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 120203,
+              "node_submit_max_ns": 22728
+            },
+            {
+              "start_ns": 22803194075526,
+              "duration_ns": 305671959,
+              "update_ids": [
+                1798
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 293349111,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 127815,
+              "node_submit_max_ns": 12627
+            }
+          ],
+          "window_initializations": 81,
+          "window_catchup_steps": 827,
+          "window_detect_stages": 844,
+          "observed_sync_max_ns": 28015576,
+          "observed_unsynced_age_max_ns": 112016697,
+          "health_error_max": 0
+        },
+        "off": {
+          "calls": 1661,
+          "call_p99_ns": 201949763,
+          "fps": 36.83229939410301,
+          "sample_overflow": 0
+        }
+      },
+      "call_p99_increment_ns": 11029482,
+      "consumption_decline_percent": -0.5324797253162927,
+      "gaps": 0,
+      "complete": true,
+      "passed": false,
+      "elapsed_seconds": 108.790143315
+    },
+    {
+      "pair": 9,
+      "metrics": {
+        "off": {
+          "calls": 1565,
+          "call_p99_ns": 215987702,
+          "fps": 34.77278575338222,
+          "sample_overflow": 0
+        },
+        "basic": {
+          "calls": 1615,
+          "call_p99_ns": 221273653,
+          "fps": 35.86976904017171,
+          "sample_overflow": 0,
+          "submit_p99_ns": 14261,
+          "slow_calls": [
+            {
+              "start_ns": 22920360893225,
+              "duration_ns": 284972566,
+              "update_ids": [
+                156
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 284684877,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 118383,
+              "node_submit_max_ns": 6026
+            },
+            {
+              "start_ns": 22929628388309,
+              "duration_ns": 221273653,
+              "update_ids": [
+                511
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 208015191,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 94973,
+              "node_submit_max_ns": 8717
+            },
+            {
+              "start_ns": 22930394693440,
+              "duration_ns": 310991949,
+              "update_ids": [
+                538
+              ],
+              "initializations": 1,
+              "catchup_steps": 24,
+              "observed_initialize_and_catchup_ns": 310700460,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 121836,
+              "node_submit_max_ns": 6003
+            },
+            {
+              "start_ns": 22932057540342,
+              "duration_ns": 343064994,
+              "update_ids": [
+                605
+              ],
+              "initializations": 1,
+              "catchup_steps": 25,
+              "observed_initialize_and_catchup_ns": 330037482,
+              "node_submit_count": 41,
+              "submission_events_matched": 41,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 166479,
+              "node_submit_max_ns": 11868
+            },
+            {
+              "start_ns": 22935246055882,
+              "duration_ns": 221815066,
+              "update_ids": [
+                712
+              ],
+              "initializations": 1,
+              "catchup_steps": 16,
+              "observed_initialize_and_catchup_ns": 210016867,
+              "node_submit_count": 32,
+              "submission_events_matched": 32,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 109343,
+              "node_submit_max_ns": 12811
+            },
+            {
+              "start_ns": 22939270154373,
+              "duration_ns": 224069524,
+              "update_ids": [
+                851
+              ],
+              "initializations": 1,
+              "catchup_steps": 15,
+              "observed_initialize_and_catchup_ns": 212110879,
+              "node_submit_count": 31,
+              "submission_events_matched": 31,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 96761,
+              "node_submit_max_ns": 11684
+            },
+            {
+              "start_ns": 22941373113605,
+              "duration_ns": 262670740,
+              "update_ids": [
+                927
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 248318415,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 115622,
+              "node_submit_max_ns": 13041
+            },
+            {
+              "start_ns": 22942880558678,
+              "duration_ns": 341406919,
+              "update_ids": [
+                976
+              ],
+              "initializations": 1,
+              "catchup_steps": 24,
+              "observed_initialize_and_catchup_ns": 328108756,
+              "node_submit_count": 40,
+              "submission_events_matched": 40,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 168786,
+              "node_submit_max_ns": 12675
+            },
+            {
+              "start_ns": 22945813896701,
+              "duration_ns": 248361247,
+              "update_ids": [
+                1082
+              ],
+              "initializations": 1,
+              "catchup_steps": 18,
+              "observed_initialize_and_catchup_ns": 235636389,
+              "node_submit_count": 34,
+              "submission_events_matched": 34,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 98417,
+              "node_submit_max_ns": 6279
+            },
+            {
+              "start_ns": 22948299884969,
+              "duration_ns": 251177523,
+              "update_ids": [
+                1181
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 239382834,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 114664,
+              "node_submit_max_ns": 13410
+            },
+            {
+              "start_ns": 22949455455883,
+              "duration_ns": 264237257,
+              "update_ids": [
+                1226
+              ],
+              "initializations": 1,
+              "catchup_steps": 18,
+              "observed_initialize_and_catchup_ns": 251077460,
+              "node_submit_count": 34,
+              "submission_events_matched": 34,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 132489,
+              "node_submit_max_ns": 14537
+            },
+            {
+              "start_ns": 22951184299097,
+              "duration_ns": 317366571,
+              "update_ids": [
+                1279
+              ],
+              "initializations": 1,
+              "catchup_steps": 23,
+              "observed_initialize_and_catchup_ns": 304225734,
+              "node_submit_count": 39,
+              "submission_events_matched": 39,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 136532,
+              "node_submit_max_ns": 12006
+            },
+            {
+              "start_ns": 22952127741588,
+              "duration_ns": 237819210,
+              "update_ids": [
+                1306
+              ],
+              "initializations": 1,
+              "catchup_steps": 18,
+              "observed_initialize_and_catchup_ns": 237602933,
+              "node_submit_count": 29,
+              "submission_events_matched": 29,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 95293,
+              "node_submit_max_ns": 5566
+            },
+            {
+              "start_ns": 22958827239278,
+              "duration_ns": 244795178,
+              "update_ids": [
+                1537
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 232052933,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 140634,
+              "node_submit_max_ns": 20568
+            },
+            {
+              "start_ns": 22960397040526,
+              "duration_ns": 237402743,
+              "update_ids": [
+                1589
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 224726421,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 95407,
+              "node_submit_max_ns": 10281
+            },
+            {
+              "start_ns": 22961892048162,
+              "duration_ns": 246450491,
+              "update_ids": [
+                1649
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 233587165,
+              "node_submit_count": 33,
+              "submission_events_matched": 33,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 109551,
+              "node_submit_max_ns": 12444
+            },
+            {
+              "start_ns": 22964117952551,
+              "duration_ns": 325984454,
+              "update_ids": [
+                1727
+              ],
+              "initializations": 1,
+              "catchup_steps": 23,
+              "observed_initialize_and_catchup_ns": 312786614,
+              "node_submit_count": 39,
+              "submission_events_matched": 39,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 163379,
+              "node_submit_max_ns": 12995
+            }
+          ],
+          "window_initializations": 88,
+          "window_catchup_steps": 876,
+          "window_detect_stages": 751,
+          "observed_sync_max_ns": 23770694,
+          "observed_unsynced_age_max_ns": 107422965,
+          "health_error_max": 0
+        }
+      },
+      "call_p99_increment_ns": 5285951,
+      "consumption_decline_percent": -3.15471787210142,
+      "gaps": 0,
+      "complete": true,
+      "passed": false,
+      "elapsed_seconds": 108.740743382
+    },
+    {
+      "pair": 10,
+      "metrics": {
+        "basic": {
+          "calls": 1593,
+          "call_p99_ns": 234033556,
+          "fps": 35.3343098808532,
+          "sample_overflow": 0,
+          "submit_p99_ns": 13386,
+          "slow_calls": [
+            {
+              "start_ns": 22978895167611,
+              "duration_ns": 290911412,
+              "update_ids": [
+                213
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 277749612,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 115327,
+              "node_submit_max_ns": 8833
+            },
+            {
+              "start_ns": 22980153337699,
+              "duration_ns": 301846347,
+              "update_ids": [
+                257
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 288669621,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 150265,
+              "node_submit_max_ns": 11478
+            },
+            {
+              "start_ns": 22981881282424,
+              "duration_ns": 360790043,
+              "update_ids": [
+                327
+              ],
+              "initializations": 1,
+              "catchup_steps": 27,
+              "observed_initialize_and_catchup_ns": 360463802,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 148585,
+              "node_submit_max_ns": 8741
+            },
+            {
+              "start_ns": 22984331808374,
+              "duration_ns": 305541834,
+              "update_ids": [
+                414
+              ],
+              "initializations": 1,
+              "catchup_steps": 22,
+              "observed_initialize_and_catchup_ns": 292458314,
+              "node_submit_count": 38,
+              "submission_events_matched": 38,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 129638,
+              "node_submit_max_ns": 6532
+            },
+            {
+              "start_ns": 22986795713572,
+              "duration_ns": 281993477,
+              "update_ids": [
+                500
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 268493743,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 120845,
+              "node_submit_max_ns": 7131
+            },
+            {
+              "start_ns": 22990155492726,
+              "duration_ns": 295412651,
+              "update_ids": [
+                621
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 280507203,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 123446,
+              "node_submit_max_ns": 10442
+            },
+            {
+              "start_ns": 22992211963814,
+              "duration_ns": 281685140,
+              "update_ids": [
+                696
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 268146381,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 142657,
+              "node_submit_max_ns": 22771
+            },
+            {
+              "start_ns": 22994397786571,
+              "duration_ns": 272656372,
+              "update_ids": [
+                769
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 272418522,
+              "node_submit_count": 32,
+              "submission_events_matched": 32,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 104905,
+              "node_submit_max_ns": 6049
+            },
+            {
+              "start_ns": 22996824523922,
+              "duration_ns": 302423390,
+              "update_ids": [
+                853
+              ],
+              "initializations": 1,
+              "catchup_steps": 21,
+              "observed_initialize_and_catchup_ns": 289043159,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 148632,
+              "node_submit_max_ns": 14237
+            },
+            {
+              "start_ns": 22998897888729,
+              "duration_ns": 340394352,
+              "update_ids": [
+                944
+              ],
+              "initializations": 1,
+              "catchup_steps": 26,
+              "observed_initialize_and_catchup_ns": 340089452,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 150493,
+              "node_submit_max_ns": 13318
+            },
+            {
+              "start_ns": 23007619747742,
+              "duration_ns": 279877117,
+              "update_ids": [
+                1235
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 267481658,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 124363,
+              "node_submit_max_ns": 12214
+            },
+            {
+              "start_ns": 23008597882271,
+              "duration_ns": 234033556,
+              "update_ids": [
+                1265
+              ],
+              "initializations": 1,
+              "catchup_steps": 17,
+              "observed_initialize_and_catchup_ns": 233780915,
+              "node_submit_count": 28,
+              "submission_events_matched": 28,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 114382,
+              "node_submit_max_ns": 12214
+            },
+            {
+              "start_ns": 23012626495118,
+              "duration_ns": 261328027,
+              "update_ids": [
+                1395
+              ],
+              "initializations": 1,
+              "catchup_steps": 19,
+              "observed_initialize_and_catchup_ns": 249175010,
+              "node_submit_count": 35,
+              "submission_events_matched": 35,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 104215,
+              "node_submit_max_ns": 5888
+            },
+            {
+              "start_ns": 23013747811125,
+              "duration_ns": 350328066,
+              "update_ids": [
+                1443
+              ],
+              "initializations": 1,
+              "catchup_steps": 26,
+              "observed_initialize_and_catchup_ns": 350017327,
+              "node_submit_count": 37,
+              "submission_events_matched": 37,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 151230,
+              "node_submit_max_ns": 8993
+            },
+            {
+              "start_ns": 23016805227668,
+              "duration_ns": 289093978,
+              "update_ids": [
+                1556
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 275856353,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 129291,
+              "node_submit_max_ns": 12031
+            },
+            {
+              "start_ns": 23017656421996,
+              "duration_ns": 293795500,
+              "update_ids": [
+                1584
+              ],
+              "initializations": 1,
+              "catchup_steps": 20,
+              "observed_initialize_and_catchup_ns": 281448801,
+              "node_submit_count": 36,
+              "submission_events_matched": 36,
+              "submission_events_missing": 0,
+              "node_submit_sum_ns": 156911,
+              "node_submit_max_ns": 13042
+            }
+          ],
+          "window_initializations": 87,
+          "window_catchup_steps": 961,
+          "window_detect_stages": 843,
+          "observed_sync_max_ns": 21586375,
+          "observed_unsynced_age_max_ns": 110733142,
+          "health_error_max": 0
+        },
+        "off": {
+          "calls": 1538,
+          "call_p99_ns": 239585568,
+          "fps": 34.16952970434494,
+          "sample_overflow": 0
+        }
+      },
+      "call_p99_increment_ns": -5552012,
+      "consumption_decline_percent": -3.4088270648926944,
+      "gaps": 0,
+      "complete": true,
+      "passed": true,
+      "elapsed_seconds": 108.484106994
+    }
+  ],
+  "passed_pairs": 7
+}

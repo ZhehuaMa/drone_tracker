@@ -1,5 +1,8 @@
 drone_tracker_node:
   ros__parameters:
+    diagnostics:
+      mode: "off"
+      socket: /run/drone_tracker/diagnostics.sock
     need_save: false
     save_path: "/home/dg/Videos/"
     visualized_result: true

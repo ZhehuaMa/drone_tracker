@@ -1,5 +1,7 @@
 #include "model/validation.h"
 #include "yolo_detector.h"
+#include "diagnostics/recorder.h"
+#include "diagnostics/timing.h"
 #include "platform/cpu_affinity.h"
 #include <fstream>
 #include <iostream>
@@ -63,46 +65,69 @@ bool YoloV8Detector::init() {
 
 void YoloV8Detector::stop()
 {
+    auto cancelled{diagnostics::event(diagnostics::Type::RequestCancel, diagnostics::Reason::Stopped)};
     {
         std::lock_guard<std::mutex> lock{m_mutex};
         if (m_stop_requested.exchange(true)) { return; }
+        if (m_new_request) {
+            cancelled.request_id = m_next_request.request_id;
+            cancelled.source_tracker_frame_id = m_next_request.frame_id;
+            cancelled.source_update_id = m_next_request.source_update_id;
+            cancelled.frame = m_next_request.identity;
+        }
     }
-
-    m_cv_request.notify_one(); // 唤醒工作线程以使其退出
-    if (m_worker_thread.joinable())
-    {
-        m_worker_thread.join();
-    }
+    const auto previous{diagnostics::current_producer};
+    diagnostics::current_producer = diagnostics::Producer::Control;
+    if (cancelled.request_id) { diagnostics::emit(cancelled); }
+    diagnostics::current_producer = previous;
+    m_cv_request.notify_one();
+    if (m_worker_thread.joinable()) { m_worker_thread.join(); }
 }
 
 bool YoloV8Detector::request(const FrameRef& frame, uint64_t frame_id, const cv::Rect& roi)
 {
-    if (validatePreprocessFrame(frame) != PreprocessError::None) { return false; }
-
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (m_cleaning || m_stop_requested || m_new_request || m_result_ready)
-    {
-        return false; // 上一个请求还未处理，忽略此请求（与Python逻辑一致）
+    auto decision{diagnostics::event(diagnostics::Type::RequestDecision)};
+    decision.request_id = ++m_request_counter;
+    decision.source_update_id = diagnostics::current_update;
+    decision.source_tracker_frame_id = frame_id;
+    if (frame) { decision.frame = frame->diagnosticIdentity(); }
+    if (validatePreprocessFrame(frame) != PreprocessError::None) {
+        decision.reason = diagnostics::Reason::InvalidInput; diagnostics::emit(decision); return false;
     }
-    m_next_request.frame = frame;
-    m_next_request.frame_id = frame_id;
-    m_next_request.roi = roi;
-
-    m_new_request = true;
-    m_result_ready = false;
-    m_cv_request.notify_one(); // 唤醒工作线程
-    return true;
+    bool accepted{};
+    {
+        std::lock_guard<std::mutex> lock{m_mutex};
+        decision.values[0] = m_executing; decision.values[1] = m_new_request;
+        decision.values[2] = m_result_ready; decision.values[3] = m_inflight_id;
+        decision.values[4] = m_next_request.request_id; decision.values[5] = m_last_result.request_id;
+        if (m_cleaning) { decision.reason = diagnostics::Reason::Cleaning; }
+        else if (m_stop_requested) { decision.reason = diagnostics::Reason::Stopped; }
+        else if (m_new_request) { decision.reason = diagnostics::Reason::PendingOccupied; }
+        else if (m_result_ready) { decision.reason = diagnostics::Reason::UnreadResult; }
+        else {
+            m_next_request = {frame, frame_id, roi, decision.request_id, diagnostics::current_update, decision.frame};
+            m_new_request = true; m_result_ready = false;
+            m_cv_request.notify_one(); accepted = true; decision.flags |= diagnostics::Complete;
+        }
+    }
+    diagnostics::emit(decision);
+    return accepted;
 }
 
 void YoloV8Detector::finishRound() {
-    std::unique_lock<std::mutex> lock{m_mutex};
-    m_cleaning = true;
-    m_new_request = false;
-    m_next_request = {};
-    m_cv_idle.wait(lock, [this] { return !m_executing; });
-    m_last_result = {};
-    m_result_ready = false;
-    m_cleaning = false;
+    auto pending{diagnostics::event(diagnostics::Type::RequestCancel, diagnostics::Reason::Cleaning)};
+    auto unread{pending};
+    {
+        std::unique_lock<std::mutex> lock{m_mutex};
+        m_cleaning = true;
+        if (m_new_request) { pending.request_id = m_next_request.request_id; pending.source_tracker_frame_id = m_next_request.frame_id; pending.source_update_id = m_next_request.source_update_id; pending.frame = m_next_request.identity; }
+        m_new_request = false; m_next_request = {};
+        m_cv_idle.wait(lock, [this] { return !m_executing; });
+        if (m_result_ready) { unread.request_id = m_last_result.request_id; unread.source_tracker_frame_id = m_last_result.frame_id; unread.source_update_id = m_last_result.source_update_id; unread.frame = m_last_result.source_identity; }
+        m_last_result = {}; m_result_ready = false; m_cleaning = false;
+    }
+    if (pending.request_id) { diagnostics::emit(pending); }
+    if (unread.request_id) { diagnostics::emit(unread); }
 }
 
 bool YoloV8Detector::isBusy() const
@@ -113,11 +138,42 @@ bool YoloV8Detector::isBusy() const
 
 bool YoloV8Detector::get_result(YoloResult& result)
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    if (!m_result_ready || m_cleaning) { return false; }
-    result = m_last_result;
-    m_result_ready = false; // 标记结果已被取走
+    {
+        std::lock_guard<std::mutex> lock{m_mutex};
+        if (!m_result_ready || m_cleaning) { return false; }
+        result = m_last_result; m_result_ready = false;
+    }
+    auto value{diagnostics::event(diagnostics::Type::ResultRead, result.reason)};
+    value.request_id = result.request_id; value.source_update_id = result.source_update_id;
+    value.source_tracker_frame_id = result.frame_id; value.frame = result.source_identity;
+    if (result.has_target) { value.flags |= diagnostics::HasTarget | diagnostics::BoxValid; }
+    value.box = {result.best.box.x, result.best.box.y, result.best.box.width, result.best.box.height};
+    value.score = result.best.score; diagnostics::emit(value);
     return true;
+}
+void YoloV8Detector::publishResult(const Request &request, bool has_target, const Detection &best, diagnostics::Reason reason) {
+    auto overwritten{diagnostics::event(diagnostics::Type::ResultOverwrite, diagnostics::Reason::None, true)};
+    {
+        std::lock_guard<std::mutex> lock{m_mutex};
+        if (m_result_ready) {
+            overwritten.request_id = m_last_result.request_id;
+            overwritten.source_tracker_frame_id = m_last_result.frame_id;
+            overwritten.values[0] = request.request_id;
+        }
+        m_last_result = YoloResult{request.frame_id, has_target, best, request.request_id,
+            request.source_update_id, request.identity, reason};
+        m_result_ready = true;
+    }
+    if (overwritten.request_id) { diagnostics::emit(overwritten); }
+    auto value{diagnostics::event(diagnostics::Type::DetectEnd, reason,
+        reason == diagnostics::Reason::InferenceException || reason == diagnostics::Reason::ImagePrepareFailed)};
+    value.request_id = request.request_id; value.source_update_id = request.source_update_id;
+    value.source_tracker_frame_id = request.frame_id; value.frame = request.identity;
+    value.box = {best.box.x, best.box.y, best.box.width, best.box.height}; value.score = best.score;
+    value.flags |= diagnostics::Complete | diagnostics::ScoreKnown;
+    if (has_target) { value.flags |= diagnostics::HasTarget | diagnostics::BoxValid; }
+    value.values[0] = m_stage_kind; value.values[1] = m_stage_index;
+    diagnostics::emit(value);
 }
 
 std::vector<cv::Rect> YoloV8Detector::createOverlappingTiles(int width, int height, float overlap_ratio)
@@ -169,6 +225,7 @@ std::pair<int, int> YoloV8Detector::getInputSize() const
 
 void YoloV8Detector::workerThreadLoop()
 {
+    diagnostics::current_producer = diagnostics::Producer::Yolo;
     std::cout << "YOLO worker thread started." << std::endl;
     
     while (true)
@@ -184,25 +241,34 @@ void YoloV8Detector::workerThreadLoop()
             m_next_request = Request{};
             m_new_request = false;
             m_executing = true;
+            m_inflight_id = req.request_id;
         } 
         
         // 此守卫先创建，确保会话和请求帧先释放，再发布空闲通知。
         auto complete{[this](void *) {
             std::lock_guard<std::mutex> lock{m_mutex};
             m_executing = false;
+            m_inflight_id = 0;
             m_cv_idle.notify_all();
         }};
         std::unique_ptr<void, decltype(complete)> execution{this, complete};
+        diagnostics::current_request = req.request_id;
+        diagnostics::current_update = req.source_update_id;
+        diagnostics::current_tracker_frame = req.frame_id;
+        diagnostics::DetailScope detail{};
+        auto started{diagnostics::event(diagnostics::Type::DetectStart)};
+        started.frame = req.identity; started.source_update_id = req.source_update_id;
+        started.source_tracker_frame_id = req.frame_id;
+        diagnostics::emit(started);
+        m_stage_index = 0; m_execution_reason = diagnostics::Reason::None;
         try {
-            if (!req.frame) { continue; }
+            if (!req.frame) { publishResult(req, false, {}, diagnostics::Reason::InvalidInput); continue; }
 
             auto session_result{preprocessor_->beginFrame(req.frame, input_contract_)};
             req.frame.reset();
             if (!session_result || !session_result.value) {
                 std::cerr << "YOLO beginFrame failed: " << session_result.message << std::endl;
-                std::lock_guard<std::mutex> lock(m_mutex);
-                m_last_result = YoloResult{req.frame_id, false, Detection{}};
-                m_result_ready = true;
+                publishResult(req, false, {}, diagnostics::Reason::ImagePrepareFailed);
                 continue;
             }
             auto &session{*session_result.value};
@@ -227,6 +293,7 @@ void YoloV8Detector::workerThreadLoop()
             {
                 m_conf_thresh_current = m_conf_thresh * m_relax_ratio;
                 std::vector<Detection> roi_detections;
+                m_stage_kind = 0;
                 detectOnImage(session, req.roi, roi_detections);
                 collect_target(roi_detections);
             }
@@ -236,6 +303,7 @@ void YoloV8Detector::workerThreadLoop()
             {
                 m_conf_thresh_current = m_conf_thresh;
                 std::vector<Detection> full_detections;
+                m_stage_kind = 1;
                 detectOnImage(session, {}, full_detections);
                 collect_target(full_detections);
             }
@@ -249,6 +317,7 @@ void YoloV8Detector::workerThreadLoop()
                 for (const auto& tile : createOverlappingTiles(w, h, TILE_OVERLAP_RATIO))
                 {
                     std::vector<Detection> tile_detections;
+                    m_stage_kind = 2;
                     detectOnImage(session, tile, tile_detections);
                     collect_target(tile_detections);
                     if (has_target)
@@ -257,20 +326,15 @@ void YoloV8Detector::workerThreadLoop()
             }
 
             // 存储结果：单框 + 帧号（Python 端 new_detections=[best_box], processed_frame_id）
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                m_last_result = YoloResult{req.frame_id, has_target, best};
-                m_result_ready = true;
-            }
+            publishResult(req, has_target, best, has_target ? diagnostics::Reason::None
+                : (m_execution_reason == diagnostics::Reason::None ? diagnostics::Reason::NoTarget : m_execution_reason));
 
             // Release frame reference
             req.frame.reset();
         } catch (const std::exception &error) {
             req.frame.reset();
             std::cerr << "YOLO request failed: " << error.what() << std::endl;
-            std::lock_guard<std::mutex> lock{m_mutex};
-            m_last_result = YoloResult{req.frame_id, false, Detection{}};
-            m_result_ready = true;
+            publishResult(req, false, {}, diagnostics::Reason::InferenceException);
         }
     }
 
@@ -279,28 +343,48 @@ void YoloV8Detector::workerThreadLoop()
 
 void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &region,
                                    std::vector<Detection> &results) {
+    m_stage = diagnostics::event(diagnostics::Type::DetectStage);
+    m_stage.values[0] = m_stage_kind; m_stage.values[1] = m_stage_index++;
+    m_stage.box = {static_cast<float>(region.x), static_cast<float>(region.y),
+        static_cast<float>(region.width), static_cast<float>(region.height)};
+    m_stage.threshold = m_conf_thresh_current;
+    const auto stage_start{diagnostics::monotonicNs()};
+    auto finish_stage{[this, stage_start](void *) {
+        m_stage.duration_ns = diagnostics::monotonicNs() - stage_start;
+        if (m_stage.reason != diagnostics::Reason::None) { m_execution_reason = m_stage.reason; }
+        diagnostics::emit(m_stage);
+    }};
+    std::unique_ptr<void, decltype(finish_stage)> stage_guard{this, finish_stage};
     auto prepared{session.prepare(region)};
     if (!prepared || !prepared.value.input) {
+        m_stage.reason = diagnostics::Reason::ImagePrepareFailed;
         std::cerr << "YOLO preprocessing failed: " << prepared.message << std::endl;
         return;
     }
     try {
         const auto output{model_->infer(prepared.value.input)};
         if (!output) {
+            m_stage.reason = diagnostics::Reason::InferenceException;
             std::cerr << model::describe(output.error) << std::endl;
             return;
         }
         const auto checked{model::yoloPrediction({output.value.predictions}, "YoloV8Detector")};
         if (!checked || output.value.attribute_axis != checked.value.attribute_axis
-            || output.value.candidate_axis != checked.value.candidate_axis) { return; }
+            || output.value.candidate_axis != checked.value.candidate_axis) {
+            m_stage.reason = diagnostics::Reason::InferenceException; return;
+        }
         const auto view{output.value.predictions.read()};
         const auto &dims{output.value.predictions.descriptor.shape};
-        if (dims[1] - 4 != class_count_) { return; }
+        if (dims[1] - 4 != class_count_) { m_stage.reason = diagnostics::Reason::InferenceException; return; }
         const auto resolved{resolveYoloRegion(session.sourceSize(), region)};
-        if (!resolved) { return; }
+        if (!resolved) { m_stage.reason = diagnostics::Reason::ImagePrepareFailed; return; }
+        m_stage.box = {static_cast<float>(resolved.value.x), static_cast<float>(resolved.value.y),
+            static_cast<float>(resolved.value.width), static_cast<float>(resolved.value.height)};
+        m_stage.flags |= diagnostics::BoxValid;
         postprocess(view.data(), dims, prepared.value.transform,
                     resolved.value.size(), cv::Point2f(resolved.value.x, resolved.value.y), results);
     } catch (const std::exception &error) {
+        m_stage.reason = diagnostics::Reason::InferenceException;
         std::cerr << "YOLO inference failed: " << error.what() << std::endl;
     }
 }
@@ -314,7 +398,13 @@ void YoloV8Detector::postprocess(const float* output, const TensorShape &output_
     std::vector<int> class_ids;
     for (std::size_t i{0}; i < num_proposals; ++i) {
         const float score{output[(4 + static_cast<std::size_t>(m_target_class_id)) * num_proposals + i]};
+        ++m_stage.counts[0];
+        if (std::isfinite(score)) {
+            if (!(m_stage.flags & diagnostics::ScoreKnown) || score > m_stage.highest_score) { m_stage.highest_score = score; }
+            m_stage.flags |= diagnostics::ScoreKnown;
+        }
         if (score >= m_conf_thresh_current) {
+            ++m_stage.counts[1];
             const float cx{output[i]};
             const float cy{output[num_proposals + i]};
             const float w{output[2 * num_proposals + i]};
@@ -325,6 +415,7 @@ void YoloV8Detector::postprocess(const float* output, const TensorShape &output_
             const float y2{(cy - lb.top + h / 2.0f) / lb.scale_y + global_offset.y};
             if ((x2 - x1) / image_size.width <= m_max_box_area_ratio &&
                 (y2 - y1) / image_size.height <= m_max_box_area_ratio) {
+                ++m_stage.counts[2];
                 boxes.emplace_back(x1, y1, x2 - x1, y2 - y1);
                 scores.push_back(score);
                 class_ids.push_back(m_target_class_id);
@@ -336,6 +427,8 @@ void YoloV8Detector::postprocess(const float* output, const TensorShape &output_
     std::vector<int> indices;
     cv::dnn::NMSBoxes(boxes, scores, m_conf_thresh_current, m_nms_thresh, indices);
 
+    m_stage.counts[3] = static_cast<std::uint32_t>(indices.size());
+    m_stage.flags |= diagnostics::Observed | diagnostics::Complete;
     for (int idx : indices)
     {
         results.push_back({cv::Rect2f(boxes[idx]), scores[idx], class_ids[idx]});

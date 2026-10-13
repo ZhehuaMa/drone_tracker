@@ -1,0 +1,713 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -178,4 +178,7 @@
+     set_tests_properties(ros_video_tests PROPERTIES FIXTURES_REQUIRED ros_video_files TIMEOUT 60 ENVIRONMENT "ROS_DOMAIN_ID=187;ROS_LOCALHOST_ONLY=1")
+ endif()
+ 
++add_executable(fixed_workload_probe src/fixed_workload_probe.cpp)
++target_link_libraries(fixed_workload_probe PRIVATE hybrid_tracker platform_rk3576 OpenSSL::Crypto)
++install(TARGETS fixed_workload_probe DESTINATION lib/${PROJECT_NAME})
+ ament_package()
+--- a/src/diagnostics/recorder.h
++++ b/src/diagnostics/recorder.h
+@@ -31,7 +31,12 @@
+ inline thread_local std::uint64_t current_update{0};
+ inline thread_local std::uint64_t current_tracker_frame{0};
+ inline thread_local std::uint64_t current_request{0};
++inline void (*fixed_preparation_hook)(std::uint64_t, Type) noexcept{};
++inline std::uint64_t preparationStart() noexcept { return fixed_preparation_hook ? monotonicNs() : 0; }
++inline void preparationEnd(std::uint64_t start, Type type) noexcept { if (fixed_preparation_hook) { fixed_preparation_hook(monotonicNs() - start, type); } }
++inline void (*fixed_hook)(const Event &) noexcept{};
+ inline void emit(Event event) noexcept {
++    if (fixed_hook) { fixed_hook(event); }
+ #ifdef DRONE_TRACKER_ENABLE_DIAGNOSTICS
+     Recorder *recorder{active.load(std::memory_order_acquire)};
+     if (recorder) {
+--- a/src/hybrid_tracker/hybrid_tracker.cpp
++++ b/src/hybrid_tracker/hybrid_tracker.cpp
+@@ -20,7 +20,8 @@
+     diagnostics::Reason reason{diagnostics::Reason::None};
+     std::uint64_t start{diagnostics::monotonicNs()};
+     ~UpdateDiagnostic() noexcept {
+-        auto value{diagnostics::event(diagnostics::Type::UpdateEnd, reason)};
++        const auto preparation_value{diagnostics::preparationStart()};
++    auto value{diagnostics::event(diagnostics::Type::UpdateEnd, reason)};
+         value.duration_ns = diagnostics::monotonicNs() - start;
+         value.prediction_us = context.now_us; value.flags |= diagnostics::PredictionKnown;
+         if (context.frame) { value.frame = context.frame->diagnosticIdentity(); value.frame_time_us = context.frame->timestampUs(); value.flags |= diagnostics::FrameTimeKnown; }
+@@ -35,7 +36,7 @@
+             static_cast<float>(other.width), static_cast<float>(other.height)};
+         if (box.is_valid) { value.flags |= diagnostics::BoxValid; }
+         if (other.is_valid) { value.flags |= diagnostics::OtherBoxValid; }
+-        diagnostics::emit(value); value.type = diagnostics::Type::Output; diagnostics::emit(value);
++        diagnostics::preparationEnd(preparation_value, value.type); diagnostics::emit(value); value.type = diagnostics::Type::Output; diagnostics::emit(value);
+     }
+ };
+ } // namespace
+@@ -251,18 +252,20 @@
+                                        const std::vector<FrameRef>& catchup_frames,
+                                        const cv::Rect2f& yolo_box)
+ {
++    const auto preparation_initialization{diagnostics::preparationStart()};
+     auto initialization{diagnostics::event(diagnostics::Type::InitializeStart)};
+     initialization.frame = hist.frame->diagnosticIdentity(); initialization.source_tracker_frame_id = hist.frame_id;
+     initialization.source_update_id = hist.update_id; initialization.box = diagnosticBox(yolo_box);
+     initialization.flags |= diagnostics::BoxValid;
+-    diagnostics::emit(initialization);
++    diagnostics::preparationEnd(preparation_initialization, initialization.type); diagnostics::emit(initialization);
+     const auto init_start{diagnostics::monotonicNs()};
+     const bool initialized{m_tracker->init(hist.frame, yolo_box)};
++    const auto preparation_initialization_end{diagnostics::preparationStart()};
+     initialization.type = diagnostics::Type::InitializeEnd;
+     initialization.duration_ns = diagnostics::monotonicNs() - init_start;
+     if (initialized) { initialization.flags |= diagnostics::Complete; }
+     else { initialization.reason = diagnostics::Reason::InitFailed; initialization.flags |= diagnostics::Critical; }
+-    diagnostics::emit(initialization);
++    diagnostics::preparationEnd(preparation_initialization_end, initialization.type); diagnostics::emit(initialization);
+     if (!initialized)
+     {
+         m_tracker->reset();
+@@ -279,25 +282,27 @@
+         cv::Rect2f t_box;
+         const auto step_start{diagnostics::monotonicNs()};
+         const bool step_ok{m_tracker->update(f, t_box)};
+-        auto step{diagnostics::event(diagnostics::Type::CatchupStep)};
++        const auto preparation_step{diagnostics::preparationStart()};
++    auto step{diagnostics::event(diagnostics::Type::CatchupStep)};
+         step.frame = f->diagnosticIdentity(); step.frame_time_us = f->timestampUs();
+         step.flags |= diagnostics::FrameTimeKnown;
+         step.source_tracker_frame_id = hist.frame_id; step.source_update_id = hist.update_id;
+         step.duration_ns = diagnostics::monotonicNs() - step_start;
+         step.box = diagnosticBox(t_box); step.score = m_tracker->lastScore(); step.flags |= diagnostics::ScoreKnown;
+         if (step_ok) { step.flags |= diagnostics::Complete | diagnostics::BoxValid; ++successful; }
+-        diagnostics::emit(step);
++        diagnostics::preparationEnd(preparation_step, step.type); diagnostics::emit(step);
+         if (step_ok)
+         {
+             m_display_box = toIntRect(t_box);
+             m_previous_box = m_display_box;
+         }
+     }
++    const auto preparation_summary{diagnostics::preparationStart()};
+     auto summary{diagnostics::event(diagnostics::Type::CatchupEnd)};
+     summary.source_tracker_frame_id = hist.frame_id; summary.source_update_id = hist.update_id;
+     summary.counts[0] = static_cast<std::uint32_t>(catchup_frames.size()); summary.counts[1] = successful;
+     summary.counts[2] = summary.counts[0] - successful; summary.flags |= diagnostics::Complete;
+-    diagnostics::emit(summary);
++    diagnostics::preparationEnd(preparation_summary, summary.type); diagnostics::emit(summary);
+     return true;
+ }
+ 
+@@ -310,10 +315,11 @@
+     diagnostics::current_request = 0;
+     diagnostics::DetailScope detail{};
+     UpdateDiagnostic observation{ctx, out};
++    const auto preparation_entered{diagnostics::preparationStart()};
+     auto entered{diagnostics::event(diagnostics::Type::UpdateStart)};
+     if (ctx.frame) { entered.frame = ctx.frame->diagnosticIdentity(); entered.frame_time_us = ctx.frame->timestampUs(); entered.flags |= diagnostics::FrameTimeKnown; }
+     entered.prediction_us = ctx.now_us; entered.flags |= diagnostics::PredictionKnown;
+-    diagnostics::emit(entered);
++    diagnostics::preparationEnd(preparation_entered, entered.type); diagnostics::emit(entered);
+     out.state = m_state;
+     out.info = m_display_info;
+     out.color = (uint32_t(m_display_color[2]) << 16) | (uint32_t(m_display_color[1]) << 8) | uint32_t(m_display_color[0]);
+@@ -367,14 +373,16 @@
+     buffered.kf_pred_box = kf_pred_box;
+     buffered.has_kf_pred = has_kf_pred;
+     m_frame_buffer.push_back(buffered);
++    const auto preparation_added{diagnostics::preparationStart()};
+     auto added{diagnostics::event(diagnostics::Type::HistoryAdd)};
+-    added.frame = ctx.frame->diagnosticIdentity(); diagnostics::emit(added);
++    added.frame = ctx.frame->diagnosticIdentity(); diagnostics::preparationEnd(preparation_added, added.type); diagnostics::emit(added);
+     if (static_cast<int>(m_frame_buffer.size()) > m_settings.frame_buffer_size) {
+-        auto removed{diagnostics::event(diagnostics::Type::HistoryEvict)};
++        const auto preparation_removed{diagnostics::preparationStart()};
++    auto removed{diagnostics::event(diagnostics::Type::HistoryEvict)};
+         removed.frame = m_frame_buffer.front().frame->diagnosticIdentity();
+         removed.source_tracker_frame_id = m_frame_buffer.front().frame_id;
+         removed.source_update_id = m_frame_buffer.front().update_id;
+-        diagnostics::emit(removed); m_frame_buffer.pop_front();
++        diagnostics::preparationEnd(preparation_removed, removed.type); diagnostics::emit(removed); m_frame_buffer.pop_front();
+     }
+ 
+     bool measurement_updated = false;
+@@ -421,12 +429,13 @@
+             }
+ 
+             diagnostics::current_request = res.request_id;
+-            auto lookup{diagnostics::event(diagnostics::Type::HistoryLookup,
++            const auto preparation_lookup{diagnostics::preparationStart()};
++    auto lookup{diagnostics::event(diagnostics::Type::HistoryLookup,
+                 found ? diagnostics::Reason::None : diagnostics::Reason::HistoryMiss, !found)};
+             lookup.request_id = res.request_id; lookup.source_tracker_frame_id = res.frame_id;
+             lookup.source_update_id = res.source_update_id;
+             lookup.values[0] = m_frame_buffer.front().frame_id; lookup.values[1] = m_frame_buffer.back().frame_id;
+-            diagnostics::emit(lookup);
++            diagnostics::preparationEnd(preparation_lookup, lookup.type); diagnostics::emit(lookup);
+             if (found)
+             {
+                 std::vector<FrameRef> catchup_frames;
+@@ -498,7 +507,8 @@
+             jump.values[0] = 1; // NanoTrack 跳变计数；区别 YOLO 未确认计数。
+             jump.values[1] = jump_from_kf;
+             jump.values[2] = jump_from_prev;
+-            auto basis{diagnostics::event(diagnostics::Type::JumpComparison)};
++            const auto preparation_basis{diagnostics::preparationStart()};
++    auto basis{diagnostics::event(diagnostics::Type::JumpComparison)};
+             basis.values[0] = 1; // NanoTrack 与 KF 比较。
+             basis.box = diagnosticBox(kf_pred_box);
+             basis.other_box = diagnosticBox(tracker_box_i);
+@@ -507,7 +517,7 @@
+             basis.counts[0] = jump_from_kf;
+             basis.score = m_settings.max_position_jump;
+             basis.threshold = m_settings.max_size_jump_ratio;
+-            diagnostics::emit(basis);
++            diagnostics::preparationEnd(preparation_basis, basis.type); diagnostics::emit(basis);
+             if (jump_from_kf && jump_from_prev)
+             {
+                 jump.reason = diagnostics::Reason::NanoJump;
+@@ -613,12 +623,13 @@
+                         break;
+                     }
+                 }
+-                auto lookup{diagnostics::event(diagnostics::Type::HistoryLookup,
++                const auto preparation_lookup{diagnostics::preparationStart()};
++    auto lookup{diagnostics::event(diagnostics::Type::HistoryLookup,
+                     found ? diagnostics::Reason::None : diagnostics::Reason::HistoryMiss, !found)};
+                 lookup.request_id = res.request_id; lookup.source_tracker_frame_id = res.frame_id;
+                 lookup.source_update_id = res.source_update_id;
+                 lookup.values[0] = m_frame_buffer.front().frame_id; lookup.values[1] = m_frame_buffer.back().frame_id;
+-                diagnostics::emit(lookup);
++                diagnostics::preparationEnd(preparation_lookup, lookup.type); diagnostics::emit(lookup);
+                 const BufferedFrame* hist = found ? &m_frame_buffer[idx] : nullptr;
+                 std::vector<FrameRef> catchup_frames;
+                 if (found)
+@@ -659,7 +670,8 @@
+                     yolo_jump_prev = isBoxJump(clipped(m_previous_box), yolo_box_vis,
+                                                m_settings.max_position_jump, m_settings.max_size_jump_ratio);
+                 const bool yolo_jump = yolo_jump_kf && yolo_jump_prev;
+-                auto basis{diagnostics::event(diagnostics::Type::JumpComparison)};
++                const auto preparation_basis{diagnostics::preparationStart()};
++    auto basis{diagnostics::event(diagnostics::Type::JumpComparison)};
+                 basis.source_tracker_frame_id = res.frame_id;
+                 basis.source_update_id = res.source_update_id;
+                 basis.values[0] = 2; // YOLO 与历史 KF 比较，使用裁剪后的实际框。
+@@ -672,13 +684,13 @@
+                 basis.counts[0] = yolo_jump_kf;
+                 basis.score = m_settings.max_position_jump;
+                 basis.threshold = m_settings.max_size_jump_ratio;
+-                diagnostics::emit(basis);
++                diagnostics::preparationEnd(preparation_basis, basis.type); diagnostics::emit(basis);
+                 basis.values[0] = 3; // YOLO 与历史跟踪框或前一显示框比较。
+                 basis.flags &= ~diagnostics::BoxValid;
+                 basis.box = diagnosticBox(hist && hist->has_tracker_box ? hist_tracker_vis : clipped(m_previous_box));
+                 if ((hist && hist->has_tracker_box) || m_has_previous_box) { basis.flags |= diagnostics::BoxValid; }
+                 basis.counts[0] = yolo_jump_prev;
+-                diagnostics::emit(basis);
++                diagnostics::preparationEnd(preparation_basis, basis.type); diagnostics::emit(basis);
+                 decision.box = diagnosticBox(hist_tracker_vis); decision.other_box = diagnosticBox(yolo_box_vis);
+                 decision.iou = current_iou; decision.threshold = m_settings.iou_reset_threshold;
+                 decision.highest_score = m_settings.iou_calibrate_threshold;
+@@ -781,9 +793,10 @@
+                           << " frames, forcing tracker reset..." << std::endl;
+                 m_tracker_initialized = false;
+                 clearBoxes();
+-                auto timeout{diagnostics::event(diagnostics::Type::Decision, diagnostics::Reason::NoResultTimeout, true)};
++                const auto preparation_timeout{diagnostics::preparationStart()};
++    auto timeout{diagnostics::event(diagnostics::Type::Decision, diagnostics::Reason::NoResultTimeout, true)};
+                 timeout.counts[0] = m_no_detection_frames; timeout.values[0] = no_detect_limit;
+-                diagnostics::emit(timeout);
++                diagnostics::preparationEnd(preparation_timeout, timeout.type); diagnostics::emit(timeout);
+                 m_no_detection_frames = 0;
+             }
+         }
+--- a/src/hybrid_tracker/yolo_detector.cpp
++++ b/src/hybrid_tracker/yolo_detector.cpp
+@@ -4,6 +4,7 @@
+ #include "diagnostics/timing.h"
+ #include "platform/cpu_affinity.h"
+ #include <fstream>
++#include <cstdlib>
+ #include <iostream>
+ #include <vector>
+ #include <numeric>
+@@ -54,6 +55,7 @@
+         input_h = size.value.height;
+         input_w = size.value.width;
+         m_stop_requested = false;
++        if (std::getenv("DRONE_FIXED_SCHEDULE")) { return true; }
+         m_worker_thread = cpu_affinity::start(cpu_affinity::Role::Yolo, [this] { workerThreadLoop(); }, m_launcher);
+         if (!m_worker_thread.joinable()) { return false; }
+         return true;
+@@ -138,6 +140,17 @@
+ 
+ bool YoloV8Detector::get_result(YoloResult& result)
+ {
++    if (std::getenv("DRONE_FIXED_SCHEDULE") && diagnostics::current_update % 40 == 20) {
++        std::lock_guard<std::mutex> lock{m_mutex};
++        if (m_new_request && m_next_request.frame_id == 1) {
++            float x{}, y{}, width{}, height{}, score{};
++            std::sscanf(std::getenv("DRONE_FIXED_BOX"), "%f,%f,%f,%f,%f", &x, &y, &width, &height, &score);
++            m_last_result = {m_next_request.frame_id, true, {{x, y, width, height}, score, 0},
++                m_next_request.request_id, m_next_request.source_update_id, m_next_request.identity, diagnostics::Reason::None};
++            m_result_ready = true;
++            m_new_request = false;
++        }
++    }
+     {
+         std::lock_guard<std::mutex> lock{m_mutex};
+         if (!m_result_ready || m_cleaning) { return false; }
+--- /dev/null
++++ b/src/fixed_workload_probe.cpp
+@@ -0,0 +1,451 @@
++#include <algorithm>
++#include <array>
++#include <chrono>
++#include <cstdlib>
++#include <ctime>
++#include <fstream>
++#include <iomanip>
++#include <iostream>
++#include <random>
++#include <sstream>
++#include <thread>
++
++#include "diagnostics/client.h"
++#include "diagnostics/measurement.h"
++#include "hybrid_tracker/hybrid_tracker.h"
++#include "hybrid_tracker/timing_observer.h"
++#include "hybrid_tracker/yolo_detector.h"
++#include "platform/cpu_affinity.h"
++#include "platform/platform_factory.h"
++#include "platform/rk3576/mjpeg_video_reader.h"
++#include "platform/rk3576/nanotrack_preprocessor.h"
++
++#include <openssl/sha.h>
++#include <opencv2/opencv.hpp>
++
++/** @brief 隔离归因程序；正式节点不会调用本文件的模式切换或工作量计数。 */
++namespace {
++constexpr std::size_t MAX_CALLS{4800};
++std::uint64_t cpuNs() {
++    timespec t{};
++    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t);
++    return t.tv_sec * 1000000000ULL + t.tv_nsec;
++}
++std::string hash(const void *data, std::size_t bytes) {
++    std::array<unsigned char, SHA256_DIGEST_LENGTH> out{};
++    SHA256(static_cast<const unsigned char *>(data), bytes, out.data());
++    std::ostringstream text{};
++    text << std::hex << std::setfill('0');
++    for (unsigned char c : out) {
++        text << std::setw(2) << static_cast<int>(c);
++    }
++    return text.str();
++}
++struct Sample {
++    std::uint64_t ns{}, cpu{}, begin{}, event_hash{1469598103934665603ULL};
++    std::uint32_t events{}, init{}, steps{}, preparation_count{};
++    std::uint64_t preparation_ns{};
++    std::uint64_t init_ns{}, step_ns{};
++    std::array<std::uint64_t, timing::stageCount> stages{};
++    std::array<std::uint32_t, timing::stageCount> counts{};
++    TrackerOutput output{};
++    float score{};
++    cv::Rect2f box{};
++};
++Sample *sample{};
++void hook(const diagnostics::Event &input) noexcept {
++    if (!sample) {
++        return;
++    }
++    auto event{input};
++    event.mono_ns = 0;
++    event.duration_ns = 0;
++    event.run_id = 0;
++    event.round_id = 0;
++    // 身份在每个独立模式按同一调用序列取得；只排除纯耗时。
++    const auto *bytes{reinterpret_cast<const unsigned char *>(&event)};
++    for (std::size_t i{}; i < sizeof(event); ++i) {
++        sample->event_hash = (sample->event_hash ^ bytes[i]) * 1099511628211ULL;
++    }
++    ++sample->events;
++    if (input.type == diagnostics::Type::InitializeEnd) {
++        ++sample->init;
++        sample->init_ns += input.duration_ns;
++    }
++    if (input.type == diagnostics::Type::CatchupStep) {
++        ++sample->steps;
++        sample->step_ns += input.duration_ns;
++    }
++}
++void preparationHook(std::uint64_t ns, diagnostics::Type) noexcept {
++    if (sample) {
++        sample->preparation_ns += ns;
++        ++sample->preparation_count;
++    }
++}
++class Observer final : public timing::Observer {
++  public:
++    std::uint32_t begin(timing::Stage stage) noexcept override {
++        const std::uint32_t id{size_++};
++        starts_[id] = diagnostics::monotonicNs();
++        stages_[id] = stage;
++        return id;
++    }
++    void end(std::uint32_t id, bool) noexcept override {
++        const auto index{static_cast<std::size_t>(stages_[id])};
++        if (sample) {
++            sample->stages[index] += diagnostics::monotonicNs() - starts_[id];
++            ++sample->counts[index];
++        }
++        if (id + 1 == size_) {
++            --size_;
++        }
++    }
++
++  private:
++    std::array<std::uint64_t, 128> starts_{};
++    std::array<timing::Stage, 128> stages_{};
++    std::uint32_t size_{};
++};
++class AuditNano final : public model::NanoTrackBackend {
++  public:
++    AuditNano(std::unique_ptr<model::NanoTrackBackend> backend, std::ofstream &out, bool enabled = true)
++        : backend_{std::move(backend)}, out_{out}, enabled_{enabled} {
++    }
++    std::uint64_t templates_{}, searches_{};
++    ModelInputContract templateContract() const override {
++        return backend_->templateContract();
++    }
++    ModelInputContract searchContract() const override {
++        return backend_->searchContract();
++    }
++    model::Status setTemplate(const PreparedInputRef &input) override {
++        ++templates_;
++        auto value{backend_->setTemplate(input)};
++        record("template", input, {}, {}, bool(value));
++        return value;
++    }
++    model::Result<model::NanoPrediction> search(const PreparedInputRef &input) override {
++        ++searches_;
++        auto value{backend_->search(input)};
++        record("search", input, value ? value.value.classification : model::Tensor{},
++               value ? value.value.location : model::Tensor{}, bool(value));
++        return value;
++    }
++    void reset() noexcept override {
++        backend_->reset();
++    }
++
++  private:
++    void record(const char *kind, const PreparedInputRef &input, const model::Tensor &a, const model::Tensor &b,
++                bool ok) {
++        if (!enabled_) {
++            return;
++        }
++        const auto prepared{std::dynamic_pointer_cast<const rk3576::FloatInput>(input)};
++        if (!prepared) {
++            throw std::runtime_error("Unknown Nano input");
++        }
++        out_ << diagnostics::current_update << ',' << kind << ','
++             << hash(prepared->values()->data(), prepared->values()->size() * sizeof(float)) << ','
++             << (a.storage ? hash(a.read().data(), a.storage->byteSize()) : "") << ','
++             << (b.storage ? hash(b.read().data(), b.storage->byteSize()) : "") << ',' << ok << '\n';
++    }
++    std::unique_ptr<model::NanoTrackBackend> backend_;
++    std::ofstream &out_;
++    bool enabled_{};
++};
++} // namespace
++int main(int argc, char **argv) {
++    if (argc != 8) {
++        std::cerr << "mode endpoint video output cycles observer audit\n";
++        return 2;
++    }
++    try {
++        cpu_affinity::initializeFromEnvironment();
++        cpu_affinity::apply(cpu_affinity::Role::Tracking);
++        const bool observed{std::atoi(argv[6]) != 0}, audit{std::atoi(argv[7]) != 0};
++        const bool mixed{std::string{argv[1]} == "mixed"};
++        const unsigned seed{std::getenv("DRONE_MIXED_SEED")
++                                ? static_cast<unsigned>(std::strtoul(std::getenv("DRONE_MIXED_SEED"), nullptr, 10))
++                                : 20261013U};
++        const int cycles{std::atoi(argv[5])};
++        if (mixed && (observed || audit || cycles % 2)) {
++            throw std::runtime_error("Mixed mode requires unobserved even complete blocks");
++        }
++        if (cycles < 1 || cycles * 40 > static_cast<int>(MAX_CALLS)) {
++            return 2;
++        }
++        auto samples{std::make_unique<std::array<Sample, MAX_CALLS>>()};
++        auto measured{std::make_unique<diagnostics::Measurement>()};
++        auto factory{CreatePlatformFactory()};
++        ModelPaths paths{};
++        paths.yolo = "/opt/drone_tracker/models/balloon_best_zoo6_int8_fp16_cls.rknn";
++        paths.template_backbone = "/opt/drone_tracker/models/fp16/template_backbone.rknn";
++        paths.search_backbone = "/opt/drone_tracker/models/fp16/search_backbone.rknn";
++        paths.head = "/opt/drone_tracker/models/fp16/head.rknn";
++        std::atomic<bool> stopped{false};
++        rk3576::MjpegVideoReader video{argv[3], stopped};
++        const auto read{video.next()};
++        if (read.status != rk3576::VideoReadStatus::Frame) {
++            throw std::runtime_error("Video first frame unavailable");
++        }
++        cv::Mat gray{read.sample.gray};
++        std::ofstream metadata{std::string{argv[4]} + "/metadata.txt"};
++        metadata << "pixels_sha256=" << hash(gray.data, gray.total()) << "\nwidth=" << gray.cols
++                 << "\nheight=" << gray.rows << "\ncv_type=" << gray.type() << "\nrow_stride=" << gray.step[0]
++                 << "\ncv_threads=" << cv::getNumThreads() << '\n';
++        auto builder{factory->createFrameBuilder()};
++        auto first{builder.value->copyFrom(gray, 1000000)};
++        auto components{factory->createTrackerComponents(paths)};
++        if (!components) {
++            throw std::runtime_error(components.error.describe());
++        }
++        YoloResult detected{};
++        {
++            YoloV8Detector detector{
++                std::move(components.value.yolo), std::move(components.value.yolo_preprocessor), .5f, .45f, 0, 1.0f};
++            if (!detector.init() || !detector.request(first.value, 1)) {
++                throw std::runtime_error("Real YOLO start failed");
++            }
++            const auto deadline{diagnostics::monotonicNs() + 3000000000ULL};
++            while (!detector.get_result(detected)) {
++                if (diagnostics::monotonicNs() >= deadline) {
++                    throw std::runtime_error("YOLO deadline");
++                }
++                std::this_thread::sleep_for(std::chrono::milliseconds{1});
++            }
++            if (!detected.has_target) {
++                throw std::runtime_error("First frame has no actual YOLO target");
++            }
++            detector.stop();
++        }
++        // 实际一次检测在预热前完成；测量期按固定调用20读取来源1，不运行检测线程。
++        std::ostringstream box{};
++        box << std::setprecision(9) << detected.best.box.x << ',' << detected.best.box.y << ','
++            << detected.best.box.width << ',' << detected.best.box.height << ',' << detected.best.score;
++        setenv("DRONE_FIXED_SCHEDULE", "1", 1);
++        setenv("DRONE_FIXED_BOX", box.str().c_str(), 1);
++        metadata << "fixed_box=" << box.str() << "\nobserver=" << observed << "\naudit=" << audit << '\n';
++        components = factory->createTrackerComponents(paths);
++        if (!components) {
++            throw std::runtime_error(components.error.describe());
++        }
++        std::ofstream audit_file{std::string{argv[4]} + "/model-audit.csv"};
++        audit_file << "update,kind,input_sha256,classification_sha256,location_sha256,ok\n";
++        AuditNano *counted{};
++        if (audit || mixed) {
++            auto counter{std::make_unique<AuditNano>(std::move(components.value.nano), audit_file, audit)};
++            counted = counter.get();
++            components.value.nano = std::move(counter);
++        }
++        TrackerSettings settings{};
++        settings.enable_dcf = false;
++        settings.yolo_conf_threshold = .5f;
++        settings.yolo_nms_threshold = .45f;
++        settings.kf_fx = 1333.3;
++        settings.kf_fy = 1333.3;
++        settings.kf_cx0 = gray.cols / 2;
++        settings.kf_cy0 = gray.rows / 2;
++        auto tracker{HybridTracker::CreateInstance(settings, std::move(components.value))};
++        if (!tracker->init()) {
++            throw std::runtime_error("Tracker init failed");
++        }
++        std::array<FrameContext, 40> frames{};
++        for (int i{}; i < 40; ++i) {
++            frames[i].frame = builder.value->copyFrom(gray, 1000000 + i * 16667).value;
++            frames[i].now_us = 1000000 + i * 16667;
++        }
++        Observer observer{};
++        std::array<std::uint64_t, 10000> clock_cost{}, cpu_cost{}, observer_cost{};
++        for (std::size_t i{}; i < clock_cost.size(); ++i) {
++            auto start{diagnostics::monotonicNs()};
++            clock_cost[i] = diagnostics::monotonicNs() - start;
++            start = diagnostics::monotonicNs();
++            cpuNs();
++            cpuNs();
++            cpu_cost[i] = diagnostics::monotonicNs() - start;
++            start = diagnostics::monotonicNs();
++            auto id{observer.begin(timing::Stage::Run)};
++            observer.end(id, true);
++            observer_cost[i] = diagnostics::monotonicNs() - start;
++        }
++        std::ofstream calibration{std::string{argv[4]} + "/calibration.csv"};
++        calibration << "clock_ns,two_thread_clock_ns,observer_span_ns,event_hook_ns,preparation_empty_ns\n";
++        for (std::size_t i{}; i < clock_cost.size(); ++i) {
++            calibration << clock_cost[i] << ',' << cpu_cost[i] << ',' << observer_cost[i] << ',';
++            Sample calibration_sample{};
++            sample = &calibration_sample;
++            auto hook_start{diagnostics::monotonicNs()};
++            hook(diagnostics::event(diagnostics::Type::UpdateEnd));
++            calibration << diagnostics::monotonicNs() - hook_start << ',';
++            hook_start = diagnostics::monotonicNs();
++            auto preparation_start{diagnostics::monotonicNs()};
++            preparationHook(diagnostics::monotonicNs() - preparation_start, diagnostics::Type::UpdateEnd);
++            calibration << diagnostics::monotonicNs() - hook_start << '\n';
++            sample = nullptr;
++        }
++        // 两个完整固定块预热；测量样本不删慢值。
++        for (int block{}; block < 2; ++block) {
++            tracker->finishRound();
++            tracker->reset();
++            for (auto &frame : frames) {
++                tracker->update(frame);
++            }
++        }
++        diagnostics::Client client{};
++        const auto mode{(std::string{argv[1]} == "basic" || mixed) ? diagnostics::Mode::Basic : diagnostics::Mode::Off};
++        if (!client.prepare(mode, argv[2])) {
++            throw std::runtime_error("Client prepare failed");
++        }
++        auto *const basic_recorder{diagnostics::active.load()};
++        std::array<int, MAX_CALLS / 40> assignment{};
++        std::mt19937 generator{seed};
++        if (mixed) {
++            for (int index{}; index < cycles; index += 2) {
++                assignment[index] = generator() & 1U;
++                assignment[index + 1] = 1 - assignment[index];
++            }
++        } else {
++            assignment.fill(mode == diagnostics::Mode::Basic ? 1 : 0);
++        }
++        std::ofstream blocks{std::string{argv[4]} + "/blocks.csv"};
++        blocks << "block,pair,mode,templates,searches,drain_wait_ns,drain_complete,behavior_same\n";
++        std::ofstream partial{std::string{argv[4]} + "/partial-calls.csv"};
++        partial << "index,block,pair,mode,position,start_ns,duration_ns,cpu_ns,state,tracking,consumed,score,x,y,w,h\n";
++        partial << std::setprecision(9);
++        metadata << "mixed=" << mixed << "\nseed=" << seed
++                 << "\nboundary_minimum_wait_ns=100000000\nboundary_maximum_wait_ns=250000000\n";
++        diagnostics::measurement = observed ? measured.get() : nullptr;
++        diagnostics::fixed_hook = observed || audit ? hook : nullptr;
++        diagnostics::fixed_preparation_hook = observed ? preparationHook : nullptr;
++        timing::Observation observation{observed ? &observer : nullptr};
++        for (int block{}; block < cycles; ++block) {
++            tracker->finishRound();
++            std::uint64_t boundary_elapsed{};
++            if (mixed) {
++                diagnostics::active.store(nullptr, std::memory_order_release);
++                const auto boundary_start{diagnostics::monotonicNs()};
++                std::this_thread::sleep_for(std::chrono::milliseconds{100});
++                bool complete{};
++                while (diagnostics::monotonicNs() - boundary_start < 250000000ULL) {
++                    complete = client.region()->oldest_unsynced_ns.load() == 0 &&
++                               client.region()->sync_finished_ns.load() >= client.region()->sync_started_ns.load();
++                    for (const auto &producer : client.region()->producers) {
++                        complete = complete && producer.position.written.load() == producer.position.generated.load() &&
++                                   producer.position.synced.load() == producer.position.generated.load() &&
++                                   producer.normal.write.load() == producer.normal.read.load() &&
++                                   producer.critical.write.load() == producer.critical.read.load();
++                    }
++                    if (complete) {
++                        break;
++                    }
++                    std::this_thread::sleep_for(std::chrono::milliseconds{1});
++                }
++                boundary_elapsed = diagnostics::monotonicNs() - boundary_start;
++                if (!complete || client.region()->error.load()) {
++                    throw std::runtime_error("Mixed boundary not fully drained and synced");
++                }
++                diagnostics::active.store(assignment[block] ? basic_recorder : nullptr, std::memory_order_release);
++            }
++            tracker->reset();
++            diagnostics::current_round = block + 1;
++            if (client.region()) {
++                client.region()->round_id = block + 1;
++            }
++            const auto templates_before{counted ? counted->templates_ : 0},
++                searches_before{counted ? counted->searches_ : 0};
++            for (int i{}; i < 40; ++i) {
++                sample = &(*samples)[block * 40 + i];
++                const auto cpu{cpuNs()};
++                sample->begin = diagnostics::monotonicNs();
++                sample->output = tracker->update(frames[i]);
++                sample->ns = diagnostics::monotonicNs() - sample->begin;
++                sample->cpu = cpuNs() - cpu;
++                sample->score = tracker->lastNanoScore();
++                sample->box = tracker->lastNanoBox();
++                sample = nullptr;
++            }
++            if (mixed) {
++                const auto same_box = [](const BBoxRect &a, const BBoxRect &b) {
++                    return a.cx == b.cx && a.cy == b.cy && a.width == b.width && a.height == b.height &&
++                           a.is_valid == b.is_valid;
++                };
++                bool same{true};
++                for (int index{}; index < 40; ++index) {
++                    const auto &a{(*samples)[index]}, &b{(*samples)[block * 40 + index]};
++                    same = same && a.score == b.score && a.box == b.box && a.output.state == b.output.state &&
++                           a.output.consumed == b.output.consumed && a.output.tracking == b.output.tracking &&
++                           same_box(a.output.display_box, b.output.display_box) &&
++                           same_box(a.output.realtime_box, b.output.realtime_box);
++                }
++                blocks << block << ',' << block / 2 << ',' << assignment[block] << ','
++                       << counted->templates_ - templates_before << ',' << counted->searches_ - searches_before << ','
++                       << boundary_elapsed << ",1," << same << '\n';
++                blocks.flush();
++                for (int index{}; index < 40; ++index) {
++                    const auto &value{(*samples)[block * 40 + index]};
++                    partial << block * 40 + index << ',' << block << ',' << block / 2 << ',' << assignment[block] << ','
++                            << index + 1 << ',' << value.begin << ',' << value.ns << ',' << value.cpu << ','
++                            << static_cast<int>(value.output.state) << ',' << value.output.tracking << ','
++                            << value.output.consumed << ',' << value.score << ',' << value.box.x << ',' << value.box.y
++                            << ',' << value.box.width << ',' << value.box.height << '\n';
++                }
++                partial.flush();
++                if (!partial) {
++                    throw std::runtime_error("Mixed partial export failed");
++                }
++                if (!same || counted->templates_ - templates_before != 1 ||
++                    counted->searches_ - searches_before != 39) {
++                    throw std::runtime_error("Mixed actual model workload or output changed");
++                }
++            }
++        }
++        diagnostics::fixed_hook = nullptr;
++        diagnostics::fixed_preparation_hook = nullptr;
++        tracker->finishRound();
++        if (mixed) {
++            diagnostics::active.store(basic_recorder, std::memory_order_release);
++        }
++        client.finish();
++        if (client.region()) {
++            for (std::size_t i{}; i < diagnostics::PRODUCERS; ++i) {
++                metadata << "dropped_" << i << '=' << client.region()->producers[i].position.dropped.load() << '\n';
++            }
++        }
++        diagnostics::exportMeasurement(argv[4]);
++        diagnostics::measurement = nullptr;
++        std::ofstream out{std::string{argv[4]} + "/fixed-calls.csv"};
++        out << "index,block,position,start_ns,duration_ns,cpu_ns,events,event_hash,init,steps,init_ns,step_ns,state,"
++               "tracking,consumed,score,x,y,w,h,dcx,dcy,dw,dh,dvalid,rcx,rcy,rw,rh,rvalid,preparation_ns,preparation_"
++               "count,mode";
++        for (std::size_t i{}; i < timing::stageCount; ++i) {
++            out << ",stage_" << i << "_ns,stage_" << i << "_count";
++        }
++        out << '\n';
++        out << std::setprecision(9);
++        for (int n{}; n < cycles * 40; ++n) {
++            const auto &v{(*samples)[n]};
++            const auto &d{v.output.display_box};
++            const auto &r{v.output.realtime_box};
++            out << n << ',' << n / 40 << ',' << n % 40 + 1 << ',' << v.begin << ',' << v.ns << ',' << v.cpu << ','
++                << v.events << ',' << v.event_hash << ',' << v.init << ',' << v.steps << ',' << v.init_ns << ','
++                << v.step_ns << ',' << static_cast<int>(v.output.state) << ',' << v.output.tracking << ','
++                << v.output.consumed << ',' << v.score << ',' << v.box.x << ',' << v.box.y << ',' << v.box.width << ','
++                << v.box.height << ',' << d.cx << ',' << d.cy << ',' << d.width << ',' << d.height << ',' << d.is_valid
++                << ',' << r.cx << ',' << r.cy << ',' << r.width << ',' << r.height << ',' << r.is_valid << ','
++                << v.preparation_ns << ',' << v.preparation_count << ',' << assignment[n / 40];
++            for (std::size_t i{}; i < timing::stageCount; ++i) {
++                out << ',' << v.stages[i] << ',' << v.counts[i];
++            }
++            out << '\n';
++        }
++        timespec resolution{};
++        clock_getres(CLOCK_MONOTONIC, &resolution);
++        metadata << "clock_resolution_ns=" << resolution.tv_nsec << "\ncycles=" << cycles << '\n';
++        return out && metadata ? 0 : 3;
++    } catch (const std::exception &error) {
++        std::cerr << error.what() << '\n';
++        return 1;
++    }
++}

@@ -1,0 +1,54 @@
+{
+  "reason": "requested",
+  "start_ns": 18635313160568,
+  "restore_finished_ns": 18864772084770,
+  "elapsed_seconds": 229.458925614,
+  "cleanup": [
+    {
+      "command": [
+        "systemctl",
+        "stop",
+        "--no-block",
+        "drone-diag-ten-batch02-pair1.service",
+        "drone-diag-ten-batch02-pair2.service",
+        "drone-diag-ten-batch02-pair3.service",
+        "drone-diag-ten-batch02-pair4.service",
+        "drone-diag-ten-batch02-pair5.service",
+        "drone-diag-ten-batch02-pair6.service",
+        "drone-diag-ten-batch02-pair7.service",
+        "drone-diag-ten-batch02-pair8.service",
+        "drone-diag-ten-batch02-pair9.service",
+        "drone-diag-ten-batch02-pair10.service",
+        "drone-diag-ten-batch02-manager.service"
+      ],
+      "returncode": 5,
+      "output": "Failed to stop drone-diag-ten-batch02-pair1.service: Unit drone-diag-ten-batch02-pair1.service not loaded.\nFailed to stop drone-diag-ten-batch02-pair2.service: Unit drone-diag-ten-batch02-pair2.service not loaded.\nFailed to stop drone-diag-ten-batch02-pair4.service: Unit drone-diag-ten-batch02-pair4.service not loaded.\nFailed to stop drone-diag-ten-batch02-pair5.service: Unit drone-diag-ten-batch02-pair5.service not loaded.\nFailed to stop drone-diag-ten-batch02-pair6.service: Unit drone-diag-ten-batch02-pair6.service not loaded.\nFailed to stop drone-diag-ten-batch02-pair7.service: Unit drone-diag-ten-batch02-pair7.service not loaded.\nFailed to stop drone-diag-ten-batch02-pair8.service: Unit drone-diag-ten-batch02-pair8.service not loaded.\nFailed to stop drone-diag-ten-batch02-pair9.service: Unit drone-diag-ten-batch02-pair9.service not loaded.\nFailed to stop drone-diag-ten-batch02-pair10.service: Unit drone-diag-ten-batch02-pair10.service not loaded.\n"
+    },
+    {
+      "command": [
+        "systemctl",
+        "kill",
+        "--kill-who=all",
+        "--signal=SIGKILL",
+        "drone-diag-ten-batch02-pair1.service",
+        "drone-diag-ten-batch02-pair2.service",
+        "drone-diag-ten-batch02-pair3.service",
+        "drone-diag-ten-batch02-pair4.service",
+        "drone-diag-ten-batch02-pair5.service",
+        "drone-diag-ten-batch02-pair6.service",
+        "drone-diag-ten-batch02-pair7.service",
+        "drone-diag-ten-batch02-pair8.service",
+        "drone-diag-ten-batch02-pair9.service",
+        "drone-diag-ten-batch02-pair10.service",
+        "drone-diag-ten-batch02-manager.service"
+      ],
+      "returncode": 1,
+      "output": "Failed to kill unit drone-diag-ten-batch02-pair1.service: Unit drone-diag-ten-batch02-pair1.service not loaded.\nFailed to kill unit drone-diag-ten-batch02-pair2.service: Unit drone-diag-ten-batch02-pair2.service not loaded.\nFailed to kill unit drone-diag-ten-batch02-pair4.service: Unit drone-diag-ten-batch02-pair4.service not loaded.\nFailed to kill unit drone-diag-ten-batch02-pair5.service: Unit drone-diag-ten-batch02-pair5.service not loaded.\nFailed to kill unit drone-diag-ten-batch02-pair6.service: Unit drone-diag-ten-batch02-pair6.service not loaded.\nFailed to kill unit drone-diag-ten-batch02-pair7.service: Unit drone-diag-ten-batch02-pair7.service not loaded.\nFailed to kill unit drone-diag-ten-batch02-pair8.service: Unit drone-diag-ten-batch02-pair8.service not loaded.\nFailed to kill unit drone-diag-ten-batch02-pair9.service: Unit drone-diag-ten-batch02-pair9.service not loaded.\nFailed to kill unit drone-diag-ten-batch02-pair10.service: Unit drone-diag-ten-batch02-pair10.service not loaded.\nFailed to kill unit drone-diag-ten-batch02-manager.service: Unit drone-diag-ten-batch02-manager.service not loaded.\n"
+    }
+  ],
+  "start": {
+    "returncode": 0,
+    "output": ""
+  },
+  "formal_service": "MainPID=11555\nActiveState=active\nSubState=running\nUnitFileState=enabled\n"
+}

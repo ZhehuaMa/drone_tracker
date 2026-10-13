@@ -1,0 +1,23 @@
+[Unit]
+Description=Drone tracker independent diagnostic collector
+After=local-fs.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/opt/drone_tracker/bin/run-diagnostics
+WorkingDirectory=/opt/drone_tracker
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGTERM
+KillMode=mixed
+TimeoutStopSec=3
+RuntimeDirectory=drone_tracker
+RuntimeDirectoryMode=0700
+StateDirectory=drone_tracker/diagnostics
+StateDirectoryMode=0700
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

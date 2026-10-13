@@ -1,0 +1,24 @@
+{
+  "node_submissions": {
+    "ordinary": {
+      "count": 208071,
+      "p99_ns": 8303,
+      "duration_ge_10us_count": 1343
+    },
+    "critical": {
+      "count": 80,
+      "p99_ns": 6256,
+      "duration_ge_10us_count": 0
+    },
+    "unknown": {
+      "count": 0,
+      "p99_ns": null,
+      "duration_ge_10us_count": 0
+    }
+  },
+  "same_update_step_intervals": 7804,
+  "intervals_less_than_10ms": 0,
+  "median_step_interval_ns": 12189901.0,
+  "actual_notification_count": null,
+  "limitation": "提交样本没有empty及实际eventfd调用标志，不能从提交耗时判定通知次数。没有调整通知节流参数。"
+}

@@ -1,0 +1,38 @@
+{
+  "git_commit": "fde4f350907f60c3c0d9e8c5ac023b6353c3dd62",
+  "branch": "rk3576",
+  "source_manifest_sha256": "289eaf5c1a9ddfceb9cee312c9a38c1e3be49e032900312ec3f0cf7788b70060",
+  "programs": {
+    "drone_tracker_node": {
+      "path": "/Users/mazhehua/projects/nickluo/drone_tracker/.docker-artifacts/install/drone_tracker/lib/drone_tracker/drone_tracker_node",
+      "sha256": "33ec81313e724936c25b0b71bab1c0a88bc64c4acb53f9aa60096d00e07cb9c6",
+      "bytes": 5570744
+    },
+    "rk3576_diagnostic_worker": {
+      "path": "/Users/mazhehua/projects/nickluo/drone_tracker/.docker-artifacts/install/drone_tracker/lib/drone_tracker/rk3576_diagnostic_worker",
+      "sha256": "2cd398014cd5991d36eb6f457e1bea44d2a2e919195fbdffa73dd539a6a75e38",
+      "bytes": 70696
+    },
+    "rk3576_diagnostic_inspect": {
+      "path": "/Users/mazhehua/projects/nickluo/drone_tracker/.docker-artifacts/install/drone_tracker/lib/drone_tracker/rk3576_diagnostic_inspect",
+      "sha256": "06592db4db093c830c43634c672b8eb78342393bb3528206b4eb5f1aa5f72be6",
+      "bytes": 96584
+    }
+  },
+  "platform": "ARM64 Linux container; not production board",
+  "model_input": "Controlled C++ mock tensors and synthesized video fixtures; no real RKNN models",
+  "build_command": "./build.sh --test",
+  "ctest": "47/47 passed; 31.84 seconds",
+  "progress": {
+    "complete": 34,
+    "total": 40
+  },
+  "remaining": [
+    "6.3",
+    "7.3",
+    "7.4",
+    "7.5",
+    "7.6",
+    "7.7"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "programs": {
+    "drone_tracker_node": "ec0391e9fb5783943ac2b857c18cfe9ca52acf53784a448fa561bef9a76585db",
+    "rk3576_diagnostic_worker": "780b2cd710714a9f71ac83512da164a6365839b8f62511dc61f721fe9b85aaa5",
+    "rk3576_diagnostic_inspect": "bc00627919b9e60ea3f95b9ab17a9aad11103f6348c8bffd22850543179a8970"
+  },
+  "archives": {
+    "raw-final-complete.tar.gz": "65b99548b7280a2384e8eb04ace1e4c080a15103d8e37512164797a32bfa8288",
+    "source-final.tar.gz": "f92efb782d30408d172f568239622494971d9cced2d96275e050738f26238909",
+    "payload.tar.gz": "7f3a09ed73edfd8cccee415110e37851265affe05096d70bab9d145b9e99f7ce",
+    "scripts-final.tar.gz": "e6e7c6f8eafed6a73980cacee6a9c3eca50623199bd4ba19e7135530288db6b9"
+  },
+  "raw_root": "/Users/mazhehua/projects/nickluo/drone_tracker/.docker-artifacts/diagnostic-warning-fixes-20261012/raw-complete",
+  "source_root": "/Users/mazhehua/projects/nickluo/drone_tracker",
+  "protocol_version": 1,
+  "event_size": 256,
+  "required_passes": 8,
+  "actual_passes": 7,
+  "task_7_3_complete": false,
+  "controlled_tests": {
+    "diagnostic_tests": "5113b41948c0dc14d922ceaf7f83defe321cbd432b4401c1a4a3b238106a66d2",
+    "diagnostic_tracker_tests": "b8397c663e521ffe8e2e5cd093274ab84b072e25242ea6aaeeed2f442b96cf04"
+  },
+  "raw_files_manifest_sha256": "2cfb51de29c6c1a480a619145cc3402e7f5a628845932d0607def9d49ebe3167"
+}

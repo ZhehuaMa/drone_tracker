@@ -1,0 +1,20 @@
+{
+  "mono_ns": 84870956480171,
+  "formal": {
+    "MainPID": "44741",
+    "ControlGroup": "/system.slice/drone-tracker.service",
+    "ActiveState": "active",
+    "SubState": "running",
+    "UnitFileState": "enabled"
+  },
+  "protected_sha_equal": true,
+  "drm_clients": [
+    {
+      "listed_tid": 44776,
+      "tgid": 44741,
+      "formal": true
+    }
+  ],
+  "formal_hdmi_found": true,
+  "remaining": []
+}

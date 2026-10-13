@@ -1,4 +1,5 @@
 #include "ar0234_camera_frame_source.h"
+#include "diagnostics/recorder.h"
 #include "platform/cpu_affinity.h"
 
 #include <atomic>
@@ -171,8 +172,18 @@ struct Ar0234CameraFrameSource::Impl {
             auto last_dequeue{stream_started_us};
             std::uint64_t last_gaps{};
             while (!stopped.load()) {
+                diagnostics::current_producer = diagnostics::Producer::Camera;
                 auto sample{device->next(100, dependencies.compare_pixels, recording ? &deferred : nullptr)};
+                auto capture_event{diagnostics::event(diagnostics::Type::Capture)};
+                capture_event.frame = {sample.capture_id, diagnostics::current_round.load(), sample.sequence,
+                    diagnostics::CaptureKnown | diagnostics::DriverKnown};
+                capture_event.frame_time_us = sample.frame ? sample.frame->timestampUs() : 0;
+                if (sample.frame) { capture_event.flags |= diagnostics::FrameTimeKnown; }
                 if (stopped.load()) {
+                    if (sample.result != CameraSampleResult::NoSample) {
+                        capture_event.reason = diagnostics::Reason::Termination;
+                        diagnostics::emit(capture_event);
+                    }
                     if (sample.result == CameraSampleResult::FrameReady) { device->discardReadyFrame(); }
                     break;
                 }
@@ -187,7 +198,13 @@ struct Ar0234CameraFrameSource::Impl {
                 last_dequeue = sample.dequeue_us;
                 const auto gap_count{device->sequenceGaps() - last_gaps};
                 last_gaps = device->sequenceGaps();
+                if (gap_count) {
+                    auto gap{capture_event}; gap.reason = diagnostics::Reason::DriverGap;
+                    gap.values[0] = gap_count; diagnostics::emit(gap);
+                }
                 if (sample.result == CameraSampleResult::WarmupDiscarded) {
+                    capture_event.reason = diagnostics::Reason::Warmup;
+                    diagnostics::emit(capture_event);
                     if (recording) { recording->disposition(sample, gap_count, false); }
                     std::lock_guard<std::mutex> lock{mutex};
                     record.source.camera = device->captureStatus();
@@ -198,6 +215,9 @@ struct Ar0234CameraFrameSource::Impl {
                 }
                 const bool enqueued{queue->try_enqueue(sample.frame)};
                 if (recording) { recording->disposition(sample, gap_count, !enqueued); }
+                capture_event.reason = enqueued ? diagnostics::Reason::None : diagnostics::Reason::QueueFull;
+                if (enqueued) { capture_event.flags |= diagnostics::Complete; }
+                diagnostics::emit(capture_event);
                 Ar0234CameraDiagnostic snapshot{};
                 {
                     std::lock_guard<std::mutex> lock{mutex};

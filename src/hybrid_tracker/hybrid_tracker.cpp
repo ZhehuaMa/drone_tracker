@@ -1,4 +1,6 @@
 #include "hybrid_tracker.h"
+#include "diagnostics/recorder.h"
+#include "diagnostics/timing.h"
 #include "nano_tracker.h"
 #include <iostream>
 #include <deque>
@@ -10,6 +12,33 @@
 #include "dcf_tracker.h"
 #include "rotation_kf.h"
 
+namespace {
+std::array<float, 4> diagnosticBox(const cv::Rect2f &box) { return {box.x, box.y, box.width, box.height}; }
+struct UpdateDiagnostic {
+    const FrameContext &context;
+    TrackerOutput &output;
+    diagnostics::Reason reason{diagnostics::Reason::None};
+    std::uint64_t start{diagnostics::monotonicNs()};
+    ~UpdateDiagnostic() noexcept {
+        auto value{diagnostics::event(diagnostics::Type::UpdateEnd, reason)};
+        value.duration_ns = diagnostics::monotonicNs() - start;
+        value.prediction_us = context.now_us; value.flags |= diagnostics::PredictionKnown;
+        if (context.frame) { value.frame = context.frame->diagnosticIdentity(); value.frame_time_us = context.frame->timestampUs(); value.flags |= diagnostics::FrameTimeKnown; }
+        value.values[0] = static_cast<std::uint64_t>(output.state);
+        value.values[1] = output.tracking ? 1 : 0;
+        if (output.consumed) { value.flags |= diagnostics::Consumed; }
+        const auto &box{output.display_box};
+        value.box = {static_cast<float>(box.cx - box.width / 2.0), static_cast<float>(box.cy - box.height / 2.0),
+            static_cast<float>(box.width), static_cast<float>(box.height)};
+        const auto &other{output.realtime_box};
+        value.other_box = {static_cast<float>(other.cx - other.width / 2.0), static_cast<float>(other.cy - other.height / 2.0),
+            static_cast<float>(other.width), static_cast<float>(other.height)};
+        if (box.is_valid) { value.flags |= diagnostics::BoxValid; }
+        if (other.is_valid) { value.flags |= diagnostics::OtherBoxValid; }
+        diagnostics::emit(value); value.type = diagnostics::Type::Output; diagnostics::emit(value);
+    }
+};
+} // namespace
 /**
  * @brief airsim_tracker_node.process_frame_callback 的移植。
  *
@@ -19,6 +48,7 @@
  */
 class HybridTrackerImp : public HybridTracker
 {
+    friend struct HybridTrackerDiagnosticTestAccess;
 public:
     HybridTrackerImp(const TrackerSettings& settings, TrackerComponents components, DetectionThreadLauncher launcher);
     virtual ~HybridTrackerImp();
@@ -35,6 +65,7 @@ private:
     struct BufferedFrame
     {
         uint64_t frame_id = 0;
+        uint64_t update_id{};
         FrameRef frame;
         cv::Rect2f tracker_box;
         bool has_tracker_box = false;
@@ -99,6 +130,7 @@ private:
     cv::Scalar m_display_color = cv::Scalar(0, 255, 255); // 黄色 (BGR)
     int m_frame_count = 0;
     uint64_t m_frame_id_counter = 0;
+    uint64_t m_update_counter{};
     int64_t m_last_timestamp_us = 0;
     int m_jump_counter = 0;            // 跟踪框连续跳变计数
     int m_yolo_jump_count = 0;         // YOLO 检测连续跳变计数
@@ -219,7 +251,19 @@ bool HybridTrackerImp::catchupTracker(const BufferedFrame& hist,
                                        const std::vector<FrameRef>& catchup_frames,
                                        const cv::Rect2f& yolo_box)
 {
-    if (!m_tracker->init(hist.frame, yolo_box))
+    auto initialization{diagnostics::event(diagnostics::Type::InitializeStart)};
+    initialization.frame = hist.frame->diagnosticIdentity(); initialization.source_tracker_frame_id = hist.frame_id;
+    initialization.source_update_id = hist.update_id; initialization.box = diagnosticBox(yolo_box);
+    initialization.flags |= diagnostics::BoxValid;
+    diagnostics::emit(initialization);
+    const auto init_start{diagnostics::monotonicNs()};
+    const bool initialized{m_tracker->init(hist.frame, yolo_box)};
+    initialization.type = diagnostics::Type::InitializeEnd;
+    initialization.duration_ns = diagnostics::monotonicNs() - init_start;
+    if (initialized) { initialization.flags |= diagnostics::Complete; }
+    else { initialization.reason = diagnostics::Reason::InitFailed; initialization.flags |= diagnostics::Critical; }
+    diagnostics::emit(initialization);
+    if (!initialized)
     {
         m_tracker->reset();
         return false;
@@ -229,15 +273,31 @@ bool HybridTrackerImp::catchupTracker(const BufferedFrame& hist,
     m_previous_box = m_display_box;
     m_has_previous_box = true;
 
+    std::uint32_t successful{};
     for (const auto& f : catchup_frames)
     {
         cv::Rect2f t_box;
-        if (m_tracker->update(f, t_box))
+        const auto step_start{diagnostics::monotonicNs()};
+        const bool step_ok{m_tracker->update(f, t_box)};
+        auto step{diagnostics::event(diagnostics::Type::CatchupStep)};
+        step.frame = f->diagnosticIdentity(); step.frame_time_us = f->timestampUs();
+        step.flags |= diagnostics::FrameTimeKnown;
+        step.source_tracker_frame_id = hist.frame_id; step.source_update_id = hist.update_id;
+        step.duration_ns = diagnostics::monotonicNs() - step_start;
+        step.box = diagnosticBox(t_box); step.score = m_tracker->lastScore(); step.flags |= diagnostics::ScoreKnown;
+        if (step_ok) { step.flags |= diagnostics::Complete | diagnostics::BoxValid; ++successful; }
+        diagnostics::emit(step);
+        if (step_ok)
         {
             m_display_box = toIntRect(t_box);
             m_previous_box = m_display_box;
         }
     }
+    auto summary{diagnostics::event(diagnostics::Type::CatchupEnd)};
+    summary.source_tracker_frame_id = hist.frame_id; summary.source_update_id = hist.update_id;
+    summary.counts[0] = static_cast<std::uint32_t>(catchup_frames.size()); summary.counts[1] = successful;
+    summary.counts[2] = summary.counts[0] - successful; summary.flags |= diagnostics::Complete;
+    diagnostics::emit(summary);
     return true;
 }
 
@@ -245,15 +305,27 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
 {
     if (m_tracker) { m_tracker->clearDiagnostics(); }
     TrackerOutput out;
+    diagnostics::current_update = ++m_update_counter;
+    diagnostics::current_tracker_frame = 0;
+    diagnostics::current_request = 0;
+    diagnostics::DetailScope detail{};
+    UpdateDiagnostic observation{ctx, out};
+    auto entered{diagnostics::event(diagnostics::Type::UpdateStart)};
+    if (ctx.frame) { entered.frame = ctx.frame->diagnosticIdentity(); entered.frame_time_us = ctx.frame->timestampUs(); entered.flags |= diagnostics::FrameTimeKnown; }
+    entered.prediction_us = ctx.now_us; entered.flags |= diagnostics::PredictionKnown;
+    diagnostics::emit(entered);
     out.state = m_state;
     out.info = m_display_info;
     out.color = (uint32_t(m_display_color[2]) << 16) | (uint32_t(m_display_color[1]) << 8) | uint32_t(m_display_color[0]);
 
-    if (!m_detector || !m_tracker || !m_kf || !ctx.frame)
+    if (!m_detector || !m_tracker || !m_kf || !ctx.frame) {
+        observation.reason = diagnostics::Reason::InvalidInput;
         return out;
+    }
 
     const auto compatibility{m_components.compatibility->validate(ctx.frame)};
     if (!compatibility.reason.empty()) {
+        observation.reason = diagnostics::Reason::InvalidInput;
         out.info = compatibility.describe();
         std::cerr << out.info << std::endl;
         return out;
@@ -262,13 +334,16 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
     const int64_t frame_timestamp_us = static_cast<int64_t>(ctx.frame->timestampUs());
 
     // 防止重复帧或时间倒退导致卡尔曼滤波协方差坍缩
-    if (frame_timestamp_us <= m_last_timestamp_us)
+    if (frame_timestamp_us <= m_last_timestamp_us) {
+        observation.reason = diagnostics::Reason::RepeatedTime;
         return out; // consumed = false，静默丢弃
+    }
     m_last_timestamp_us = frame_timestamp_us;
 
     m_frame_count++;
     m_frame_id_counter++;
     const uint64_t current_frame_id = m_frame_id_counter;
+    diagnostics::current_tracker_frame = current_frame_id;
 
     const int frame_w = ctx.frame->width();
     const int frame_h = ctx.frame->height();
@@ -285,14 +360,22 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
     // 维护缓存队列（保存最新 frame_buffer_size 帧）
     BufferedFrame buffered;
     buffered.frame_id = current_frame_id;
+    buffered.update_id = diagnostics::current_update;
     buffered.frame = ctx.frame;
     buffered.tracker_box = m_display_box;
     buffered.has_tracker_box = m_has_display_box;
     buffered.kf_pred_box = kf_pred_box;
     buffered.has_kf_pred = has_kf_pred;
     m_frame_buffer.push_back(buffered);
-    if (static_cast<int>(m_frame_buffer.size()) > m_settings.frame_buffer_size)
-        m_frame_buffer.pop_front();
+    auto added{diagnostics::event(diagnostics::Type::HistoryAdd)};
+    added.frame = ctx.frame->diagnosticIdentity(); diagnostics::emit(added);
+    if (static_cast<int>(m_frame_buffer.size()) > m_settings.frame_buffer_size) {
+        auto removed{diagnostics::event(diagnostics::Type::HistoryEvict)};
+        removed.frame = m_frame_buffer.front().frame->diagnosticIdentity();
+        removed.source_tracker_frame_id = m_frame_buffer.front().frame_id;
+        removed.source_update_id = m_frame_buffer.front().update_id;
+        diagnostics::emit(removed); m_frame_buffer.pop_front();
+    }
 
     bool measurement_updated = false;
     bool kf_needs_reset = false;
@@ -317,6 +400,8 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                                    m_settings.roi_scale_factor * 1.5f, cv::Size(in_w / 2, in_h / 2));
             }
             m_detector->request(ctx.frame, current_frame_id, roi);
+        } else {
+            diagnostics::emit(diagnostics::event(diagnostics::Type::RequestSkipped, diagnostics::Reason::BusyPending));
         }
 
         YoloResult res;
@@ -335,6 +420,13 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                 }
             }
 
+            diagnostics::current_request = res.request_id;
+            auto lookup{diagnostics::event(diagnostics::Type::HistoryLookup,
+                found ? diagnostics::Reason::None : diagnostics::Reason::HistoryMiss, !found)};
+            lookup.request_id = res.request_id; lookup.source_tracker_frame_id = res.frame_id;
+            lookup.source_update_id = res.source_update_id;
+            lookup.values[0] = m_frame_buffer.front().frame_id; lookup.values[1] = m_frame_buffer.back().frame_id;
+            diagnostics::emit(lookup);
             if (found)
             {
                 std::vector<FrameRef> catchup_frames;
@@ -393,9 +485,34 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                 jump_from_prev = isBoxJump(m_previous_box, tracker_box_i,
                                            m_settings.max_position_jump, m_settings.max_size_jump_ratio);
 
+            auto jump{diagnostics::event(diagnostics::Type::Decision)};
+            jump.flags |= diagnostics::DecisionDetails | diagnostics::NanoCounter | diagnostics::BoxValid;
+            jump.box = diagnosticBox(tracker_box_i);
+            jump.other_box = diagnosticBox(m_previous_box);
+            if (m_has_previous_box) { jump.flags |= diagnostics::OtherBoxValid; }
+            jump.counts[0] = m_jump_counter;
+            jump.counts[1] = m_jump_counter;
+            jump.counts[3] = m_settings.jump_tolerance;
+            jump.score = m_settings.max_position_jump;
+            jump.threshold = m_settings.max_size_jump_ratio;
+            jump.values[0] = 1; // NanoTrack 跳变计数；区别 YOLO 未确认计数。
+            jump.values[1] = jump_from_kf;
+            jump.values[2] = jump_from_prev;
+            auto basis{diagnostics::event(diagnostics::Type::JumpComparison)};
+            basis.values[0] = 1; // NanoTrack 与 KF 比较。
+            basis.box = diagnosticBox(kf_pred_box);
+            basis.other_box = diagnosticBox(tracker_box_i);
+            basis.flags |= diagnostics::OtherBoxValid;
+            if (has_kf_pred) { basis.flags |= diagnostics::BoxValid; }
+            basis.counts[0] = jump_from_kf;
+            basis.score = m_settings.max_position_jump;
+            basis.threshold = m_settings.max_size_jump_ratio;
+            diagnostics::emit(basis);
             if (jump_from_kf && jump_from_prev)
             {
+                jump.reason = diagnostics::Reason::NanoJump;
                 m_jump_counter++;
+                jump.counts[1] = m_jump_counter;
                 std::cout << "Box jump detected! curr=[" << tracker_box_i.x << ", " << tracker_box_i.y
                           << ", " << tracker_box_i.width << ", " << tracker_box_i.height
                           << "] (counter=" << m_jump_counter << ")" << std::endl;
@@ -407,6 +524,10 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                     m_tracker_initialized = false;
                     clearBoxes();
                     m_jump_counter = 0;
+                    observation.reason = diagnostics::Reason::NanoJump;
+                    jump.flags |= diagnostics::Critical;
+                    jump.counts[2] = m_jump_counter;
+                    diagnostics::emit(jump);
                     // 提前返回：本帧不发布（Python 的 return True 早退）
                     return out;
                 }
@@ -428,6 +549,8 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                 m_display_info = "Tracking (nanotrack)";
                 m_display_color = cv::Scalar(0, 255, 0); // 绿色
             }
+            jump.counts[2] = m_jump_counter;
+            diagnostics::emit(jump);
             m_state = TrackerState::Tracking;
         }
         else
@@ -453,13 +576,26 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                                        m_settings.roi_scale_factor, cv::Size(in_w / 2, in_h / 2));
                 }
                 m_detector->request(ctx.frame, current_frame_id, roi);
+            } else {
+                diagnostics::emit(diagnostics::event(diagnostics::Type::RequestSkipped, diagnostics::Reason::BusyPending));
             }
+        } else {
+            diagnostics::emit(diagnostics::event(diagnostics::Type::RequestSkipped, diagnostics::Reason::Interval));
         }
 
         // 检查 YOLO 检测结果
         YoloResult res;
         if (m_detector->get_result(res))
         {
+            diagnostics::current_request = res.request_id;
+            auto decision{diagnostics::event(diagnostics::Type::Decision)};
+            decision.source_tracker_frame_id = res.frame_id; decision.source_update_id = res.source_update_id;
+            decision.counts[0] = m_yolo_lost; decision.counts[2] = m_yolo_jump_count;
+            decision.flags |= diagnostics::DecisionDetails;
+            decision.values[2] = ok;
+            decision.values[3] = m_settings.lost_max_count;
+            decision.values[4] = m_settings.jump_tolerance;
+            const auto state_before{m_state};
             m_no_detection_frames = 0; // 收到检测信号，重置无信号计数
             if (res.has_target)
             {
@@ -477,6 +613,12 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                         break;
                     }
                 }
+                auto lookup{diagnostics::event(diagnostics::Type::HistoryLookup,
+                    found ? diagnostics::Reason::None : diagnostics::Reason::HistoryMiss, !found)};
+                lookup.request_id = res.request_id; lookup.source_tracker_frame_id = res.frame_id;
+                lookup.source_update_id = res.source_update_id;
+                lookup.values[0] = m_frame_buffer.front().frame_id; lookup.values[1] = m_frame_buffer.back().frame_id;
+                diagnostics::emit(lookup);
                 const BufferedFrame* hist = found ? &m_frame_buffer[idx] : nullptr;
                 std::vector<FrameRef> catchup_frames;
                 if (found)
@@ -517,9 +659,35 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                     yolo_jump_prev = isBoxJump(clipped(m_previous_box), yolo_box_vis,
                                                m_settings.max_position_jump, m_settings.max_size_jump_ratio);
                 const bool yolo_jump = yolo_jump_kf && yolo_jump_prev;
+                auto basis{diagnostics::event(diagnostics::Type::JumpComparison)};
+                basis.source_tracker_frame_id = res.frame_id;
+                basis.source_update_id = res.source_update_id;
+                basis.values[0] = 2; // YOLO 与历史 KF 比较，使用裁剪后的实际框。
+                basis.other_box = diagnosticBox(yolo_box_vis);
+                basis.flags |= diagnostics::OtherBoxValid;
+                if (hist && hist->has_kf_pred) {
+                    basis.box = diagnosticBox(clipped(hist->kf_pred_box));
+                    basis.flags |= diagnostics::BoxValid;
+                }
+                basis.counts[0] = yolo_jump_kf;
+                basis.score = m_settings.max_position_jump;
+                basis.threshold = m_settings.max_size_jump_ratio;
+                diagnostics::emit(basis);
+                basis.values[0] = 3; // YOLO 与历史跟踪框或前一显示框比较。
+                basis.flags &= ~diagnostics::BoxValid;
+                basis.box = diagnosticBox(hist && hist->has_tracker_box ? hist_tracker_vis : clipped(m_previous_box));
+                if ((hist && hist->has_tracker_box) || m_has_previous_box) { basis.flags |= diagnostics::BoxValid; }
+                basis.counts[0] = yolo_jump_prev;
+                diagnostics::emit(basis);
+                decision.box = diagnosticBox(hist_tracker_vis); decision.other_box = diagnosticBox(yolo_box_vis);
+                decision.iou = current_iou; decision.threshold = m_settings.iou_reset_threshold;
+                decision.highest_score = m_settings.iou_calibrate_threshold;
+                decision.flags |= diagnostics::OtherBoxValid;
+                if ((hist && hist->has_tracker_box) || m_has_display_box) { decision.flags |= diagnostics::BoxValid; }
 
                 if (yolo_jump && current_iou < m_settings.iou_calibrate_threshold)
                 {
+                    decision.reason = diagnostics::Reason::YoloJump;
                     m_yolo_jump_count++;
                     std::cout << "YOLO detection jump (" << m_yolo_jump_count << ")! IOU="
                               << current_iou << std::endl;
@@ -543,6 +711,8 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                 }
                 else if (!ok || current_iou < m_settings.iou_reset_threshold)
                 {
+                    decision.reason = current_iou < m_settings.iou_reset_threshold
+                        ? diagnostics::Reason::LowIou : diagnostics::Reason::NanoUpdateFailed;
                     m_yolo_jump_count = 0;
                     // 重新初始化追踪器（复用已加载的 TRT 引擎）
                     if (hist)
@@ -576,6 +746,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
             }
             else
             {
+                decision.reason = diagnostics::Reason::NoTarget;
                 // YOLO 没有检测到目标
                 m_yolo_jump_count = 0;
                 m_yolo_lost++;
@@ -591,7 +762,12 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                 std::cout << "Target lost (unconfirmed streak " << m_yolo_lost << ")."
                           << " Re-initializing detection." << std::endl;
                 m_state = TrackerState::TargetLost;
+                decision.flags |= diagnostics::Critical;
             }
+            decision.counts[1] = m_yolo_lost; decision.counts[3] = m_yolo_jump_count;
+            decision.values[0] = static_cast<std::uint64_t>(state_before);
+            decision.values[1] = static_cast<std::uint64_t>(m_state);
+            diagnostics::emit(decision);
         }
         else
         {
@@ -605,6 +781,9 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                           << " frames, forcing tracker reset..." << std::endl;
                 m_tracker_initialized = false;
                 clearBoxes();
+                auto timeout{diagnostics::event(diagnostics::Type::Decision, diagnostics::Reason::NoResultTimeout, true)};
+                timeout.counts[0] = m_no_detection_frames; timeout.values[0] = no_detect_limit;
+                diagnostics::emit(timeout);
                 m_no_detection_frames = 0;
             }
         }
@@ -732,3 +911,19 @@ cv::Rect HybridTrackerImp::calculateROI(const cv::Rect2f& box, int img_w, int im
 
     return cv::Rect(roi_x, roi_y, roi_w, roi_h);
 }
+
+#ifdef DRONE_TRACKER_DIAGNOSTIC_TESTING
+#include "tests/diagnostic_test_access.h"
+void HybridTrackerDiagnosticTestAccess::jump(HybridTracker &tracker, int counter, float position, float size) {
+    auto &implementation{dynamic_cast<HybridTrackerImp &>(tracker)};
+    implementation.m_jump_counter = counter;
+    implementation.m_settings.max_position_jump = position;
+    implementation.m_settings.max_size_jump_ratio = size;
+}
+bool HybridTrackerDiagnosticTestAccess::idle(const HybridTracker &tracker) {
+    const auto &implementation{dynamic_cast<const HybridTrackerImp &>(tracker)};
+    const auto &detector{*implementation.m_detector};
+    std::lock_guard<std::mutex> lock{detector.m_mutex};
+    return !detector.m_executing && !detector.m_new_request;
+}
+#endif

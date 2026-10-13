@@ -130,3 +130,26 @@ sudo systemctl daemon-reload
 吞吐中位数下降超过 5% 时记录为开销目标未通过并调查。
 测试结束恢复原配置和 release 后重启服务。只回退诊断时可设
 `osd.timing_enabled=false` 后重启；不得覆盖系统 RKNN Runtime。
+
+## 独立跟踪诊断
+
+`drone-tracker-diagnostics.service` 单独运行收集器。主业务通过 `Wants`（启动时尝试拉起）和 `After`（启动顺序）使用它；这两种关系不绑定停止。主业务退出、重启或 OFF 不停止日志服务。日志服务失败时独立重启，业务在最多 500 ms 的连接预算后继续运行并报告诊断不可用。
+
+生产配置默认 `diagnostics.mode: basic`，其余入口默认 `off`。模式启动后固定。`off` 仅关闭该业务进程的提交，不会停止全局日志服务。`detail` 增加阶段耗时；业务退出时诊断收尾最多等 2 秒，服务停止预算 3 秒。
+
+通信端点为 `/run/drone_tracker/diagnostics.sock`，权限为 0600，只接受与收集器相同本机用户身份。服务及当前直接入口均以生产安装用户运行（现有服务为 root）。文件目录为 `/var/lib/drone_tracker/diagnostics`，只保存诊断，不覆盖录像、ROS 日志或 bag。部署不会删除历史诊断。
+
+只检查命令仍为 `sudo deployment/deploy.sh --check`。它核对新增 ARM64 程序、动态库、协议版本、服务语法及配置，不启停服务，也不改写诊断日志。正式安装先备份程序链接、入口、配置及两个服务。升级时先停业务，再有限停止旧诊断服务，安装完整匹配版本后先尝试恢复日志服务，再启动业务。诊断启动失败只使记录退化。
+
+```bash
+sudo systemctl start drone-tracker-diagnostics.service
+sudo systemctl start drone-tracker.service
+sudo systemctl stop drone-tracker.service   # 日志服务继续保存已提交事件
+sudo systemctl stop drone-tracker-diagnostics.service
+```
+
+直接启动先确认独立服务没有运行；不能同时启动同一路径的第二收集器。然后使用 `/opt/drone_tracker/bin/run-diagnostics`。该入口与服务读取同一 CPU 策略，设置并读回允许核心范围，使用普通调度，不改变业务线程职责或内核隔离。范围核对失败返回非零并报告不可用。
+
+空间不足、写入失败或同步落后超过 500 ms 会使诊断退化。业务继续；满缓冲计入缺口。维护者应先备份原件，再用匹配的 `rk3576_diagnostic_inspect` 导出至新目录。100 ms 同步周期不保证固定最大掉电损失时间。
+
+回退使用新包内的 `sudo deployment/rollback.sh /opt/drone_tracker/backups/<备份名>`。该脚本恢复原业务、程序链接、入口、配置、服务和启用/运行状态；回退到没有诊断能力的旧版本时停止并移除新诊断服务。所有发布目录和历史诊断原件保留。读取新格式日志时使用已保留新发布目录中的匹配检查器，不能使用旧程序猜测格式。

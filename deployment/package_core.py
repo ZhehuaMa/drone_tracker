@@ -16,7 +16,8 @@ import yaml
 
 
 TARGET_MODELS = Path('/opt/drone_tracker/models')
-PROGRAMS = ('drone_tracker_node', 'rk3576_recording_worker', 'rk3576_recording_inspect')
+PROGRAMS = ('drone_tracker_node', 'rk3576_recording_worker', 'rk3576_recording_inspect',
+            'rk3576_diagnostic_worker', 'rk3576_diagnostic_inspect')
 MODEL_KEYS = ('yolo_engine', 'nano_template_backbone', 'nano_search_backbone', 'nano_head')
 PACKAGER = Path('/packager')
 INPUTS = Path('/inputs')
@@ -59,6 +60,8 @@ def parse_camera(path):
             raise ValueError('连续模式的 trigger_rate_hz 必须为 0')
         if camera['sensor_model'] == 'ar0234' and params.get('recording', {}).get('enabled'):
             raise ValueError('AR0234 不支持独立录像')
+        if params.get('diagnostics', {}).get('mode', 'off') not in ('off', 'basic', 'detail'):
+            raise ValueError('diagnostics.mode 无效')
         tracker = params['tracker']
         if tracker.get('nano_backbone') not in ('', None):
             raise ValueError('RK3576 nano_backbone 必须为空')
@@ -116,14 +119,22 @@ def make_bundle(bundle, source_info):
     model_root = INPUTS / 'models'
     params = parse_camera(camera)
     run('python3', str(PACKAGER / 'cpu-policy.py'), str(policy))
+    diagnostics = PACKAGER / 'diagnostics.yaml'
+    run('python3', '-c', 'import importlib.machinery,sys; m=importlib.machinery.SourceFileLoader("diagnostic_launch","/packager/diagnostic-launch.py").load_module(); m.parse(sys.argv[1])', str(diagnostics))
+    diagnostic_record = copy(diagnostics, bundle / 'config/diagnostics.yaml')
     camera_record = copy(camera, bundle / 'config/camera.yaml', source_info['camera_source'])
     policy_record = copy(policy, bundle / 'config/cpu-affinity.yaml', source_info['policy_source'])
     for name in ('deploy.sh', 'run-camera', 'prepare-display.py', 'cpu-policy.py',
-                 'drone-tracker.service', 'README.md'):
+                 'drone-tracker.service', 'drone-tracker-diagnostics.service', 'run-diagnostics',
+                 'diagnostic-launch.py', 'rollback.sh', 'README.md'):
         copy(PACKAGER / name, bundle / name)
     (bundle / 'deploy.sh').chmod(0o755)
     (bundle / 'run-camera').chmod(0o755)
+    (bundle / 'run-diagnostics').chmod(0o755)
+    (bundle / 'rollback.sh').chmod(0o755)
 
+    protocol_env = os.environ.copy()
+    protocol_env['LD_LIBRARY_PATH'] = f"/opt/rknn-runtime/lib:{protocol_env.get('LD_LIBRARY_PATH', '')}"
     program_records = {}
     program_dir = bundle / 'payload/lib/drone_tracker'
     for name in PROGRAMS:
@@ -131,6 +142,10 @@ def make_bundle(bundle, source_info):
         if not source.is_file():
             raise RuntimeError(f'缺少安装程序: {source}')
         aarch64(source)
+        if name == 'drone_tracker_node' and run(str(source), '--diagnostic-protocol-version', env=protocol_env).strip() != '1':
+            raise RuntimeError('主业务诊断协议不兼容')
+        if name.startswith('rk3576_diagnostic_') and run(str(source), '--protocol-version', env=protocol_env).strip() != '1':
+            raise RuntimeError(f'诊断协议版本不兼容: {name}')
         program_records[name] = copy(source, program_dir / name,
                                      f"{source_info['install_source']}/lib/drone_tracker/{name}")
         (program_dir / name).chmod(0o755)
@@ -228,6 +243,8 @@ def make_bundle(bundle, source_info):
 
     provenance = {
         'camera_config': camera_record,
+        'diagnostic_config': diagnostic_record,
+        'diagnostic_protocol_version': 1,
         'cpu_policy': policy_record,
         'install_root': source_info['install_source'],
         'programs': program_records,
