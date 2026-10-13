@@ -1,0 +1,9 @@
+pid 3462 的当前亲和力列表：0-3
+pid 3462 的新亲和力列表：4-7
+2016000
+2208000
+MemTotal:        8112044 kB
+MemFree:         7226800 kB
+MemAvailable:    7641772 kB
+Buffers:           96952 kB
+Cached:           505112 kB

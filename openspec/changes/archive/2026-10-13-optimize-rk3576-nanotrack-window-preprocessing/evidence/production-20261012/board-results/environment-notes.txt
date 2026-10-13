@@ -1,0 +1,1 @@
+生产板 HZ-RK3576_WuKong Board，ADB USB 序列号 5ceb49407502303d，hostname hzhy。隔离诊断，无相机触发。正式 drone-tracker.service 在测量前停止、测量结束或异常退出恢复。其他正式服务不停止。CPU 4，OpenCV 1 线程，CPU/NPU 策略不修改。原板时钟为 2026-08，记录不修改时钟，耗时取单调时钟。原重建输入与时间戳只读沿用，不重解码录像。

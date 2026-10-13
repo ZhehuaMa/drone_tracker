@@ -67,6 +67,13 @@ if(DRONE_TRACKER_PREPROCESS_TESTS_ONLY OR DRONE_TRACKER_BUILD_TESTS)
         ../platform/rk3576/yolo_preprocessor.cpp ../platform/rk3576/host_frame.cpp)
     target_link_libraries(rknn_preprocess_tests PRIVATE hybrid_tracker)
     add_test(NAME rknn_preprocess_tests COMMAND rknn_preprocess_tests)
+    add_executable(recovery_regression_tests tests/recovery_regression_test.cpp
+        ../platform/rk3576/nanotrack_preprocessor.cpp ../platform/rk3576/host_frame.cpp
+        ../../tests/nanotracev3_performance_benchmarks/window_preprocess/whole_frame_preprocessor.cpp)
+    target_link_libraries(recovery_regression_tests PRIVATE hybrid_tracker)
+    add_test(NAME recovery_regression_tests COMMAND recovery_regression_tests)
+    set_tests_properties(recovery_regression_tests PROPERTIES TIMEOUT 30)
+
     add_test(NAME platform_selection_tests COMMAND ${CMAKE_COMMAND}
         -DREPO_ROOT=${CMAKE_CURRENT_SOURCE_DIR}/../..
         -DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/platform_selection

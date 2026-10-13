@@ -1,0 +1,31 @@
+%YAML:1.0
+# 必须从既有输入包填写时间戳和解码后像素 SHA-256。占位符会被工具拒绝。
+source_commit: "09006db9ea11bd4fa137efc47ecb117660e0fad2"
+video_sha256: "11d45885dc32859c5aba16541ecc83f769ad47ba9ae66b54908b19d805d4c152"
+mapping: "latest_video_frame_not_after_processing_time"
+frames:
+  - { order: 0, video_index: 4146, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-000.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 1, video_index: 4147, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-001.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 2, video_index: 4148, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-002.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 3, video_index: 4149, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-003.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 4, video_index: 4150, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-004.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 5, video_index: 4151, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-005.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 6, video_index: 4152, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-006.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 7, video_index: 4153, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-007.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 8, video_index: 4154, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-008.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 9, video_index: 4155, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-009.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 10, video_index: 4156, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-010.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 11, video_index: 4157, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-011.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 12, video_index: 4158, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-012.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 13, video_index: 4159, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-013.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 14, video_index: 4160, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-014.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 15, video_index: 4161, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-015.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 16, video_index: 4162, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-016.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 17, video_index: 4163, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-017.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 18, video_index: 4164, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-018.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 19, video_index: 4165, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-019.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 20, video_index: 4166, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-020.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 21, video_index: 4167, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-021.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 22, video_index: 4168, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-022.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 23, video_index: 4169, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-023.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 24, video_index: 4170, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-024.png", pixel_sha256: "填写解码后像素SHA256" }

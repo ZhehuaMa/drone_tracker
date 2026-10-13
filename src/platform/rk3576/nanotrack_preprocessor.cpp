@@ -1,6 +1,7 @@
 #include "nanotrack_preprocessor.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 
 #include "preprocess/input_validation.h"
@@ -52,7 +53,16 @@ PreparedInputResult NanoTrackPreprocessor::prepare(const FrameRef &frame, const 
         if (is_template) {
             mean_.initialize(frame);
         }
-        cv::Mat snapshot;
+        const auto &g{geometry.value};
+        const std::int64_t left{g.crop.x}, top{g.crop.y};
+        const std::int64_t sx0{std::max<std::int64_t>(left, 0)};
+        const std::int64_t sy0{std::max<std::int64_t>(top, 0)};
+        const std::int64_t sx1{std::min<std::int64_t>(left + original_size, frame->width())};
+        const std::int64_t sy1{std::min<std::int64_t>(top + original_size, frame->height())};
+        window_.create(original_size, original_size, CV_32FC1);
+        if (g.top || g.bottom || g.left || g.right) {
+            window_.setTo(cv::Scalar{static_cast<double>(mean_.value())});
+        }
         {
             const auto view{frame->mapRead()};
             if (!view) {
@@ -68,15 +78,18 @@ PreparedInputResult NanoTrackPreprocessor::prepare(const FrameRef &frame, const 
                 image_prepare.finish(false);
                 return PreparedInputResult::failure(PreprocessError::PlatformTypeMismatch, "Invalid Gray8 mapping");
             }
-            mat.convertTo(snapshot, CV_32F);
+            // 空交集也必须完成上面的映射校验；非空坐标已被图像与窗口边界约束。
+            if (sx1 > sx0 && sy1 > sy0) {
+                const cv::Rect source{static_cast<int>(sx0), static_cast<int>(sy0),
+                                      static_cast<int>(sx1 - sx0), static_cast<int>(sy1 - sy0)};
+                const cv::Rect destination{static_cast<int>(sx0 - left), static_cast<int>(sy0 - top),
+                                           source.width, source.height};
+                cv::Mat region{window_(destination)};
+                mat(source).convertTo(region, CV_32F);
+            }
         }
-        const auto &g{geometry.value};
-        cv::Mat padded;
-        cv::copyMakeBorder(snapshot, padded, g.top, g.bottom, g.left, g.right, cv::BORDER_CONSTANT,
-                           cv::Scalar{static_cast<double>(mean_.value())});
-        const cv::Rect crop{g.crop.x + g.left, g.crop.y + g.top, original_size, original_size};
         cv::Mat plane(size, size, CV_32FC1, storage->data());
-        cv::resize(padded(crop), plane, {size, size}, 0, 0, cv::INTER_LINEAR);
+        cv::resize(window_, plane, {size, size}, 0, 0, cv::INTER_LINEAR);
         const auto count{static_cast<std::size_t>(size * size)};
         std::copy_n(storage->data(), count, storage->data() + count);
         std::copy_n(storage->data(), count, storage->data() + 2 * count);

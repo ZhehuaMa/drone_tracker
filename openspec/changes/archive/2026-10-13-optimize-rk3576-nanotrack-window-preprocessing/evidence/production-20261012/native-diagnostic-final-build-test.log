@@ -1,0 +1,15 @@
+[100%] 检查 NanoTrack 基准源码身份
+[100%] Built target nanotrack_window_recovery_identity
+/tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/window_preprocess/tests/recovery_test.cpp: In function ‘void {anonymous}::timingChecks()’:
+/tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/window_preprocess/tests/recovery_test.cpp:125:18: error: redeclaration of ‘window_preprocess::Recorder invalid’
+  125 |     wp::Recorder invalid{clock};
+      |                  ^~~~~~~
+/tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/window_preprocess/tests/recovery_test.cpp:84:18: note: ‘window_preprocess::Recorder invalid’ previously declared here
+   84 |     wp::Recorder invalid;
+      |                  ^~~~~~~
+Traceback (most recent call last):
+  File "/tmp/nanotrack-window-20261012/refresh-main.py", line 13, in <module>
+    subprocess.run(shlex.split(command['command']), cwd=command['directory'], check=True)
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/usr/bin/c++', '-I/tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/window_preprocess', '-I/tmp/nanotrack-window-20261012/source/src/hybrid_tracker/..', '-I/tmp/nanotrack-window-20261012/source/src/hybrid_tracker', '-isystem', '/usr/include/opencv4', '-O3', '-DNDEBUG', '-std=gnu++17', '-o', 'CMakeFiles/nanotrack_window_tests.dir/tests/recovery_test.cpp.o', '-c', '/tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/window_preprocess/tests/recovery_test.cpp']' returned non-zero exit status 1.

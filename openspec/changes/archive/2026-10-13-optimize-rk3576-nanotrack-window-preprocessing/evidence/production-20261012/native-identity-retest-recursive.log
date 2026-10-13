@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /tmp/nanotrack-window-20261012/build
+Test project /tmp/nanotrack-window-20261012/build
+    Start 20: baseline_code_identity_tests
+1/1 Test #20: baseline_code_identity_tests .....   Passed   10.11 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  10.12 sec

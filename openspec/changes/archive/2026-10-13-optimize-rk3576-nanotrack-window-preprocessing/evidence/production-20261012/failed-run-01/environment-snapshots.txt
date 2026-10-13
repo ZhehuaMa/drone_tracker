@@ -1,0 +1,210 @@
+initial
+loadavg=1.12 2.20 1.64 1/350 5734
+stat=cpu  131710 0 14482 1138276 368 0 622 0 0 0
+cpu0 33100 0 3422 123941 70 0 152 0 0 0
+cpu1 30422 0 2944 127132 37 0 145 0 0 0
+cpu2 34958 0 3233 122198 112 0 180 0 0 0
+cpu3 28899 0 4106 127450 92 0 133 0 0 0
+cpu4 3047 0 683 156886 55 0 8 0 0 0
+cpu5 0 0 0 160681 0 0 0 0 0 0
+cpu6 1282 0 92 159304 0 0 2 0 0 0
+cpu7 0 0 0 160681 0 0 0 0 0 0
+intr 18477239 0 2708809 1226 0 0 0 4728 0 0 0 0 15067796 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1600 507615 1216 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 8525 4 242 0 0 0 1 21 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 63668 0 15436 0 0 0 0 0 0 96329 1 0 0 19 1 1 1
+ctxt 17512178
+btime 1786388610
+processes 5741
+procs_running 1
+procs_blocked 0
+softirq 3077031 0 104895 2 5101 30590 0 1 712305 2224137 0
+/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq=2208000
+/sys/devices/system/cpu/cpufreq/policy4/scaling_governor=performance
+/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq=2016000
+/sys/devices/system/cpu/cpufreq/policy0/scaling_governor=performance
+/sys/class/devfreq/27700000.npu/cur_freq=950000000
+/sys/class/devfreq/27700000.npu/governor=performance
+/sys/class/devfreq/27d00000.vop/cur_freq=702000000
+/sys/class/devfreq/27d00000.vop/governor=performance
+/sys/class/devfreq/27800000.gpu/cur_freq=900000000
+/sys/class/devfreq/27800000.gpu/governor=performance
+/sys/class/thermal/thermal_zone2/temp=48076
+/sys/class/thermal/thermal_zone2/type=little-core-thermal
+/sys/class/thermal/cooling_device1/type=devfreq-27700000.npu
+/sys/class/thermal/thermal_zone0/temp=46230
+/sys/class/thermal/thermal_zone0/type=soc-thermal
+/sys/class/thermal/thermal_zone5/temp=48076
+/sys/class/thermal/thermal_zone5/type=gpu-thermal
+/sys/class/thermal/thermal_zone3/temp=46230
+/sys/class/thermal/thermal_zone3/type=ddr-thermal
+/sys/class/thermal/thermal_zone1/temp=48076
+/sys/class/thermal/thermal_zone1/type=bigcore-thermal
+/sys/class/thermal/cooling_device0/type=devfreq-27800000.gpu
+/sys/class/thermal/thermal_zone4/temp=45307
+/sys/class/thermal/thermal_zone4/type=npu-thermal
+pair=0 order=0 before
+loadavg=1.12 2.20 1.64 1/350 5734
+stat=cpu  131710 0 14483 1138277 368 0 622 0 0 0
+cpu0 33100 0 3422 123941 70 0 152 0 0 0
+cpu1 30422 0 2944 127132 37 0 145 0 0 0
+cpu2 34958 0 3233 122198 112 0 180 0 0 0
+cpu3 28899 0 4106 127450 92 0 133 0 0 0
+cpu4 3047 0 683 156886 55 0 8 0 0 0
+cpu5 0 0 0 160681 0 0 0 0 0 0
+cpu6 1282 0 92 159304 0 0 2 0 0 0
+cpu7 0 0 0 160681 0 0 0 0 0 0
+intr 18477263 0 2708813 1226 0 0 0 4728 0 0 0 0 15067815 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1600 507615 1216 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 8525 4 242 0 0 0 1 21 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 63668 0 15436 0 0 0 0 0 0 96330 1 0 0 19 1 1 1
+ctxt 17512227
+btime 1786388610
+processes 5741
+procs_running 1
+procs_blocked 0
+softirq 3077036 0 104896 2 5101 30590 0 1 712306 2224140 0
+/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq=2208000
+/sys/devices/system/cpu/cpufreq/policy4/scaling_governor=performance
+/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq=2016000
+/sys/devices/system/cpu/cpufreq/policy0/scaling_governor=performance
+/sys/class/devfreq/27700000.npu/cur_freq=950000000
+/sys/class/devfreq/27700000.npu/governor=performance
+/sys/class/devfreq/27d00000.vop/cur_freq=702000000
+/sys/class/devfreq/27d00000.vop/governor=performance
+/sys/class/devfreq/27800000.gpu/cur_freq=900000000
+/sys/class/devfreq/27800000.gpu/governor=performance
+/sys/class/thermal/thermal_zone2/temp=48999
+/sys/class/thermal/thermal_zone2/type=little-core-thermal
+/sys/class/thermal/cooling_device1/type=devfreq-27700000.npu
+/sys/class/thermal/thermal_zone0/temp=46230
+/sys/class/thermal/thermal_zone0/type=soc-thermal
+/sys/class/thermal/thermal_zone5/temp=48076
+/sys/class/thermal/thermal_zone5/type=gpu-thermal
+/sys/class/thermal/thermal_zone3/temp=46230
+/sys/class/thermal/thermal_zone3/type=ddr-thermal
+/sys/class/thermal/thermal_zone1/temp=48076
+/sys/class/thermal/thermal_zone1/type=bigcore-thermal
+/sys/class/thermal/cooling_device0/type=devfreq-27800000.gpu
+/sys/class/thermal/thermal_zone4/temp=46230
+/sys/class/thermal/thermal_zone4/type=npu-thermal
+pair=0 order=0 after
+loadavg=1.12 2.20 1.64 1/350 5734
+stat=cpu  131733 0 14514 1138686 368 0 622 0 0 0
+cpu0 33100 0 3423 123999 70 0 152 0 0 0
+cpu1 30422 0 2946 127188 37 0 145 0 0 0
+cpu2 34958 0 3233 122256 112 0 180 0 0 0
+cpu3 28899 0 4106 127508 92 0 134 0 0 0
+cpu4 3070 0 712 156893 55 0 8 0 0 0
+cpu5 0 0 0 160739 0 0 0 0 0 0
+cpu6 1282 0 92 159362 0 0 2 0 0 0
+cpu7 0 0 0 160739 0 0 0 0 0 0
+intr 18486636 0 2711305 1244 0 0 0 4730 0 0 0 0 15073236 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1601 507799 2432 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 8525 4 242 0 0 0 1 21 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 63668 0 15441 0 0 0 0 0 0 96364 1 0 0 19 1 1 1
+ctxt 17526528
+btime 1786388610
+processes 5741
+procs_running 1
+procs_blocked 0
+softirq 3078306 0 104972 2 5101 30590 0 1 712711 2224929 0
+/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq=2208000
+/sys/devices/system/cpu/cpufreq/policy4/scaling_governor=performance
+/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq=2016000
+/sys/devices/system/cpu/cpufreq/policy0/scaling_governor=performance
+/sys/class/devfreq/27700000.npu/cur_freq=950000000
+/sys/class/devfreq/27700000.npu/governor=performance
+/sys/class/devfreq/27d00000.vop/cur_freq=702000000
+/sys/class/devfreq/27d00000.vop/governor=performance
+/sys/class/devfreq/27800000.gpu/cur_freq=900000000
+/sys/class/devfreq/27800000.gpu/governor=performance
+/sys/class/thermal/thermal_zone2/temp=48999
+/sys/class/thermal/thermal_zone2/type=little-core-thermal
+/sys/class/thermal/cooling_device1/type=devfreq-27700000.npu
+/sys/class/thermal/thermal_zone0/temp=47153
+/sys/class/thermal/thermal_zone0/type=soc-thermal
+/sys/class/thermal/thermal_zone5/temp=48076
+/sys/class/thermal/thermal_zone5/type=gpu-thermal
+/sys/class/thermal/thermal_zone3/temp=47153
+/sys/class/thermal/thermal_zone3/type=ddr-thermal
+/sys/class/thermal/thermal_zone1/temp=48076
+/sys/class/thermal/thermal_zone1/type=bigcore-thermal
+/sys/class/thermal/cooling_device0/type=devfreq-27800000.gpu
+/sys/class/thermal/thermal_zone4/temp=46230
+/sys/class/thermal/thermal_zone4/type=npu-thermal
+pair=0 order=1 before
+loadavg=1.12 2.20 1.64 1/350 5734
+stat=cpu  131733 0 14514 1138687 368 0 622 0 0 0
+cpu0 33100 0 3423 123999 70 0 152 0 0 0
+cpu1 30422 0 2946 127188 37 0 145 0 0 0
+cpu2 34958 0 3233 122256 112 0 180 0 0 0
+cpu3 28899 0 4106 127508 92 0 134 0 0 0
+cpu4 3070 0 712 156893 55 0 8 0 0 0
+cpu5 0 0 0 160739 0 0 0 0 0 0
+cpu6 1282 0 92 159362 0 0 2 0 0 0
+cpu7 0 0 0 160739 0 0 0 0 0 0
+intr 18486646 0 2711306 1244 0 0 0 4730 0 0 0 0 15073245 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1601 507799 2432 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 8525 4 242 0 0 0 1 21 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 63668 0 15441 0 0 0 0 0 0 96364 1 0 0 19 1 1 1
+ctxt 17526549
+btime 1786388610
+processes 5741
+procs_running 1
+procs_blocked 0
+softirq 3078308 0 104972 2 5101 30590 0 1 712712 2224930 0
+/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq=2208000
+/sys/devices/system/cpu/cpufreq/policy4/scaling_governor=performance
+/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq=2016000
+/sys/devices/system/cpu/cpufreq/policy0/scaling_governor=performance
+/sys/class/devfreq/27700000.npu/cur_freq=950000000
+/sys/class/devfreq/27700000.npu/governor=performance
+/sys/class/devfreq/27d00000.vop/cur_freq=702000000
+/sys/class/devfreq/27d00000.vop/governor=performance
+/sys/class/devfreq/27800000.gpu/cur_freq=900000000
+/sys/class/devfreq/27800000.gpu/governor=performance
+/sys/class/thermal/thermal_zone2/temp=48999
+/sys/class/thermal/thermal_zone2/type=little-core-thermal
+/sys/class/thermal/cooling_device1/type=devfreq-27700000.npu
+/sys/class/thermal/thermal_zone0/temp=47153
+/sys/class/thermal/thermal_zone0/type=soc-thermal
+/sys/class/thermal/thermal_zone5/temp=48076
+/sys/class/thermal/thermal_zone5/type=gpu-thermal
+/sys/class/thermal/thermal_zone3/temp=47153
+/sys/class/thermal/thermal_zone3/type=ddr-thermal
+/sys/class/thermal/thermal_zone1/temp=48076
+/sys/class/thermal/thermal_zone1/type=bigcore-thermal
+/sys/class/thermal/cooling_device0/type=devfreq-27800000.gpu
+/sys/class/thermal/thermal_zone4/temp=46230
+/sys/class/thermal/thermal_zone4/type=npu-thermal
+pair=0 order=1 after
+loadavg=1.12 2.20 1.64 1/350 5734
+stat=cpu  131744 0 14517 1138833 368 0 622 0 0 0
+cpu0 33100 0 3423 124019 70 0 152 0 0 0
+cpu1 30422 0 2947 127207 37 0 145 0 0 0
+cpu2 34958 0 3233 122276 112 0 180 0 0 0
+cpu3 28899 0 4106 127528 92 0 134 0 0 0
+cpu4 3081 0 714 156900 55 0 8 0 0 0
+cpu5 0 0 0 160759 0 0 0 0 0 0
+cpu6 1282 0 92 159382 0 0 2 0 0 0
+cpu7 0 0 0 160759 0 0 0 0 0 0
+intr 18491437 0 2712914 1246 0 0 0 4733 0 0 0 0 15075124 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1601 507863 3648 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 8525 4 247 0 0 0 1 21 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 63668 0 15443 0 0 0 0 0 0 96377 1 0 0 19 1 1 1
+ctxt 17534712
+btime 1786388610
+processes 5741
+procs_running 1
+procs_blocked 0
+softirq 3078722 0 104987 2 5101 30590 0 1 712832 2225209 0
+/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq=2208000
+/sys/devices/system/cpu/cpufreq/policy4/scaling_governor=performance
+/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq=2016000
+/sys/devices/system/cpu/cpufreq/policy0/scaling_governor=performance
+/sys/class/devfreq/27700000.npu/cur_freq=950000000
+/sys/class/devfreq/27700000.npu/governor=performance
+/sys/class/devfreq/27d00000.vop/cur_freq=702000000
+/sys/class/devfreq/27d00000.vop/governor=performance
+/sys/class/devfreq/27800000.gpu/cur_freq=900000000
+/sys/class/devfreq/27800000.gpu/governor=performance
+/sys/class/thermal/thermal_zone2/temp=48999
+/sys/class/thermal/thermal_zone2/type=little-core-thermal
+/sys/class/thermal/cooling_device1/type=devfreq-27700000.npu
+/sys/class/thermal/thermal_zone0/temp=47153
+/sys/class/thermal/thermal_zone0/type=soc-thermal
+/sys/class/thermal/thermal_zone5/temp=48999
+/sys/class/thermal/thermal_zone5/type=gpu-thermal
+/sys/class/thermal/thermal_zone3/temp=47153
+/sys/class/thermal/thermal_zone3/type=ddr-thermal
+/sys/class/thermal/thermal_zone1/temp=48076
+/sys/class/thermal/thermal_zone1/type=bigcore-thermal
+/sys/class/thermal/cooling_device0/type=devfreq-27800000.gpu
+/sys/class/thermal/thermal_zone4/temp=46230
+/sys/class/thermal/thermal_zone4/type=npu-thermal

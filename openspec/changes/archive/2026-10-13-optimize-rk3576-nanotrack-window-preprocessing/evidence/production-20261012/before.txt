@@ -1,0 +1,58 @@
+MainPID=1357
+ExecStart={ path=/opt/drone_tracker/bin/run-camera ; argv[]=/opt/drone_tracker/bin/run-camera ; ignore_errors=no ; start_time=[Tue 2026-08-11 03:03:36 CST] ; stop_time=[n/a] ; pid=1357 ; code=(null) ; status=0/0 }
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/drone-tracker.service
+# /etc/systemd/system/drone-tracker.service
+[Unit]
+Description=Drone tracker production camera node
+Wants=network-online.target
+After=local-fs.target network-online.target display-manager.service lightdm.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/opt/drone_tracker/bin/run-camera
+WorkingDirectory=/opt/drone_tracker
+Environment=ROS_LOG_DIR=/var/log/drone_tracker
+LogsDirectory=drone_tracker
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGINT
+KillMode=mixed
+TimeoutStopSec=30
+UMask=0022
+
+[Install]
+WantedBy=multi-user.target
+/opt/drone_tracker/releases/bundle-20260927T075028Z-3213
+f909ec82c2c3c45a82b1c85fb616e2f1f7a97b2da4159c7755af195f2e05298c  /opt/drone_tracker/config/camera.yaml
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /usr/lib/librknnrt.so
+3e58d3b61932d31771c2f12c196d55b96638317f48ca26e083122726f4e1f034  /opt/drone_tracker/current/lib/drone_tracker/drone_tracker_node
+RKNPU driver: v0.9.8
+PRETTY_NAME="Ubuntu 22.04.5 LTS"
+NAME="Ubuntu"
+VERSION_ID="22.04"
+VERSION="22.04.5 LTS (Jammy Jellyfish)"
+VERSION_CODENAME=jammy
+ID=ubuntu
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=jammy
+BUILD_INFO="root@4492c3398ae8 Tue Sep 15 10:05:36 CST 2026"
+BUILD_INFO="root@4492c3398ae8 Tue Sep 15 16:55:51 CST 2026"
+BUILD_INFO="root@fdfa7e4221e4 Tue Sep 22 02:23:34 UTC 2026"
+BUILD_INFO="root@5553c24f6331 Tue Sep 22 02:41:01 UTC 2026"
+BUILD_INFO="root@8a215e6a5868 Tue Sep 22 02:44:33 UTC 2026"
+BUILD_INFO="root@e915b094f7ff Tue Sep 22 02:46:35 UTC 2026"
+BUILD_INFO="root@88e54eeff7c6 Tue Sep 22 02:50:20 UTC 2026"
+BUILD_INFO="root@1f5bf58e0d94 Tue Sep 22 02:53:15 UTC 2026"
+BUILD_INFO="root@d1ea2d332200 Wed Sep 23 10:37:11 UTC 2026"
+BUILD_INFO="root@7eb74c7bf503 Wed Sep 23 10:46:28 UTC 2026"
+BUILD_INFO="root@a1fc914eb29c Wed Sep 23 10:50:57 UTC 2026"
+BUILD_INFO="root@dcb64c2135e9 Wed Sep 23 10:53:18 UTC 2026"
+ID_LIKE="ubuntu"
+RK_BUILD_INFO="root@dcb64c2135e9 Wed Sep 23 10:53:19 UTC 2026"

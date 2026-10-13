@@ -1,0 +1,18 @@
+Internal ctest changing into directory: /tmp/nanotrack-window-20261012/build
+Test project /tmp/nanotrack-window-20261012/build
+    Start 20: baseline_code_identity_tests
+1/1 Test #20: baseline_code_identity_tests .....***Failed   11.90 sec
+-- Found Git: /usr/bin/git (found version "2.34.1") 
+CMake Error at /tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/baseline/tests/code_identity_test.cmake:108 (message):
+  无改动重复构建触发了身份文件或程序重编译
+
+
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =  11.90 sec
+
+The following tests FAILED:
+	 20 - baseline_code_identity_tests (Failed)
+Errors while running CTest

@@ -1,0 +1,44 @@
+{
+  "历史已记录源码数量": 289,
+  "仍匹配历史hash": 286,
+  "与历史hash不同的已有诊断文件": [
+    "tests/nanotracev3_performance_benchmarks/window_preprocess/CMakeLists.txt",
+    "tests/nanotracev3_performance_benchmarks/window_preprocess/main.cpp",
+    "tests/nanotracev3_performance_benchmarks/window_preprocess/recovery.h"
+  ],
+  "新增加诊断测试文件": [
+    "performance_verdict.cpp",
+    "tests/performance_verdict_test.cpp",
+    "tests/performance_exit_test.cmake"
+  ],
+  "生产源码及公共算法历史身份保持": true,
+  "旧参考还原后逐字节一致": true,
+  "历史帧数": 600,
+  "历史批次数": 24,
+  "历史区间数": 11256,
+  "真实Run事件数": 1176,
+  "独立复算耗时": {
+    "旧路径": {
+      "batch_ns": {
+        "中位数_ms": 573.712983,
+        "P95_ms": 580.295609
+      },
+      "preprocess_ns": {
+        "中位数_ms": 367.115402,
+        "P95_ms": 373.372192
+      }
+    },
+    "新路径": {
+      "batch_ns": {
+        "中位数_ms": 193.3046045,
+        "P95_ms": 197.284198
+      },
+      "preprocess_ns": {
+        "中位数_ms": 7.278238,
+        "P95_ms": 7.426194
+      }
+    }
+  },
+  "预处理新旧比例": 0.019825477112507525,
+  "范围说明": "2026-10-12原始测量复算，不是2026-10-13重新测量。W2只改诊断判定/测试，当前二进制身份另存。"
+}

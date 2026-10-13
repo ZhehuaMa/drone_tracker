@@ -1,0 +1,6 @@
+MainPID=5959
+ActiveState=active
+SubState=running
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /usr/lib/librknnrt.so
+f909ec82c2c3c45a82b1c85fb616e2f1f7a97b2da4159c7755af195f2e05298c  /opt/drone_tracker/config/camera.yaml
+3e58d3b61932d31771c2f12c196d55b96638317f48ca26e083122726f4e1f034  /opt/drone_tracker/current/lib/drone_tracker/drone_tracker_node

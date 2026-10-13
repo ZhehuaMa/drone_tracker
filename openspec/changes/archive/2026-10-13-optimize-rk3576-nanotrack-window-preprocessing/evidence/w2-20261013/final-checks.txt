@@ -1,0 +1,1 @@
+Change 'optimize-rk3576-nanotrack-window-preprocessing' is valid

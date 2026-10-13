@@ -1,0 +1,20 @@
+{
+  "requirements_added": 8,
+  "requirements_modified": 0,
+  "requirements_removed": 0,
+  "requirements_renamed": 0,
+  "scenarios_added": 23,
+  "tasks_completed": 23,
+  "tasks_total": 23,
+  "delta_paths": [
+    "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/specs/model-input-preprocessing/spec.md"
+  ],
+  "main_spec": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/specs/model-input-preprocessing/spec.md",
+  "original_main_content_unchanged": true,
+  "all_delta_blocks_synced": true,
+  "delta_operation_headers_in_main": false,
+  "original_change_files_unchanged": 89,
+  "other_modified_or_untracked_files_unchanged": 24,
+  "main_existing_long_description_warning": "requirements[3]",
+  "new_requirement_long_description_warnings": 0
+}

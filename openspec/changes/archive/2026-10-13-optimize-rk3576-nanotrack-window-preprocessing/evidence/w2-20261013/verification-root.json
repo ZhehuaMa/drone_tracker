@@ -1,0 +1,22 @@
+{
+  "changes": [
+    {
+      "name": "optimize-rk3576-nanotrack-window-preprocessing",
+      "completedTasks": 23,
+      "totalTasks": 23,
+      "lastModified": "2026-10-13T02:24:21.926Z",
+      "status": "complete"
+    },
+    {
+      "name": "assemble-rk3576-tracker-replay",
+      "completedTasks": 31,
+      "totalTasks": 33,
+      "lastModified": "2026-10-12T10:24:14.759Z",
+      "status": "in-progress"
+    }
+  ],
+  "root": {
+    "path": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker",
+    "source": "nearest"
+  }
+}

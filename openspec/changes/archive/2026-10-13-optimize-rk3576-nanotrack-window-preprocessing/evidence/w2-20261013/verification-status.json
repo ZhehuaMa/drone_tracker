@@ -1,0 +1,104 @@
+{
+  "changeName": "optimize-rk3576-nanotrack-window-preprocessing",
+  "schemaName": "spec-driven",
+  "planningHome": {
+    "kind": "repo",
+    "root": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker",
+    "changesDir": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes",
+    "defaultSchema": "spec-driven"
+  },
+  "changeRoot": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing",
+  "artifactPaths": {
+    "proposal": {
+      "outputPath": "proposal.md",
+      "resolvedOutputPath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/proposal.md",
+      "existingOutputPaths": [
+        "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/proposal.md"
+      ]
+    },
+    "specs": {
+      "outputPath": "specs/**/*.md",
+      "resolvedOutputPath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/specs/**/*.md",
+      "existingOutputPaths": [
+        "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/specs/model-input-preprocessing/spec.md"
+      ]
+    },
+    "design": {
+      "outputPath": "design.md",
+      "resolvedOutputPath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/design.md",
+      "existingOutputPaths": [
+        "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/design.md"
+      ]
+    },
+    "tasks": {
+      "outputPath": "tasks.md",
+      "resolvedOutputPath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "existingOutputPaths": [
+        "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md"
+      ]
+    }
+  },
+  "isPlanningComplete": true,
+  "isComplete": true,
+  "applyRequires": [
+    "tasks"
+  ],
+  "nextSteps": [
+    "All planning artifacts are complete. Run openspec instructions apply --change \"optimize-rk3576-nanotrack-window-preprocessing\" --json to inspect implementation progress."
+  ],
+  "actionContext": {
+    "mode": "repo-local",
+    "sourceOfTruth": "repo",
+    "planningArtifacts": [
+      "proposal",
+      "specs",
+      "design",
+      "tasks"
+    ],
+    "linkedContext": [],
+    "allowedEditRoots": [
+      "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker"
+    ],
+    "requiresAffectedAreaSelection": false,
+    "constraints": [
+      "Repo-local change artifacts and implementation edits are scoped to this project."
+    ]
+  },
+  "artifacts": [
+    {
+      "id": "proposal",
+      "outputPath": "proposal.md",
+      "status": "done",
+      "requires": []
+    },
+    {
+      "id": "specs",
+      "outputPath": "specs/**/*.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "design",
+      "outputPath": "design.md",
+      "status": "done",
+      "requires": [
+        "proposal"
+      ]
+    },
+    {
+      "id": "tasks",
+      "outputPath": "tasks.md",
+      "status": "done",
+      "requires": [
+        "specs",
+        "design"
+      ]
+    }
+  ],
+  "root": {
+    "path": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker",
+    "source": "nearest"
+  }
+}

@@ -1,0 +1,286 @@
+{
+  "items": [
+    {
+      "id": "generic-frame",
+      "type": "spec",
+      "valid": true,
+      "issues": [],
+      "durationMs": 5
+    },
+    {
+      "id": "model-backends",
+      "type": "spec",
+      "valid": true,
+      "issues": [],
+      "durationMs": 1
+    },
+    {
+      "id": "model-execution",
+      "type": "spec",
+      "valid": true,
+      "issues": [],
+      "durationMs": 1
+    },
+    {
+      "id": "model-input-preprocessing",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[3]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 1
+    },
+    {
+      "id": "nanotrackv3-performance-baseline",
+      "type": "spec",
+      "valid": true,
+      "issues": [],
+      "durationMs": 0
+    },
+    {
+      "id": "nanotrackv3-search-direct-benchmark",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[1]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 0
+    },
+    {
+      "id": "osd-presentation",
+      "type": "spec",
+      "valid": true,
+      "issues": [],
+      "durationMs": 1
+    },
+    {
+      "id": "osd-ros-telemetry",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[0]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 1
+    },
+    {
+      "id": "platform-factory",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[3]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 1
+    },
+    {
+      "id": "production-binary-deployment",
+      "type": "spec",
+      "valid": true,
+      "issues": [],
+      "durationMs": 1
+    },
+    {
+      "id": "rk3576-camera-frame-source",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[5]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 0
+    },
+    {
+      "id": "rk3576-camera-recording",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[0]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        },
+        {
+          "level": "WARNING",
+          "path": "requirements[3]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        },
+        {
+          "level": "WARNING",
+          "path": "requirements[4]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        },
+        {
+          "level": "WARNING",
+          "path": "requirements[8]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 0
+    },
+    {
+      "id": "rk3576-hdmi-osd",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[16]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        },
+        {
+          "level": "WARNING",
+          "path": "requirements[18]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 1
+    },
+    {
+      "id": "rk3576-model-session",
+      "type": "spec",
+      "valid": true,
+      "issues": [],
+      "durationMs": 1
+    },
+    {
+      "id": "rk3576-nanotrack-backend",
+      "type": "spec",
+      "valid": true,
+      "issues": [],
+      "durationMs": 1
+    },
+    {
+      "id": "rk3576-ros-camera",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[0]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        },
+        {
+          "level": "WARNING",
+          "path": "requirements[1]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        },
+        {
+          "level": "WARNING",
+          "path": "requirements[2]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        },
+        {
+          "level": "WARNING",
+          "path": "requirements[4]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 1
+    },
+    {
+      "id": "rk3576-ros-video",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[4]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        },
+        {
+          "level": "WARNING",
+          "path": "requirements[7]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 0
+    },
+    {
+      "id": "rk3576-sc233hgs-camera-frame-source",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[2]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        },
+        {
+          "level": "WARNING",
+          "path": "requirements[3]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        },
+        {
+          "level": "WARNING",
+          "path": "requirements[7]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 0
+    },
+    {
+      "id": "rk3576-thread-affinity",
+      "type": "spec",
+      "valid": true,
+      "issues": [],
+      "durationMs": 0
+    },
+    {
+      "id": "rk3576-video-frame-source",
+      "type": "spec",
+      "valid": true,
+      "issues": [],
+      "durationMs": 0
+    },
+    {
+      "id": "rk3576-yolo-backend",
+      "type": "spec",
+      "valid": true,
+      "issues": [
+        {
+          "level": "WARNING",
+          "path": "requirements[0]",
+          "message": "Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+        }
+      ],
+      "durationMs": 0
+    }
+  ],
+  "summary": {
+    "totals": {
+      "items": 21,
+      "passed": 21,
+      "failed": 0
+    },
+    "byType": {
+      "spec": {
+        "items": 21,
+        "passed": 21,
+        "failed": 0
+      }
+    }
+  },
+  "version": "1.0",
+  "root": {
+    "path": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker",
+    "source": "nearest"
+  }
+}

@@ -1,0 +1,2 @@
+当前 worktree 与板端隔离源码的 289 个 C++/头文件/CMake/模板文件指纹全部匹配。
+运行工具 SHA256=f5dfec99ccad0dd59ba70bed18dcf2fe261c0d06348bb030fc33ee1ddea2cdee

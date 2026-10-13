@@ -1,0 +1,32 @@
+{
+  "old": {
+    "recovery": {
+      "median_ms": 573.712983,
+      "p95_ms": 580.295609
+    },
+    "preprocess": {
+      "median_ms": 367.115402,
+      "p95_ms": 373.372192
+    }
+  },
+  "new": {
+    "recovery": {
+      "median_ms": 193.3046045,
+      "p95_ms": 197.284198
+    },
+    "preprocess": {
+      "median_ms": 7.278238,
+      "p95_ms": 7.426194
+    }
+  },
+  "preprocess_ratio": 0.019825477112507525,
+  "frames": 600,
+  "batches": 24,
+  "intervals": 11256,
+  "actual_run_events": 1176,
+  "source_files_matching": 289,
+  "original_input_records_matching": 25,
+  "reference_exact": true,
+  "elements": 4730187,
+  "other_window_records": 192
+}

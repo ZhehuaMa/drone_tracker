@@ -1,0 +1,21 @@
+[100%] 检查 NanoTrack 基准源码身份
+[100%] Built target nanotrack_window_recovery_identity
+/usr/bin/ar qc libnanotrack_window_support.a CMakeFiles/nanotrack_window_support.dir/whole_frame_preprocessor.cpp.o CMakeFiles/nanotrack_window_support.dir/recovery.cpp.o
+/usr/bin/ranlib libnanotrack_window_support.a
+/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/nanotrack_window_tests.dir/tests/recovery_test.cpp.o -o nanotrack_window_tests  libnanotrack_window_support.a rk3576/librk3576_yolo_host.a common/libhybrid_tracker.a common/libmodel_common.a common/libpreprocess_geometry.a /usr/lib/aarch64-linux-gnu/libopencv_video.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_dnn.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_videoio.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.5.4d common/libcpu_affinity.a /usr/lib/aarch64-linux-gnu/libyaml-cpp.so.0.7.0 /usr/lib/aarch64-linux-gnu/libcrypto.so 
+/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/nanotrack_window_recovery.dir/main.cpp.o -o nanotrack_window_recovery  libnanotrack_window_support.a rk3576/librk3576_yolo_sdk.a baseline/libnanotrack_baseline_support.a -ldl /usr/lib/aarch64-linux-gnu/libcrypto.so rk3576/librk3576_yolo_runtime.a rk3576/librk3576_yolo_host.a /usr/lib/librknnrt.so common/libhybrid_tracker.a common/libmodel_common.a common/libpreprocess_geometry.a /usr/lib/aarch64-linux-gnu/libopencv_video.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_dnn.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_videoio.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.5.4d common/libcpu_affinity.a /usr/lib/aarch64-linux-gnu/libyaml-cpp.so.0.7.0 /usr/lib/aarch64-linux-gnu/libcrypto.so 
+诊断源码身份刷新，变更诊断源按 CMake 原编译命令原生重编译及链接。
+Internal ctest changing into directory: /tmp/nanotrack-window-20261012/build
+Test project /tmp/nanotrack-window-20261012/build
+    Start  1: nanotrack_window_tests
+1/4 Test  #1: nanotrack_window_tests ................   Passed    3.18 sec
+    Start  2: nanotrack_window_help
+2/4 Test  #2: nanotrack_window_help .................   Passed    0.14 sec
+    Start 10: recovery_regression_tests
+3/4 Test #10: recovery_regression_tests .............   Passed    0.02 sec
+    Start 16: baseline_nanotrack_preprocess_tests
+4/4 Test #16: baseline_nanotrack_preprocess_tests ...   Passed    0.47 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =   3.82 sec

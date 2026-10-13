@@ -25,7 +25,11 @@ private:
     std::shared_ptr<const std::vector<float>> values_;
     ModelInputContract contract_;
 };
-/** @brief 灰度裁剪先转浮点再缩放；模板与搜索各持有一个受租约保护的缓存。 */
+/**
+ * @brief 同一实例仍须串行调用；模板与搜索复用一个单通道 Float32 小窗。
+ * 源映射只在复制有效区域时存活，缩放前释放。小窗每次完整写入或补齐，返回后可重写。
+ * 消费者持有的 FloatInput 使用独立三平面存储，由模板/搜索各自的缓存租约保护。
+ */
 class NanoTrackPreprocessor final : public ::NanoTrackPreprocessor {
 public:
     PreparedInputResult prepareTemplate(const FrameRef &frame, const cv::Point2f &position, int original_size,
@@ -37,6 +41,7 @@ public:
 private:
     PreparedInputResult prepare(const FrameRef &frame, const cv::Point2f &position, int original_size,
                                 const ModelInputContract &contract, bool is_template);
+    cv::Mat window_{}; // 临时工作区，不借给消费者，也不持有源帧。
     TargetMean mean_{};
     std::array<ReusableInput<std::vector<float>>, 2> cache_{};
 };

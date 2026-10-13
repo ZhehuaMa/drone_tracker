@@ -1,0 +1,4 @@
+源提交：ea9cd822b9717b2759ece8e251bb977c3f88449b
+源文件：src/platform/rk3576/nanotrack_preprocessor.h 和 .cpp
+仅重命名命名空间、类及 FloatInput 引用，保留旧整帧处理与均值/租约逻辑。
+仅供测试和诊断工具，不链接生产节点。

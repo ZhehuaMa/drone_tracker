@@ -1,0 +1,116 @@
+Starting >>> drone_tracker
+--- stderr: drone_tracker
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/baseline/libnanotrack_baseline_runner.a' has modification time 0.02 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/baseline/libnanotrack_baseline_runner.a' has modification time 0.019 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/baseline/libnanotrack_baseline_runner.a' has modification time 0.019 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/baseline/libnanotrack_baseline_runner.a' has modification time 0.019 s in the future
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+---
+Finished <<< drone_tracker [3.74s]
+
+Summary: 1 package finished [3.83s]
+  1 package had stderr output: drone_tracker
+Internal ctest changing into directory: /work/ros2_ws/build/drone_tracker
+Test project /work/ros2_ws/build/drone_tracker
+      Start  1: sc233hgs_camera_tests
+ 1/47 Test  #1: sc233hgs_camera_tests ...................   Passed    0.03 sec
+      Start  2: cpu_affinity_tests
+ 2/47 Test  #2: cpu_affinity_tests ......................   Passed    0.00 sec
+      Start  3: deployment_cpu_policy_tests
+ 3/47 Test  #3: deployment_cpu_policy_tests .............   Passed    0.15 sec
+      Start  4: deployment_package_tests
+ 4/47 Test  #4: deployment_package_tests ................   Passed    0.05 sec
+      Start  5: ros_video_generate_fixtures
+ 5/47 Test  #5: ros_video_generate_fixtures .............   Passed    0.13 sec
+      Start  6: ros_video_tests
+ 6/47 Test  #6: ros_video_tests .........................   Passed   12.09 sec
+      Start  7: ros_initialization_tests
+ 7/47 Test  #7: ros_initialization_tests ................   Passed    0.52 sec
+      Start  8: jetson_config_tests
+ 8/47 Test  #8: jetson_config_tests .....................   Passed    0.16 sec
+      Start  9: yolo_output_adapter_tests
+ 9/47 Test  #9: yolo_output_adapter_tests ...............   Passed    1.35 sec
+      Start 10: model_contract_tests
+10/47 Test #10: model_contract_tests ....................   Passed    0.00 sec
+      Start 11: preprocess_common_tests
+11/47 Test #11: preprocess_common_tests .................   Passed    0.00 sec
+      Start 12: preprocess_contract_tests
+12/47 Test #12: preprocess_contract_tests ...............   Passed    0.16 sec
+      Start 13: hybrid_tracker_tests
+13/47 Test #13: hybrid_tracker_tests ....................   Passed    0.01 sec
+      Start 14: platform_contract_tests
+14/47 Test #14: platform_contract_tests .................   Passed    0.04 sec
+      Start 15: rknn_preprocess_tests
+15/47 Test #15: rknn_preprocess_tests ...................   Passed    0.01 sec
+      Start 16: recovery_regression_tests
+16/47 Test #16: recovery_regression_tests ...............   Passed    0.01 sec
+      Start 17: platform_selection_tests
+17/47 Test #17: platform_selection_tests ................   Passed    0.21 sec
+      Start 18: osd_yaml_tests
+18/47 Test #18: osd_yaml_tests ..........................   Passed    0.02 sec
+      Start 19: osd_pipeline_state_tests
+19/47 Test #19: osd_pipeline_state_tests ................   Passed    0.00 sec
+      Start 20: osd_config_tests
+20/47 Test #20: osd_config_tests ........................   Passed    0.00 sec
+      Start 21: osd_timing_tests
+21/47 Test #21: osd_timing_tests ........................   Passed    0.00 sec
+      Start 22: osd_presenter_tests
+22/47 Test #22: osd_presenter_tests .....................   Passed    0.60 sec
+      Start 23: osd_geometry_tests
+23/47 Test #23: osd_geometry_tests ......................   Passed    0.00 sec
+      Start 24: osd_layout_tests
+24/47 Test #24: osd_layout_tests ........................   Passed    1.22 sec
+      Start 25: osd_short_text_tests
+25/47 Test #25: osd_short_text_tests ....................   Passed    0.00 sec
+      Start 26: osd_hud_style_tests
+26/47 Test #26: osd_hud_style_tests .....................   Passed    0.10 sec
+      Start 27: osd_telemetry_tests
+27/47 Test #27: osd_telemetry_tests .....................   Passed    0.00 sec
+      Start 28: ros_osd_telemetry_tests
+28/47 Test #28: ros_osd_telemetry_tests .................   Passed    0.64 sec
+      Start 29: nanotrack_baseline_tests
+29/47 Test #29: nanotrack_baseline_tests ................   Passed    0.02 sec
+      Start 30: nanotrack_baseline_help
+30/47 Test #30: nanotrack_baseline_help .................   Passed    0.02 sec
+      Start 31: baseline_rknn_session_tests
+31/47 Test #31: baseline_rknn_session_tests .............   Passed    0.00 sec
+      Start 32: baseline_rknn_nanotrack_backend_tests
+32/47 Test #32: baseline_rknn_nanotrack_backend_tests ...   Passed    0.02 sec
+      Start 33: baseline_nanotrack_preprocess_tests
+33/47 Test #33: baseline_nanotrack_preprocess_tests .....   Passed    0.05 sec
+      Start 34: baseline_video_fixtures
+34/47 Test #34: baseline_video_fixtures .................   Passed    0.16 sec
+      Start 35: baseline_video_observation
+35/47 Test #35: baseline_video_observation ..............   Passed    0.02 sec
+      Start 36: baseline_runner_tests
+36/47 Test #36: baseline_runner_tests ...................   Passed    0.17 sec
+      Start 37: baseline_code_identity_tests
+37/47 Test #37: baseline_code_identity_tests ............   Passed    2.64 sec
+      Start 38: search_direct_direct_backend_tests
+38/47 Test #38: search_direct_direct_backend_tests ......   Passed    0.01 sec
+      Start 39: search_direct_direct_failure_tests
+39/47 Test #39: search_direct_direct_failure_tests ......   Passed    0.01 sec
+      Start 40: search_direct_help
+40/47 Test #40: search_direct_help ......................   Passed    0.01 sec
+      Start 41: search_direct_probe_help
+41/47 Test #41: search_direct_probe_help ................   Passed    0.00 sec
+      Start 42: search_direct_probe_missing_models
+42/47 Test #42: search_direct_probe_missing_models ......   Passed    0.00 sec
+      Start 43: search_direct_missing_config
+43/47 Test #43: search_direct_missing_config ............   Passed    0.01 sec
+      Start 44: search_direct_video_fixtures
+44/47 Test #44: search_direct_video_fixtures ............   Passed    0.14 sec
+      Start 45: search_direct_runner_tests
+45/47 Test #45: search_direct_runner_tests ..............   Passed    0.14 sec
+      Start 46: nanotrack_window_tests
+46/47 Test #46: nanotrack_window_tests ..................   Passed    0.45 sec
+      Start 47: nanotrack_window_help
+47/47 Test #47: nanotrack_window_help ...................   Passed    0.02 sec
+
+100% tests passed, 0 tests failed out of 47
+
+Total Test time (real) =  21.49 sec
+构建成功，安装目录：/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/.docker-artifacts/install

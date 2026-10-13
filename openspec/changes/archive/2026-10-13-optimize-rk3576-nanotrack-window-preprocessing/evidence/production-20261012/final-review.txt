@@ -1,0 +1,5 @@
+Change 'optimize-rk3576-nanotrack-window-preprocessing' is valid
+git diff --check：通过。
+生产 C++ 改动只在 RK3576 nanotrack_preprocessor.cpp/.h。
+公共算法、补帧、RKNN 输入提交、生产配置与 Jetson 源码未修改。
+生产节点链接命令没有 nanotrack_window_support 或 whole_frame_preprocessor。

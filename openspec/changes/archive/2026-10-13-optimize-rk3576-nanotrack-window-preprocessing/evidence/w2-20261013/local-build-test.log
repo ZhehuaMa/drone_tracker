@@ -1,0 +1,265 @@
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /work/build
+gmake[1]: Warning: File 'CMakeFiles/Makefile2' has modification time 0.017 s in the future
+gmake[2]: Warning: File 'CMakeFiles/Makefile2' has modification time 0.0075 s in the future
+[  2%] 检查 NanoTrack 基准源码身份
+Consolidate compiler generated dependencies of target preprocess_geometry
+[  7%] Built target preprocess_geometry
+Consolidate compiler generated dependencies of target cpu_affinity
+[ 10%] Built target cpu_affinity
+Consolidate compiler generated dependencies of target model_common
+[ 17%] Built target model_common
+Consolidate compiler generated dependencies of target hybrid_tracker
+[ 33%] Built target hybrid_tracker
+Consolidate compiler generated dependencies of target rk3576_yolo_host
+[ 43%] Built target rk3576_yolo_host
+Consolidate compiler generated dependencies of target nanotrack_baseline_support
+[ 58%] Built target nanotrack_baseline_support
+Consolidate compiler generated dependencies of target nanotrack_window_support
+[ 61%] Building CXX object CMakeFiles/nanotrack_window_support.dir/recovery.cpp.o
+[ 64%] Building CXX object CMakeFiles/nanotrack_window_support.dir/performance_verdict.cpp.o
+Consolidate compiler generated dependencies of target rk3576_yolo_runtime
+[ 79%] Built target rk3576_yolo_runtime
+Consolidate compiler generated dependencies of target rk3576_yolo_sdk
+[ 89%] Built target rk3576_yolo_sdk
+[ 89%] Built target nanotrack_window_recovery_identity
+[ 92%] Linking CXX static library libnanotrack_window_support.a
+[ 94%] Built target nanotrack_window_support
+Consolidate compiler generated dependencies of target nanotrack_window_recovery
+gmake[3]: Warning: File 'CMakeFiles/nanotrack_window_recovery.dir/compiler_depend.make' has modification time 0.0064 s in the future
+[ 97%] Building CXX object CMakeFiles/nanotrack_window_recovery.dir/main.cpp.o
+[100%] Linking CXX executable nanotrack_window_recovery
+gmake[3]: warning:  Clock skew detected.  Your build may be incomplete.
+[100%] Built target nanotrack_window_recovery
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[1]: warning:  Clock skew detected.  Your build may be incomplete.
+[  9%] Built target cpu_affinity
+[ 22%] Built target preprocess_geometry
+[ 27%] Built target model_common
+[ 54%] Built target hybrid_tracker
+[ 72%] Built target rk3576_yolo_host
+Consolidate compiler generated dependencies of target nanotrack_window_support
+[ 90%] Built target nanotrack_window_support
+Consolidate compiler generated dependencies of target nanotrack_window_tests
+gmake[3]: Warning: File 'CMakeFiles/nanotrack_window_tests.dir/compiler_depend.make' has modification time 0.0065 s in the future
+[ 95%] Building CXX object CMakeFiles/nanotrack_window_tests.dir/tests/recovery_test.cpp.o
+[100%] Linking CXX executable nanotrack_window_tests
+gmake[3]: warning:  Clock skew detected.  Your build may be incomplete.
+[100%] Built target nanotrack_window_tests
+[ 13%] Built target cpu_affinity
+[ 13%] Built target preprocess_geometry
+[ 27%] Built target model_common
+[ 54%] Built target hybrid_tracker
+[ 72%] Built target rk3576_yolo_host
+[ 90%] Built target nanotrack_window_support
+[ 95%] Building CXX object CMakeFiles/nanotrack_window_performance_tests.dir/tests/performance_verdict_test.cpp.o
+[100%] Linking CXX executable nanotrack_window_performance_tests
+[100%] Built target nanotrack_window_performance_tests
+[ 25%] Built target preprocess_geometry
+[ 25%] Built target cpu_affinity
+[ 37%] Built target model_common
+[ 75%] Built target hybrid_tracker
+Consolidate compiler generated dependencies of target recovery_regression_tests
+[ 81%] Building CXX object common/CMakeFiles/recovery_regression_tests.dir/tests/recovery_regression_test.cpp.o
+[ 87%] Linking CXX executable recovery_regression_tests
+[100%] Built target recovery_regression_tests
+[ 12%] Built target cpu_affinity
+[ 20%] Built target preprocess_geometry
+[ 25%] Built target model_common
+[ 50%] Built target hybrid_tracker
+[ 66%] Built target rk3576_yolo_host
+[ 91%] Built target rk3576_yolo_runtime
+Consolidate compiler generated dependencies of target baseline_nanotrack_preprocess_tests
+[100%] Built target baseline_nanotrack_preprocess_tests
+Internal ctest changing into directory: /work/build
+UpdateCTestConfiguration  from :/work/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/work/build/DartConfiguration.tcl
+Test project /work/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 1
+    Start  1: nanotrack_window_tests
+
+1: Test command: /work/build/nanotrack_window_tests
+1: Test timeout computed to be: 10000000
+1: 恢复状态/工作量、观测透明性、计时统计和输入校验通过（模拟模型，无 NPU）
+1/6 Test  #1: nanotrack_window_tests ....................   Passed    0.44 sec
+test 2
+    Start  2: nanotrack_window_help
+
+2: Test command: /work/build/nanotrack_window_recovery "--help"
+2: Test timeout computed to be: 10000000
+2: 用法：nanotrack_window_recovery --check-inputs 配置.yaml
+2:       nanotrack_window_recovery --measure 配置.yaml
+2: 检查模式只读图像；测量模式要求生产板、系统 Runtime、真实模型及未存在的输出目录。
+2/6 Test  #2: nanotrack_window_help .....................   Passed    0.02 sec
+test 3
+    Start  3: nanotrack_window_performance_tests
+
+3: Test command: /work/build/nanotrack_window_performance_tests
+3: Test timeout computed to be: 10000000
+3: 通过正例：断言通过；诊断退出码=0
+3: 预处理比例30%：断言通过；诊断退出码=1
+3: 恢复中位数相等：断言通过；诊断退出码=1
+3: 恢复中位数增加：断言通过；诊断退出码=1
+3: 恢复P95增加：断言通过；诊断退出码=1
+3: 预处理恰好20%：断言通过；诊断退出码=0
+3: 预处理刚超过20%：断言通过；诊断退出码=1
+3: 恢复中位数刚降低：断言通过；诊断退出码=0
+3: 恢复P95相等：断言通过；诊断退出码=0
+3: 恢复P95刚增加：断言通过；诊断退出码=1
+3: 10 个固定统计用例通过；调用正式诊断共用逻辑，无模型执行
+3/6 Test  #3: nanotrack_window_performance_tests ........   Passed    0.00 sec
+test 4
+    Start  4: nanotrack_window_performance_exit_tests
+
+4: Test command: /usr/bin/cmake "-DTEST_PROGRAM=/work/build/nanotrack_window_performance_tests" "-P" "/work/source/tests/nanotracev3_performance_benchmarks/window_preprocess/tests/performance_exit_test.cmake"
+4: Test timeout computed to be: 10000000
+4: -- 预处理比例30%：实际退出码=1
+4: 指定录像重建恢复对照：失败
+4: 单位：纳秒
+4: 旧恢复中位数=100 新恢复中位数=80
+4: 旧恢复P95=120 新恢复P95=110
+4: 旧预处理中位数=100 新预处理中位数=30
+4: 预处理比例=0.3
+4: 仅此输入与窗口；不代表现场约 388 ms 的分项耗时。
+4: 状态：性能门槛未通过
+4: 
+4: -- 恢复中位数相等：实际退出码=1
+4: 指定录像重建恢复对照：失败
+4: 单位：纳秒
+4: 旧恢复中位数=100 新恢复中位数=100
+4: 旧恢复P95=120 新恢复P95=110
+4: 旧预处理中位数=100 新预处理中位数=18
+4: 预处理比例=0.18
+4: 仅此输入与窗口；不代表现场约 388 ms 的分项耗时。
+4: 状态：性能门槛未通过
+4: 
+4: -- 恢复中位数增加：实际退出码=1
+4: 指定录像重建恢复对照：失败
+4: 单位：纳秒
+4: 旧恢复中位数=100 新恢复中位数=101
+4: 旧恢复P95=120 新恢复P95=110
+4: 旧预处理中位数=100 新预处理中位数=18
+4: 预处理比例=0.18
+4: 仅此输入与窗口；不代表现场约 388 ms 的分项耗时。
+4: 状态：性能门槛未通过
+4: 
+4: -- 恢复P95增加：实际退出码=1
+4: 指定录像重建恢复对照：失败
+4: 单位：纳秒
+4: 旧恢复中位数=100 新恢复中位数=80
+4: 旧恢复P95=120 新恢复P95=121
+4: 旧预处理中位数=100 新预处理中位数=18
+4: 预处理比例=0.18
+4: 仅此输入与窗口；不代表现场约 388 ms 的分项耗时。
+4: 状态：性能门槛未通过
+4: 
+4: -- 预处理刚超过20%：实际退出码=1
+4: 指定录像重建恢复对照：失败
+4: 单位：纳秒
+4: 旧恢复中位数=100 新恢复中位数=80
+4: 旧恢复P95=120 新恢复P95=110
+4: 旧预处理中位数=100 新预处理中位数=20
+4: 预处理比例=0.2
+4: 仅此输入与窗口；不代表现场约 388 ms 的分项耗时。
+4: 状态：性能门槛未通过
+4: 
+4: -- 恢复P95刚增加：实际退出码=1
+4: 指定录像重建恢复对照：失败
+4: 单位：纳秒
+4: 旧恢复中位数=100 新恢复中位数=80
+4: 旧恢复P95=120 新恢复P95=120
+4: 旧预处理中位数=100 新预处理中位数=18
+4: 预处理比例=0.18
+4: 仅此输入与窗口；不代表现场约 388 ms 的分项耗时。
+4: 状态：性能门槛未通过
+4: 
+4: -- 通过正例：实际退出码=0
+4: 指定录像重建恢复对照：通过
+4: 单位：纳秒
+4: 旧恢复中位数=100 新恢复中位数=80
+4: 旧恢复P95=120 新恢复P95=110
+4: 旧预处理中位数=100 新预处理中位数=18
+4: 预处理比例=0.18
+4: 仅此输入与窗口；不代表现场约 388 ms 的分项耗时。
+4: 状态：通过
+4: 
+4: -- 预处理恰好20%：实际退出码=0
+4: 指定录像重建恢复对照：通过
+4: 单位：纳秒
+4: 旧恢复中位数=100 新恢复中位数=80
+4: 旧恢复P95=120 新恢复P95=110
+4: 旧预处理中位数=100 新预处理中位数=20
+4: 预处理比例=0.2
+4: 仅此输入与窗口；不代表现场约 388 ms 的分项耗时。
+4: 状态：通过
+4: 
+4: -- 恢复中位数刚降低：实际退出码=0
+4: 指定录像重建恢复对照：通过
+4: 单位：纳秒
+4: 旧恢复中位数=100 新恢复中位数=100
+4: 旧恢复P95=120 新恢复P95=110
+4: 旧预处理中位数=100 新预处理中位数=18
+4: 预处理比例=0.18
+4: 仅此输入与窗口；不代表现场约 388 ms 的分项耗时。
+4: 状态：通过
+4: 
+4: -- 恢复P95相等：实际退出码=0
+4: 指定录像重建恢复对照：通过
+4: 单位：纳秒
+4: 旧恢复中位数=100 新恢复中位数=80
+4: 旧恢复P95=120 新恢复P95=120
+4: 旧预处理中位数=100 新预处理中位数=18
+4: 预处理比例=0.18
+4: 仅此输入与窗口；不代表现场约 388 ms 的分项耗时。
+4: 状态：通过
+4: 
+4/6 Test  #4: nanotrack_window_performance_exit_tests ...   Passed    0.01 sec
+test 12
+    Start 12: recovery_regression_tests
+
+12: Test command: /work/build/common/recovery_regression_tests
+12: Test timeout computed to be: 30
+12: YOLO worker thread started.
+12: NanoTrack template failed: controlled init failure
+12: NanoDcfTracker: nano init failed (crop error?)
+12: YOLO worker thread started.
+12: NanoTrack template failed: controlled init failure
+12: NanoDcfTracker: nano init failed (crop error?)
+12: YOLO worker thread started.
+12: NanoTrack search failed: controlled catchup failure
+12: Tracker initialized at [42, 33, 16, 14] and caught up 3 frames
+12: YOLO worker thread started.
+12: NanoTrack search failed: controlled catchup failure
+12: Tracker initialized at [42, 33, 16, 14] and caught up 3 frames
+12: YOLO worker thread started.
+12: Tracker initialized at [42, 33, 16, 14] and caught up 3 frames
+12: YOLO worker thread started.
+12: Tracker initialized at [42, 33, 16, 14] and caught up 3 frames
+12: 真实 HybridTracker 初始化失败、补帧失败后继续和恢复成功检查通过
+5/6 Test #12: recovery_regression_tests .................   Passed    0.00 sec
+test 18
+    Start 18: baseline_nanotrack_preprocess_tests
+
+18: Test command: /work/build/baseline/baseline_nanotrack_preprocess_tests
+18: Test timeout computed to be: 10000000
+18: NanoTrack 浮点裁剪、奇偶/边缘、均值回退与租约测试通过
+6/6 Test #18: baseline_nanotrack_preprocess_tests .......   Passed    0.05 sec
+
+The following tests passed:
+	nanotrack_window_tests
+	nanotrack_window_help
+	nanotrack_window_performance_tests
+	nanotrack_window_performance_exit_tests
+	recovery_regression_tests
+	baseline_nanotrack_preprocess_tests
+
+100% tests passed, 0 tests failed out of 6
+
+Total Test time (real) =   0.53 sec

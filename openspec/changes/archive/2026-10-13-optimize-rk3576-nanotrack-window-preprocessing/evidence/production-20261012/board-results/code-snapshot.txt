@@ -1,0 +1,1867 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 53f1bc8..efccb67 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -78,6 +78,7 @@ add_subdirectory(src/osd)
+ if(DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
+     add_subdirectory(tests/nanotracev3_performance_benchmarks/baseline)
+     add_subdirectory(tests/nanotracev3_performance_benchmarks/search_direct)
++    add_subdirectory(tests/nanotracev3_performance_benchmarks/window_preprocess)
+ endif()
+ 
+ # Executable
+diff --git a/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/design.md b/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/design.md
+index 59733db..cdf5187 100644
+--- a/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/design.md
++++ b/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/design.md
+@@ -23,7 +23,7 @@
+ - 模板和搜索共用局部窗口准备流程。只对本次窗口与原图的相交部分做灰度转浮点，不生成整帧浮点快照或整帧补边画布。
+ - 同一平台、同一 OpenCV 构建下，新旧路径交给模型的浮点张量逐元素精确一致。张量是带形状的数组；`NCHW` 表示批次、通道、高度、宽度顺序。
+ - 保留全图均值、窗口几何、浮点插值、失败类别、输入生命周期及串行调用约定。
+-- 在同输入、同模型、同补帧次数的生产板对照中确认收益。性能验收目标见第 6 项决策，目标尚未实测通过。
++- 在同输入、同模型、同补帧次数的生产板对照中确认收益。性能验收门槛见第 6 项决策，实际结论及原始证据保存在 `validation.md`。
+ 
+ **Non-Goals:**
+ 
+@@ -124,7 +124,7 @@ sx1 = min(x + n, W),     sy1 = min(y + n, H)
+ 
+ 1. 先校验全部输入与模型指纹。在计时外解码图片、复制输入帧和加载模型。
+ 2. 新旧路径各预热至少两批完整恢复，再正式测量至少十对批次，交替先后顺序。保存预热记录，并从正式统计中排除。
+-3. 固定跟踪 CPU 核心及 OpenCV 线程设置，记录 CPU/NPU 频率、温度和并发负载。正式节点保持既定待命状态，不为本次对照修改配置或触发相机。
++3. 固定跟踪 CPU 核心及 OpenCV 线程设置，记录 CPU/NPU 频率、温度和并发负载。本轮可按用户授权临时停止正式节点。测量结束和异常退出均恢复原服务并检查 active/running；不修改配置或触发相机。
+ 4. 保持 `Preprocess`、`ImagePrepare` 原有计时含义。统计初始化、24 次更新、整批恢复和各阶段；计时结果写盘放在测量外，父子区间不重复累加。
+ 5. 保存每对原始记录、批次中位数及 P95。中位数在样本数为奇数时取排序后中间项，偶数时取中间两项的均值。P95 是覆盖约 95% 样本的耗时值，采用排序后第 `ceil(0.95×N)` 项，反映较慢批次。
+ 
+@@ -149,9 +149,9 @@ sx1 = min(x + n, W),     sy1 = min(y + n, H)
+ 
+ ## Migration Plan
+ 
+-本次仅完成规划，不实施、不构建、不部署优化版本。
++本变更实施代码、测试和构建，并在隔离目录完成生产板验收，不部署优化版本。
+ 
+-后续实施按 [tasks.md](tasks.md) 执行：固定旧路径参考与测试输入，完成小窗实现及数值/生命周期回归，再在生产板执行独立诊断工具。所有正确性和性能条件通过后才报告优化可用，不自动切换正式版本。
++实施按 [tasks.md](tasks.md) 执行：固定旧路径参考与测试输入，完成小窗实现及数值/生命周期回归，再在生产板执行独立诊断工具。所有正确性和性能条件通过后才报告优化可用，不自动切换正式版本。
+ 
+ 生产部署不属于本变更任务。若以后另行要求部署，按既有版本打包和回退流程执行。实现不增加配置，回退可恢复旧二进制，无需迁移模型、参数或录制数据。
+ 
+diff --git a/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/proposal.md b/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/proposal.md
+index 6840eb6..66bcf78 100644
+--- a/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/proposal.md
++++ b/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/proposal.md
+@@ -32,4 +32,4 @@
+ - 扩展 `src/platform/rk3576/tests/nanotrack_preprocess_test.cpp`，保留现有独立插值参考，并加入旧整帧路径对照。新增小窗数值及恢复性能验证工具，按需接入现有 CMake 测试目标。
+ - 验证使用正式 HZ-RK3576_WuKong 生产板、原有模型、RKNN Runtime 2.3.2 和驱动 0.9.8。既有 25 张重建输入可复用，但完整恢复回放必须与现有纯 NanoTrack 性能基线分开记录。
+ - 不优化 RKNN CPU 输入准备、`inputs_set`、FP16 直通或设备内存绑定；不改变模型、YOLO、DCF、卡尔曼滤波、相机队列、ROS 话题或 Jetson 实现；不增加运行时开关或新依赖。
+-- 本次交付仅包含 OpenSpec 规划工件。所有实施与优化后验证任务保持未完成，不修改代码或生产部署。
++- 本变更实施代码、测试和诊断入口，并完成生产板数值与性能验收。诊断程序在独立目录运行，不切换正式部署。测量可按本轮授权临时停止正式服务，结束和异常退出均恢复原服务并检查运行状态。
+diff --git a/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md b/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md
+index a16a9b5..35c63ef 100644
+--- a/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md
++++ b/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md
+@@ -1,43 +1,43 @@
+ # RK3576 NanoTrack 局部窗口预处理任务
+ 
+-本清单用于后续实施；本次仅生成规划，所有任务保持未完成。数值等价指同平台、同 OpenCV 构建下模型输入逐元素精确一致。A/B 是只切换新旧预处理路径的对照；输入租约保护消费者仍持有的数据。
++本清单记录实施与验收进度。本轮继续完成生产板验收；只有实际证据满足完成条件才勾选任务。数值等价指同平台、同 OpenCV 构建下模型输入逐元素精确一致。A/B 是只切换新旧预处理路径的对照；输入租约保护消费者仍持有的数据。
+ 
+ NanoTracker 执行模型和目标框更新，NanoDcfTracker 保留已有的跟踪融合与中心滤波，HybridTracker 负责检测/跟踪仲裁及历史恢复。Head 是结合模板和搜索特征输出目标预测的模型。
+ 
+ ## 1. 固定旧路径参考和数值验收输入
+ 
+-- [ ] 1.1 建立可追溯的旧整帧预处理参考，在 `tests/nanotracev3_performance_benchmarks/window_preprocess/` 保存仅供验证的参考实现及源提交身份；完成条件是参考保留原 Float32 转换、补边、裁剪、缩放和均值/租约语义，且没有接入生产装配。
+-- [ ] 1.2 建立独立数值检查，在 `src/platform/rk3576/tests/nanotrack_preprocess_test.cpp` 复用旧参考，并保留现有四邻点插值参考；完成条件是旧路径对照和现有 `5e-4` 独立参考检查分别运行，不用生产几何函数生成全部预期坐标。
+-- [ ] 1.3 固定恢复输入身份，在 `window_preprocess/` 的配置样例和输入清单格式中记录初始框、逐帧顺序、时间戳、像素校验值及跟踪参数；完成条件是能只读校验既有 25 张 1920×1200 重建图像，缺失或校验失败时拒绝测量，不把大图像或模型文件提交到仓库。
+-- [ ] 1.4 说明参考与数据边界，在 `window_preprocess/README.md` 写明旧参考来源、指定录像及重建映射假设；完成条件是文档可独立说明输入不是原始相机帧，且没有固化开发机路径。
++- [x] 1.1 建立可追溯的旧整帧预处理参考，在 `tests/nanotracev3_performance_benchmarks/window_preprocess/` 保存仅供验证的参考实现及源提交身份；完成条件是参考保留原 Float32 转换、补边、裁剪、缩放和均值/租约语义，且没有接入生产装配。
++- [x] 1.2 建立独立数值检查，在 `src/platform/rk3576/tests/nanotrack_preprocess_test.cpp` 复用旧参考，并保留现有四邻点插值参考；完成条件是旧路径对照和现有 `5e-4` 独立参考检查分别运行，不用生产几何函数生成全部预期坐标。
++- [x] 1.3 固定恢复输入身份，在 `window_preprocess/` 的配置样例和输入清单格式中记录初始框、逐帧顺序、时间戳、像素校验值及跟踪参数；完成条件是能只读校验既有 25 张 1920×1200 重建图像，缺失或校验失败时拒绝测量，不把大图像或模型文件提交到仓库。
++- [x] 1.4 说明参考与数据边界，在 `window_preprocess/README.md` 写明旧参考来源、指定录像及重建映射假设；完成条件是文档可独立说明输入不是原始相机帧，且没有固化开发机路径。
+ 
+ ## 2. 完成生产局部窗口路径及其回归检查
+ 
+-- [ ] 2.1 将浮点处理范围缩小到当前窗口，在 `src/platform/rk3576/nanotrack_preprocessor.cpp` 沿用现有几何计算，以宽整数求交集并只转换有效源区域；完成条件是无整帧 Float32 转换和整帧补边，保留全图均值、浮点缩放、输出形状与三个通道。
+-- [ ] 2.2 保持工作区与输出数据独立，在 `nanotrack_preprocessor.h/.cpp` 增加串行复用的单通道小窗工作区；完成条件是越界窗口每次完整填充、图内窗口完整写入，模板/搜索结果继续由原缓存租约保护。
+-- [ ] 2.3 证明局部输入与旧路径精确一致，扩展 `nanotrack_preprocess_test.cpp` 的奇偶边长、分数中心、四侧/四角、全图外、大于原图、边长 1、上/下采样、固定随机图及非连续行用例；完成条件是每个模板和搜索张量的旧路径精确对照及独立插值检查均通过。
+-- [ ] 2.4 证明复用与失败不会改变既有语义，扩展同文件的旧像素残留、均值切换、114 回退、非法映射、InputBusy、源帧释放及预处理器销毁用例；完成条件是旧输入未覆盖、映射已释放，错误类别和均值状态与旧路径一致，包括空交集仍校验映射。
+-- [ ] 2.5 说明局部路径资源边界，更新 `nanotrack_preprocessor.h` 中有关工作区、源映射和输入存储的注释；完成条件是能够明确分辨可复写工作区与消费者持有结果，并写明同一实例仍串行调用。
++- [x] 2.1 将浮点处理范围缩小到当前窗口，在 `src/platform/rk3576/nanotrack_preprocessor.cpp` 沿用现有几何计算，以宽整数求交集并只转换有效源区域；完成条件是无整帧 Float32 转换和整帧补边，保留全图均值、浮点缩放、输出形状与三个通道。
++- [x] 2.2 保持工作区与输出数据独立，在 `nanotrack_preprocessor.h/.cpp` 增加串行复用的单通道小窗工作区；完成条件是越界窗口每次完整填充、图内窗口完整写入，模板/搜索结果继续由原缓存租约保护。
++- [x] 2.3 证明局部输入与旧路径精确一致，扩展 `nanotrack_preprocess_test.cpp` 的奇偶边长、分数中心、四侧/四角、全图外、大于原图、边长 1、上/下采样、固定随机图及非连续行用例；完成条件是每个模板和搜索张量的旧路径精确对照及独立插值检查均通过。
++- [x] 2.4 证明复用与失败不会改变既有语义，扩展同文件的旧像素残留、均值切换、114 回退、非法映射、InputBusy、源帧释放及预处理器销毁用例；完成条件是旧输入未覆盖、映射已释放，错误类别和均值状态与旧路径一致，包括空交集仍校验映射。
++- [x] 2.5 说明局部路径资源边界，更新 `nanotrack_preprocessor.h` 中有关工作区、源映射和输入存储的注释；完成条件是能够明确分辨可复写工作区与消费者持有结果，并写明同一实例仍串行调用。
+ 
+ ## 3. 建立恢复对照入口及受控恢复回归
+ 
+-- [ ] 3.1 提供同输入的新旧恢复测量入口，在 `window_preprocess/` 使用真实 NanoTracker、NanoDcfTracker 和现有 RKNN 后端；完成条件是两种预处理器均执行一次初始化及按时间戳顺序的 24 次更新，不复制跟踪算法，也不修改既有 `baseline` 的 MJPEG/纯 NanoTrack 范围。
+-- [ ] 3.2 接入隔离的诊断构建目标，在新目录的 `CMakeLists.txt` 及必要父级 CMake 文件接入入口和相关测试；完成条件是 RK3576 验证环境能构建目标，生产节点不链接旧参考，不安装参考为运行时回退路径。
+-- [ ] 3.3 验证恢复输出与工作量，在新入口的测试中核对每次状态、框、分数、帧顺序和模型调用次数；完成条件是对应新旧批次输出一致，成功指定用例的模板模型为 1 次，搜索模型和 Head 各为 24 次。
+-- [ ] 3.4 验证原补帧与仲裁规则，在 `src/hybrid_tracker/tests/` 增加受控恢复回归，并沿用现有组件注入与真实 HybridTracker；完成条件是固定检测结果事件下覆盖初始化失败、中间补帧失败后继续、恢复成功，调用顺序和有效状态条件保持一致，不用复制的状态机代替真实代码。
+-- [ ] 3.5 验证计时记录不改变结果，在新工具测试中核对观测开启/关闭、预热与正式标记、父子区间及统计计算；完成条件是结果一致、区间完整、耗时不重复累计，中位数和 `ceil(0.95×N)` 的 P95 用固定样本验证。
+-- [ ] 3.6 给出可复现命令和报告解释，补齐 `window_preprocess/README.md`；完成条件是说明配置、独立数值检查、恢复测量、输出目录保护、频率/负载记录及失败退出，且示例命令与实际入口参数一致。
++- [x] 3.1 提供同输入的新旧恢复测量入口，在 `window_preprocess/` 使用真实 NanoTracker、NanoDcfTracker 和现有 RKNN 后端；完成条件是两种预处理器均执行一次初始化及按时间戳顺序的 24 次更新，不复制跟踪算法，也不修改既有 `baseline` 的 MJPEG/纯 NanoTrack 范围。
++- [x] 3.2 接入隔离的诊断构建目标，在新目录的 `CMakeLists.txt` 及必要父级 CMake 文件接入入口和相关测试；完成条件是 RK3576 验证环境能构建目标，生产节点不链接旧参考，不安装参考为运行时回退路径。
++- [x] 3.3 验证恢复输出与工作量，在新入口的测试中核对每次状态、框、分数、帧顺序和模型调用次数；完成条件是对应新旧批次输出一致，成功指定用例的模板模型为 1 次，搜索模型和 Head 各为 24 次。
++- [x] 3.4 验证原补帧与仲裁规则，在 `src/hybrid_tracker/tests/` 增加受控恢复回归，并沿用现有组件注入与真实 HybridTracker；完成条件是固定检测结果事件下覆盖初始化失败、中间补帧失败后继续、恢复成功，调用顺序和有效状态条件保持一致，不用复制的状态机代替真实代码。
++- [x] 3.5 验证计时记录不改变结果，在新工具测试中核对观测开启/关闭、预热与正式标记、父子区间及统计计算；完成条件是结果一致、区间完整、耗时不重复累计，中位数和 `ceil(0.95×N)` 的 P95 用固定样本验证。
++- [x] 3.6 给出可复现命令和报告解释，补齐 `window_preprocess/README.md`；完成条件是说明配置、独立数值检查、恢复测量、输出目录保护、频率/负载记录及失败退出，且示例命令与实际入口参数一致。
+ 
+ ## 4. 完成构建、生产板验收及交付审查
+ 
+-- [ ] 4.1 确认目标环境中的整体回归通过，按 `AGENTS.local.md` 构建约定执行 `./build.sh --test`，并在匹配生产板环境构建诊断目标；完成条件是相关 CTest 通过，保留日志，并明确记录不可用的 clang-tidy/clangd 检查，而非宣称已完成静态检查。
++- [x] 4.1 确认目标环境中的整体回归通过，按 `AGENTS.local.md` 构建约定执行 `./build.sh --test`，并在匹配生产板环境构建诊断目标；完成条件是相关 CTest 通过，保留日志，并明确记录不可用的 clang-tidy/clangd 检查，而非宣称已完成静态检查。
+ - [ ] 4.2 确认生产板同版本数值一致，在 HZ-RK3576_WuKong 上运行旧参考与新路径的完整数值、租约和恢复对照；完成条件是模型、输入和系统 Runtime 校验通过，逐元素输入与指定恢复输出均通过一致性检查，正式部署保持原状。
+ - [ ] 4.3 确认预处理优化带来整体收益，在同生产板各预热至少两批、执行至少十对交替顺序 A/B 恢复，并记录其他窗口尺寸；完成条件是保存原始批次与环境，指定用例预处理中位数不高于旧路径的 20%，恢复中位数降低且 P95 不增加，未达标则明确标记失败。
+ - [ ] 4.4 给出可审核验收结论，在本变更下新增 `validation.md` 引用数值、生命周期、工作量和性能证据；完成条件是列出板卡、版本、模型/输入/代码身份、绝对耗时、比例及未运行检查，不把重建回放结论替代现场 388 ms 的分项测量。
+-- [ ] 4.5 确认交付符合限定范围，审查最终 diff 并执行 `openspec validate optimize-rk3576-nanotrack-window-preprocessing --strict`；完成条件是未修改公共算法、补帧策略、RKNN 输入提交和生产配置，规格与实际实现及验证证据一致。
++- [x] 4.5 确认交付符合限定范围，审查最终 diff 并执行 `openspec validate optimize-rk3576-nanotrack-window-preprocessing --strict`；完成条件是未修改公共算法、补帧策略、RKNN 输入提交和生产配置，规格与实际实现及验证证据一致。
+ 
+ ## Workflow follow-up
+ 
+-- 本次规划完成后停止，不启动实施、构建或板端测试。
++- 本轮完成本地实施、ARM64 容器检查和经 adb 连接的生产板验收。正式服务若临时停止，结束和异常退出均恢复原服务并核实 active/running。
+ - 后续实施和验收完成后，再按项目 OpenSpec 流程同步规格或归档；这些动作不属于实施任务计数。
+ - 正式部署另按用户后续指令及已有版本回退流程执行，不作为本变更的自动收尾步骤。
+diff --git a/src/hybrid_tracker/CMakeLists.txt b/src/hybrid_tracker/CMakeLists.txt
+index 643829c..7699a4d 100644
+--- a/src/hybrid_tracker/CMakeLists.txt
++++ b/src/hybrid_tracker/CMakeLists.txt
+@@ -56,6 +56,13 @@ if(DRONE_TRACKER_PREPROCESS_TESTS_ONLY OR DRONE_TRACKER_BUILD_TESTS)
+         ../platform/rk3576/yolo_preprocessor.cpp ../platform/rk3576/host_frame.cpp)
+     target_link_libraries(rknn_preprocess_tests PRIVATE hybrid_tracker)
+     add_test(NAME rknn_preprocess_tests COMMAND rknn_preprocess_tests)
++    add_executable(recovery_regression_tests tests/recovery_regression_test.cpp
++        ../platform/rk3576/nanotrack_preprocessor.cpp ../platform/rk3576/host_frame.cpp
++        ../../tests/nanotracev3_performance_benchmarks/window_preprocess/whole_frame_preprocessor.cpp)
++    target_link_libraries(recovery_regression_tests PRIVATE hybrid_tracker)
++    add_test(NAME recovery_regression_tests COMMAND recovery_regression_tests)
++    set_tests_properties(recovery_regression_tests PROPERTIES TIMEOUT 30)
++
+     add_test(NAME platform_selection_tests COMMAND ${CMAKE_COMMAND}
+         -DREPO_ROOT=${CMAKE_CURRENT_SOURCE_DIR}/../..
+         -DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/platform_selection
+diff --git a/src/platform/rk3576/CMakeLists.txt b/src/platform/rk3576/CMakeLists.txt
+index 1153d64..40c0397 100644
+--- a/src/platform/rk3576/CMakeLists.txt
++++ b/src/platform/rk3576/CMakeLists.txt
+@@ -38,6 +38,9 @@ if(DRONE_TRACKER_BUILD_TESTS)
+         target_include_directories(${test_name}_tests PRIVATE "${RKNN_INCLUDE_DIR}")
+         target_link_libraries(${test_name}_tests PRIVATE rk3576_yolo_runtime)
+         add_test(NAME ${test_name}_tests COMMAND ${test_name}_tests)
++        if(test_name STREQUAL "nanotrack_preprocess")
++            target_sources(${test_name}_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../tests/nanotracev3_performance_benchmarks/window_preprocess/whole_frame_preprocessor.cpp)
++        endif()
+     endforeach()
+     add_test(NAME nanotrack_probe_missing_args COMMAND rk3576_nanotrack_probe --mode replay)
+     add_test(NAME nanotrack_probe_invalid_bbox COMMAND rk3576_nanotrack_probe --template-model unused
+diff --git a/src/platform/rk3576/nanotrack_preprocessor.cpp b/src/platform/rk3576/nanotrack_preprocessor.cpp
+index 93d7ab4..2f871e4 100644
+--- a/src/platform/rk3576/nanotrack_preprocessor.cpp
++++ b/src/platform/rk3576/nanotrack_preprocessor.cpp
+@@ -1,6 +1,7 @@
+ #include "nanotrack_preprocessor.h"
+ 
+ #include <algorithm>
++#include <cstdint>
+ #include <limits>
+ 
+ #include "preprocess/input_validation.h"
+@@ -52,7 +53,16 @@ PreparedInputResult NanoTrackPreprocessor::prepare(const FrameRef &frame, const
+         if (is_template) {
+             mean_.initialize(frame);
+         }
+-        cv::Mat snapshot;
++        const auto &g{geometry.value};
++        const std::int64_t left{g.crop.x}, top{g.crop.y};
++        const std::int64_t sx0{std::max<std::int64_t>(left, 0)};
++        const std::int64_t sy0{std::max<std::int64_t>(top, 0)};
++        const std::int64_t sx1{std::min<std::int64_t>(left + original_size, frame->width())};
++        const std::int64_t sy1{std::min<std::int64_t>(top + original_size, frame->height())};
++        window_.create(original_size, original_size, CV_32FC1);
++        if (g.top || g.bottom || g.left || g.right) {
++            window_.setTo(cv::Scalar{static_cast<double>(mean_.value())});
++        }
+         {
+             const auto view{frame->mapRead()};
+             if (!view) {
+@@ -68,15 +78,18 @@ PreparedInputResult NanoTrackPreprocessor::prepare(const FrameRef &frame, const
+                 image_prepare.finish(false);
+                 return PreparedInputResult::failure(PreprocessError::PlatformTypeMismatch, "Invalid Gray8 mapping");
+             }
+-            mat.convertTo(snapshot, CV_32F);
++            // 空交集也必须完成上面的映射校验；非空坐标已被图像与窗口边界约束。
++            if (sx1 > sx0 && sy1 > sy0) {
++                const cv::Rect source{static_cast<int>(sx0), static_cast<int>(sy0),
++                                      static_cast<int>(sx1 - sx0), static_cast<int>(sy1 - sy0)};
++                const cv::Rect destination{static_cast<int>(sx0 - left), static_cast<int>(sy0 - top),
++                                           source.width, source.height};
++                cv::Mat region{window_(destination)};
++                mat(source).convertTo(region, CV_32F);
++            }
+         }
+-        const auto &g{geometry.value};
+-        cv::Mat padded;
+-        cv::copyMakeBorder(snapshot, padded, g.top, g.bottom, g.left, g.right, cv::BORDER_CONSTANT,
+-                           cv::Scalar{static_cast<double>(mean_.value())});
+-        const cv::Rect crop{g.crop.x + g.left, g.crop.y + g.top, original_size, original_size};
+         cv::Mat plane(size, size, CV_32FC1, storage->data());
+-        cv::resize(padded(crop), plane, {size, size}, 0, 0, cv::INTER_LINEAR);
++        cv::resize(window_, plane, {size, size}, 0, 0, cv::INTER_LINEAR);
+         const auto count{static_cast<std::size_t>(size * size)};
+         std::copy_n(storage->data(), count, storage->data() + count);
+         std::copy_n(storage->data(), count, storage->data() + 2 * count);
+diff --git a/src/platform/rk3576/nanotrack_preprocessor.h b/src/platform/rk3576/nanotrack_preprocessor.h
+index 0e844d8..fe45825 100644
+--- a/src/platform/rk3576/nanotrack_preprocessor.h
++++ b/src/platform/rk3576/nanotrack_preprocessor.h
+@@ -25,7 +25,11 @@ private:
+     std::shared_ptr<const std::vector<float>> values_;
+     ModelInputContract contract_;
+ };
+-/** @brief 灰度裁剪先转浮点再缩放；模板与搜索各持有一个受租约保护的缓存。 */
++/**
++ * @brief 同一实例仍须串行调用；模板与搜索复用一个单通道 Float32 小窗。
++ * 源映射只在复制有效区域时存活，缩放前释放。小窗每次完整写入或补齐，返回后可重写。
++ * 消费者持有的 FloatInput 使用独立三平面存储，由模板/搜索各自的缓存租约保护。
++ */
+ class NanoTrackPreprocessor final : public ::NanoTrackPreprocessor {
+ public:
+     PreparedInputResult prepareTemplate(const FrameRef &frame, const cv::Point2f &position, int original_size,
+@@ -37,6 +41,7 @@ public:
+ private:
+     PreparedInputResult prepare(const FrameRef &frame, const cv::Point2f &position, int original_size,
+                                 const ModelInputContract &contract, bool is_template);
++    cv::Mat window_{}; // 临时工作区，不借给消费者，也不持有源帧。
+     TargetMean mean_{};
+     std::array<ReusableInput<std::vector<float>>, 2> cache_{};
+ };
+diff --git a/src/platform/rk3576/tests/nanotrack_preprocess_test.cpp b/src/platform/rk3576/tests/nanotrack_preprocess_test.cpp
+index deefc45..5f41427 100644
+--- a/src/platform/rk3576/tests/nanotrack_preprocess_test.cpp
++++ b/src/platform/rk3576/tests/nanotrack_preprocess_test.cpp
+@@ -1,8 +1,10 @@
+ #include "../nanotrack_preprocessor.h"
++#include "../../../../tests/nanotracev3_performance_benchmarks/window_preprocess/whole_frame_preprocessor.h"
+ 
+ #include <algorithm>
+ #include <cmath>
+ #include <iostream>
++#include <random>
+ #include <stdexcept>
+ 
+ #include "../host_frame.h"
+@@ -39,18 +41,19 @@ private:
+ };
+ class TestFrame final : public Frame {
+ public:
+-    TestFrame(std::shared_ptr<Trace> trace, bool fallback = false, bool bad = false)
+-        : trace_{std::move(trace)}, fallback_{fallback}, bad_{bad} {}
++    TestFrame(std::shared_ptr<Trace> trace, bool fallback = false, bool bad = false, bool unmapped = false)
++        : trace_{std::move(trace)}, fallback_{fallback}, bad_{bad}, unmapped_{unmapped} {}
+     int width() const noexcept override { return 7; }
+     int height() const noexcept override { return 5; }
+     FramePixelFormat pixelFormat() const noexcept override { return FramePixelFormat::Gray8; }
+     std::uint64_t timestampUs() const noexcept override { return 0; }
+     std::unique_ptr<FrameReadView> mapRead() const override {
+         ++trace_->calls;
+-        if (fallback_ && trace_->calls == 1) {
++        if (unmapped_ || (fallback_ && trace_->calls == 1)) {
+             return {};
+         }
+-        cv::Mat allocation(5, 11, CV_8UC1, cv::Scalar{20});
++        cv::Mat allocation(5, 11, CV_8UC1, cv::Scalar{249});
++        allocation(cv::Rect{0, 0, 7, 5}).setTo(20);
+         return std::make_unique<View>(allocation(cv::Rect{0, 0, 7, 5}), trace_, bad_);
+     }
+ 
+@@ -58,6 +61,19 @@ private:
+     std::shared_ptr<Trace> trace_;
+     bool fallback_{};
+     bool bad_{};
++    bool unmapped_{};
++};
++class ImageFrame final : public Frame {
++public:
++    explicit ImageFrame(cv::Mat image) : image_{std::move(image)}, trace_{std::make_shared<Trace>()} {}
++    int width() const noexcept override { return image_.cols; }
++    int height() const noexcept override { return image_.rows; }
++    FramePixelFormat pixelFormat() const noexcept override { return FramePixelFormat::Gray8; }
++    std::uint64_t timestampUs() const noexcept override { return 0; }
++    std::unique_ptr<FrameReadView> mapRead() const override { return std::make_unique<View>(image_, trace_, false); }
++private:
++    cv::Mat image_;
++    std::shared_ptr<Trace> trace_;
+ };
+ // 双精度四邻点参考，裁剪原点作为固定样例给出，不调用生产几何或 resize。
+ double pixel(const cv::Mat &source, int x, int y, int fill) {
+@@ -76,21 +92,30 @@ double reference(const cv::Mat &source, int left, int top, int crop, int output,
+                (1 - fy) +
+            (pixel(source, left + x0, top + y1, fill) * (1 - fx) + pixel(source, left + x1, top + y1, fill) * fx) * fy;
+ }
+-void numeric(int crop, cv::Point2f center, int left, int top) {
+-    cv::Mat source(5, 7, CV_8UC1);
++void numeric(int crop, cv::Point2f center, int left, int top, int pattern = 0) {
++    cv::Mat allocation(5, 11, CV_8UC1, cv::Scalar{251});
++    cv::Mat source{allocation(cv::Rect{0, 0, 7, 5})};
++    std::mt19937 random{3576};
+     for (int y{0}; y < source.rows; ++y) {
+         for (int x{0}; x < source.cols; ++x) {
+-            source.at<std::uint8_t>(y, x) = static_cast<std::uint8_t>(x * 25 + y * 7);
++            source.at<std::uint8_t>(y, x) = static_cast<std::uint8_t>(pattern == 0 ? x * 25 + y * 7 :
++                pattern == 1 ? random() % 256 : pattern == 2 ? ((x + y) % 2) * 127 : 42);
+         }
+     }
+-    // 此固定样例的均值恰为 89。
++    const int fill{cv::saturate_cast<unsigned char>(cv::mean(source)[0])};
+     rk3576::NanoTrackPreprocessor preprocessor;
+-    const auto frame{rk3576::copyGrayFrame(source)};
++    window_preprocess::WholeFramePreprocessor old;
++    const FrameRef frame{std::make_shared<ImageFrame>(source)};
+     for (int output : {127, 255}) {
+         const ModelInputContract contract{{1, 3, output, output}};
+         auto result{output == 127 ? preprocessor.prepareTemplate(frame, center, crop, contract)
+                                   : preprocessor.prepareSearch(frame, center, crop, contract)};
+         require(static_cast<bool>(result), "固定裁剪样例失败");
++        auto previous{output == 127 ? old.prepareTemplate(frame, center, crop, contract)
++                                   : old.prepareSearch(frame, center, crop, contract)};
++        require(previous && *std::dynamic_pointer_cast<const rk3576::FloatInput>(result.value)->values()
++                    == *std::dynamic_pointer_cast<const rk3576::FloatInput>(previous.value)->values(),
++                "旧整帧路径精确对照失败");
+         const auto input{std::dynamic_pointer_cast<const rk3576::FloatInput>(result.value)};
+         require(input && input->values()->size() == static_cast<std::size_t>(3 * output * output), "Float32 存储错误");
+         bool fractional{false};
+@@ -98,17 +123,85 @@ void numeric(int crop, cv::Point2f center, int left, int top) {
+             for (int x{0}; x < output; ++x) {
+                 const auto offset{static_cast<std::size_t>(y * output + x)};
+                 const float value{input->values()->at(offset)};
+-                require(std::abs(value - reference(source, left, top, crop, output, x, y, 89)) < 5e-4,
++                if (std::abs(value - reference(source, left, top, crop, output, x, y, fill)) >= 5e-4) {
++                    std::cerr << "crop=" << crop << " center=" << center << " origin=" << left << "," << top
++                              << " pattern=" << pattern << " output=" << output << " pixel=" << x << "," << y
++                              << " actual=" << value << " reference="
++                              << reference(source, left, top, crop, output, x, y, fill) << std::endl;
++                }
++                require(std::abs(value - reference(source, left, top, crop, output, x, y, fill)) < 5e-4,
+                         "浮点裁剪偏离独立参考");
+-                require(value >= 0 && value <= 255 && value == input->values()->at(offset + output * output) &&
++                // 浮点运算可能在端点产生舍入尾差；输入仍与旧路径逐元素精确对照，不能钳制。
++                require(value >= -5e-4 && value <= 255 + 5e-4 && value == input->values()->at(offset + output * output) &&
+                             value == input->values()->at(offset + 2 * output * output),
+                         "范围/三平面错误");
+                 fractional = fractional || std::abs(value - std::round(value)) > 0.01f;
+             }
+         }
+-        require(fractional, "缩放结果被量化回 uint8");
++        if (pattern == 0 && crop > 1 && crop != output && left < source.cols && top < source.rows
++            && left + crop > 0 && top + crop > 0) {
++            require(fractional, "缩放结果被量化回 uint8");
++        }
++    }
++}
++void matrix() {
++    // 独立给定左上角；不从生产几何函数生成预期结果。
++    struct Case { int crop; cv::Point2f center; int left, top; };
++    const std::vector<Case> cases{
++        {5, {2.25f, 1.75f}, -1, -1}, {6, {2.25f, 1.75f}, -1, -2},
++        {3, {1.5f, 1.5f}, 0, 0}, {3, {5.5f, 3.5f}, 4, 2},
++        {5, {1, 3}, -2, 0}, {5, {7, 3}, 4, 0}, {5, {3, 1}, 0, -2}, {5, {3, 5}, 0, 2},
++        {5, {1, 1}, -2, -2}, {5, {7, 1}, 4, -2}, {5, {1, 5}, -2, 2}, {5, {7, 5}, 4, 2},
++        {5, {23, 21}, 20, 18}, {5, {-10, -10}, -13, -13},
++        {1, {4, 3}, 3, 2}, {127, {64, 64}, 0, 0}, {255, {128, 128}, 0, 0},
++        {257, {3, 2}, -126, -127}};
++    for (int pattern{0}; pattern < 4; ++pattern) {
++        for (const auto &c : cases) { numeric(c.crop, c.center, c.left, c.top, pattern); }
+     }
+ }
++void reuseAndFailures() {
++    const ModelInputContract z{{1, 3, 127, 127}}, x{{1, 3, 255, 255}};
++    rk3576::NanoTrackPreprocessor current;
++    window_preprocess::WholeFramePreprocessor previous;
++    auto compare{[&](const FrameRef &frame, cv::Point2f center, int size, bool init) {
++        auto a{init ? current.prepareTemplate(frame, center, size, z) : current.prepareSearch(frame, center, size, x)};
++        auto b{init ? previous.prepareTemplate(frame, center, size, z) : previous.prepareSearch(frame, center, size, x)};
++        require(a.error == b.error && static_cast<bool>(a) == static_cast<bool>(b), "失败类别与旧路径不一致");
++        if (a) {
++            require(*std::dynamic_pointer_cast<const rk3576::FloatInput>(a.value)->values() ==
++                    *std::dynamic_pointer_cast<const rk3576::FloatInput>(b.value)->values(), "复用残留旧像素或旧均值");
++        }
++    }};
++    const auto first{rk3576::copyGrayFrame(cv::Mat{5, 7, CV_8UC1, cv::Scalar{17}})};
++    const auto second{rk3576::copyGrayFrame(cv::Mat{5, 7, CV_8UC1, cv::Scalar{233}})};
++    compare(first, {4, 3}, 3, true);
++    compare(first, {4, 3}, 3, false);
++    compare(second, {0, 0}, 3, false); // 沿用第一帧全图均值，完整补齐相同尺寸工作区。
++    compare(second, {0, 0}, 257, false);
++    compare(second, {4, 3}, 1, false);
++    compare(second, {0, 0}, 3, true);
++    compare(first, {23, 21}, 5, false);
++    cv::Mat outside_a{5, 7, CV_8UC1, cv::Scalar{32}};
++    cv::Mat outside_b{5, 7, CV_8UC1, cv::Scalar{222}};
++    outside_a(cv::Rect{0, 0, 2, 2}).setTo(20);
++    outside_b(cv::Rect{0, 0, 2, 2}).setTo(20);
++    compare(rk3576::copyGrayFrame(outside_a), {0, 0}, 5, true);
++    compare(rk3576::copyGrayFrame(outside_b), {0, 0}, 5, true); // 窗口内不变，窗口外改变全图均值。
++    compare(rk3576::copyHostFrame(cv::Mat{5, 7, CV_8UC3, cv::Scalar{20, 20, 20}}), {0, 0}, 5, true);
++    for (bool init : {false, true}) {
++        auto trace{std::make_shared<Trace>()};
++        compare(std::make_shared<TestFrame>(trace, false, true), {23, 21}, 5, init);
++        require(trace->views == 0, "失败后映射未释放");
++        compare(std::make_shared<TestFrame>(trace, false, false, true), {23, 21}, 5, init);
++        require(trace->views == 0, "映射失败后仍保留视图");
++        compare(first, {0, 0}, 5, false); // 搜索失败保留均值；模板失败使均值无效。
++        compare(second, {0, 0}, 5, true);
++    }
++    compare({}, {0, 0}, 5, true);
++    compare(first, {0, 0}, 5, false);
++    compare(first, {0, 0}, 0, true);
++    compare(first, {std::numeric_limits<float>::infinity(), 0}, 5, true);
++}
+ void observationPixels() {
+     class Observer final : public timing::Observer {
+     public:
+@@ -131,6 +224,8 @@ void observationPixels() {
+ }
+ } // namespace
+ int main() {
++    matrix();
++    reuseAndFailures();
+     observationPixels();
+     numeric(5, {2, 1}, -1, -2);
+     numeric(6, {2, 1}, -1, -2);
+@@ -140,34 +235,41 @@ int main() {
+     const ModelInputContract z{{1, 3, 127, 127}};
+     const ModelInputContract x{{1, 3, 255, 255}};
+     PreparedInputRef survivor;
+-    for (bool fallback : {false, true}) {
+-        auto trace{std::make_shared<Trace>()};
+-        FrameRef frame{std::make_shared<TestFrame>(trace, fallback)};
+-        std::weak_ptr<const Frame> weak{frame};
+-        auto preprocessor{std::make_unique<rk3576::NanoTrackPreprocessor>()};
+-        auto result{preprocessor->prepareTemplate(frame, {0, 0}, 5, z)};
+-        require(result && trace->views == 0, "映射租约未释放");
+-        auto input{std::dynamic_pointer_cast<const rk3576::FloatInput>(result.value)};
+-        require(input->values()->front() == (fallback ? 114 : 20), "目标均值/114 回退错误");
+-        require(preprocessor->prepareTemplate(frame, {0, 0}, 5, z).error == PreprocessError::InputBusy,
+-                "旧输入被缓存覆盖");
+-        require(preprocessor->prepareSearch(frame, {0, 0}, 5, x).error == PreprocessError::ContractMismatch,
+-                "新模板失败仍复用旧均值");
+-        result.value.reset();
+-        input.reset();
+-        result = preprocessor->prepareTemplate(frame, {0, 0}, 5, z);
+-        require(static_cast<bool>(result), "释放租约后无法准备模板");
+-        auto search{preprocessor->prepareSearch(frame, {0, 0}, 5, x)};
+-        require(search && preprocessor->prepareSearch(frame, {0, 0}, 5, x).error == PreprocessError::InputBusy,
+-                "搜索租约未生效");
+-        survivor = search.value;
+-        frame.reset();
+-        require(weak.expired() && trace->views == 0, "准备输入仍占用帧");
+-        preprocessor->reset();
+-        preprocessor->reset();
+-        preprocessor.reset();
+-        const auto kept{std::dynamic_pointer_cast<const rk3576::FloatInput>(survivor)};
+-        require(kept->values()->front() == 20, "预处理器销毁破坏旧输入");
++    for (bool legacy : {false, true}) {
++        for (bool fallback : {false, true}) {
++            auto trace{std::make_shared<Trace>()};
++            FrameRef frame{std::make_shared<TestFrame>(trace, fallback)};
++            std::weak_ptr<const Frame> weak{frame};
++            std::unique_ptr<::NanoTrackPreprocessor> preprocessor;
++            if (legacy) { preprocessor = std::make_unique<window_preprocess::WholeFramePreprocessor>(); }
++            else { preprocessor = std::make_unique<rk3576::NanoTrackPreprocessor>(); }
++            auto result{preprocessor->prepareTemplate(frame, {0, 0}, 5, z)};
++            require(result && trace->views == 0, "映射租约未释放");
++            auto input{std::dynamic_pointer_cast<const rk3576::FloatInput>(result.value)};
++            require(input->values()->front() == (fallback ? 114 : 20), "目标均值/114 回退错误");
++            require(preprocessor->prepareTemplate(frame, {0, 0}, 5, z).error == PreprocessError::InputBusy,
++                    "旧输入被缓存覆盖");
++            require(preprocessor->prepareSearch(frame, {0, 0}, 5, x).error == PreprocessError::ContractMismatch,
++                    "新模板失败仍复用旧均值");
++            result.value.reset();
++            input.reset();
++            result = preprocessor->prepareTemplate(frame, {0, 0}, 5, z);
++            require(static_cast<bool>(result), "释放租约后无法准备模板");
++            const auto held_template{std::dynamic_pointer_cast<const rk3576::FloatInput>(result.value)};
++            const auto template_values{*held_template->values()};
++            auto search{preprocessor->prepareSearch(frame, {0, 0}, 257, x)};
++            require(*held_template->values() == template_values, "复写搜索工作区覆盖模板结果");
++            require(search && preprocessor->prepareSearch(frame, {0, 0}, 5, x).error == PreprocessError::InputBusy,
++                    "搜索租约未生效");
++            survivor = search.value;
++            frame.reset();
++            require(weak.expired() && trace->views == 0, "准备输入仍占用帧");
++            preprocessor->reset();
++            preprocessor->reset();
++            preprocessor.reset();
++            const auto kept{std::dynamic_pointer_cast<const rk3576::FloatInput>(survivor)};
++            require(kept->values()->front() == 20, "预处理器销毁破坏旧输入");
++        }
+     }
+     rk3576::NanoTrackPreprocessor preprocessor;
+     auto trace{std::make_shared<Trace>()};
+diff --git a/tests/nanotracev3_performance_benchmarks/baseline/CMakeLists.txt b/tests/nanotracev3_performance_benchmarks/baseline/CMakeLists.txt
+index 3d278ef..c923e21 100644
+--- a/tests/nanotracev3_performance_benchmarks/baseline/CMakeLists.txt
++++ b/tests/nanotracev3_performance_benchmarks/baseline/CMakeLists.txt
+@@ -40,6 +40,9 @@ if(DRONE_TRACKER_BUILD_TESTS)
+         target_include_directories(baseline_${name}_tests PRIVATE ${RKNN_INCLUDE_DIR})
+         target_link_libraries(baseline_${name}_tests PRIVATE rk3576_yolo_runtime)
+         add_test(NAME baseline_${name}_tests COMMAND baseline_${name}_tests)
++        if(name STREQUAL "nanotrack_preprocess")
++            target_sources(baseline_${name}_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../window_preprocess/whole_frame_preprocessor.cpp)
++        endif()
+     endforeach()
+     add_executable(baseline_video_fixtures ${REPOSITORY_ROOT}/src/platform/rk3576/tests/video_fixture_generator.cpp)
+     target_link_libraries(baseline_video_fixtures PRIVATE rk3576_video JPEG::JPEG PkgConfig::BASELINE_AV)
+diff --git a/tests/nanotracev3_performance_benchmarks/baseline/generate_code_identity.cmake b/tests/nanotracev3_performance_benchmarks/baseline/generate_code_identity.cmake
+index 333b728..b199b39 100644
+--- a/tests/nanotracev3_performance_benchmarks/baseline/generate_code_identity.cmake
++++ b/tests/nanotracev3_performance_benchmarks/baseline/generate_code_identity.cmake
+@@ -21,7 +21,7 @@ identity_git(BASELINE_SOURCE_SNAPSHOT diff --no-ext-diff --no-textconv HEAD --)
+ identity_git(BASELINE_UNTRACKED -c core.quotepath=false ls-files --others --exclude-standard)
+ string(REPLACE "\n" ";" BASELINE_UNTRACKED "${BASELINE_UNTRACKED}")
+ foreach(path IN LISTS BASELINE_UNTRACKED)
+-    if(path MATCHES "^(src/|tests/nanotracev3_performance_benchmarks/(baseline|search_direct)/)"
++    if(path MATCHES "^(src/|tests/nanotracev3_performance_benchmarks/(baseline|search_direct|window_preprocess)/)"
+        AND path MATCHES "[.](cpp|h|yaml|txt|in|cmake)$")
+         file(READ "${REPOSITORY_ROOT}/${path}" content)
+         string(APPEND BASELINE_SOURCE_SNAPSHOT "\n新增文件 ${path}\n${content}\n")
+
+新增文件 src/hybrid_tracker/tests/recovery_regression_test.cpp
+#include "hybrid_tracker.h"
+
+#include <condition_variable>
+#include <iostream>
+#include <mutex>
+
+#include "model_test_support.h"
+#include "platform/rk3576/host_frame.h"
+#include "platform/rk3576/nanotrack_preprocessor.h"
+#include "../../../tests/nanotracev3_performance_benchmarks/window_preprocess/whole_frame_preprocessor.h"
+
+namespace {
+using model_test::require;
+struct Gate {
+    std::mutex mutex{};
+    std::condition_variable cv{};
+    int entered{}, published{};
+    bool first{}, all{};
+};
+class Storage final : public model::TensorStorage {
+public:
+    const float *hostData() const noexcept override { return values_.data(); }
+    std::size_t byteSize() const noexcept override { return sizeof(float) * values_.size(); }
+private:
+    std::array<float, 5> values_{50, 40, 16, 14, 0.95f};
+};
+class Input final : public PreparedModelInput {
+public:
+    explicit Input(ModelInputContract contract) : contract_{std::move(contract)} {}
+    const ModelInputContract &contract() const noexcept override { return contract_; }
+private:
+    ModelInputContract contract_;
+};
+class Session final : public YoloFrameSession {
+public:
+    Session(ModelInputContract contract, std::shared_ptr<Gate> gate)
+        : contract_{std::move(contract)}, gate_{std::move(gate)} {}
+    ~Session() override {
+        std::lock_guard<std::mutex> lock{gate_->mutex};
+        ++gate_->published; // 真实 worker 先提交检测结果，随后销毁会话。
+        gate_->cv.notify_all();
+    }
+    cv::Size sourceSize() const noexcept override { return {100, 80}; }
+    PreprocessResult<YoloPreparedRegion> prepare(const cv::Rect &region) override {
+        const auto size{region.empty() ? sourceSize() : region.size()};
+        return {YoloPreparedRegion{std::make_shared<Input>(contract_),
+                                   calculateLetterboxTransform(size, {100, 80}).value}};
+    }
+private:
+    ModelInputContract contract_;
+    std::shared_ptr<Gate> gate_;
+};
+class YoloPre final : public YoloPreprocessor {
+public:
+    explicit YoloPre(std::shared_ptr<Gate> gate) : gate_{std::move(gate)} {}
+    PreprocessResult<std::unique_ptr<YoloFrameSession>> beginFrame(
+        const FrameRef &, const ModelInputContract &c) override {
+        return {std::make_unique<Session>(c, gate_)};
+    }
+private:
+    std::shared_ptr<Gate> gate_;
+};
+class Yolo final : public model::YoloBackend {
+public:
+    explicit Yolo(std::shared_ptr<Gate> gate) : gate_{std::move(gate)} {}
+    model::Result<int> classCount() const override { return {1}; }
+    ModelInputContract inputContract() const override { return {{1, 3, 80, 100}, TensorElementType::Float32,
+                                                               TensorLayout::Nchw, 1.0f / 255.0f}; }
+    model::Result<model::YoloPrediction> infer(const PreparedInputRef &) override {
+        std::unique_lock<std::mutex> lock{gate_->mutex};
+        const int call{++gate_->entered};
+        gate_->cv.notify_all();
+        gate_->cv.wait(lock, [&] { return gate_->all || (call == 1 && gate_->first); });
+        model::Tensor tensor{{{1, 5, 1}, TensorElementType::Float32, TensorLayout::Linear,
+                               5 * sizeof(float), {}}, std::make_shared<Storage>()};
+        return {{std::move(tensor), 1, 2}};
+    }
+private:
+    std::shared_ptr<Gate> gate_;
+};
+class Compatibility final : public FrameCompatibility {
+public:
+    PlatformDiagnostic validate(const FrameRef &frame) const override {
+        return rk3576::isHostGrayFrame(frame) ? PlatformDiagnostic{} : PlatformDiagnostic{"mock", "frame", {}, "wrong"};
+    }
+};
+struct Trace { std::vector<std::uint64_t> calls{}; bool fail_init{}; std::uint64_t fail_search{}; };
+class NanoPre final : public NanoTrackPreprocessor {
+public:
+    NanoPre(std::unique_ptr<NanoTrackPreprocessor> inner, std::shared_ptr<Trace> trace)
+        : inner_{std::move(inner)}, trace_{std::move(trace)} {}
+    PreparedInputResult prepareTemplate(const FrameRef &frame, const cv::Point2f &p, int size,
+                                        const ModelInputContract &c) override {
+        trace_->calls.push_back(frame->timestampUs());
+        if (trace_->fail_init) {
+            return PreparedInputResult::failure(PreprocessError::PlatformFailure, "controlled init failure");
+        }
+        return inner_->prepareTemplate(frame, p, size, c);
+    }
+    PreparedInputResult prepareSearch(const FrameRef &frame, const cv::Point2f &p, int size,
+                                        const ModelInputContract &c) override {
+        trace_->calls.push_back(frame->timestampUs());
+        if (trace_->fail_search == frame->timestampUs()) {
+            return PreparedInputResult::failure(PreprocessError::PlatformFailure, "controlled catchup failure");
+        }
+        return inner_->prepareSearch(frame, p, size, c);
+    }
+    void reset() noexcept override { inner_->reset(); }
+private:
+    std::unique_ptr<NanoTrackPreprocessor> inner_;
+    std::shared_ptr<Trace> trace_;
+};
+class Nano final : public model::NanoTrackBackend {
+public:
+    model::Status setTemplate(const PreparedInputRef &) override { return {true}; }
+    model::Result<model::NanoPrediction> search(const PreparedInputRef &) override {
+        return {{model_test::tensor({1, 2, 15, 15}), model_test::tensor({1, 4, 15, 15}, 32.0f)}};
+    }
+    void reset() noexcept override {}
+};
+void wait(const std::shared_ptr<Gate> &gate, bool publication) {
+    std::unique_lock<std::mutex> lock{gate->mutex};
+    require(gate->cv.wait_for(lock, std::chrono::seconds{5}, [&] {
+        return publication ? gate->published >= 1 : gate->entered >= 1;
+    }), "受控检测事件未发生");
+}
+TrackerOutput scenario(bool legacy, bool fail_init, bool fail_search) {
+    auto gate{std::make_shared<Gate>()};
+    auto trace{std::make_shared<Trace>()};
+    trace->fail_init = fail_init;
+    trace->fail_search = fail_search ? 1033334 : 0;
+    TrackerComponents components{};
+    components.yolo = std::make_unique<Yolo>(gate);
+    components.yolo_preprocessor = std::make_unique<YoloPre>(gate);
+    components.nano = std::make_unique<Nano>();
+    std::unique_ptr<NanoTrackPreprocessor> inner;
+    if (legacy) { inner = std::make_unique<window_preprocess::WholeFramePreprocessor>(); }
+    else { inner = std::make_unique<rk3576::NanoTrackPreprocessor>(); }
+    components.nano_preprocessor = std::make_unique<NanoPre>(std::move(inner), trace);
+    components.compatibility = std::make_unique<Compatibility>();
+    TrackerSettings settings{};
+    settings.enable_dcf = false;
+    settings.kf_fx = settings.kf_fy = 100;
+    auto tracker{HybridTracker::CreateInstance(settings, std::move(components))};
+    // 先于 tracker 析构解除阻塞；断言失败时也不会让 worker 遗留。
+    struct Release {
+        std::shared_ptr<Gate> gate;
+        ~Release() { std::lock_guard<std::mutex> lock{gate->mutex}; gate->all = true; gate->cv.notify_all(); }
+    } release{gate};
+    require(tracker->init(), "真实 HybridTracker 未初始化");
+    auto update{[&](int i) {
+        FrameContext context{};
+        context.now_us = 1000000 + i * 16667;
+        context.frame = rk3576::copyGrayFrame(cv::Mat{80, 100, CV_8UC1, cv::Scalar{42}}, context.now_us);
+        return tracker->update(context);
+    }};
+    require(update(0).state == TrackerState::Detecting, "无检测结果时状态错误");
+    wait(gate, false);
+    update(1); update(2); // 检测仍阻塞，积压两张历史帧。
+    {
+        std::lock_guard<std::mutex> lock{gate->mutex};
+        gate->first = true;
+        gate->cv.notify_all();
+    }
+    wait(gate, true);
+    const auto output{update(3)};
+    if (fail_init) {
+        require(trace->calls == std::vector<std::uint64_t>{1000000}, "初始化失败后仍执行补帧");
+        require(output.state == TrackerState::Detecting && !output.tracking && !output.display_box.is_valid,
+                "初始化失败仍发布有效目标");
+    } else {
+        require(trace->calls == std::vector<std::uint64_t>{1000000, 1016667, 1033334, 1050001},
+                "补帧顺序变化或中间失败后未继续");
+        require(output.state == TrackerState::TargetFound && output.tracking && output.display_box.is_valid,
+                "恢复成功状态或有效框条件改变");
+    }
+    return output;
+}
+} // namespace
+int main() {
+    for (const auto &failures : {std::pair{true, false}, std::pair{false, true}, std::pair{false, false}}) {
+        const auto old{scenario(true, failures.first, failures.second)};
+        const auto current{scenario(false, failures.first, failures.second)};
+        require(old.state == current.state && old.tracking == current.tracking
+            && old.display_box.cx == current.display_box.cx && old.display_box.cy == current.display_box.cy
+            && old.display_box.width == current.display_box.width
+            && old.display_box.height == current.display_box.height,
+            "新旧受控恢复输出不同");
+    }
+    std::cout << "真实 HybridTracker 初始化失败、补帧失败后继续和恢复成功检查通过\n";
+}
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/CMakeLists.txt
+cmake_minimum_required(VERSION 3.16)
+get_filename_component(REPOSITORY_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    project(nanotrack_window_preprocess LANGUAGES CXX)
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    set(DRONE_TRACKER_PLATFORM rk3576)
+    option(DRONE_TRACKER_BUILD_TESTS "Build controlled window tests" ON)
+    enable_testing()
+    include(${REPOSITORY_ROOT}/src/platform/rk3576/dependencies.cmake)
+    find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn video imgcodecs videoio)
+    add_subdirectory(${REPOSITORY_ROOT}/src/hybrid_tracker common)
+    add_subdirectory(${REPOSITORY_ROOT}/src/platform/rk3576 rk3576)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../baseline baseline)
+endif()
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+add_library(nanotrack_window_support STATIC whole_frame_preprocessor.cpp recovery.cpp)
+target_link_libraries(nanotrack_window_support PUBLIC rk3576_yolo_host OpenSSL::Crypto)
+target_include_directories(nanotrack_window_support PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_executable(nanotrack_window_recovery main.cpp)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../baseline/code_identity.cmake)
+baseline_code_identity(nanotrack_window_recovery "${REPOSITORY_ROOT}")
+target_include_directories(nanotrack_window_recovery PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(nanotrack_window_recovery PRIVATE nanotrack_window_support rk3576_yolo_sdk nanotrack_baseline_support ${CMAKE_DL_LIBS})
+# 诊断目标不安装，旧参考仅在支持库/测试中，生产节点不链接它。
+if(DRONE_TRACKER_BUILD_TESTS)
+    add_executable(nanotrack_window_tests tests/recovery_test.cpp)
+    target_link_libraries(nanotrack_window_tests PRIVATE nanotrack_window_support)
+    add_test(NAME nanotrack_window_tests COMMAND nanotrack_window_tests)
+    add_test(NAME nanotrack_window_help COMMAND nanotrack_window_recovery --help)
+endif()
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/config.example.yaml
+%YAML:1.0
+# 相对路径以此配置文件的目录为基准。此文件只作格式样例。
+manifest: "input-manifest.yaml"
+output: "results/window-recovery-01"
+environment: "environment-notes.txt"
+board: "HZ-RK3576_WuKong Board"
+bbox: [756.689, 461.019, 39.712, 36.7552]
+warmups: 2
+pairs: 10
+cpu: 2
+opencv_threads: 1
+models:
+  template: { path: "models/template_backbone.rknn", sha256: "622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2" }
+  search: { path: "models/search_backbone.rknn", sha256: "9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44" }
+  head: { path: "models/head.rknn", sha256: "2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889" }
+# 完整列出融合/中心滤波参数；指定重建实验关闭 DCF，但仍运行真实中心滤波。
+tracker:
+  enable_dcf: 0
+  max_div_factor: 0.5
+  model_sz: 96
+  pad: 1.0
+  sigma_factor: 0.1
+  learning_rate: 0.01
+  psr_thresh: 5.0
+  lambda_reg: 0.0001
+  fixed_template: 1
+  eps: 0.00001
+  r_pos: 4.0
+  q_a: 50000.0
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/environment-notes.example.txt
+板卡：HZ-RK3576_WuKong Board；填写具体设备或序列号。
+正式节点：填写服务名称、版本、是否等待触发及对照期间是否变化。
+并发负载：填写录像、显示、其他推理进程及其状态。
+频率策略：填写 CPU/NPU 调频策略、是否固定频率及频率设置来源。
+窗口范围：本次指定初始框；其他尺寸另用独立数值/性能实验记录，不混入指定用例验收。
+输入来源：test-01-20260929-1513；25 张重建灰度图，不是原始相机帧。
+重建映射：每个处理时刻选择不晚于该时刻的最近录像帧；填写重建工具和逐帧映射记录位置。
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/input-manifest.example.yaml
+%YAML:1.0
+# 必须从既有输入包填写时间戳和解码后像素 SHA-256。占位符会被工具拒绝。
+source_commit: "09006db9ea11bd4fa137efc47ecb117660e0fad2"
+video_sha256: "11d45885dc32859c5aba16541ecc83f769ad47ba9ae66b54908b19d805d4c152"
+mapping: "latest_video_frame_not_after_processing_time"
+frames:
+  - { order: 0, video_index: 4146, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-000.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 1, video_index: 4147, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-001.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 2, video_index: 4148, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-002.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 3, video_index: 4149, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-003.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 4, video_index: 4150, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-004.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 5, video_index: 4151, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-005.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 6, video_index: 4152, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-006.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 7, video_index: 4153, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-007.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 8, video_index: 4154, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-008.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 9, video_index: 4155, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-009.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 10, video_index: 4156, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-010.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 11, video_index: 4157, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-011.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 12, video_index: 4158, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-012.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 13, video_index: 4159, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-013.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 14, video_index: 4160, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-014.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 15, video_index: 4161, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-015.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 16, video_index: 4162, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-016.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 17, video_index: 4163, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-017.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 18, video_index: 4164, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-018.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 19, video_index: 4165, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-019.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 20, video_index: 4166, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-020.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 21, video_index: 4167, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-021.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 22, video_index: 4168, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-022.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 23, video_index: 4169, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-023.png", pixel_sha256: "填写解码后像素SHA256" }
+  - { order: 24, video_index: 4170, timestamp_us: "填写原记录微秒时间戳", path: "frames/frame-024.png", pixel_sha256: "填写解码后像素SHA256" }
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/main.cpp
+#include "recovery.h"
+
+#include <fstream>
+#include <iomanip>
+#include <dlfcn.h>
+#include <iostream>
+#include <sched.h>
+#include <sstream>
+#include <sys/utsname.h>
+
+#include "whole_frame_preprocessor.h"
+#include "../baseline/result_writer.h"
+#include "../baseline/timing_recorder.h"
+#include "code_identity.h"
+#include "platform/rk3576/rknn_nanotrack_factory.h"
+
+namespace wp = window_preprocess;
+namespace {
+std::string read(const std::filesystem::path &path) {
+    std::ifstream file{path};
+    if (!file) { throw std::runtime_error("环境记录无法读取：" + path.string()); }
+    return {std::istreambuf_iterator<char>{file}, {}};
+}
+std::string environment() {
+    std::ostringstream result;
+    result << "loadavg=" << read("/proc/loadavg") << "stat=" << read("/proc/stat");
+    for (const auto &directory : {"/sys/devices/system/cpu/cpufreq", "/sys/class/devfreq", "/sys/class/thermal"}) {
+        if (!std::filesystem::is_directory(directory)) { continue; }
+        for (const auto &entry : std::filesystem::directory_iterator{directory}) {
+            for (const auto &name : {"scaling_cur_freq", "scaling_governor", "cur_freq", "governor", "temp", "type"}) {
+                const auto path{entry.path() / name};
+                if (std::filesystem::is_regular_file(path)) {
+                    try { result << path.string() << '=' << read(path); }
+                    catch (const std::exception &error) { result << error.what() << '\n'; }
+                }
+            }
+        }
+    }
+    return result.str();
+}
+void write(const std::filesystem::path &path, const std::string &text) {
+    std::ofstream file{path};
+    file.exceptions(std::ios::failbit | std::ios::badbit);
+    file << text;
+}
+std::unique_ptr<NanoDcfTracker> tracker(const wp::Config &config, bool legacy,
+                                     std::unique_ptr<::NanoTrackPreprocessor> checked = {}) {
+    auto loaded{rk3576::loadNanoTrack(config.models[0].string(), config.models[1].string(), config.models[2].string())};
+    if (!loaded) { throw std::runtime_error(model::describe(loaded.error)); }
+    if (legacy) { loaded.value.preprocessor = std::make_unique<wp::WholeFramePreprocessor>(); }
+    if (checked) { loaded.value.preprocessor = std::move(checked); }
+    auto nano{std::make_unique<NanoTracker>(std::move(loaded.value.backend), std::move(loaded.value.preprocessor))};
+    return std::make_unique<NanoDcfTracker>(config.parameters, std::move(nano));
+}
+std::string raw(const std::vector<wp::Batch> &batches) {
+    std::ostringstream file;
+    file << std::setprecision(9);
+    file << "warmup,pair,order,legacy,frame,timestamp_us,success,initialized,x,y,w,h,score,elapsed_ns,preprocess_ns,"
+            "image_prepare_ns,template_calls,search_calls,head_calls,batch_ns\n";
+    for (const auto &batch : batches) {
+        for (std::size_t i{0}; i < batch.frames.size(); ++i) {
+            const auto &f{batch.frames[i]};
+            file << batch.warmup << ',' << batch.pair << ',' << batch.order << ',' << batch.legacy << ','
+                     << i << ','
+                 << f.timestamp << ',' << f.success << ',' << f.initialized << ',' << f.box.x << ',' << f.box.y << ','
+                 << f.box.width << ',' << f.box.height << ',' << f.score << ',' << f.elapsed << ','
+                 << f.recorder.duration(timing::Stage::Preprocess) << ','
+                 << f.recorder.duration(timing::Stage::ImagePrepare) << ','
+                 << f.recorder.modelCalls(timing::Stage::TemplateBackbone) << ','
+                 << f.recorder.modelCalls(timing::Stage::SearchBackbone) << ','
+                 << f.recorder.modelCalls(timing::Stage::Head) << ',' << batch.elapsed << '\n';
+        }
+    }
+    return file.str();
+}
+std::string intervals(const std::vector<wp::Batch> &batches) {
+    std::ostringstream file;
+    file << "warmup,pair,order,legacy,frame,id,parent,stage,start_ns,end_ns,complete\n";
+    for (const auto &batch : batches) {
+        for (std::size_t i{0}; i < batch.frames.size(); ++i) {
+            const auto &recorder{batch.frames[i].recorder};
+            for (std::size_t j{0}; j < recorder.size(); ++j) {
+                const auto &span{recorder.intervals()[j]};
+                file << batch.warmup << ',' << batch.pair << ',' << batch.order << ',' << batch.legacy << ','
+                     << i << ','
+                     << span.id << ',' << span.parent << ',' << baseline::stageName(span.stage) << ','
+                     << span.start << ',' << span.end << ',' << span.complete << '\n';
+            }
+        }
+    }
+    return file.str();
+}
+std::string windowSamples(const FrameRef &frame, int warmups, int pairs) {
+    std::ostringstream output;
+    output << "side,warmup,pair,order,legacy,template_ns,search_ns,exact\n";
+    const ModelInputContract template_contract{{1, 3, 127, 127}}, search_contract{{1, 3, 255, 255}};
+    // 此诊断只测预处理，固定同一真实图像与中心；不运行模型或修改恢复初始框。
+    for (const int side : {1, 32, 77, 154, 255, 511, 1024, 2048}) {
+        wp::WholeFramePreprocessor old;
+        rk3576::NanoTrackPreprocessor current;
+        std::array<std::vector<float>, 2> expected;
+        for (const auto &tag : wp::plan(warmups, pairs)) {
+            auto &preprocessor{tag.legacy ? static_cast<::NanoTrackPreprocessor &>(old)
+                                         : static_cast<::NanoTrackPreprocessor &>(current)};
+            preprocessor.reset();
+            std::array<std::int64_t, 2> elapsed{};
+            for (int role{0}; role < 2; ++role) {
+                const auto start{wp::Recorder::now()};
+                auto prepared{role == 0 ? preprocessor.prepareTemplate(frame, {776.045f, 478.8966f},
+                    side, template_contract) : preprocessor.prepareSearch(frame, {776.045f, 478.8966f},
+                    side, search_contract)};
+                elapsed[role] = wp::Recorder::now() - start;
+                if (!prepared) { throw std::runtime_error("其他窗口预处理失败"); }
+                const auto input{std::dynamic_pointer_cast<const rk3576::FloatInput>(prepared.value)};
+                if (!input) { throw std::runtime_error("其他窗口缺少 Float32 结果"); }
+                if (tag.order == 0) { expected[role] = *input->values(); }
+                else if (expected[role] != *input->values()) {
+                    throw std::runtime_error("其他窗口逐元素对照失败");
+                }
+            }
+            output << side << ',' << tag.warmup << ',' << tag.pair << ',' << tag.order << ','
+                   << tag.legacy << ',' << elapsed[0] << ',' << elapsed[1] << ",1\n";
+        }
+    }
+    return output.str();
+}
+} // namespace
+int main(int argc, char **argv) {
+    if (argc == 2 && std::string{argv[1]} == "--help") {
+        std::cout << "用法：nanotrack_window_recovery --check-inputs 配置.yaml\n"
+                     "      nanotrack_window_recovery --measure 配置.yaml\n"
+                     "检查模式只读图像；测量模式要求生产板、系统 Runtime、真实模型及未存在的输出目录。\n";
+        return 0;
+    }
+    std::filesystem::path output;
+    std::vector<wp::Batch> batches;
+    bool created{false};
+    try {
+        if (argc != 3 || (std::string{argv[1]} != "--check-inputs"
+            && std::string{argv[1]} != "--measure")) {
+            throw std::runtime_error("参数错误，请使用 --help");
+        }
+        const auto config{wp::loadConfig(argv[2])};
+        const auto frames{wp::loadFrames(config)}; // 解码与复制位于计时外；检查模式不读取模型。
+        if (std::string{argv[1]} == "--check-inputs") { std::cout << "25 帧身份校验通过\n"; return 0; }
+        output = config.output;
+        wp::createOutputDirectory(output);
+        created = true;
+        write(output / "status.txt", "未完成\n");
+        std::filesystem::copy_file(config.source, output / "config.yaml");
+        std::filesystem::copy_file(config.manifest, output / "input-manifest.yaml");
+        std::filesystem::copy_file(config.environment, output / "environment-notes.txt");
+        write(output / "code-snapshot.txt", BASELINE_SOURCE_SNAPSHOT);
+        struct utsname system{};
+        if (uname(&system) != 0 || std::string{system.machine} != "aarch64") {
+            throw std::runtime_error("恢复测量必须在 ARM64 生产板运行");
+        }
+        const auto device_tree{read("/proc/device-tree/model")};
+        const auto os{read("/etc/os-release")};
+        const auto driver{read("/sys/kernel/debug/rknpu/version")};
+        const auto runtime{baseline::sha256("/usr/lib/librknnrt.so")};
+        if (runtime != "d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8"
+            || driver.find("0.9.8") == std::string::npos || std::string{system.release} != "6.1.141-rt36"
+            || os.find("22.04.5") == std::string::npos || device_tree.find("3576") == std::string::npos) {
+            throw std::runtime_error("系统 Runtime、驱动、内核或操作系统与生产板基线不符");
+        }
+        Dl_info library{};
+        if (!dladdr(dlsym(RTLD_DEFAULT, "rknn_run"), &library) || !library.dli_fname
+            || !std::filesystem::equivalent(library.dli_fname, "/usr/lib/librknnrt.so")) {
+            throw std::runtime_error("进程必须实际加载生产板系统 RKNN Runtime");
+        }
+        std::ostringstream identity;
+        identity << "board=" << config.board << "\nkernel=" << system.release << "\nmodel=" << device_tree
+                 << "\nruntime_path=" << library.dli_fname << "\nruntime=" << runtime
+                 << "\ndriver=" << driver << "\ncommit=" << BASELINE_COMMIT
+                 << "\nflags=" << BASELINE_BUILD_FLAGS << "\nexecutable=" << baseline::sha256("/proc/self/exe")
+                 << "\nconfig=" << baseline::sha256(config.source)
+                 << "\nmanifest=" << baseline::sha256(config.manifest);
+        identity << "\nmodel_call_method=actual RKNN Run with model ancestors; unlabelled Inference Run is "
+                    "the existing direct search backbone path";
+        for (std::size_t i{0}; i < 3; ++i) {
+            const auto hash{baseline::sha256(config.models[i])};
+            if (hash != config.model_hashes[i]) { throw std::runtime_error("模型校验失败"); }
+            identity << "\nmodel_" << i << '=' << hash;
+        }
+        write(output / "identity.txt", identity.str());
+        if (config.cpu >= CPU_SETSIZE) { throw std::runtime_error("CPU 编号越界"); }
+        cpu_set_t affinity{};
+        CPU_ZERO(&affinity);
+        CPU_SET(config.cpu, &affinity);
+        if (sched_setaffinity(0, sizeof(affinity), &affinity) != 0) { throw std::runtime_error("固定 CPU 失败"); }
+        cv::setNumThreads(config.threads);
+        auto exact{std::make_unique<wp::ExactPreprocessor>()};
+        const auto *input_check{exact.get()};
+        auto validating{tracker(config, false, std::move(exact))};
+        const auto checked{wp::recover(*validating, frames, config.box, false)};
+        if (input_check->sizes().size() != 25) { throw std::runtime_error("实际输入对照不足 25 次"); }
+        std::ostringstream numeric;
+        numeric << "实际恢复逐元素精确对照通过\n张量数=25\n元素数=" << input_check->elements()
+                << "\n原始窗口边长=";
+        for (const auto side : input_check->sizes()) { numeric << side << ','; }
+        numeric << '\n';
+        write(output / "exact-inputs.txt", numeric.str());
+        validating.reset(); // 精确比较与额外模型执行均在正式预热/测量之前完成。
+        auto old{tracker(config, true)}, current{tracker(config, false)}; // 同时装配，同模型加载在计时外。
+        const auto initial_environment{environment()};
+        if (initial_environment.find("scaling_cur_freq=") == std::string::npos
+            || initial_environment.find("npu/cur_freq=") == std::string::npos
+            || initial_environment.find("/temp=") == std::string::npos) {
+            throw std::runtime_error("CPU/NPU 频率或温度记录不完整，拒绝正式测量");
+        }
+        std::ostringstream snapshots;
+        snapshots << "initial\n" << initial_environment;
+        bool equal{true};
+        std::array<wp::Batch, 2> paired;
+        for (const auto &tag : wp::plan(config.warmups, config.pairs)) {
+            snapshots << "pair=" << tag.pair << " order=" << tag.order << " before\n" << environment();
+            auto batch{wp::recover(tag.legacy ? *old : *current, frames, config.box)};
+            snapshots << "pair=" << tag.pair << " order=" << tag.order << " after\n" << environment();
+            batch.pair = tag.pair;
+            batch.order = tag.order;
+            batch.legacy = tag.legacy;
+            batch.warmup = tag.warmup;
+            paired[tag.legacy ? 0 : 1] = batch;
+            batches.push_back(std::move(batch));
+            if (tag.order == 1) {
+                try {
+                    wp::compare(paired[0], paired[1]);
+                    wp::compare(checked, paired[1], false);
+                }
+                catch (const std::exception &) { equal = false; }
+                if (!equal) { break; }
+            }
+        }
+        write(output / "frames.csv", raw(batches));
+        write(output / "intervals.csv", intervals(batches));
+        write(output / "environment-snapshots.txt", snapshots.str());
+        if (!equal) { throw std::runtime_error("新旧恢复输出或工作量不一致，原始记录已保存"); }
+        const auto a{wp::distribution(wp::formalSamples(batches, true, false))};
+        const auto b{wp::distribution(wp::formalSamples(batches, false, false))};
+        const auto pa{wp::distribution(wp::formalSamples(batches, true, true))};
+        const auto pb{wp::distribution(wp::formalSamples(batches, false, true))};
+        const bool passed{pb.median <= pa.median * 0.2 && b.median < a.median && b.p95 <= a.p95};
+        std::ostringstream report;
+        report << "指定录像重建恢复对照：" << (passed ? "通过" : "失败") << "\n单位：纳秒\n"
+               << "旧恢复中位数=" << a.median << " 新恢复中位数=" << b.median
+               << "\n旧恢复P95=" << a.p95 << " 新恢复P95=" << b.p95
+               << "\n旧预处理中位数=" << pa.median << " 新预处理中位数=" << pb.median
+               << "\n预处理比例=" << pb.median / pa.median
+               << "\n仅此输入与窗口；不代表现场约 388 ms 的分项耗时。\n";
+        write(output / "report.txt", report.str());
+        snapshots << "other_windows_before\n" << environment();
+        write(output / "other-windows.csv", windowSamples(frames.front(), config.warmups, config.pairs));
+        snapshots << "other_windows_after\n" << environment();
+        write(output / "environment-snapshots.txt", snapshots.str());
+        write(output / "status.txt", passed ? "通过\n" : "性能门槛未通过\n");
+        return passed ? 0 : 1;
+    } catch (const std::exception &error) {
+        if (created) {
+            try {
+                write(output / "frames.csv", raw(batches));
+                write(output / "intervals.csv", intervals(batches));
+                write(output / "status.txt", std::string{"失败："} + error.what() + '\n');
+            } catch (...) {}
+        }
+        std::cerr << error.what() << '\n';
+        return 1;
+    }
+}
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/recovery.cpp
+#include "recovery.h"
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <iomanip>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+
+#include "platform/rk3576/host_frame.h"
+
+#include <openssl/evp.h>
+#include <opencv2/imgcodecs.hpp>
+
+namespace window_preprocess {
+namespace {
+void require(bool valid, const char *message) {
+    if (!valid) { throw std::runtime_error(message); }
+}
+std::filesystem::path resolve(const std::filesystem::path &base, const std::string &value) {
+    require(!value.empty(), "配置路径缺失");
+    return std::filesystem::absolute(base / value).lexically_normal();
+}
+std::uint64_t timestamp(const std::string &value) {
+    require(!value.empty() && value.find_first_not_of("0123456789") == std::string::npos, "时间戳必须是十进制字符串");
+    const auto result{std::stoull(value)};
+    require(result > 0 && result <= static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()), "时间戳越界");
+    return result;
+}
+} // namespace
+PreparedInputResult ExactPreprocessor::checked(PreparedInputResult current,
+                                              const PreparedInputResult &reference, int size) {
+    require(current && reference, "实际恢复预处理失败");
+    const auto a{std::dynamic_pointer_cast<const rk3576::FloatInput>(current.value)};
+    const auto b{std::dynamic_pointer_cast<const rk3576::FloatInput>(reference.value)};
+    require(a && b && *a->values() == *b->values(), "实际恢复模型输入逐元素不一致");
+    sizes_.push_back(size);
+    elements_ += a->values()->size();
+    return current;
+}
+PreparedInputResult ExactPreprocessor::prepareTemplate(const FrameRef &frame, const cv::Point2f &position,
+                                                       int size, const ModelInputContract &contract) {
+    return checked(current_.prepareTemplate(frame, position, size, contract),
+                   reference_.prepareTemplate(frame, position, size, contract), size);
+}
+PreparedInputResult ExactPreprocessor::prepareSearch(const FrameRef &frame, const cv::Point2f &position,
+                                                     int size, const ModelInputContract &contract) {
+    return checked(current_.prepareSearch(frame, position, size, contract),
+                   reference_.prepareSearch(frame, position, size, contract), size);
+}
+void ExactPreprocessor::reset() noexcept {
+    current_.reset();
+    reference_.reset();
+    sizes_.clear();
+    elements_ = 0;
+}
+std::int64_t Recorder::now() noexcept {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
+std::uint32_t Recorder::begin(timing::Stage stage) noexcept {
+    if (size_ == intervals_.size()) { valid_ = false; return 0; }
+    const auto id{static_cast<std::uint32_t>(size_ + 1)};
+    intervals_[size_++] = {id, top_, stage, clock_(), 0, false};
+    top_ = id;
+    return id;
+}
+void Recorder::end(std::uint32_t id, bool complete) noexcept {
+    if (!id || id != top_ || id > size_) { valid_ = false; return; }
+    auto &interval{intervals_[id - 1]};
+    interval.end = clock_();
+    interval.complete = complete;
+    valid_ = valid_ && interval.end >= interval.start;
+    top_ = interval.parent;
+}
+std::int64_t Recorder::duration(timing::Stage stage) const {
+    std::int64_t total{};
+    for (std::size_t i{0}; i < size_; ++i) {
+        // 同名嵌套阶段只统计最外层，其他父子阶段分别报告，禁止加成总耗时。
+        const auto &span{intervals_[i]};
+        if (span.stage != stage) { continue; }
+        bool nested{false};
+        for (auto id{span.parent}; id; id = intervals_[id - 1].parent) {
+            nested = nested || intervals_[id - 1].stage == stage;
+        }
+        if (!nested) { total += span.end - span.start; }
+    }
+    return total;
+}
+int Recorder::count(timing::Stage stage) const {
+    int total{};
+    for (std::size_t i{0}; i < size_; ++i) { total += intervals_[i].stage == stage; }
+    return total;
+}
+int Recorder::modelCalls(timing::Stage stage) const {
+    require(stage == timing::Stage::TemplateBackbone || stage == timing::Stage::SearchBackbone
+        || stage == timing::Stage::Head, "只能查询三个 NanoTrack 模型的执行次数");
+    if (count(timing::Stage::Run) == 0) { return count(stage); }
+    int total{};
+    for (std::size_t i{0}; i < size_; ++i) {
+        const auto &run{intervals_[i]};
+        if (run.stage != timing::Stage::Run) { continue; }
+        bool inference{false}, identified{false};
+        auto role{timing::Stage::SearchBackbone};
+        for (auto id{run.parent}; id; id = intervals_[id - 1].parent) {
+            const auto ancestor{intervals_[id - 1].stage};
+            inference = inference || ancestor == timing::Stage::Inference;
+            if (ancestor == timing::Stage::TemplateBackbone || ancestor == timing::Stage::SearchBackbone
+                || ancestor == timing::Stage::Head) {
+                require(!identified, "模型执行区间存在冲突祖先");
+                role = ancestor;
+                identified = true;
+            }
+        }
+        // 现有直通后端的搜索 Run 直接属于 Inference；模板/Head 均有独立模型祖先。
+        require(run.complete && (identified || inference), "实际模型执行缺少可识别上下文");
+        total += role == stage;
+    }
+    return total;
+}
+std::vector<BatchTag> plan(int warmups, int pairs) {
+    require(warmups >= 2 && pairs >= 10 && warmups <= 10000 && pairs <= 10000, "批次数量不符合测量要求");
+    std::vector<BatchTag> result;
+    for (int pair{0}; pair < warmups + pairs; ++pair) {
+        for (int order{0}; order < 2; ++order) {
+            result.push_back({pair < warmups, (pair + order) % 2 == 0, pair, order});
+        }
+    }
+    return result;
+}
+std::vector<std::int64_t> formalSamples(const std::vector<Batch> &batches, bool legacy, bool preprocessing) {
+    std::vector<std::int64_t> result;
+    for (const auto &batch : batches) {
+        if (!batch.warmup && batch.legacy == legacy) {
+            result.push_back(preprocessing ? batch.preprocess : batch.elapsed);
+        }
+    }
+    return result;
+}
+Batch recover(NanoDcfTracker &tracker, const std::vector<FrameRef> &frames, const cv::Rect2f &box, bool observed) {
+    require(frames.size() == 25, "恢复需要恰好 25 帧");
+    std::uint64_t last{};
+    for (const auto &frame : frames) {
+        require(frame && frame->timestampUs() > last, "恢复帧必须按时间戳严格递增");
+        last = frame->timestampUs();
+    }
+    tracker.reset();
+    Batch batch{};
+    batch.frames.resize(frames.size()); // 分配位于计时外。
+    const auto start{Recorder::now()};
+    for (std::size_t i{0}; i < frames.size(); ++i) {
+        auto &result{batch.frames[i]};
+        result.timestamp = frames[i]->timestampUs();
+        result.box = i == 0 ? box : cv::Rect2f{};
+        const auto begin{Recorder::now()};
+        {
+            timing::Observation observation{observed ? &result.recorder : nullptr};
+            result.success = i == 0 ? tracker.init(frames[i], box) : tracker.update(frames[i], result.box);
+        }
+        result.elapsed = Recorder::now() - begin;
+        result.initialized = tracker.isInitialized();
+        result.score = tracker.lastScore();
+        batch.preprocess += result.recorder.duration(timing::Stage::Preprocess);
+    }
+    batch.elapsed = Recorder::now() - start;
+    for (const auto &frame : batch.frames) { require(frame.recorder.valid(), "阶段计时区间不完整"); }
+    return batch;
+}
+void compare(const Batch &old_batch, const Batch &new_batch, bool check_calls) {
+    require(old_batch.frames.size() == 25 && new_batch.frames.size() == 25, "恢复输出缺帧");
+    for (std::size_t i{0}; i < 25; ++i) {
+        const auto &a{old_batch.frames[i]}, &b{new_batch.frames[i]};
+        require(a.timestamp == b.timestamp && a.success == b.success && a.initialized == b.initialized
+            && a.box == b.box && a.score == b.score, "新旧恢复状态、框、分数或帧顺序不一致");
+        require(a.success && a.initialized, "指定恢复用例未全部成功");
+        if (check_calls) {
+            for (const auto *frame : {&a, &b}) {
+                require(frame->recorder.modelCalls(timing::Stage::TemplateBackbone) == (i == 0 ? 1 : 0)
+                    && frame->recorder.modelCalls(timing::Stage::SearchBackbone) == (i == 0 ? 0 : 1)
+                    && frame->recorder.modelCalls(timing::Stage::Head) == (i == 0 ? 0 : 1),
+                    "模型调用次数不符合 1/24/24");
+            }
+        }
+    }
+}
+Distribution distribution(std::vector<std::int64_t> samples) {
+    require(!samples.empty(), "统计样本为空");
+    require(std::all_of(samples.begin(), samples.end(), [](auto value) { return value >= 0; }), "耗时不能为负");
+    std::sort(samples.begin(), samples.end());
+    const auto n{samples.size()};
+    const double median{n % 2 ? static_cast<double>(samples[n / 2]) :
+        static_cast<double>(samples[n / 2 - 1]) / 2 + static_cast<double>(samples[n / 2]) / 2};
+    return {median, static_cast<double>(samples[static_cast<std::size_t>(std::ceil(0.95 * n)) - 1])};
+}
+std::string pixelHash(const cv::Mat &gray) {
+    require(!gray.empty() && gray.type() == CV_8UC1, "像素校验仅接受 Gray8");
+    std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context{EVP_MD_CTX_new(), EVP_MD_CTX_free};
+    require(context && EVP_DigestInit_ex(context.get(), EVP_sha256(), nullptr) == 1, "无法初始化像素 SHA-256");
+    for (int y{0}; y < gray.rows; ++y) {
+        require(EVP_DigestUpdate(context.get(), gray.ptr(y), gray.cols) == 1, "像素 SHA-256 更新失败");
+    }
+    std::array<unsigned char, 32> digest{};
+    unsigned int size{};
+    require(EVP_DigestFinal_ex(context.get(), digest.data(), &size) == 1 && size == digest.size(), "像素校验失败");
+    std::ostringstream output;
+    for (auto byte : digest) { output << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(byte); }
+    return output.str();
+}
+void createOutputDirectory(const std::filesystem::path &path) {
+    require(!std::filesystem::exists(path) && std::filesystem::create_directories(path), "输出目录已存在或不可创建，拒绝覆盖");
+}
+Config loadConfig(const std::filesystem::path &path) {
+    cv::FileStorage file{path.string(), cv::FileStorage::READ};
+    require(file.isOpened(), "无法读取恢复配置");
+    Config result{};
+    result.source = std::filesystem::absolute(path);
+    const auto base{result.source.parent_path()};
+    result.manifest = resolve(base, file["manifest"].string());
+    result.output = resolve(base, file["output"].string());
+    result.environment = resolve(base, file["environment"].string());
+    result.board = file["board"].string();
+    require(result.board == "HZ-RK3576_WuKong Board", "正式测量板卡身份必须为 HZ-RK3576_WuKong Board");
+    const std::array<std::string, 3> roles{"template", "search", "head"};
+    for (std::size_t i{0}; i < roles.size(); ++i) {
+        result.models[i] = resolve(base, file["models"][roles[i]]["path"].string());
+        result.model_hashes[i] = file["models"][roles[i]]["sha256"].string();
+        require(result.model_hashes[i].size() == 64, "模型必须给出 SHA-256");
+    }
+    const auto box{file["bbox"]};
+    require(box.isSeq() && box.size() == 4, "初始框必须含 x、y、宽、高");
+    result.box = {static_cast<float>(box[0]), static_cast<float>(box[1]),
+                  static_cast<float>(box[2]), static_cast<float>(box[3])};
+    require(result.box == cv::Rect2f{756.689f, 461.019f, 39.712f, 36.7552f}, "初始框不符合指定恢复输入");
+    result.warmups = static_cast<int>(file["warmups"]);
+    result.pairs = static_cast<int>(file["pairs"]);
+    result.cpu = static_cast<int>(file["cpu"]);
+    result.threads = static_cast<int>(file["opencv_threads"]);
+    require(result.warmups >= 2 && result.pairs >= 10 && result.cpu >= 0 && result.threads > 0, "预热、配对或线程配置无效");
+    const auto params{file["tracker"]};
+    const std::array<std::string, 11> keys{"enable_dcf", "max_div_factor", "model_sz", "pad", "sigma_factor",
+        "learning_rate", "psr_thresh", "lambda_reg", "fixed_template", "eps", "r_pos"};
+    for (const auto &key : keys) { require(!params[key].empty(), "跟踪参数缺失"); }
+    require(!params["q_a"].empty(), "中心滤波 q_a 参数缺失");
+    result.parameters.enable_dcf = static_cast<int>(params["enable_dcf"]) != 0;
+    result.parameters.max_div_factor = static_cast<float>(params["max_div_factor"]);
+    auto &dcf{result.parameters.dcf};
+    dcf.model_sz = static_cast<int>(params["model_sz"]);
+    dcf.pad = static_cast<float>(params["pad"]);
+    dcf.sigma_factor = static_cast<float>(params["sigma_factor"]);
+    dcf.learning_rate = static_cast<float>(params["learning_rate"]);
+    dcf.psr_thresh = static_cast<float>(params["psr_thresh"]);
+    dcf.lambda_reg = static_cast<float>(params["lambda_reg"]);
+    dcf.fixed_template = static_cast<int>(params["fixed_template"]) != 0;
+    dcf.eps = static_cast<float>(params["eps"]);
+    result.parameters.center_kf.r_pos = static_cast<double>(params["r_pos"]);
+    result.parameters.center_kf.q_a = static_cast<double>(params["q_a"]);
+    require(dcf.model_sz > 1 && dcf.pad > 0 && dcf.sigma_factor > 0 && dcf.lambda_reg > 0 && dcf.eps > 0
+        && result.parameters.max_div_factor > 0 && result.parameters.center_kf.r_pos > 0
+        && result.parameters.center_kf.q_a >= 0, "跟踪参数超出有效范围");
+    plan(result.warmups, result.pairs);
+    return result;
+}
+std::vector<FrameRef> loadFrames(const Config &config) {
+    cv::FileStorage file{config.manifest.string(), cv::FileStorage::READ};
+    require(file.isOpened(), "输入清单缺失");
+    require(file["source_commit"].string() == "09006db9ea11bd4fa137efc47ecb117660e0fad2"
+        && file["video_sha256"].string() == "11d45885dc32859c5aba16541ecc83f769ad47ba9ae66b54908b19d805d4c152"
+        && file["mapping"].string() == "latest_video_frame_not_after_processing_time", "重建来源或映射身份不符");
+    const auto entries{file["frames"]};
+    require(entries.isSeq() && entries.size() == 25, "输入清单必须包含 25 帧");
+    std::vector<FrameRef> frames;
+    std::uint64_t last{};
+    int order{};
+    for (const auto &entry : entries) {
+        require(static_cast<int>(entry["order"]) == order && static_cast<int>(entry["video_index"]) == 4146 + order,
+                "图像顺序或视频索引不符");
+        const auto ts{timestamp(entry["timestamp_us"].string())};
+        require(ts > last, "输入时间戳必须严格递增");
+        const std::filesystem::path relative{entry["path"].string()};
+        require(!relative.empty() && relative.is_relative(), "帧路径必须相对清单目录");
+        for (const auto &part : relative) { require(part != "..", "帧路径不能离开输入目录"); }
+        const auto gray{cv::imread((config.manifest.parent_path() / relative).string(), cv::IMREAD_UNCHANGED)};
+        require(gray.cols == 1920 && gray.rows == 1200 && gray.type() == CV_8UC1, "需要 1920×1200 原有重建 Gray8 图像");
+        require(pixelHash(gray) == entry["pixel_sha256"].string(), "输入像素校验失败，拒绝测量");
+        frames.push_back(rk3576::copyGrayFrame(gray, ts));
+        last = ts;
+        ++order;
+    }
+    return frames;
+}
+} // namespace window_preprocess
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/recovery.h
+#ifndef WINDOW_PREPROCESS_RECOVERY_H
+#define WINDOW_PREPROCESS_RECOVERY_H
+
+#include <array>
+#include <cstdint>
+#include <filesystem>
+#include <vector>
+
+#include "dcf_tracker.h"
+#include "nano_tracker.h"
+#include "timing_observer.h"
+#include "whole_frame_preprocessor.h"
+
+namespace window_preprocess {
+/** @brief 仅在计时外运行真实恢复；逐次精确核对实际几何产生的新旧模型输入。 */
+class ExactPreprocessor final : public ::NanoTrackPreprocessor {
+public:
+    PreparedInputResult prepareTemplate(const FrameRef &frame, const cv::Point2f &position, int original_size,
+                                        const ModelInputContract &contract) override;
+    PreparedInputResult prepareSearch(const FrameRef &frame, const cv::Point2f &position, int original_size,
+                                      const ModelInputContract &contract) override;
+    void reset() noexcept override;
+    const std::vector<int> &sizes() const noexcept { return sizes_; }
+    std::size_t elements() const noexcept { return elements_; }
+private:
+    PreparedInputResult checked(PreparedInputResult current, const PreparedInputResult &reference, int size);
+    rk3576::NanoTrackPreprocessor current_{};
+    WholeFramePreprocessor reference_{};
+    std::vector<int> sizes_{};
+    std::size_t elements_{};
+};
+/** @brief 一个阶段的起止时间；parent=0 表示直接属于本帧恢复操作。 */
+struct Interval {
+    std::uint32_t id{}, parent{};
+    timing::Stage stage{};
+    std::int64_t start{}, end{};
+    bool complete{};
+};
+/** @brief 回调不分配内存；完整性错误导致测量失败。 */
+class Recorder final : public timing::Observer {
+public:
+    using Clock = std::int64_t (*)() noexcept;
+    explicit Recorder(Clock clock = now) noexcept : clock_{clock} {}
+    static std::int64_t now() noexcept;
+    std::uint32_t begin(timing::Stage stage) noexcept override;
+    void end(std::uint32_t id, bool complete) noexcept override;
+    bool valid() const noexcept { return valid_ && top_ == 0; }
+    const auto &intervals() const noexcept { return intervals_; }
+    std::size_t size() const noexcept { return size_; }
+    std::int64_t duration(timing::Stage stage) const;
+    int count(timing::Stage stage) const;
+    /** @brief 实机按 rknn_run 区间及祖先区分模型；无 Run 的受控替身按模型区间计数。 */
+    int modelCalls(timing::Stage stage) const;
+private:
+    std::array<Interval, 256> intervals_{};
+    Clock clock_{};
+    std::size_t size_{};
+    std::uint32_t top_{};
+    bool valid_{true};
+};
+struct FrameResult {
+    std::uint64_t timestamp{};
+    bool success{}, initialized{};
+    cv::Rect2f box{};
+    float score{};
+    std::int64_t elapsed{};
+    Recorder recorder{};
+};
+struct BatchTag { bool warmup{}, legacy{}; int pair{}, order{}; };
+std::vector<BatchTag> plan(int warmups, int pairs);
+struct Batch {
+    bool warmup{}, legacy{};
+    int pair{}, order{};
+    std::vector<FrameResult> frames{};
+    std::int64_t elapsed{}, preprocess{};
+};
+/** @brief 复用真实 NanoDcfTracker，严格执行一次初始化和其后的全部帧更新。 */
+Batch recover(NanoDcfTracker &tracker, const std::vector<FrameRef> &frames, const cv::Rect2f &box,
+              bool observed = true);
+void compare(const Batch &old_batch, const Batch &new_batch, bool check_calls = true);
+struct Distribution { double median{}, p95{}; };
+Distribution distribution(std::vector<std::int64_t> samples);
+std::vector<std::int64_t> formalSamples(const std::vector<Batch> &batches, bool legacy, bool preprocessing);
+struct Config {
+    std::filesystem::path source{}, manifest{}, output{}, environment{};
+    std::array<std::filesystem::path, 3> models{};
+    std::array<std::string, 3> model_hashes{};
+    cv::Rect2f box{};
+    NanoDcfTracker::Params parameters{};
+    int warmups{2}, pairs{10}, cpu{-1}, threads{1};
+    std::string board{};
+};
+/** @brief 创建全新输出目录；已有目录或文件一律拒绝。 */
+void createOutputDirectory(const std::filesystem::path &path);
+Config loadConfig(const std::filesystem::path &path);
+/** @brief 只读加载清单中的 25 张 Gray8 图；核对解码像素而非压缩文件字节。 */
+std::vector<FrameRef> loadFrames(const Config &config);
+std::string pixelHash(const cv::Mat &gray);
+} // namespace window_preprocess
+#endif // WINDOW_PREPROCESS_RECOVERY_H
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/reference_source.txt
+源提交：ea9cd822b9717b2759ece8e251bb977c3f88449b
+源文件：src/platform/rk3576/nanotrack_preprocessor.h 和 .cpp
+仅重命名命名空间、类及 FloatInput 引用，保留旧整帧处理与均值/租约逻辑。
+仅供测试和诊断工具，不链接生产节点。
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/tests/recovery_test.cpp
+#include "recovery.h"
+#include "whole_frame_preprocessor.h"
+
+#include <fstream>
+#include <iostream>
+
+#include "platform/rk3576/host_frame.h"
+#include "tests/model_test_support.h"
+
+#include <opencv2/imgcodecs.hpp>
+
+namespace wp = window_preprocess;
+namespace {
+using model_test::require;
+struct Trace { int templates{}, searches{}, resets{}; std::vector<std::vector<float>> inputs{}; };
+class Model final : public model::NanoTrackBackend {
+public:
+    explicit Model(std::shared_ptr<Trace> trace) : trace_{std::move(trace)} {}
+    model::Status setTemplate(const PreparedInputRef &input) override {
+        timing::Span model{timing::Stage::TemplateBackbone};
+        ++trace_->templates;
+        save(input);
+        return {true};
+    }
+    model::Result<model::NanoPrediction> search(const PreparedInputRef &input) override {
+        {
+            timing::Span model{timing::Stage::SearchBackbone};
+            ++trace_->searches;
+            save(input);
+        }
+        timing::Span head{timing::Stage::Head};
+        return {{model_test::tensor({1, 2, 15, 15}), model_test::tensor({1, 4, 15, 15}, 32.0f)}};
+    }
+    void reset() noexcept override { ++trace_->resets; }
+private:
+    void save(const PreparedInputRef &input) {
+        const auto values{std::dynamic_pointer_cast<const rk3576::FloatInput>(input)};
+        require(static_cast<bool>(values), "恢复未使用真实浮点预处理器");
+        trace_->inputs.push_back(*values->values());
+    }
+    std::shared_ptr<Trace> trace_;
+};
+std::unique_ptr<NanoDcfTracker> make(bool legacy, bool dcf, const std::shared_ptr<Trace> &trace) {
+    std::unique_ptr<::NanoTrackPreprocessor> preprocessor;
+    if (legacy) { preprocessor = std::make_unique<wp::WholeFramePreprocessor>(); }
+    else { preprocessor = std::make_unique<rk3576::NanoTrackPreprocessor>(); }
+    auto nano{std::make_unique<NanoTracker>(std::make_unique<Model>(trace), std::move(preprocessor))};
+    NanoDcfTracker::Params params{};
+    params.enable_dcf = dcf;
+    return std::make_unique<NanoDcfTracker>(params, std::move(nano));
+}
+std::vector<FrameRef> frames() {
+    std::vector<FrameRef> result;
+    cv::Mat source{cv::Size{1920, 1200}, CV_8UC1};
+    for (int i{0}; i < 25; ++i) {
+        for (int y{0}; y < source.rows; ++y) {
+            for (int x{0}; x < source.cols; ++x) { source.at<std::uint8_t>(y, x) = (x * 7 + y * 11 + i * 3) % 256; }
+        }
+        result.push_back(rk3576::copyGrayFrame(source, 1000000 + i * 16667));
+    }
+    return result;
+}
+template <typename Work> void rejected(Work work) {
+    bool failed{false};
+    try { work(); } catch (const std::exception &) { failed = true; }
+    require(failed, "非法用例未被拒绝");
+}
+std::int64_t tick{};
+std::int64_t clock() noexcept { return ++tick; }
+void timingChecks() {
+    wp::Recorder direct;
+    const auto inference{direct.begin(timing::Stage::Inference)};
+    const auto search{direct.begin(timing::Stage::Run)};
+    direct.end(search, true);
+    const auto head{direct.begin(timing::Stage::Head)};
+    const auto head_run{direct.begin(timing::Stage::Run)};
+    direct.end(head_run, true);
+    direct.end(head, true);
+    direct.end(inference, true);
+    require(direct.modelCalls(timing::Stage::SearchBackbone) == 1
+        && direct.modelCalls(timing::Stage::Head) == 1
+        && direct.modelCalls(timing::Stage::TemplateBackbone) == 0,
+        "直通路径未按实际 Run 区分搜索模型与 Head");
+    wp::Recorder unidentified;
+    const auto outside{unidentified.begin(timing::Stage::Run)};
+    unidentified.end(outside, true);
+    rejected([&] { unidentified.modelCalls(timing::Stage::SearchBackbone); });
+    const auto labels{wp::plan(2, 10)};
+    require(labels.size() == 24, "预热与正式批次总数错误");
+    std::vector<wp::Batch> batches;
+    for (std::size_t i{0}; i < labels.size(); ++i) {
+        const auto &tag{labels[i]};
+        require(tag.warmup == (i < 4) && tag.pair == static_cast<int>(i / 2)
+            && tag.order == static_cast<int>(i % 2)
+            && tag.legacy == ((tag.pair + tag.order) % 2 == 0), "预热标记或交替顺序错误");
+        wp::Batch batch{};
+        batch.warmup = tag.warmup;
+        batch.legacy = tag.legacy;
+        batch.elapsed = tag.warmup ? 9999 : tag.pair;
+        batch.preprocess = tag.warmup ? 9999 : tag.pair * 2;
+        batches.push_back(batch);
+    }
+    const auto formal{wp::formalSamples(batches, true, false)};
+    require(formal.size() == 10 && wp::distribution(formal).median == 6.5
+        && wp::distribution(wp::formalSamples(batches, false, true)).p95 == 22,
+        "正式统计混入预热或混淆总耗时与预处理");
+    rejected([] { wp::plan(1, 10); });
+    rejected([] { wp::plan(2, 9); });
+    wp::Recorder recorder{clock};
+    const auto parent{recorder.begin(timing::Stage::Preprocess)};
+    const auto child{recorder.begin(timing::Stage::ImagePrepare)};
+    recorder.end(child, true);
+    recorder.end(parent, true);
+    require(recorder.valid() && recorder.duration(timing::Stage::Preprocess) == 3
+        && recorder.duration(timing::Stage::ImagePrepare) == 1 && recorder.intervals()[1].parent == parent,
+        "父子计时区间错误");
+    const auto outer{recorder.begin(timing::Stage::Preprocess)};
+    const auto inner{recorder.begin(timing::Stage::Preprocess)};
+    recorder.end(inner, true);
+    recorder.end(outer, true);
+    require(recorder.duration(timing::Stage::Preprocess) == 6, "同名嵌套区间重复累计");
+    wp::Recorder unfinished{clock};
+    unfinished.begin(timing::Stage::Head);
+    require(!unfinished.valid(), "未闭合区间仍有效");
+    wp::Recorder invalid{clock};
+    invalid.end(42, true);
+    require(!invalid.valid(), "错误区间未拒绝");
+    require(wp::distribution({3, 1, 2}).median == 2 && wp::distribution({4, 1, 2, 3}).median == 2.5,
+            "奇偶中位数错误");
+    std::vector<std::int64_t> values;
+    for (int i{1}; i <= 20; ++i) { values.push_back(i); }
+    require(wp::distribution(values).p95 == 19, "P95 未使用 ceil(0.95×N)");
+    rejected([] { wp::distribution({}); });
+    rejected([] { wp::distribution({-1}); });
+}
+void recovery() {
+    const auto input{frames()};
+    const cv::Rect2f box{756.689f, 461.019f, 39.712f, 36.7552f};
+    wp::ExactPreprocessor exact;
+    for (std::size_t i{0}; i < input.size(); ++i) {
+        const auto prepared{i == 0 ? exact.prepareTemplate(input[i], {776.045f, 478.8966f}, 77,
+            ModelInputContract{{1, 3, 127, 127}}) : exact.prepareSearch(input[i], {776.045f, 478.8966f},
+            154, ModelInputContract{{1, 3, 255, 255}})};
+        require(static_cast<bool>(prepared), "计时外实际输入检查失败");
+    }
+    require(exact.sizes().size() == 25 && exact.sizes().front() == 77 && exact.sizes().back() == 154
+        && exact.elements() == 3 * 127 * 127 + 24 * 3 * 255 * 255, "精确对照缺少窗口或元素身份");
+    exact.reset();
+    require(exact.sizes().empty() && exact.elements() == 0, "精确对照重置未清除旧计数");
+    for (bool dcf : {false, true}) {
+        auto old_trace{std::make_shared<Trace>()}, new_trace{std::make_shared<Trace>()};
+        auto old{make(true, dcf, old_trace)}, current{make(false, dcf, new_trace)};
+        const auto a{wp::recover(*old, input, box)}, b{wp::recover(*current, input, box)};
+        wp::compare(a, b);
+        require(old_trace->inputs == new_trace->inputs, "真实恢复中的新旧张量不一致");
+        require(old_trace->templates == 1 && old_trace->searches == 24 && new_trace->templates == 1
+            && new_trace->searches == 24, "恢复模型工作量错误");
+        const auto without{wp::recover(*current, input, box, false)};
+        wp::compare(b, without, false);
+        for (const auto &result : without.frames) { require(result.recorder.size() == 0, "关闭观测仍记录区间"); }
+        auto mutated{b};
+        mutated.frames[12].timestamp++;
+        rejected([&] { wp::compare(a, mutated); });
+        mutated = b;
+        mutated.frames[12].score += 0.1f;
+        rejected([&] { wp::compare(a, mutated); });
+        mutated = b;
+        mutated.frames[12].box.x++;
+        rejected([&] { wp::compare(a, mutated); });
+        mutated = b;
+        mutated.frames[12].success = false;
+        rejected([&] { wp::compare(a, mutated); });
+        mutated = b;
+        mutated.frames[12].recorder = wp::Recorder{};
+        rejected([&] { wp::compare(a, mutated); });
+    }
+    auto reordered{input};
+    std::swap(reordered[1], reordered[2]);
+    auto trace{std::make_shared<Trace>()};
+    auto current{make(false, false, trace)};
+    rejected([&] { wp::recover(*current, reordered, box); });
+    require(trace->templates == 0 && trace->searches == 0, "错误输入仍执行模型");
+}
+void inputs() {
+    const auto directory{std::filesystem::temp_directory_path()
+        / ("window-input-test-" + std::to_string(wp::Recorder::now()))};
+    std::filesystem::create_directories(directory);
+    struct Cleanup {
+        std::filesystem::path path;
+        ~Cleanup() { std::error_code error; std::filesystem::remove_all(path, error); }
+    } cleanup{directory};
+    cv::Mat gray{1200, 1920, CV_8UC1, cv::Scalar{42}};
+    require(cv::imwrite((directory / "gray.png").string(), gray), "生成灰度测试输入失败");
+    wp::createOutputDirectory(directory / "result");
+    std::ofstream{directory / "result/sentinel"} << "保留";
+    rejected([&] { wp::createOutputDirectory(directory / "result"); });
+    require(std::filesystem::exists(directory / "result/sentinel"), "输出目录保护破坏已有证据");
+    rejected([&] { wp::createOutputDirectory(directory / "result/sentinel"); });
+    wp::Config config{};
+    config.manifest = directory / "manifest.yaml";
+    auto manifest{[&](int count, bool wrong_order, bool wrong_hash, bool repeated) {
+        std::ofstream file{config.manifest};
+        file << "%YAML:1.0\nsource_commit: \"09006db9ea11bd4fa137efc47ecb117660e0fad2\"\n"
+             << "video_sha256: \"11d45885dc32859c5aba16541ecc83f769ad47ba9ae66b54908b19d805d4c152\"\n"
+             << "mapping: latest_video_frame_not_after_processing_time\nframes:\n";
+        for (int i{0}; i < count; ++i) {
+            file << "  - { order: " << (wrong_order ? 0 : i) << ", video_index: " << 4146 + i
+                 << ", timestamp_us: \"" << (repeated ? 1 : 1000000 + i * 16667)
+                 << "\", path: gray.png, pixel_sha256: \""
+                 << (wrong_hash ? std::string(64, '0') : wp::pixelHash(gray)) << "\" }\n";
+        }
+    }};
+    manifest(25, false, false, false);
+    const auto loaded{wp::loadFrames(config)};
+    require(loaded.size() == 25 && loaded.back()->timestampUs() == 1400008, "输入清单未保留顺序和时间戳");
+    manifest(24, false, false, false); rejected([&] { wp::loadFrames(config); });
+    manifest(25, true, false, false); rejected([&] { wp::loadFrames(config); });
+    manifest(25, false, true, false); rejected([&] { wp::loadFrames(config); });
+    manifest(25, false, false, true); rejected([&] { wp::loadFrames(config); });
+    manifest(25, false, false, false);
+    std::filesystem::remove(directory / "gray.png"); rejected([&] { wp::loadFrames(config); });
+    cv::imwrite((directory / "gray.png").string(), cv::Mat{1200, 1920, CV_8UC3, cv::Scalar{42, 42, 42}});
+    rejected([&] { wp::loadFrames(config); });
+    cv::Mat padded{1200, 1924, CV_8UC1, cv::Scalar{255}};
+    gray.copyTo(padded(cv::Rect{0, 0, 1920, 1200}));
+    require(wp::pixelHash(gray) == wp::pixelHash(padded(cv::Rect{0, 0, 1920, 1200})), "像素指纹读取行末填充");
+}
+} // namespace
+int main() {
+    timingChecks();
+    recovery();
+    inputs();
+    std::cout << "恢复状态/工作量、观测透明性、计时统计和输入校验通过（模拟模型，无 NPU）\n";
+}
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/whole_frame_preprocessor.cpp
+#include "whole_frame_preprocessor.h"
+
+#include <algorithm>
+#include <limits>
+
+#include "preprocess/input_validation.h"
+#include "timing_observer.h"
+
+#include <opencv2/imgproc.hpp>
+
+namespace window_preprocess {
+void WholeFramePreprocessor::reset() noexcept { mean_.reset(); }
+PreparedInputResult WholeFramePreprocessor::prepareTemplate(const FrameRef &frame, const cv::Point2f &position,
+                                                           int original_size, const ModelInputContract &contract) {
+    reset();
+    return prepare(frame, position, original_size, contract, true);
+}
+PreparedInputResult WholeFramePreprocessor::prepareSearch(const FrameRef &frame, const cv::Point2f &position,
+                                                         int original_size, const ModelInputContract &contract) {
+    return prepare(frame, position, original_size, contract, false);
+}
+PreparedInputResult WholeFramePreprocessor::prepare(const FrameRef &frame, const cv::Point2f &position,
+                                                   int original_size, const ModelInputContract &contract,
+                                                   bool is_template) {
+    timing::Span image_prepare{timing::Stage::ImagePrepare};
+    const auto error{validatePreprocessFrame(frame)};
+    if (error != PreprocessError::None) {
+        image_prepare.finish(false);
+        return PreparedInputResult::failure(error, preprocessErrorName(error));
+    }
+    const int size{is_template ? 127 : 255};
+    if (!matchesImageContract(contract, 1.0f, size)) {
+        image_prepare.finish(false);
+        return PreparedInputResult::failure(PreprocessError::ContractMismatch, "Expected Float32 NCHW NanoTrack input");
+    }
+    if (!is_template && !mean_.valid()) {
+        image_prepare.finish(false);
+        return PreparedInputResult::failure(PreprocessError::ContractMismatch, "Current target template is required");
+    }
+    const auto geometry{calculateNanoCropGeometry({frame->width(), frame->height()}, position, original_size)};
+    if (!geometry) {
+        image_prepare.finish(false);
+        return PreparedInputResult::failure(geometry.error, geometry.message);
+    }
+    try {
+        auto storage{cache_[is_template ? 0 : 1].acquire(
+            [size] { return std::make_shared<std::vector<float>>(3 * size * size); })};
+        if (!storage) {
+            image_prepare.finish(false);
+            return PreparedInputResult::failure(PreprocessError::InputBusy, "Previous input still owns cache lease");
+        }
+        if (is_template) {
+            mean_.initialize(frame);
+        }
+        cv::Mat snapshot;
+        {
+            const auto view{frame->mapRead()};
+            if (!view) {
+                image_prepare.finish(false);
+                return PreparedInputResult::failure(PreprocessError::PlatformFailure, "Frame mapping failed");
+            }
+            const auto &mat{view->mat()};
+            if (view->width() != frame->width() || view->height() != frame->height() ||
+                view->pixelFormat() != FramePixelFormat::Gray8 || mat.type() != CV_8UC1 || mat.step[1] != 1 ||
+                mat.cols != frame->width() || mat.rows != frame->height() || !mat.data ||
+                view->rowStrideBytes() != mat.step[0] || mat.step[0] < static_cast<std::size_t>(mat.cols) ||
+                mat.step[0] > std::numeric_limits<std::size_t>::max() / static_cast<std::size_t>(mat.rows)) {
+                image_prepare.finish(false);
+                return PreparedInputResult::failure(PreprocessError::PlatformTypeMismatch, "Invalid Gray8 mapping");
+            }
+            mat.convertTo(snapshot, CV_32F);
+        }
+        const auto &g{geometry.value};
+        cv::Mat padded;
+        cv::copyMakeBorder(snapshot, padded, g.top, g.bottom, g.left, g.right, cv::BORDER_CONSTANT,
+                           cv::Scalar{static_cast<double>(mean_.value())});
+        const cv::Rect crop{g.crop.x + g.left, g.crop.y + g.top, original_size, original_size};
+        cv::Mat plane(size, size, CV_32FC1, storage->data());
+        cv::resize(padded(crop), plane, {size, size}, 0, 0, cv::INTER_LINEAR);
+        const auto count{static_cast<std::size_t>(size * size)};
+        std::copy_n(storage->data(), count, storage->data() + count);
+        std::copy_n(storage->data(), count, storage->data() + 2 * count);
+        PreparedInputRef prepared{std::make_shared<rk3576::FloatInput>(std::move(storage), contract)};
+        if (is_template) {
+            mean_.commit();
+        }
+        return {std::move(prepared)};
+    } catch (const std::exception &exception) {
+        image_prepare.finish(false);
+        return PreparedInputResult::failure(PreprocessError::PlatformFailure, exception.what());
+    }
+}
+} // namespace window_preprocess
+
+
+新增文件 tests/nanotracev3_performance_benchmarks/window_preprocess/whole_frame_preprocessor.h
+#ifndef WINDOW_WHOLE_FRAME_PREPROCESSOR_H
+#define WINDOW_WHOLE_FRAME_PREPROCESSOR_H
+
+#include "platform/rk3576/nanotrack_preprocessor.h"
+
+namespace window_preprocess {
+/** @brief 灰度裁剪先转浮点再缩放；模板与搜索各持有一个受租约保护的缓存。 */
+class WholeFramePreprocessor final : public ::NanoTrackPreprocessor {
+public:
+    PreparedInputResult prepareTemplate(const FrameRef &frame, const cv::Point2f &position, int original_size,
+                                        const ModelInputContract &contract) override;
+    PreparedInputResult prepareSearch(const FrameRef &frame, const cv::Point2f &position, int original_size,
+                                      const ModelInputContract &contract) override;
+    void reset() noexcept override;
+
+private:
+    PreparedInputResult prepare(const FrameRef &frame, const cv::Point2f &position, int original_size,
+                                const ModelInputContract &contract, bool is_template);
+    TargetMean mean_{};
+    std::array<ReusableInput<std::vector<float>>, 2> cache_{};
+};
+} // namespace window_preprocess
+#endif // WINDOW_WHOLE_FRAME_PREPROCESSOR_H
+

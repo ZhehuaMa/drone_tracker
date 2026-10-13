@@ -81,6 +81,7 @@ add_subdirectory(src/osd)
 if(DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
     add_subdirectory(tests/nanotracev3_performance_benchmarks/baseline)
     add_subdirectory(tests/nanotracev3_performance_benchmarks/search_direct)
+    add_subdirectory(tests/nanotracev3_performance_benchmarks/window_preprocess)
 endif()
 
 # Executable

@@ -1,0 +1,224 @@
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /tmp/nanotrack-window-20261012/build
+Consolidate compiler generated dependencies of target cpu_affinity
+Consolidate compiler generated dependencies of target preprocess_geometry
+Consolidate compiler generated dependencies of target model_common
+gmake[2]: 警告：文件“/usr/include/stdc-predef.h”的修改时间在未来 2055574 秒后
+gmake[2]: 警告：文件“/usr/include/stdc-predef.h”的修改时间在未来 2055574 秒后
+gmake[2]: 警告：文件“/usr/include/stdc-predef.h”的修改时间在未来 2055574 秒后
+[  1%] 检查 NanoTrack 基准源码身份
+[  2%] Building CXX object common/CMakeFiles/preprocess_geometry.dir/preprocess/preprocess_geometry.cpp.o
+[  3%] Building CXX object common/CMakeFiles/cpu_affinity.dir/tmp/nanotrack-window-20261012/source/src/platform/cpu_affinity.cpp.o
+[  4%] Building CXX object common/CMakeFiles/model_common.dir/model/validation.cpp.o
+[  4%] Built target nanotrack_window_recovery_identity
+[  5%] Building CXX object common/CMakeFiles/model_common.dir/model/yolo_output_adapter.cpp.o
+[  6%] Linking CXX static library libpreprocess_geometry.a
+gmake[2]: 警告：检测到时钟错误。您的构建版本可能是不完整的。
+[  6%] Built target preprocess_geometry
+[  7%] Building CXX object common/CMakeFiles/model_common.dir/model/jetson/jetson_model_backend.cpp.o
+[  8%] Building CXX object common/CMakeFiles/platform_headers_check.dir/tests/platform_headers_test.cpp.o
+[  9%] 检查 NanoTrack 基准源码身份
+[  9%] Built target nanotrack_baseline_runner_identity
+[ 10%] Linking CXX static library libmodel_common.a
+gmake[2]: 警告：检测到时钟错误。您的构建版本可能是不完整的。
+[ 10%] Built target model_common
+[ 11%] Building CXX object common/CMakeFiles/jetson_tracker_assembly.dir/tmp/nanotrack-window-20261012/source/src/platform/jetson/tracker_assembly.cpp.o
+[ 11%] Built target platform_headers_check
+[ 12%] Linking CXX static library libcpu_affinity.a
+gmake[2]: 警告：检测到时钟错误。您的构建版本可能是不完整的。
+[ 12%] Built target cpu_affinity
+[ 14%] Building CXX object common/CMakeFiles/hybrid_tracker.dir/hybrid_tracker.cpp.o
+[ 14%] Building CXX object common/CMakeFiles/hybrid_tracker.dir/nano_tracker.cpp.o
+[ 15%] Building CXX object common/CMakeFiles/hybrid_tracker.dir/yolo_detector.cpp.o
+[ 16%] Linking CXX static library libjetson_tracker_assembly.a
+[ 16%] Built target jetson_tracker_assembly
+[ 17%] Building CXX object common/CMakeFiles/hybrid_tracker.dir/dcf_tracker.cpp.o
+[ 18%] Building CXX object common/CMakeFiles/hybrid_tracker.dir/rotation_kf.cpp.o
+[ 19%] Linking CXX static library libhybrid_tracker.a
+[ 19%] Built target hybrid_tracker
+[ 20%] Building CXX object common/CMakeFiles/model_contract_tests.dir/tests/model_contract_test.cpp.o
+[ 20%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_host.dir/yolo_preprocessor.cpp.o
+[ 21%] Building CXX object common/CMakeFiles/yolo_output_adapter_tests.dir/tests/yolo_output_adapter_test.cpp.o
+[ 22%] Building CXX object baseline/CMakeFiles/nanotrack_baseline_support.dir/config.cpp.o
+[ 23%] Linking CXX executable yolo_output_adapter_tests
+[ 23%] Built target yolo_output_adapter_tests
+[ 24%] Building CXX object baseline/CMakeFiles/nanotrack_baseline_support.dir/timing_recorder.cpp.o
+[ 25%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_host.dir/nanotrack_preprocessor.cpp.o
+[ 26%] Building CXX object baseline/CMakeFiles/nanotrack_baseline_support.dir/result_writer.cpp.o
+[ 27%] Building CXX object baseline/CMakeFiles/nanotrack_baseline_support.dir/statistics.cpp.o
+[ 28%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_host.dir/host_frame.cpp.o
+[ 29%] Linking CXX executable model_contract_tests
+[ 29%] Built target model_contract_tests
+[ 30%] Building CXX object baseline/CMakeFiles/nanotrack_baseline_support.dir/model_preparation.cpp.o
+[ 31%] Linking CXX static library librk3576_yolo_host.a
+[ 31%] Built target rk3576_yolo_host
+[ 32%] Building CXX object common/CMakeFiles/preprocess_common_tests.dir/tests/preprocess_geometry_test.cpp.o
+[ 33%] Building CXX object common/CMakeFiles/preprocess_contract_tests.dir/tests/preprocess_contract_test.cpp.o
+[ 34%] Linking CXX executable preprocess_common_tests
+[ 34%] Built target preprocess_common_tests
+[ 34%] Building CXX object common/CMakeFiles/hybrid_tracker_tests.dir/tests/test_main.cpp.o
+[ 35%] Building CXX object common/CMakeFiles/platform_contract_tests.dir/tests/platform_contract_test.cpp.o
+[ 36%] Linking CXX static library libnanotrack_baseline_support.a
+[ 36%] Built target nanotrack_baseline_support
+[ 37%] Building CXX object common/CMakeFiles/rknn_preprocess_tests.dir/tests/rknn_preprocess_test.cpp.o
+[ 38%] Building CXX object common/CMakeFiles/rknn_preprocess_tests.dir/tmp/nanotrack-window-20261012/source/src/platform/rk3576/yolo_preprocessor.cpp.o
+[ 39%] Linking CXX executable hybrid_tracker_tests
+[ 39%] Built target hybrid_tracker_tests
+[ 39%] Building CXX object common/CMakeFiles/recovery_regression_tests.dir/tests/recovery_regression_test.cpp.o
+[ 40%] Building CXX object common/CMakeFiles/rknn_preprocess_tests.dir/tmp/nanotrack-window-20261012/source/src/platform/rk3576/host_frame.cpp.o
+[ 41%] Linking CXX executable preprocess_contract_tests
+[ 41%] Built target preprocess_contract_tests
+[ 42%] Building CXX object common/CMakeFiles/recovery_regression_tests.dir/tmp/nanotrack-window-20261012/source/src/platform/rk3576/nanotrack_preprocessor.cpp.o
+[ 43%] Linking CXX executable rknn_preprocess_tests
+[ 43%] Built target rknn_preprocess_tests
+[ 44%] Building CXX object common/CMakeFiles/recovery_regression_tests.dir/tmp/nanotrack-window-20261012/source/src/platform/rk3576/host_frame.cpp.o
+[ 45%] Linking CXX executable platform_contract_tests
+[ 45%] Built target platform_contract_tests
+[ 46%] Building CXX object common/CMakeFiles/recovery_regression_tests.dir/tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/window_preprocess/whole_frame_preprocessor.cpp.o
+[ 47%] Building CXX object rk3576/CMakeFiles/rk3576_ar0234_camera.dir/ar0234_camera_device.cpp.o
+[ 48%] Building CXX object rk3576/CMakeFiles/rk3576_ar0234_camera.dir/rk3576_camera_capture_base.cpp.o
+[ 49%] Building CXX object rk3576/CMakeFiles/rk3576_ar0234_camera.dir/camera_timing.cpp.o
+[ 50%] Building CXX object rk3576/CMakeFiles/rk3576_ar0234_camera.dir/ar0234_camera_frame_source.cpp.o
+[ 51%] Linking CXX executable recovery_regression_tests
+[ 51%] Built target recovery_regression_tests
+[ 52%] Building CXX object rk3576/CMakeFiles/rk3576_video.dir/mjpeg_video_reader.cpp.o
+[ 53%] Building CXX object rk3576/CMakeFiles/rk3576_video.dir/video_timing.cpp.o
+gmake[2]: 警告：文件“/usr/lib/aarch64-linux-gnu/libcrypto.so”的修改时间在未来 665727 秒后
+[ 54%] Building CXX object baseline/CMakeFiles/baseline_verify_records.dir/tests/verify_records.cpp.o
+[ 55%] Building CXX object rk3576/CMakeFiles/rk3576_video.dir/video_frame_source.cpp.o
+[ 56%] Linking CXX static library librk3576_ar0234_camera.a
+[ 56%] Built target rk3576_ar0234_camera
+gmake[2]: 警告：文件“/tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/window_preprocess/recovery.cpp”的修改时间在未来 5414819 秒后
+[ 57%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_runtime.dir/rknn_session.cpp.o
+[ 58%] Building CXX object CMakeFiles/nanotrack_window_support.dir/whole_frame_preprocessor.cpp.o
+[ 59%] Linking CXX static library librk3576_video.a
+[ 59%] Built target rk3576_video
+[ 60%] Building CXX object CMakeFiles/nanotrack_window_support.dir/recovery.cpp.o
+[ 61%] Building CXX object rk3576/CMakeFiles/rk3576_sc233hgs_camera.dir/sc233hgs_camera_device.cpp.o
+[ 62%] Linking CXX executable baseline_verify_records
+gmake[2]: 警告：检测到时钟错误。您的构建版本可能是不完整的。
+[ 62%] Built target baseline_verify_records
+[ 63%] Building CXX object rk3576/CMakeFiles/rk3576_sc233hgs_camera.dir/sc233hgs_camera_frame_source.cpp.o
+[ 64%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_runtime.dir/rknn_runtime.cpp.o
+[ 65%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_runtime.dir/rknn_yolo_contract.cpp.o
+[ 66%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_runtime.dir/rknn_yolo_backend.cpp.o
+[ 67%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_runtime.dir/rknn_nanotrack_contract.cpp.o
+[ 68%] Linking CXX static library libnanotrack_window_support.a
+gmake[2]: 警告：检测到时钟错误。您的构建版本可能是不完整的。
+[ 68%] Built target nanotrack_window_support
+[ 69%] Building CXX object baseline/CMakeFiles/baseline_video_fixtures.dir/tmp/nanotrack-window-20261012/source/src/platform/rk3576/tests/video_fixture_generator.cpp.o
+[ 70%] Building CXX object rk3576/CMakeFiles/rk3576_sc233hgs_camera.dir/recording/session.cpp.o
+[ 71%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_runtime.dir/rknn_nanotrack_backend.cpp.o
+[ 72%] Linking CXX executable baseline_video_fixtures
+[ 72%] Built target baseline_video_fixtures
+gmake[2]: 警告：文件“/tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/window_preprocess/tests/recovery_test.cpp”的修改时间在未来 5414821 秒后
+[ 73%] Building CXX object CMakeFiles/nanotrack_window_tests.dir/tests/recovery_test.cpp.o
+[ 74%] Linking CXX static library librk3576_sc233hgs_camera.a
+[ 74%] Built target rk3576_sc233hgs_camera
+[ 75%] Building CXX object rk3576/CMakeFiles/rk3576_tracker_assembly.dir/platform_factory.cpp.o
+[ 76%] Building CXX object rk3576/CMakeFiles/rk3576_tracker_assembly.dir/tracker_assembly.cpp.o
+[ 77%] Linking CXX static library librk3576_yolo_runtime.a
+[ 77%] Built target rk3576_yolo_runtime
+[ 78%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_sdk.dir/rknn_api.cpp.o
+[ 79%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_sdk.dir/rknn_yolo_factory.cpp.o
+[ 80%] Building CXX object rk3576/CMakeFiles/rk3576_yolo_sdk.dir/rknn_nanotrack_factory.cpp.o
+gmake[2]: 警告：文件“/usr/lib/aarch64-linux-gnu/libcrypto.so”的修改时间在未来 665644 秒后
+[ 81%] Building CXX object baseline/CMakeFiles/nanotrack_baseline_tests.dir/tests/baseline_test.cpp.o
+[ 82%] Linking CXX static library librk3576_tracker_assembly.a
+[ 82%] Built target rk3576_tracker_assembly
+[ 83%] Building CXX object baseline/CMakeFiles/baseline_rknn_session_tests.dir/tmp/nanotrack-window-20261012/source/src/platform/rk3576/tests/rknn_session_test.cpp.o
+[ 84%] Linking CXX executable nanotrack_window_tests
+gmake[2]: 警告：检测到时钟错误。您的构建版本可能是不完整的。
+[ 85%] Linking CXX static library librk3576_yolo_sdk.a
+[ 85%] Built target nanotrack_window_tests
+[ 86%] Building CXX object baseline/CMakeFiles/baseline_rknn_nanotrack_backend_tests.dir/tmp/nanotrack-window-20261012/source/src/platform/rk3576/tests/rknn_nanotrack_backend_test.cpp.o
+[ 86%] Built target rk3576_yolo_sdk
+[ 86%] Building CXX object baseline/CMakeFiles/baseline_nanotrack_preprocess_tests.dir/tmp/nanotrack-window-20261012/source/src/platform/rk3576/tests/nanotrack_preprocess_test.cpp.o
+[ 87%] Linking CXX executable nanotrack_baseline_tests
+gmake[2]: 警告：检测到时钟错误。您的构建版本可能是不完整的。
+[ 87%] Built target nanotrack_baseline_tests
+gmake[2]: 警告：文件“/tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/window_preprocess/main.cpp”的修改时间在未来 5414762 秒后
+[ 87%] Building CXX object CMakeFiles/nanotrack_window_recovery.dir/main.cpp.o
+[ 88%] Linking CXX executable baseline_rknn_session_tests
+[ 88%] Built target baseline_rknn_session_tests
+[ 89%] Building CXX object rk3576/CMakeFiles/platform_rk3576.dir/production_factory.cpp.o
+[ 90%] Building CXX object baseline/CMakeFiles/baseline_nanotrack_preprocess_tests.dir/tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/window_preprocess/whole_frame_preprocessor.cpp.o
+[ 91%] Linking CXX static library libplatform_rk3576.a
+[ 91%] Built target platform_rk3576
+[ 92%] Building CXX object baseline/CMakeFiles/nanotrack_baseline_runner.dir/benchmark_runner.cpp.o
+[ 93%] Linking CXX executable baseline_nanotrack_preprocess_tests
+[ 93%] Built target baseline_nanotrack_preprocess_tests
+[ 94%] Linking CXX executable baseline_rknn_nanotrack_backend_tests
+[ 94%] Built target baseline_rknn_nanotrack_backend_tests
+[ 95%] Linking CXX executable nanotrack_window_recovery
+gmake[2]: 警告：检测到时钟错误。您的构建版本可能是不完整的。
+[ 95%] Built target nanotrack_window_recovery
+[ 96%] Linking CXX static library libnanotrack_baseline_runner.a
+[ 96%] Built target nanotrack_baseline_runner
+gmake[2]: 警告：文件“/usr/lib/aarch64-linux-gnu/libcrypto.so”的修改时间在未来 665588 秒后
+gmake[2]: 警告：文件“/usr/lib/aarch64-linux-gnu/libcrypto.so”的修改时间在未来 665588 秒后
+[ 98%] Building CXX object baseline/CMakeFiles/nanotrackv3_baseline.dir/main.cpp.o
+[ 98%] Building CXX object baseline/CMakeFiles/baseline_runner_tests.dir/tests/runner_test.cpp.o
+[ 99%] Linking CXX executable nanotrackv3_baseline
+gmake[2]: 警告：检测到时钟错误。您的构建版本可能是不完整的。
+[ 99%] Built target nanotrackv3_baseline
+[100%] Linking CXX executable baseline_runner_tests
+gmake[2]: 警告：检测到时钟错误。您的构建版本可能是不完整的。
+[100%] Built target baseline_runner_tests
+Internal ctest changing into directory: /tmp/nanotrack-window-20261012/build
+Test project /tmp/nanotrack-window-20261012/build
+      Start  1: nanotrack_window_tests
+ 1/20 Test  #1: nanotrack_window_tests ..................   Passed    4.43 sec
+      Start  2: nanotrack_window_help
+ 2/20 Test  #2: nanotrack_window_help ...................   Passed    0.24 sec
+      Start  3: yolo_output_adapter_tests
+ 3/20 Test  #3: yolo_output_adapter_tests ...............   Passed   67.03 sec
+      Start  4: model_contract_tests
+ 4/20 Test  #4: model_contract_tests ....................   Passed    0.01 sec
+      Start  5: preprocess_common_tests
+ 5/20 Test  #5: preprocess_common_tests .................   Passed    0.01 sec
+      Start  6: preprocess_contract_tests
+ 6/20 Test  #6: preprocess_contract_tests ...............   Passed    0.16 sec
+      Start  7: hybrid_tracker_tests
+ 7/20 Test  #7: hybrid_tracker_tests ....................   Passed    0.06 sec
+      Start  8: platform_contract_tests
+ 8/20 Test  #8: platform_contract_tests .................   Passed    0.05 sec
+      Start  9: rknn_preprocess_tests
+ 9/20 Test  #9: rknn_preprocess_tests ...................   Passed    0.10 sec
+      Start 10: recovery_regression_tests
+10/20 Test #10: recovery_regression_tests ...............   Passed    0.04 sec
+      Start 11: platform_selection_tests
+11/20 Test #11: platform_selection_tests ................   Passed    1.58 sec
+      Start 12: nanotrack_baseline_tests
+12/20 Test #12: nanotrack_baseline_tests ................   Passed    0.11 sec
+      Start 13: nanotrack_baseline_help
+13/20 Test #13: nanotrack_baseline_help .................   Passed    0.12 sec
+      Start 14: baseline_rknn_session_tests
+14/20 Test #14: baseline_rknn_session_tests .............   Passed    0.01 sec
+      Start 15: baseline_rknn_nanotrack_backend_tests
+15/20 Test #15: baseline_rknn_nanotrack_backend_tests ...   Passed    0.30 sec
+      Start 16: baseline_nanotrack_preprocess_tests
+16/20 Test #16: baseline_nanotrack_preprocess_tests .....   Passed    1.14 sec
+      Start 17: baseline_video_fixtures
+17/20 Test #17: baseline_video_fixtures .................   Passed    0.43 sec
+      Start 18: baseline_video_observation
+18/20 Test #18: baseline_video_observation ..............   Passed    0.21 sec
+      Start 19: baseline_runner_tests
+19/20 Test #19: baseline_runner_tests ...................   Passed    1.01 sec
+      Start 20: baseline_code_identity_tests
+20/20 Test #20: baseline_code_identity_tests ............***Failed   19.57 sec
+-- Found Git: /usr/bin/git (found version "2.34.1") 
+CMake Error at /tmp/nanotrack-window-20261012/source/tests/nanotracev3_performance_benchmarks/baseline/tests/code_identity_test.cmake:108 (message):
+  无改动重复构建触发了身份文件或程序重编译
+
+
+
+
+95% tests passed, 1 tests failed out of 20
+
+Total Test time (real) =  96.64 sec
+
+The following tests FAILED:
+	 20 - baseline_code_identity_tests (Failed)
+Errors while running CTest

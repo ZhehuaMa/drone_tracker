@@ -1,0 +1,29 @@
+%YAML:1.0
+# 相对路径以此配置文件的目录为基准。此文件只作格式样例。
+manifest: "input-manifest.yaml"
+output: "results/window-recovery-01"
+environment: "environment-notes.txt"
+board: "HZ-RK3576_WuKong Board"
+bbox: [756.689, 461.019, 39.712, 36.7552]
+warmups: 2
+pairs: 10
+cpu: 4
+opencv_threads: 1
+models:
+  template: { path: "/opt/drone_tracker/models/fp16/template_backbone.rknn", sha256: "622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2" }
+  search: { path: "/opt/drone_tracker/models/fp16/search_backbone.rknn", sha256: "9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44" }
+  head: { path: "/opt/drone_tracker/models/fp16/head.rknn", sha256: "2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889" }
+# 完整列出融合/中心滤波参数；指定重建实验关闭 DCF，但仍运行真实中心滤波。
+tracker:
+  enable_dcf: 0
+  max_div_factor: 0.5
+  model_sz: 96
+  pad: 1.0
+  sigma_factor: 0.1
+  learning_rate: 0.01
+  psr_thresh: 5.0
+  lambda_reg: 0.0001
+  fixed_template: 1
+  eps: 0.00001
+  r_pos: 4.0
+  q_a: 50000.0

@@ -1,0 +1,16 @@
+{
+  "archive_date": "2026-10-13",
+  "archive_path": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/archive/2026-10-13-optimize-rk3576-nanotrack-window-preprocessing",
+  "active_change_absent": true,
+  "all_pre_move_files_unchanged": 96,
+  "all_original_change_files_unchanged": 89,
+  "other_modified_or_untracked_files_unchanged": 24,
+  "openspec_yaml_preserved": true,
+  "validation_report_preserved": true,
+  "verification_report_and_W1_original_preserved": true,
+  "complete_evidence_tree_preserved": true,
+  "main_spec_still_synced": true,
+  "committed": false,
+  "deployed": false,
+  "board_accessed": false
+}

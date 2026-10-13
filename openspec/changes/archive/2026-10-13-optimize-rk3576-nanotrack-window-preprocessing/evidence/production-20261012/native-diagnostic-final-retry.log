@@ -1,0 +1,48 @@
+[100%] 检查 NanoTrack 基准源码身份
+[100%] Built target nanotrack_window_recovery_identity
+/usr/bin/ar qc libnanotrack_window_support.a CMakeFiles/nanotrack_window_support.dir/whole_frame_preprocessor.cpp.o CMakeFiles/nanotrack_window_support.dir/recovery.cpp.o
+/usr/bin/ranlib libnanotrack_window_support.a
+/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/nanotrack_window_tests.dir/tests/recovery_test.cpp.o -o nanotrack_window_tests  libnanotrack_window_support.a rk3576/librk3576_yolo_host.a common/libhybrid_tracker.a common/libmodel_common.a common/libpreprocess_geometry.a /usr/lib/aarch64-linux-gnu/libopencv_video.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_dnn.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_videoio.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_imgcodecs.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.5.4d /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.5.4d common/libcpu_affinity.a /usr/lib/aarch64-linux-gnu/libyaml-cpp.so.0.7.0 /usr/lib/aarch64-linux-gnu/libcrypto.so 
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::Recorder::begin(timing::Stage)':
+recovery.cpp:(.text+0x0): multiple definition of `window_preprocess::Recorder::begin(timing::Stage)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x0): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::ExactPreprocessor::reset()':
+recovery.cpp:(.text+0xa0): multiple definition of `window_preprocess::ExactPreprocessor::reset()'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0xa0): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::Recorder::now()':
+recovery.cpp:(.text+0xe0): multiple definition of `window_preprocess::Recorder::now()'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0xe0): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::Recorder::end(unsigned int, bool)':
+recovery.cpp:(.text+0xf4): multiple definition of `window_preprocess::Recorder::end(unsigned int, bool)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0xf4): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::Recorder::duration(timing::Stage) const':
+recovery.cpp:(.text+0x930): multiple definition of `window_preprocess::Recorder::duration(timing::Stage) const'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x790): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::Recorder::count(timing::Stage) const':
+recovery.cpp:(.text+0x9f0): multiple definition of `window_preprocess::Recorder::count(timing::Stage) const'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x850): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::compare(window_preprocess::Batch const&, window_preprocess::Batch const&, bool)':
+recovery.cpp:(.text+0x11a4): multiple definition of `window_preprocess::compare(window_preprocess::Batch const&, window_preprocess::Batch const&, bool)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0xac4): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::distribution(std::vector<long, std::allocator<long> >)':
+recovery.cpp:(.text+0x22d0): multiple definition of `window_preprocess::distribution(std::vector<long, std::allocator<long> >)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x1420): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::createOutputDirectory(std::filesystem::__cxx11::path const&)':
+recovery.cpp:(.text+0x2640): multiple definition of `window_preprocess::createOutputDirectory(std::filesystem::__cxx11::path const&)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x1790): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::pixelHash[abi:cxx11](cv::Mat const&)':
+recovery.cpp:(.text+0x26d0): multiple definition of `window_preprocess::pixelHash[abi:cxx11](cv::Mat const&)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x1820): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::ExactPreprocessor::checked(PreprocessResult<std::shared_ptr<PreparedModelInput const> >, PreprocessResult<std::shared_ptr<PreparedModelInput const> > const&, int)':
+recovery.cpp:(.text+0x2c44): multiple definition of `window_preprocess::ExactPreprocessor::checked(PreprocessResult<std::shared_ptr<PreparedModelInput const> >, PreprocessResult<std::shared_ptr<PreparedModelInput const> > const&, int)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x1d94): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::ExactPreprocessor::prepareTemplate(std::shared_ptr<Frame const> const&, cv::Point_<float> const&, int, ModelInputContract const&)':
+recovery.cpp:(.text+0x3064): multiple definition of `window_preprocess::ExactPreprocessor::prepareTemplate(std::shared_ptr<Frame const> const&, cv::Point_<float> const&, int, ModelInputContract const&)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x21b4): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::ExactPreprocessor::prepareSearch(std::shared_ptr<Frame const> const&, cv::Point_<float> const&, int, ModelInputContract const&)':
+recovery.cpp:(.text+0x32b0): multiple definition of `window_preprocess::ExactPreprocessor::prepareSearch(std::shared_ptr<Frame const> const&, cv::Point_<float> const&, int, ModelInputContract const&)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x2400): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::formalSamples(std::vector<window_preprocess::Batch, std::allocator<window_preprocess::Batch> > const&, bool, bool)':
+recovery.cpp:(.text+0x3500): multiple definition of `window_preprocess::formalSamples(std::vector<window_preprocess::Batch, std::allocator<window_preprocess::Batch> > const&, bool, bool)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x2650): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::recover(NanoDcfTracker&, std::vector<std::shared_ptr<Frame const>, std::allocator<std::shared_ptr<Frame const> > > const&, cv::Rect_<float> const&, bool)':
+recovery.cpp:(.text+0x3620): multiple definition of `window_preprocess::recover(NanoDcfTracker&, std::vector<std::shared_ptr<Frame const>, std::allocator<std::shared_ptr<Frame const> > > const&, cv::Rect_<float> const&, bool)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x2770): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::plan(int, int)':
+recovery.cpp:(.text+0x3a54): multiple definition of `window_preprocess::plan(int, int)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x2ba4): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::loadConfig(std::filesystem::__cxx11::path const&)':
+recovery.cpp:(.text+0x3c40): multiple definition of `window_preprocess::loadConfig(std::filesystem::__cxx11::path const&)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x2d90): first defined here
+/usr/bin/ld: libnanotrack_window_support.a(recovery.cpp.o): in function `window_preprocess::loadFrames(window_preprocess::Config const&)':
+recovery.cpp:(.text+0x5220): multiple definition of `window_preprocess::loadFrames(window_preprocess::Config const&)'; libnanotrack_window_support.a(recovery.cpp.o):recovery.cpp:(.text+0x4370): first defined here
+collect2: error: ld returned 1 exit status
+Traceback (most recent call last):
+  File "/tmp/nanotrack-window-20261012/refresh-main.py", line 15, in <module>
+    subprocess.run(['cmake', '-E', 'cmake_link_script',
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['cmake', '-E', 'cmake_link_script', 'CMakeFiles/nanotrack_window_tests.dir/link.txt', '--verbose=1']' returned non-zero exit status 1.

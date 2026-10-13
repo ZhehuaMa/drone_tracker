@@ -1,0 +1,195 @@
+{
+  "changeName": "optimize-rk3576-nanotrack-window-preprocessing",
+  "changeDir": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing",
+  "schemaName": "spec-driven",
+  "contextFiles": {
+    "proposal": [
+      "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/proposal.md"
+    ],
+    "specs": [
+      "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/specs/model-input-preprocessing/spec.md"
+    ],
+    "design": [
+      "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/design.md"
+    ],
+    "tasks": [
+      "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md"
+    ]
+  },
+  "progress": {
+    "total": 23,
+    "complete": 23,
+    "remaining": 0
+  },
+  "tasks": [
+    {
+      "id": "1",
+      "description": "1.1 建立可追溯的旧整帧预处理参考，在 `tests/nanotracev3_performance_benchmarks/window_preprocess/` 保存仅供验证的参考实现及源提交身份；完成条件是参考保留原 Float32 转换、补边、裁剪、缩放和均值/租约语义，且没有接入生产装配。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 9
+    },
+    {
+      "id": "2",
+      "description": "1.2 建立独立数值检查，在 `src/platform/rk3576/tests/nanotrack_preprocess_test.cpp` 复用旧参考，并保留现有四邻点插值参考；完成条件是旧路径对照和现有 `5e-4` 独立参考检查分别运行，不用生产几何函数生成全部预期坐标。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 10
+    },
+    {
+      "id": "3",
+      "description": "1.3 固定恢复输入身份，在 `window_preprocess/` 的配置样例和输入清单格式中记录初始框、逐帧顺序、时间戳、像素校验值及跟踪参数；完成条件是能只读校验既有 25 张 1920×1200 重建图像，缺失或校验失败时拒绝测量，不把大图像或模型文件提交到仓库。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 11
+    },
+    {
+      "id": "4",
+      "description": "1.4 说明参考与数据边界，在 `window_preprocess/README.md` 写明旧参考来源、指定录像及重建映射假设；完成条件是文档可独立说明输入不是原始相机帧，且没有固化开发机路径。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 12
+    },
+    {
+      "id": "5",
+      "description": "2.1 将浮点处理范围缩小到当前窗口，在 `src/platform/rk3576/nanotrack_preprocessor.cpp` 沿用现有几何计算，以宽整数求交集并只转换有效源区域；完成条件是无整帧 Float32 转换和整帧补边，保留全图均值、浮点缩放、输出形状与三个通道。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 16
+    },
+    {
+      "id": "6",
+      "description": "2.2 保持工作区与输出数据独立，在 `nanotrack_preprocessor.h/.cpp` 增加串行复用的单通道小窗工作区；完成条件是越界窗口每次完整填充、图内窗口完整写入，模板/搜索结果继续由原缓存租约保护。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 17
+    },
+    {
+      "id": "7",
+      "description": "2.3 证明局部输入与旧路径精确一致，扩展 `nanotrack_preprocess_test.cpp` 的奇偶边长、分数中心、四侧/四角、全图外、大于原图、边长 1、上/下采样、固定随机图及非连续行用例；完成条件是每个模板和搜索张量的旧路径精确对照及独立插值检查均通过。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 18
+    },
+    {
+      "id": "8",
+      "description": "2.4 证明复用与失败不会改变既有语义，扩展同文件的旧像素残留、均值切换、114 回退、非法映射、InputBusy、源帧释放及预处理器销毁用例；完成条件是旧输入未覆盖、映射已释放，错误类别和均值状态与旧路径一致，包括空交集仍校验映射。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 19
+    },
+    {
+      "id": "9",
+      "description": "2.5 说明局部路径资源边界，更新 `nanotrack_preprocessor.h` 中有关工作区、源映射和输入存储的注释；完成条件是能够明确分辨可复写工作区与消费者持有结果，并写明同一实例仍串行调用。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 20
+    },
+    {
+      "id": "10",
+      "description": "3.1 提供同输入的新旧恢复测量入口，在 `window_preprocess/` 使用真实 NanoTracker、NanoDcfTracker 和现有 RKNN 后端；完成条件是两种预处理器均执行一次初始化及按时间戳顺序的 24 次更新，不复制跟踪算法，也不修改既有 `baseline` 的 MJPEG/纯 NanoTrack 范围。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 24
+    },
+    {
+      "id": "11",
+      "description": "3.2 接入隔离的诊断构建目标，在新目录的 `CMakeLists.txt` 及必要父级 CMake 文件接入入口和相关测试；完成条件是 RK3576 验证环境能构建目标，生产节点不链接旧参考，不安装参考为运行时回退路径。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 25
+    },
+    {
+      "id": "12",
+      "description": "3.3 验证恢复输出与工作量，在新入口的测试中核对每次状态、框、分数、帧顺序和模型调用次数；完成条件是对应新旧批次输出一致，成功指定用例的模板模型为 1 次，搜索模型和 Head 各为 24 次。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 26
+    },
+    {
+      "id": "13",
+      "description": "3.4 验证原补帧与仲裁规则，在 `src/hybrid_tracker/tests/` 增加受控恢复回归，并沿用现有组件注入与真实 HybridTracker；完成条件是固定检测结果事件下覆盖初始化失败、中间补帧失败后继续、恢复成功，调用顺序和有效状态条件保持一致，不用复制的状态机代替真实代码。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 27
+    },
+    {
+      "id": "14",
+      "description": "3.5 验证计时记录不改变结果，在新工具测试中核对观测开启/关闭、预热与正式标记、父子区间及统计计算；完成条件是结果一致、区间完整、耗时不重复累计，中位数和 `ceil(0.95×N)` 的 P95 用固定样本验证。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 28
+    },
+    {
+      "id": "15",
+      "description": "3.6 给出可复现命令和报告解释，补齐 `window_preprocess/README.md`；完成条件是说明配置、独立数值检查、恢复测量、输出目录保护、频率/负载记录及失败退出，且示例命令与实际入口参数一致。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 29
+    },
+    {
+      "id": "16",
+      "description": "4.1 确认目标环境中的整体回归通过，按 `AGENTS.local.md` 构建约定执行 `./build.sh --test`，并在匹配生产板环境构建诊断目标；完成条件是相关 CTest 通过，保留日志，并明确记录不可用的 clang-tidy/clangd 检查，而非宣称已完成静态检查。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 33
+    },
+    {
+      "id": "17",
+      "description": "4.2 确认生产板同版本数值一致，在 HZ-RK3576_WuKong 上运行旧参考与新路径的完整数值、租约和恢复对照；完成条件是模型、输入和系统 Runtime 校验通过，逐元素输入与指定恢复输出均通过一致性检查，正式部署保持原状。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 34
+    },
+    {
+      "id": "18",
+      "description": "4.3 确认预处理优化带来整体收益，在同生产板各预热至少两批、执行至少十对交替顺序 A/B 恢复，并记录其他窗口尺寸；完成条件是保存原始批次与环境，指定用例预处理中位数不高于旧路径的 20%，恢复中位数降低且 P95 不增加，未达标则明确标记失败。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 35
+    },
+    {
+      "id": "19",
+      "description": "4.4 给出可审核验收结论，在本变更下新增 `validation.md` 引用数值、生命周期、工作量和性能证据；完成条件是列出板卡、版本、模型/输入/代码身份、绝对耗时、比例及未运行检查，不把重建回放结论替代现场 388 ms 的分项测量。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 36
+    },
+    {
+      "id": "20",
+      "description": "4.5 确认交付符合限定范围，审查最终 diff 并执行 `openspec validate optimize-rk3576-nanotrack-window-preprocessing --strict`；完成条件是未修改公共算法、补帧策略、RKNN 输入提交和生产配置，规格与实际实现及验证证据一致。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 37
+    },
+    {
+      "id": "21",
+      "description": "5.1 统一性能判定与外部结论，在 `window_preprocess/performance_verdict.cpp` 提供共用函数，并让 `main.cpp` 使用它生成报告、状态文件和退出码；完成条件是原有三个门槛及报告格式保持一致。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 43
+    },
+    {
+      "id": "22",
+      "description": "5.2 覆盖性能失败及门槛边界，在 `window_preprocess/tests/` 增加固定统计测试；完成条件是比例 0.30、恢复中位数未降低、恢复 P95 增加均产生失败报告和退出码 1，20% 与 P95 相等边界及通过正例产生退出码 0，真实子进程再次核对退出状态。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 44
+    },
+    {
+      "id": "23",
+      "description": "5.3 保存 W2 修复证据，在已有 ARM64 容器构建相关目标并运行测试，将日志及代码身份补充到 `validation.md`；完成条件是说明历史测量与当前诊断源码的区别，并把正式重新验收交由独立验收流程完成。",
+      "done": true,
+      "sourcePath": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker/openspec/changes/optimize-rk3576-nanotrack-window-preprocessing/tasks.md",
+      "line": 45
+    }
+  ],
+  "taskTrackingConfigured": true,
+  "state": "all_done",
+  "instruction": "All tracked tasks are complete.\nReview or verify the change as appropriate before archiving.",
+  "context": "Write all artifacts in Simplified Chinese.\n\nTreat every artifact as a standalone document. Do not assume that the reader\nhas read the conversation or understands the implementation.\n\nPreserve exact identifiers and normative terms when required, but explain\ntheir role in plain language at their first meaningful use.\n",
+  "root": {
+    "path": "/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker",
+    "source": "nearest"
+  }
+}

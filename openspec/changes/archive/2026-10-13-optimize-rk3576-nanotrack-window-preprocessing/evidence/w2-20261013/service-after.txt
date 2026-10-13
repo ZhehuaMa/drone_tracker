@@ -1,0 +1,4 @@
+MainPID=6107
+ActiveState=active
+SubState=running
+/opt/drone_tracker/releases/bundle-20260927T075028Z-3213

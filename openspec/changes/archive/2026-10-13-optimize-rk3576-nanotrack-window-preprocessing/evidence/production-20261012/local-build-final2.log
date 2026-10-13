@@ -1,0 +1,30 @@
+Starting >>> drone_tracker
+--- stderr: drone_tracker
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/window_preprocess/CMakeFiles/nanotrack_window_tests.dir/compiler_depend.make' has modification time 0.0036 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/window_preprocess/CMakeFiles/nanotrack_window_recovery.dir/compiler_depend.make' has modification time 0.0039 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/baseline/libnanotrack_baseline_runner.a' has modification time 0.02 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/baseline/libnanotrack_baseline_runner.a' has modification time 0.019 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/baseline/libnanotrack_baseline_runner.a' has modification time 0.018 s in the future
+gmake[2]: Warning: File 'tests/nanotracev3_performance_benchmarks/baseline/libnanotrack_baseline_runner.a' has modification time 0.018 s in the future
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+/work/ros2_ws/src/drone_tracker/tests/nanotracev3_performance_benchmarks/window_preprocess/tests/recovery_test.cpp: In function ‘void {anonymous}::timingChecks()’:
+/work/ros2_ws/src/drone_tracker/tests/nanotracev3_performance_benchmarks/window_preprocess/tests/recovery_test.cpp:125:18: error: redeclaration of ‘window_preprocess::Recorder invalid’
+  125 |     wp::Recorder invalid{clock};
+      |                  ^~~~~~~
+/work/ros2_ws/src/drone_tracker/tests/nanotracev3_performance_benchmarks/window_preprocess/tests/recovery_test.cpp:84:18: note: ‘window_preprocess::Recorder invalid’ previously declared here
+   84 |     wp::Recorder invalid;
+      |                  ^~~~~~~
+gmake[2]: *** [tests/nanotracev3_performance_benchmarks/window_preprocess/CMakeFiles/nanotrack_window_tests.dir/build.make:76: tests/nanotracev3_performance_benchmarks/window_preprocess/CMakeFiles/nanotrack_window_tests.dir/tests/recovery_test.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:2636: tests/nanotracev3_performance_benchmarks/window_preprocess/CMakeFiles/nanotrack_window_tests.dir/all] Error 2
+gmake[1]: *** Waiting for unfinished jobs....
+gmake[2]: warning:  Clock skew detected.  Your build may be incomplete.
+gmake: *** [Makefile:146: all] Error 2
+---
+Failed   <<< drone_tracker [3.38s, exited with code 2]
+
+Summary: 0 packages finished [3.47s]
+  1 package failed: drone_tracker
+  1 package had stderr output: drone_tracker
