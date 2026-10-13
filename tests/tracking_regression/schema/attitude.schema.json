@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "source_header_us",
+    "bag_storage_ns",
+    "relative_us",
+    "source_cdr_sha256",
+    "orientation"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "source_header_us": {
+      "type": "integer"
+    },
+    "bag_storage_ns": {
+      "type": "integer"
+    },
+    "relative_us": {
+      "type": "integer"
+    },
+    "orientation": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "number"
+      }
+    },
+    "source_cdr_sha256": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

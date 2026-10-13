@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "required": [
+    "metric_version",
+    "unit",
+    "window",
+    "sample_count",
+    "availability",
+    "reason"
+  ],
+  "properties": {
+    "metric_version": {
+      "const": 1
+    },
+    "sample_count": {
+      "type": "integer"
+    },
+    "availability": {
+      "enum": [
+        "available",
+        "no_event",
+        "incomplete",
+        "not_applicable"
+      ]
+    }
+  }
+}

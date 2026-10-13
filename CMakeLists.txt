@@ -144,6 +144,7 @@ install(DIRECTORY
 )
 
 if(DRONE_TRACKER_BUILD_TESTS AND DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
+    add_subdirectory(tests/tracking_regression)
     include(src/platform/rk3576/sc233hgs_camera_tests.cmake)
     add_executable(cpu_affinity_tests src/platform/rk3576/tests/cpu_affinity_test.cpp)
     target_link_libraries(cpu_affinity_tests PRIVATE cpu_affinity)

@@ -37,6 +37,7 @@ struct Trace {
     std::atomic<int> templates{}, searches{}, fail_templates{}, fail_searches{}, search_delay_ms{};
     std::atomic<int> preprocess_error{}, template_error{static_cast<int>(model::ModelError::ExecutionFailure)};
     bool throw_template{};
+    bool fail_yolo_prepare{}, throw_yolo_infer{};
     std::atomic<float> target_x{32.0f};
     std::mutex mutex{};
     std::condition_variable cv{};
@@ -120,9 +121,13 @@ private:
 };
 class Session final : public YoloFrameSession {
 public:
-    explicit Session(ModelInputContract contract) : contract_{std::move(contract)} {}
+    explicit Session(ModelInputContract contract, std::shared_ptr<Trace> trace)
+        : contract_{std::move(contract)}, trace_{std::move(trace)} {}
     cv::Size sourceSize() const noexcept override { return {100, 80}; }
     PreprocessResult<YoloPreparedRegion> prepare(const cv::Rect &region) override {
+        if (trace_->fail_yolo_prepare) {
+            return PreprocessResult<YoloPreparedRegion>::failure(PreprocessError::EmptyFrame, "injected rejection");
+        }
         const cv::Size size{region.empty() ? sourceSize() : region.size()};
         return {
             YoloPreparedRegion{std::make_shared<Input>(contract_), calculateLetterboxTransform(size, {64, 64}).value}};
@@ -130,6 +135,7 @@ public:
 
 private:
     ModelInputContract contract_;
+    std::shared_ptr<Trace> trace_;
 };
 class YoloPre final : public YoloPreprocessor {
 public:
@@ -137,7 +143,7 @@ public:
     PreprocessResult<std::unique_ptr<YoloFrameSession>> beginFrame(const FrameRef &,
                                                                    const ModelInputContract &c) override {
         ++lifetime_.trace->begins;
-        return {std::make_unique<Session>(c)};
+        return {std::make_unique<Session>(c, lifetime_.trace)};
     }
 
 private:
@@ -187,6 +193,7 @@ public:
     model::Result<model::YoloPrediction> infer(const PreparedInputRef &) override {
         auto &t{*lifetime_.trace};
         ++t.calls;
+        if (t.throw_yolo_infer) { throw std::runtime_error{"injected inference failure"}; }
         ++t.active;
         {
             std::unique_lock<std::mutex> lock{t.mutex};
@@ -335,6 +342,35 @@ void report(const diagnostics::SharedRegion &region, const std::string &name, co
     const std::string timeline{std::istreambuf_iterator<char>{input}, {}};
     require(timeline.find(expected) != std::string::npos, "中文报告与注入事实不一致");
     std::filesystem::remove_all(directory);
+}
+void testActualInferenceObservation() {
+    for (int failure{0}; failure < 3; ++failure) {
+        Recording recording{diagnostics::Mode::Basic};
+        auto trace{std::make_shared<Trace>()};
+        trace->fail_yolo_prepare = failure == 1;
+        trace->throw_yolo_infer = failure == 2;
+        YoloV8Detector detector{std::make_unique<Yolo>(trace), std::make_unique<YoloPre>(trace),
+            0.5f, 0.45f, 0, 1.0f};
+        require(detector.init(), "inference observation detector init");
+        require(detector.request(context(1).frame, 1), "inference observation request");
+        YoloResult result{};
+        const auto deadline{std::chrono::steady_clock::now() + std::chrono::seconds{2}};
+        bool read{};
+        while (!(read = detector.get_result(result)) && std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::yield();
+        }
+        detector.stop();
+        require(read, "inference observation result timeout");
+        int observed{}, stages{};
+        for (const auto &value : captured(*recording.region)) {
+            if (value.type == diagnostics::Type::DetectStage) {
+                ++stages;
+                observed += (value.flags & diagnostics::Observed) != 0;
+            }
+        }
+        require(stages > 0 && observed == trace->calls.load(), "stage count is not actual inference count");
+        require(failure == 1 ? observed == 0 : observed > 0, "inference attempted marker incorrect");
+    }
 }
 void testHistoryMissAndPartialCatchup() {
     for (bool evicted : {false, true}) {
@@ -711,6 +747,7 @@ int main(int argc, char **argv) {
     try {
         require(argc == 2, "inspector argument");
         inspector = argv[1];
+        testActualInferenceObservation();
         testLatestFrames();
         testTimeAndPublication();
         testUnknownFrameTime();

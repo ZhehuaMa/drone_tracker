@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "case_id",
+    "runs",
+    "comparison_group"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "case_id": {
+      "const": "wlcb-1513-loss-recovery"
+    },
+    "runs": {
+      "type": "array",
+      "minItems": 3
+    },
+    "comparison_group": {
+      "type": "object"
+    }
+  }
+}

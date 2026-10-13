@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "fixture_frame_id",
+    "source_frame_id",
+    "driver_sequence",
+    "source_timestamp_us",
+    "pts_us",
+    "relative_us",
+    "pixel_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "fixture_frame_id": {
+      "type": "integer"
+    },
+    "source_frame_id": {
+      "type": "integer"
+    },
+    "driver_sequence": {
+      "type": "integer"
+    },
+    "source_timestamp_us": {
+      "type": "integer"
+    },
+    "pts_us": {
+      "type": "integer"
+    },
+    "relative_us": {
+      "type": "integer"
+    },
+    "pixel_sha256": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

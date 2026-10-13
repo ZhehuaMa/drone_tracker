@@ -362,6 +362,8 @@ void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &re
         return;
     }
     try {
+        // Observed marks an actual inference attempt, including a thrown model call.
+        m_stage.flags |= diagnostics::Observed;
         const auto output{model_->infer(prepared.value.input)};
         if (!output) {
             m_stage.reason = diagnostics::Reason::InferenceException;

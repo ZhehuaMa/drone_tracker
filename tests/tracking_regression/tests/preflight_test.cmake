@@ -1,0 +1,30 @@
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/regression-invalid-preflight")
+execute_process(COMMAND "${REGRESSION_PROGRAM}" missing-fixture missing-config
+    "${CMAKE_CURRENT_BINARY_DIR}/regression-invalid-preflight" unused-socket
+    RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(result EQUAL 0 OR NOT error MATCHES "preflight certificate required")
+    message(FATAL_ERROR "Unverified input was not rejected before model loading: ${result} ${output} ${error}")
+endif()
+
+# Exercise the actual entry's model mapping checks without loading any model.
+set(fixture "${CMAKE_CURRENT_BINARY_DIR}/regression-model-preflight-fixture")
+file(MAKE_DIRECTORY "${fixture}")
+file(WRITE "${fixture}/fixture.json" "{}")
+file(WRITE "${fixture}/model.rknn" "different synthetic model bytes")
+file(WRITE "${fixture}/algorithm.yaml" "{\"parameters\":{\"tracker.yolo_engine\":\"${fixture}/model.rknn\"},\"models\":{\"tracker.yolo_engine\":{\"path\":\"${fixture}/model.rknn\",\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000000\"}}}")
+file(SHA256 "${fixture}/fixture.json" fixture_hash)
+file(SHA256 "${fixture}/algorithm.yaml" algorithm_hash)
+function(reject_model_mapping name mapping expected)
+    set(directory "${CMAKE_CURRENT_BINARY_DIR}/regression-model-${name}")
+    file(MAKE_DIRECTORY "${directory}")
+    file(WRITE "${directory}/preflight-fixture.json" "{\"schema_version\":1,\"files_verified\":true,\"fixture_sha256\":\"${fixture_hash}\",\"files\":{\"algorithm.yaml\":\"${algorithm_hash}\"}}")
+    file(WRITE "${directory}/config.json" "{\"model_paths\":${mapping}}")
+    execute_process(COMMAND "${REGRESSION_PROGRAM}" "${fixture}" "${directory}/config.json"
+        "${directory}" unused-socket RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+    if(result EQUAL 0 OR NOT error MATCHES "${expected}")
+        message(FATAL_ERROR "${name}: model mapping not rejected before loading: ${result} ${output} ${error}")
+    endif()
+endfunction()
+reject_model_mapping(unknown "{\"unknown_model\":\"${fixture}/model.rknn\"}" "unknown frozen model parameter")
+reject_model_mapping(relative "{\"tracker.yolo_engine\":\"relative.rknn\"}" "model content mismatch before loading")
+reject_model_mapping(content "{}" "model content mismatch before loading")

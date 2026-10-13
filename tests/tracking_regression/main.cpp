@@ -1,0 +1,176 @@
+#include "realtime_source.h"
+
+#include <fstream>
+#include <iostream>
+#include <stdexcept>
+#include "drone_tracker_node.h"
+#include "diagnostics/measurement.h"
+#include "platform/cpu_affinity.h"
+#include "platform/file_identity.h"
+#include <yaml-cpp/yaml.h>
+
+/** @brief Test-only access invokes the same production callback and observes lifecycle state. */
+struct DroneTrackerNodeTestAccess {
+    static void attitude(DroneTrackerNode &node, sensor_msgs::msg::Imu::SharedPtr message) {
+        node.imu_callback(std::move(message));
+    }
+    static bool idle(const DroneTrackerNode &node) {
+        return node.run_state_.load() == DroneTrackerNode::RunState::Idle;
+    }
+};
+namespace tracking_regression {
+namespace {
+class RegressionFactory final : public PlatformFactory {
+public:
+    explicit RegressionFactory(std::unique_ptr<RealtimeSource> source)
+        : prepared_source_{std::move(source)}, production_{CreatePlatformFactory()} {}
+    PlatformResult<std::unique_ptr<FrameSource>> createFrameSource(const FrameSourceConfig &) override {
+        return {std::move(prepared_source_)};
+    }
+    PlatformResult<std::unique_ptr<FrameBuilder>> createFrameBuilder() override {
+        return production_->createFrameBuilder();
+    }
+    PlatformResult<TrackerComponents> createTrackerComponents(const ModelPaths &paths) override {
+        return production_->createTrackerComponents(paths);
+    }
+
+private:
+    std::unique_ptr<RealtimeSource> prepared_source_{};
+    std::unique_ptr<PlatformFactory> production_{};
+
+};
+rclcpp::Parameter parameter(const std::string &name, const YAML::Node &value) {
+    const std::string text{value.Scalar()};
+    if (text == "true" || text == "false") { return {name, value.as<bool>()}; }
+    if (!text.empty() && text.find_first_not_of("-0123456789") == std::string::npos) {
+        return {name, value.as<std::int64_t>()};
+    }
+    if (!text.empty() && text.find_first_not_of("-+.0123456789eE") == std::string::npos && text.find('.') != std::string::npos) {
+        return {name, value.as<double>()};
+    }
+    return {name, text};
+}
+} // namespace
+} // namespace tracking_regression
+int main(int argc, char **argv) {
+    using namespace tracking_regression;
+    if (argc != 5) {
+        std::cerr << "Usage: rk3576_tracking_regression FIXTURE CONFIG OUTPUT DIAGNOSTIC_SOCKET\n";
+        return 2;
+    }
+    const char *measurement_directory{std::getenv("DRONE_TRACKER_ACCEPTANCE_DIRECTORY")};
+    std::unique_ptr<diagnostics::Measurement> measurements{};
+    if (measurement_directory) {
+        measurements = std::make_unique<diagnostics::Measurement>();
+        diagnostics::measurement = measurements.get();
+    }
+    try {
+        const std::filesystem::path fixture{argv[1]}, output{argv[3]};
+        if (!std::filesystem::exists(output / "preflight-fixture.json")) {
+            throw std::invalid_argument{"preflight certificate required; use run_batch.py before model loading"};
+        }
+        const auto certificate{YAML::LoadFile((output / "preflight-fixture.json").string())};
+        if (certificate["schema_version"].as<int>() != 1 || !certificate["files_verified"].as<bool>()
+            || certificate["fixture_sha256"].as<std::string>() != recordingFileIdentity((fixture / "fixture.json").string())) {
+            throw std::invalid_argument{"fixture: preflight certificate mismatch"};
+        }
+        for (const auto &file : certificate["files"]) {
+            const auto name{file.first.as<std::string>()};
+            if (recordingFileIdentity((fixture / name).string()) != file.second.as<std::string>()) {
+                throw std::invalid_argument{"fixture checksum changed after preflight: " + name};
+            }
+        }
+        for (const auto *name : {"input-clock.json", "input.jsonl", "source-completion.json", "preparation.json", "submissions.csv"}) {
+            if (std::filesystem::exists(output / name)) {
+                throw std::invalid_argument{std::string{"output already exists: "} + name};
+            }
+        }
+        cpu_affinity::initializeControl();
+        const auto config{YAML::LoadFile(argv[2])};
+        const auto algorithm{YAML::LoadFile(std::string{argv[1]} + "/algorithm.yaml")};
+        const auto model_paths{config["model_paths"]};
+        if (model_paths) {
+            for (const auto &entry : model_paths) {
+                const auto name{entry.first.as<std::string>()};
+                if (!algorithm["models"][name]) {
+                    throw std::invalid_argument{"model_paths: unknown frozen model parameter " + name};
+                }
+            }
+        }
+        // Verify the exact locations handed to production, before constructing any model.
+        for (const auto &entry : algorithm["models"]) {
+            const auto name{entry.first.as<std::string>()};
+            const auto recorded{entry.second["path"].as<std::string>()};
+            if (algorithm["parameters"][name].as<std::string>() != recorded) {
+                throw std::invalid_argument{"algorithm: parameter/model locator mismatch " + name};
+            }
+            const std::filesystem::path path{model_paths && model_paths[name]
+                ? model_paths[name].as<std::string>() : recorded};
+            if (!path.is_absolute()
+                || recordingFileIdentity(path.string()) != entry.second["sha256"].as<std::string>()) {
+                throw std::invalid_argument{"model content mismatch before loading: " + name};
+            }
+        }
+        SourceOptions options{};
+        options.fixture = argv[1]; options.output = argv[3];
+        options.queue_capacity = config["queue_capacity"].as<std::size_t>();
+        if (config["schema_version"].as<int>() != 2 || config["input_mode"].as<std::string>() != "predecode_all"
+            || config["prefetch_frames"]) {
+            throw std::invalid_argument{"configuration requires version 2 predecode_all without prefetch_frames"};
+        }
+        options.max_supply_lateness_us = config["max_supply_lateness_us"].as<std::uint64_t>();
+        options.clock_jump_tolerance_us = config["clock_jump_tolerance_us"].as<std::uint64_t>();
+        auto prepared_source{std::make_unique<RealtimeSource>(options)};
+        if (!prepared_source->prepare()) {
+            const auto reason{prepared_source->status().reason};
+            prepared_source->stop();
+            throw std::runtime_error{reason};
+        }
+        RealtimeSource *source{prepared_source.get()};
+        auto factory{std::make_unique<RegressionFactory>(std::move(prepared_source))};
+        std::vector<rclcpp::Parameter> parameters{};
+        for (const auto &entry : algorithm["parameters"]) {
+            const auto name{entry.first.as<std::string>()};
+            parameters.push_back(parameter(name, model_paths && model_paths[name] ? model_paths[name] : entry.second));
+        }
+        // Freeze test observations while preserving source algorithm parameters and geometry.
+        parameters.emplace_back("video_source", (options.fixture / "clip.mkv").string());
+        parameters.emplace_back("need_save", false);
+        parameters.emplace_back("recording.enabled", false);
+        parameters.emplace_back("visualized_result", false);
+        parameters.emplace_back("osd.enabled", false);
+        parameters.emplace_back("osd.timing_enabled", false);
+        parameters.emplace_back("use_history_timestamp", false);
+        parameters.emplace_back("use_sim_time", false);
+        parameters.emplace_back("diagnostics.mode", "basic");
+        parameters.emplace_back("diagnostics.socket", argv[4]);
+        int ros_argc{1};
+        rclcpp::init(ros_argc, argv);
+        auto node{std::make_shared<DroneTrackerNode>(rclcpp::NodeOptions{}.parameter_overrides(parameters), std::move(factory))};
+        // The callback borrows node during this scope, avoiding a source/node ownership cycle.
+        source->setAttitudeCallback([pointer = node.get()](sensor_msgs::msg::Imu::SharedPtr message) {
+            DroneTrackerNodeTestAccess::attitude(*pointer, std::move(message));
+        });
+        node->run();
+        rclcpp::executors::SingleThreadedExecutor executor{};
+        executor.add_node(node);
+        while (rclcpp::ok() && !DroneTrackerNodeTestAccess::idle(*node)) {
+            executor.spin_some();
+            std::this_thread::sleep_for(std::chrono::milliseconds{2});
+        }
+        node->stop();
+        const auto status{source->status()};
+        const bool complete{status.state == FrameSourceState::Eof && status.reason.empty()};
+        executor.remove_node(node);
+        node.reset();
+        if (measurement_directory) { diagnostics::exportMeasurement(measurement_directory); }
+        diagnostics::measurement = nullptr;
+        rclcpp::shutdown();
+        return complete ? 0 : 1;
+    } catch (const std::exception &error) {
+        diagnostics::measurement = nullptr;
+        std::cerr << "Regression failed: " << error.what() << '\n';
+        if (rclcpp::ok()) { rclcpp::shutdown(); }
+        return 1;
+    }
+}

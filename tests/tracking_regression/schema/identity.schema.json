@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "case_id",
+    "mode",
+    "comparison_group",
+    "code",
+    "clock",
+    "duration_us"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "case_id": {
+      "const": "wlcb-1513-loss-recovery"
+    },
+    "mode": {
+      "const": "realtime"
+    },
+    "comparison_group": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "required": [
+        "identity_version",
+        "fixture",
+        "attitude",
+        "models",
+        "algorithm",
+        "board",
+        "runtime",
+        "driver",
+        "system_library",
+        "dependencies",
+        "cpu_policy",
+        "workload",
+        "observation",
+        "test_driver",
+        "metric_schema",
+        "metric_calculator"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "identity_version": {
+          "type": "integer",
+          "const": 2
+        }
+      }
+    },
+    "code": {
+      "type": "object"
+    },
+    "clock": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "required": [
+        "m0_ns",
+        "e0_us"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "m0_ns": {
+          "type": "integer"
+        },
+        "e0_us": {
+          "type": "integer"
+        }
+      }
+    },
+    "duration_us": {
+      "const": 20000000
+    }
+  }
+}

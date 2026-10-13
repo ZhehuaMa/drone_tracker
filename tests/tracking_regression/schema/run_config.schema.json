@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "max_supply_lateness_us",
+    "queue_capacity",
+    "clock_jump_tolerance_us",
+    "ros_domain_id",
+    "input_mode"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "max_supply_lateness_us": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "queue_capacity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "clock_jump_tolerance_us": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "ros_domain_id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "model_paths": {
+      "type": "object",
+      "properties": {
+        "tracker.yolo_engine": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tracker.nano_template_backbone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tracker.nano_search_backbone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tracker.nano_head": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "input_mode": {
+      "type": "string",
+      "const": "predecode_all"
+    },
+    "workload": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_workload_processes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false
+}
