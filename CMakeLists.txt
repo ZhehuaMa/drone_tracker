@@ -164,6 +164,9 @@ if(DRONE_TRACKER_BUILD_TESTS AND DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
     add_test(NAME ros_video_generate_fixtures COMMAND ros_video_fixture_generator "${ROS_VIDEO_FIXTURES}")
     set_tests_properties(ros_video_generate_fixtures PROPERTIES FIXTURES_SETUP ros_video_files)
     add_test(NAME ros_video_tests COMMAND ros_video_tests)
+    add_test(NAME ros_continuous_camera_tests COMMAND ros_video_tests --continuous-camera)
+    set_tests_properties(ros_continuous_camera_tests PROPERTIES TIMEOUT 45
+        ENVIRONMENT "ROS_DOMAIN_ID=189;ROS_LOCALHOST_ONLY=1")
     add_test(NAME ros_initialization_tests COMMAND ${CMAKE_COMMAND}
         -DPROGRAM=$<TARGET_FILE:drone_tracker_node> -DOSD_BUILT=${DRONE_TRACKER_BUILD_OSD}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/ros_initialization_test.cmake)

@@ -307,12 +307,17 @@ void Storage::finish(const std::string &camera_summary) {
     if (camera["failed"].as<bool>()) { outcome = s.frame_count ? "camera_failed" : "camera_warmup_failed"; }
     else if (!s.frame_count) { outcome = "cancelled_before_first_frame"; }
     s.syncFile(s.events.value);
-    s.marker("complete.json", "{\"outcome\":" + quote(outcome) + ",\"video_success\":"
+    s.marker("complete.json", "{\"outcome\":" + quote(outcome)
+        + ",\"end_reason\":" + quote(camera["end_reason"] ? camera["end_reason"].as<std::string>() : "source_stopped") + ",\"video_success\":"
         + (outcome == "complete" ? "true" : "false") + ",\"frames\":" + std::to_string(s.frame_count)
         + ",\"accepted\":" + std::to_string(s.status.accepted.load())
         + ",\"attempted\":" + std::to_string(s.status.attempts.load())
         + ",\"dropped\":" + std::to_string(s.status.dropped.load())
-        + ",\"cancelled\":" + std::to_string(s.status.cancelled.load()) + "}");
+        + ",\"cancelled\":" + std::to_string(s.status.cancelled.load())
+        + ",\"first_accepted_sequence\":" + (s.status.first_accepted_known.load(std::memory_order_acquire)
+            ? std::to_string(s.status.first_accepted_sequence) : "null")
+        + ",\"first_accepted_timestamp_us\":" + (s.status.first_accepted_known.load(std::memory_order_acquire)
+            ? std::to_string(s.status.first_accepted_timestamp_us) : "null") + "}");
     s.finished = true;
 }
 } // namespace rk3576::recording

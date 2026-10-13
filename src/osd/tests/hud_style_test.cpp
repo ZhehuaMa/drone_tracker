@@ -124,6 +124,19 @@ int main(int argc, char **argv) {
             require(cv::imwrite(std::string{argv[1]} + "/hud-normal.png", normal.hud), "normal HUD snapshot");
             require(cv::imwrite(std::string{argv[1]} + "/target-normal.png", normal.target), "normal target snapshot");
         }
+        auto preview{state};
+        preview.has_tracking_result = false;
+        preview.mission_active = true;
+        preview.telemetry.warning = "FAILSAFE";
+        for (auto phase : {osd::TrackingPhase::Idle, osd::TrackingPhase::Starting, osd::TrackingPhase::Failed}) {
+            preview.tracking_phase = phase;
+            equivalent(legacy, cached, preview, geometry, 720, 480, time);
+            const auto layers{legacy.draw(preview, geometry, 720, 480, time)};
+            require(opaque(layers.target, {0, 0, 720, 480}) == 0, "preview target decoration remains");
+            require(opaque(layers.hud, {250, 360, 200, 25}) > 0, "tracking phase hint hidden by mission");
+            require(opaque(layers.hud, {200, 390, 220, 30}) > 0, "preview warning disappeared");
+        }
+        equivalent(legacy, cached, state, geometry, 720, 480, time);
         osd::PresentationState alert{state};
         alert.sequence = 150;
         alert.telemetry.battery.value = osd::Battery{20.1, 4.3, 1.f - 10400.f / 13000.f, 10400, 3.35};

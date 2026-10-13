@@ -52,6 +52,9 @@ public:
         std::atomic<std::uint64_t> encoded{0}, written{0}, synced{0};
         std::atomic<std::uint64_t> total_bytes{0}, free_bytes{0};
         std::atomic<std::int64_t> first_input_mono_us{0}, latest_frame_us{0};
+        std::atomic<bool> first_accepted_known{false};
+        std::int64_t first_accepted_timestamp_us{}, first_accepted_monotonic_us{};
+        std::uint32_t first_accepted_sequence{};
         std::atomic<std::int64_t> last_idr_mono_us{0}, last_synced_frame_us{0};
         std::atomic<std::int64_t> last_sync_mono_us{0}, sync_started_us{0}, sync_duration_us{0};
         std::array<Event, 512> events{};
@@ -169,11 +172,16 @@ public:
         std::int64_t unset{0};
         header_->first_input_mono_us.compare_exchange_strong(unset, now);
         if (pending_ >= 0 && header_->stop_accepting.load(std::memory_order_acquire)) {
-            header_->slots[pending_].state.store(State::Empty, std::memory_order_release);
-            pending_ = -1;
-            pending_stopped_ = true;
+            cancel();
+            return;
         }
         if (pending_ >= 0) {
+            if (!header_->first_accepted_known.load(std::memory_order_relaxed)) {
+                header_->first_accepted_timestamp_us = pending_identity_.timestamp_us;
+                header_->first_accepted_monotonic_us = now;
+                header_->first_accepted_sequence = pending_identity_.sequence;
+                header_->first_accepted_known.store(true, std::memory_order_release);
+            }
             header_->slots[pending_].state.store(State::Ready, std::memory_order_release);
             ++statistics_.published;
             header_->accepted.fetch_add(1, std::memory_order_relaxed);

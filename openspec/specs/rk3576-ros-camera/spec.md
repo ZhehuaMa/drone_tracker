@@ -12,11 +12,11 @@
 
 相机 SHALL 要求 use_history_timestamp=false、use_sim_time=false。`need_save` SHALL 仅控制 ROS bag 消息记录，不得因其为 true 而拒绝相机初始化。模型路径 SHALL 遵守现有四文件角色规则。camera.fx/fy/cx/cy SHALL 全部显式且有限，fx/fy SHALL 为正；它们表示实际图像像素坐标中的焦距和主点，MUST NOT 再按输出尺寸缩放。运行期修改输入、模式、频率、内参、模型、算法、时钟、记录及传感器型号配置 SHALL 明确拒绝。
 
-录像 SHALL 使用独立的 `recording.*` 启动参数并遵守 `rk3576-camera-recording`。仅 SC233HGS 相机 SHALL 实际启用 `recording.enabled=true` 指定的原画面录像。RK3576 AR0234 或视频输入设置该值时，节点 SHALL 完成初始化，并在 ON 后明确报告该录像不受支持，不得静默宣称已录像。SC233HGS 的录像专属配置无效时，节点 SHALL 完成初始化，并在 ON 后报告该轮录像失败。运行期修改 `recording.*` SHALL 明确拒绝。关闭录像 SHALL 保持现有输入行为，不创建录像进程或视频文件。新录像 MUST NOT 自动打开 ROS bag。
+录像 SHALL 使用独立的 `recording.*` 启动参数并遵守 `rk3576-camera-recording`。仅 SC233HGS 相机 SHALL 实际启用 `recording.enabled=true` 指定的原画面录像。RK3576 AR0234 或视频输入设置该值时，节点 SHALL 完成初始化，并在 ON 后明确报告该录像不受支持，不得静默宣称已录像。SC233HGS 的录像专属配置无效时，节点 SHALL 完成初始化，并在 ON 后报告该轮录像失败。运行期修改 `recording.*` SHALL 明确拒绝。关闭录像 SHALL 保持相机配置及其模式，不创建录像进程或视频文件。持续预览模式指 RK3576 正式相机输入且 osd.enabled=true。该模式 SHALL 初始化成功后自动采集并显示，跟踪和记录仍等待 ON。osd.enabled=false SHALL 保持原 ON/OFF 采集行为。新录像 MUST NOT 自动打开 ROS bag。
 
 #### Scenario: 合法软件模式
 - **WHEN** 配置 `sensor_model=ar0234`、1920×1200、设备 fps=60、software_trigger、trigger_rate_hz=20，以及合法模型与内参
-- **THEN** 初始化后等待 ON，不自动拍摄，不把触发频率当作设备 fps
+- **THEN** osd.enabled=false 时初始化后等待 ON，不自动拍摄，不把触发频率当作设备 fps
 
 #### Scenario: 多位设备号
 - **WHEN** video_source=video10 或 /dev/video10 且设备满足其余配置
@@ -28,7 +28,7 @@
 
 #### Scenario: 记录请求
 - **WHEN** 相机配置 need_save=true
-- **THEN** 初始化成功并等待 ON；ON 后尝试创建 ROS bag，不因此启动相机视频录像
+- **THEN** 初始化成功并等待 ON 启动记录；持续预览可先显示，ON 后尝试创建 ROS bag，不因此启动相机视频录像
 
 #### Scenario: 运行期改频率
 - **WHEN** 已初始化的节点收到修改 mv_camera.trigger_rate_hz 的参数请求
@@ -36,7 +36,7 @@
 
 #### Scenario: 合法 SC233HGS 连续配置
 - **WHEN** 配置 `sensor_model=sc233hgs`、capture_mode=continuous、trigger_rate_hz=0，以及合法模型与内参
-- **THEN** 初始化后等待 ON，不发送任何触发命令，不要求提供触发相关参数
+- **THEN** 初始化后跟踪等待 ON；osd.enabled=true 时自动预览，否则采集也等待 ON；不发送任何触发命令，不要求提供触发相关参数
 
 #### Scenario: SC233HGS 配置软件触发被拒绝
 - **WHEN** 配置 `sensor_model=sc233hgs` 且 capture_mode=software_trigger
@@ -48,7 +48,7 @@
 
 #### Scenario: 独立录像配置
 - **WHEN** SC233HGS 相机配置 need_save=true、recording.enabled=true 且录像配置合法
-- **THEN** 节点完成初始化并等待 ON；ON 后分别尝试 bag 与原画面录像，视频录像不受 visualized_result 或 OSD 开关影响
+- **THEN** 节点完成初始化，跟踪与记录等待 ON；持续预览自动显示，ON 后分别尝试 bag 与原画面录像，视频录像不受 visualized_result 或 OSD 开关影响
 
 #### Scenario: 运行中修改录像周期
 - **WHEN** 节点运行中请求修改 recording.sync_interval_ms
@@ -62,20 +62,26 @@
 - **WHEN** Jetson 输入配置 recording.enabled=true
 - **THEN** 仍按 Jetson 既有规则拒绝该配置，不因 RK3576 的记录拆分改变参考实现
 
+#### Scenario: AR0234 持续预览
+- **WHEN** 合法 AR0234 软件采集配置显式 osd.enabled=true，尚未 ON
+- **THEN** 服务开流后按配置周期采集并输出预览，但不调用检测跟踪；话题 OFF 不停止传感器周期采集
+
 ### Requirement: ON 和 OFF 控制完整运行轮次
 
-ON SHALL 启动整轮采集与跟踪，MUST NOT 解释为单次拍照命令。软件模式 SHALL 在采集就绪后开始周期触发。连续模式 SHALL 不发送触发命令。OFF SHALL 停止后续触发并结束本轮，重复 ON 不增加工作线程，空闲 OFF 安全。启动失败 SHALL 回滚已有资源。首帧超时 SHALL 遵守相机帧源契约。
+非持续预览模式的 ON SHALL 启动整轮采集与跟踪，MUST NOT 解释为单次拍照命令。软件模式 SHALL 在采集就绪后开始周期触发。连续模式 SHALL 不发送触发命令。OFF SHALL 停止后续触发并结束本轮，重复 ON 不增加工作线程，空闲 OFF 安全。启动失败 SHALL 回滚已有资源。首帧超时 SHALL 遵守相机帧源契约。
 
-新轮 SHALL 清空旧队列、统计和跟踪状态，建立新时间基准。模型 SHALL 跨轮复用。收尾 SHALL 清除旧检测请求和结果，并等待在途模型访问结束。相机不报告文件 EOF；普通设备失败后的下一次 ON SHALL 重新打开核验设备。
+非持续预览模式的新轮 SHALL 清空旧队列、统计和跟踪状态，建立新时间基准。模型 SHALL 跨轮复用。收尾 SHALL 清除旧检测请求和结果，并等待在途模型访问结束。相机不报告文件 EOF；普通设备失败后的下一次 ON SHALL 重新打开核验设备。
 
-SC233HGS 每轮 SHALL 遵守 `rk3576-sc233hgs-camera-frame-source` 的有界启动预热。预热是交付图像前的时间递增观察期。预热观察帧 MUST NOT 提交算法，也 MUST NOT 产生对应的检测框或图像消息。预热阶段 SHALL 能响应 OFF，不等待预热期限结束。预热未稳定或致命元数据错误 SHALL 作为相机失败结束本轮，MUST NOT 伪装成算法 TargetLost。预热 SHALL 只增加内部诊断阶段，不改变四个 TrackerState 数值或六个业务话题。AR0234、Jetson 与视频 SHALL 保持原启停和时间语义。
+非持续预览模式 SC233HGS 每轮 SHALL 遵守 `rk3576-sc233hgs-camera-frame-source` 的有界启动预热。预热是交付图像前的时间递增观察期。预热观察帧 MUST NOT 提交算法，也 MUST NOT 产生对应的检测框或图像消息。预热阶段 SHALL 能响应 OFF，不等待预热期限结束。预热未稳定或致命元数据错误 SHALL 作为相机失败结束本轮，MUST NOT 伪装成算法 TargetLost。预热 SHALL 只增加内部诊断阶段，不改变四个 TrackerState 数值或六个业务话题。非持续预览 AR0234、Jetson 与视频 SHALL 保持原启停和时间语义。
 
-启用录像时，每次 ON SHALL 尝试建立独立录像会话，从相机完成归还、停止及预热期限最终检查后的合格帧边界开始录制，包括没有目标的期间。OFF SHALL 停止录像接收并结束该会话，不继续采集。重复 ON MUST NOT 创建第二个录像会话。录像专属配置无效或不受支持、录像资源故障或运行故障 SHALL 只使该轮录像失败并报告，MUST NOT 阻止节点初始化或停止仍健康的采集、跟踪或 OSD。其他相机、模型及跟踪配置仍按原规则校验。相机/跟踪本身故障 SHALL 按原规则结束整轮。录像收尾 SHALL 有有限等待预算并与相机停止、模型等待分别报告；超时 MUST NOT 无限阻塞 ON/OFF。
+非持续预览模式启用录像时，每次 ON SHALL 尝试建立独立录像会话，从相机完成归还、停止及预热期限最终检查后的合格帧边界开始录制，包括没有目标的期间。OFF SHALL 停止录像接收并结束该会话，不继续采集。重复 ON MUST NOT 创建第二个录像会话。录像专属配置无效或不受支持、录像资源故障或运行故障 SHALL 只使该轮录像失败并报告，MUST NOT 阻止节点初始化或停止仍健康的采集、跟踪或 OSD。其他相机、模型及跟踪配置仍按原规则校验。相机/跟踪本身故障 SHALL 按原规则结束整轮。录像收尾 SHALL 有有限等待预算并与相机停止、模型等待分别报告；超时 MUST NOT 无限阻塞 ON/OFF。
 
-录像准备与相机预热 SHALL 使用独立起点和预算；录像准备耗时 MUST NOT 缩短开流后的预热期限。预热中 OFF 或失败 SHALL 按 `rk3576-camera-recording` 保存零帧取消或失败结果，不伪造视频。录像时间起点及基于视频输入的健康检查 SHALL 从合格帧边界建立，MUST NOT 把等待预热误报为编码或持久化停滞。
+非持续预览模式录像准备与相机预热 SHALL 使用独立起点和预算；录像准备耗时 MUST NOT 缩短开流后的预热期限。预热中 OFF 或失败 SHALL 按 `rk3576-camera-recording` 保存零帧取消或失败结果，不伪造视频。录像时间起点及基于视频输入的健康检查 SHALL 从合格帧边界建立，MUST NOT 把等待预热误报为编码或持久化停滞。
+
+持续预览模式 ON SHALL 建立跟踪及显式启用的记录会话，MUST NOT 重开相机或重置流时间基准。OFF SHALL 先关闭任务与结果接收、清框并切无框预览，再安全收尾模型与记录。收尾 MUST NOT 阻塞预览或遥测。停止中 SHALL 仅保留最后期望 ON/OFF。SC233HGS SHALL 只在流启动时执行原预热，OFF MUST NOT 取消预热。相机故障 SHALL 非零退出，恢复不依赖 ON；跟踪故障 SHALL 结束本轮并保持健康预览。模型 SHALL 跨轮复用，旧访问结束前不得重置。
 
 #### Scenario: 首次启动失败后重试
-- **WHEN** 首次 ON 时设备不可用，设备恢复后再次 ON
+- **WHEN** 非持续预览模式首次 ON 时设备不可用，设备恢复后再次 ON
 - **THEN** 首轮无残留工作线程，第二轮重新打开设备并使用新轮状态
 
 #### Scenario: 检测中停止再启动
@@ -87,15 +93,15 @@ SC233HGS 每轮 SHALL 遵守 `rk3576-sc233hgs-camera-frame-source` 的有界启�
 - **THEN** 录像覆盖该轮预热后的合格采集期间，OFF 后停止接收，视频不包含检测框或 OSD
 
 #### Scenario: 预热中 OFF
-- **WHEN** SC233HGS 已开流但尚未输出合格帧时收到 OFF
+- **WHEN** 非持续预览 SC233HGS 已开流但尚未输出合格帧时收到 OFF
 - **THEN** 及时停止并回收本轮，不发布观察帧对应的框或图像，不因没有首帧误报预热失败
 
 #### Scenario: 预热失败后新轮
-- **WHEN** 一轮因时间重复未能在界限内稳定，清理后再次收到 ON
+- **WHEN** 非持续预览一轮因时间重复未能在界限内稳定，清理后再次收到 ON
 - **THEN** 新轮重新预热，旧轮无帧或失败状态不占用新轮时间基准，不自动发送 TargetLost
 
 #### Scenario: 录像准备后相机预热失败
-- **WHEN** 录像资源已准备，相机随后因预热未稳定结束本轮
+- **WHEN** 非持续预览录像资源已准备，相机随后因预热未稳定结束本轮
 - **THEN** 保留相机失败原因与零帧录像结果，有限回收录像资源，不把失败归因于编码器没有输出
 
 #### Scenario: 录像故障后下一轮重试
@@ -110,11 +116,23 @@ SC233HGS 每轮 SHALL 遵守 `rk3576-sc233hgs-camera-frame-source` 的有界启�
 - **WHEN** SC233HGS 配置 `recording.enabled=true`，但录像目录或码率无效，随后收到 ON
 - **THEN** 节点已完成初始化；本轮明确报告录像失败，健康的相机、跟踪和 HDMI 显示继续运行
 
+#### Scenario: 持续预览反复启停
+- **WHEN** 相机持续预览中反复 ON/OFF
+- **THEN** 相机只开流一次，视频时间递增，每次实际新轮重置跟踪且不混入旧结果，录像仍逐轮建立和结束
+
+#### Scenario: 持续预览预热中 OFF
+- **WHEN** 持续预览 SC233HGS 仍在合法预热且收到 OFF
+- **THEN** 跟踪和记录关闭，流预热继续，观察帧不提交任何像素输出，之后合格帧用于预览
+
+#### Scenario: 持续预览相机故障
+- **WHEN** 未发送 ON 的服务开流失败，或运行预览时相机失败
+- **THEN** 保存原因并安全非零退出，不等待下一次 ON 重开设备
+
 ### Requirement: 图像与预测消息保持原有语义
 
 系统 SHALL 保留输入 /fpv/gimbal（sensor_msgs/msg/Imu）、/fpv/odom（nav_msgs/msg/Odometry）、/fpv/tracker_trigger（std_msgs/msg/Header）。系统 SHALL 保留输出 /fpv/target_bbox（vision_msgs/msg/Detection2D）、/fpv/tracker_image（sensor_msgs/msg/Image）、/fpv/tracker_state（std_msgs/msg/Int8）。QoS，即消息队列与可靠性设置，SHALL 保持不变。
 
-节点 SHALL 取最新排队帧，保留其原尺寸像素与帧源时间。图像开启时 SHALL 发布独立 BGR8 图像，时间为原帧时间，绘图不修改共享灰度帧。框 SHALL 使用当前预测时刻，跟踪有效时 frame_id 为 camera_frame，否则为空。未消费帧 SHALL 保持既有不发布结果行为。姿态查询和缺姿态时的单位旋转 SHALL 保持现有规则。
+节点 SHALL 通过唯一帧源消费者取最新排队帧，保留其原尺寸像素与帧源时间。图像开启时 SHALL 发布独立 BGR8 图像，时间为原帧时间，绘图不修改共享灰度帧。框 SHALL 使用当前预测时刻，跟踪有效时 frame_id 为 camera_frame，否则为空。未消费帧 SHALL 保持既有不发布结果行为。持续预览帧 MUST NOT 产生检测框、状态或 /fpv/tracker_image。调试图像 SHALL 仍仅在 visualized_result=true 且当前轮次实际消费图像时发布；OFF 后旧轮不得启动新发布，已交给 ROS 中间件的消息允许延迟送达。姿态查询和缺姿态时的单位旋转 SHALL 保持现有规则。
 
 状态 SHALL 保持 Detecting=0、TargetFound=1、Tracking=2、TargetLost=3，仅变化时发布，每轮首次状态仍可发布。OFF 和设备失败 MUST NOT 被伪装为算法 TargetLost。没有曝光证据时 MUST NOT 宣称图像时间代表曝光时刻。
 
@@ -126,9 +144,13 @@ SC233HGS 每轮 SHALL 遵守 `rk3576-sc233hgs-camera-frame-source` 的有界启�
 - **WHEN** 两轮首次消费都处于 Detecting 且没有有效目标
 - **THEN** 每轮都可发布状态 0，框 frame_id 为空，不为验收伪造捕获
 
+#### Scenario: 预览不扩展 ROS 图像
+- **WHEN** 持续预览 visualized_result=true，ON 前和 OFF 后持续有图像
+- **THEN** HDMI 更新但没有新的业务输出；ON 有效消费窗口才按原时间和独立 BGR8 图像规则发布
+
 ### Requirement: 每轮故障和采集量可诊断
 
-节点 SHALL 报告相机终止原因、模式、请求/实际触发频率、调用错误、周期跳过、收到/入队/丢弃/消费帧数和时间来源。常规统计 SHALL 每秒最多汇总一次，结束时 SHALL 保存最终统计到输出日志，错误 SHALL 及时报告。相机停止耗时与整个节点停止耗时 SHALL 分别报告，模型推理等待不得隐藏。
+节点 SHALL 报告相机终止原因、模式、请求/实际触发频率、调用错误、周期跳过、收到/入队/丢弃/消费帧数和时间来源。常规统计 SHALL 每秒最多汇总一次，结束时 SHALL 保存最终统计到输出日志，错误 SHALL 及时报告。相机停止耗时与整个节点停止耗时 SHALL 分别报告，模型推理等待不得隐藏。持续预览 SHALL 分别报告流累计计数和轮次快照差值，ON/OFF MUST NOT 重置采集计数。诊断 SHALL 区分分发、跟踪待处理替换、实际消费及预览/配对显示量。OFF 接受、清框和模型/记录收尾 SHALL 分别计时。预热证据 SHALL 关联流启动而非伪造每轮重新预热。
 
 SC233HGS 诊断 SHALL 增加预热阶段、阈值、耗时、检查量、丢弃量、重复次数、最终连续计数和首个合格帧身份。收到的合格帧与全部成功出队 SHALL 使用不同计数。预热丢弃、终止处置、驱动序号缺口和队列满丢弃 SHALL 分别报告。未交付首帧时 SHALL 标记首帧时间未知，不输出伪造的零延迟。预热失败 SHALL 区分无帧超时、未稳定时间超限、检查量超限及致命元数据错误。
 
@@ -140,13 +162,19 @@ SC233HGS 诊断 SHALL 增加预热阶段、阈值、耗时、检查量、丢弃�
 - **WHEN** 一轮出队 11 帧后完成预热，其中 10 帧被观察丢弃且没有驱动缺帧
 - **THEN** 报告预热丢弃 10、合格帧 1、出队总量 11，不把预热丢弃计为驱动或队列丢帧
 
+#### Scenario: 一条流包含多轮跟踪
+- **WHEN** 持续预览流已采集 1000 帧，在其间完成两轮 ON/OFF
+- **THEN** 流累计采集保持 1000，两个跟踪轮分别报告窗口差值和消费量，OFF 期间预览采集不算作跟踪消费
+
 ### Requirement: ROS 实机验收不替代模型质量
 
-开发板 2 SHALL 对同一 YOLO 和纯 FP16、纯 INT8 两组 NanoTrack 模型分别完成软件及连续模式基础 ROS 检查。FP16/INT8 分别指 16 位浮点和八位整数；每组模板、搜索和 Head 文件采用同一精度。报告 SHALL 记录程序、模型、配置的文件指纹、设备身份及 Runtime/驱动版本。
+非持续预览模式开发板 2 SHALL 对同一 YOLO 和纯 FP16、纯 INT8 两组 NanoTrack 模型分别完成软件及连续模式基础 ROS 检查。FP16/INT8 分别指 16 位浮点和八位整数；每组模板、搜索和 Head 文件采用同一精度。报告 SHALL 记录程序、模型、配置的文件指纹、设备身份及 Runtime/驱动版本。
 
-固定 INT8 软件模式 SHALL 在同一节点进程完成至少 20 轮 ON/OFF，并额外至少 30 分钟持续负载。验收 SHALL 覆盖重复 ON/OFF、启动失败后恢复、采集失败、主动退出、图像开关、无目标消息与旧轮隔离。资源报告 SHALL 包含主机内存、线程和文件描述符；持续增长或停止失败 SHALL 解释并解决。相机实机停止 SHALL 在 1 秒内完成；节点整体停止 SHALL 单独测量。退出后 SHALL 核对设备占用和控制恢复。未测 NPU 设备内存 SHALL 明确标注。
+非持续预览固定 INT8 软件模式 SHALL 在同一节点进程完成至少 20 轮 ON/OFF，并额外至少 30 分钟持续负载。验收 SHALL 覆盖重复 ON/OFF、启动失败后恢复、采集失败、主动退出、图像开关、无目标消息与旧轮隔离。资源报告 SHALL 包含主机内存、线程和文件描述符；持续增长或停止失败 SHALL 解释并解决。服务退出或非持续预览模式停止相机 SHALL 在 1 秒内完成；节点整体停止 SHALL 单独测量。退出后 SHALL 核对设备占用和控制恢复。未测 NPU 设备内存 SHALL 明确标注。
 
 系统 SHALL 通过可控模型与真实公共算法验证状态转换和旧轮隔离。真实模型未捕获 SHALL 单独报告，MUST NOT 用降低阈值、改变类别或人工首框替代。前序回放 7.2、7.3 和 Jetson 等价性 MUST NOT 因本变更完成而标记通过。
+
+持续预览模式的新生命周期验收 SHALL 按 rk3576-continuous-hdmi-stream 在指定生产板完成，MUST NOT 用开发板 2 或历史长测替代。相机停止门槛 SHALL 仅用于真实停流，OFF SHALL 验证持续视频与清框。该模式 SHALL 遵守单次运行不超过 180 秒的定向计划。
 
 #### Scenario: 输入稳定但没有识别目标
 - **WHEN** 真实相机正确供帧、ROS 输出和资源检查通过，但真实模型一直未捕获
@@ -155,6 +183,10 @@ SC233HGS 诊断 SHALL 增加预热阶段、阈值、耗时、检查量、丢弃�
 #### Scenario: 只做短测
 - **WHEN** 20 Hz 完成有限触发检查，但尚未完成同进程启停和持续负载
 - **THEN** 保留对应验收任务未完成，不以历史 shell 测试替代新实现负载
+
+#### Scenario: 生产持续预览短测
+- **WHEN** 生产板完成新模式未触发预览、ON/OFF、联合负载和最终退出
+- **THEN** 报告生命周期、旧轮隔离与资源结果，同时保留模型质量、曝光时间和长期稳定性未验证的边界
 
 ### Requirement: 短时比较 bag 开关对跟踪和 HDMI 帧率的影响
 

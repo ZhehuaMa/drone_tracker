@@ -62,6 +62,9 @@ std::string formatTiming(const TimingWindow &window, RenderPath path) {
     out << "OSD timing round=" << window.round << " window_id=" << window.id << " window_us="
         << std::chrono::duration_cast<std::chrono::microseconds>(window.end - window.start).count()
         << " submitted=" << window.submitted << " replaced=" << window.replaced << " displayed=" << window.displayed
+        << " stream=" << window.stream << " preview_submitted=" << window.preview_submitted
+        << " tracking_submitted=" << window.tracking_submitted
+        << " preview_displayed=" << window.preview_displayed << " tracking_displayed=" << window.tracking_displayed
         << " rejected=" << window.rejected << " commits=" << window.commits << " unit=us quantiles=approx_pow2";
     for (std::size_t g{0}; g < window.groups.size(); ++g) {
         const auto &group{window.groups[g]};

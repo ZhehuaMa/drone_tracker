@@ -1,4 +1,9 @@
 #include "session.h"
+#include "metadata.h"
+#ifdef RECORDING_TEST_CAMERA_CONTROL
+#include "../sc233hgs_camera_frame_source.h"
+#include "../tests/camera_test_support.h"
+#endif
 
 #include <signal.h>
 #include <sys/prctl.h>
@@ -39,6 +44,7 @@ int fakeWorker() {
     }
     const auto identity{std::to_string(::getpid())};
     std::copy(identity.begin(), identity.end(), h.session_path.begin());
+    if (mode == "prepare_delay") { waitMilliseconds(150); }
     h.ready.store(true, std::memory_order_release);
     if (mode == "sync_timeout") {
         h.sync_started_us.store(RecordingSlots::monotonicUs() - 5000001);
@@ -69,6 +75,93 @@ std::size_t descriptorCount() {
     }
     return count;
 }
+void dispatcherBoundary() {
+    auto slots{std::make_shared<RecordingSlots>(8, 4, 1)};
+    SessionDispatcher dispatcher{};
+    dispatcher.attach(slots);
+    std::array<std::uint8_t, 48> pixels{};
+    CameraNv12View view{};
+    view.pixels = pixels.data(); view.available_bytes = pixels.size();
+    view.format.width = 8; view.format.height = 4; view.format.stride = 8;
+    view.timestamp_us = 123; view.sequence = 17;
+    dispatcher.stage(view);
+    std::weak_ptr<RecordingSlots> pinned{slots};
+    dispatcher.detach();
+    dispatcher.publish();
+    require(slots->header().accepted == 0 && slots->header().cancelled == 1,
+        "OFF between stage and publish accepted candidate");
+    slots.reset();
+    require(!pinned.expired(), "Frame visit lost session ownership");
+    dispatcher.finishFrame();
+    dispatcher.drain();
+    require(pinned.expired(), "Completed visit retained session");
+    auto second{std::make_shared<RecordingSlots>(8, 4, 2)};
+    dispatcher.attach(second);
+    dispatcher.stage(view); dispatcher.publish(); dispatcher.finishFrame();
+    require(second->header().accepted == 1, "Next session did not accept its own frame");
+    dispatcher.detach();
+    dispatcher.stage(view); dispatcher.publish(); dispatcher.finishFrame();
+    require(second->header().attempts == 1, "Closed dispatcher copied or submitted another frame");
+    FrameSourceStatus start{}, end{};
+    start.camera.dequeued_total = 100; start.read = 92;
+    end.camera.dequeued_total = 120; end.read = 112; end.state = FrameSourceState::Running;
+    const auto summary{YAML::Load(cameraSummary(end, start, 71, 2, "user_off"))};
+    require(summary["camera_running_at_end"].as<bool>() && summary["window_dequeued"].as<int>() == 20,
+        "Session snapshot changed Running camera or included preview history");
+}
+#ifdef RECORDING_TEST_CAMERA_CONTROL
+void liveCameraControl(const std::string &directory, const std::string &executable) {
+    auto config{configuration(directory, "prepare_delay")};
+    config.path = "/dev/test-camera";
+    config.width = 8; config.height = 4; config.fps = 60;
+    config.output_width = 0; config.output_height = 0;
+    config.trigger_mode = false; config.camera_trigger_rate_hz = 0;
+    config.camera_media_device = "/dev/test-media"; config.camera_sensor_entity = "sc233hgs test";
+    auto system{std::make_shared<camera_test::System>()};
+    system->nv12 = true; system->width = 8; system->height = 4; system->stride = 16;
+    system->frame_limit = 10000;
+    auto deps{camera_test::dependencies(system)};
+    deps.observe = [](const CameraSample &, const Ar0234CameraDiagnostic &) { waitMilliseconds(1); };
+    auto session{std::make_unique<Session>(config, executable)};
+    Sc233hgsCameraFrameSource source{config, deps, std::move(session)};
+    source.useSessionControl(71);
+    require(source.start(), "Managed capture did not start");
+    const auto await{[&](const std::function<bool()> &condition) {
+        const auto deadline{RecordingSlots::monotonicUs() + 2000000};
+        while (!condition() && RecordingSlots::monotonicUs() < deadline) { waitMilliseconds(2); }
+        require(condition(), "Managed recording control timeout");
+    }};
+    await([&] { return source.status().read > 3; });
+    require(source.status().recording.phase == "idle", "Preview prepared recording automatically");
+    source.requestRecording(1, true);
+    await([&] { return source.status().recording.phase == "preparing"; });
+    const auto before{source.status().read};
+    source.requestRecording(1, false);
+    await([&] { return source.status().recording.phase == "finished"; });
+    require(source.isRunning() && source.status().read > before && source.status().recording.accepted == 0,
+        "Cancelled preparation attached or stopped capture");
+    source.requestRecording(2, true);
+    await([&] { return source.status().recording.accepted > 0; });
+    const auto first{source.status().recording};
+    require(first.stream_id == 71 && first.tracking_round == 2, "Recording lost stream or tracking round");
+    source.requestRecording(2, false);
+    await([&] { return source.status().recording.phase == "finished"; });
+    const auto closed{source.status().recording.accepted};
+    const auto preview{source.status().read};
+    await([&] { return source.status().read > preview + 3; });
+    require(source.status().recording.accepted == closed, "OFF accepted new recording frames");
+    source.requestRecording(3, true);
+    await([&] { return source.status().recording.accepted > 0; });
+    const auto second{source.status().recording};
+    require(second.stream_id == first.stream_id && second.round != first.round && second.tracking_round == 3,
+        "Same stream reused a recording session identity");
+    source.requestRecording(3, false);
+    await([&] { return source.status().recording.phase == "finished"; });
+    require(system->counts["stream_on"] == 1, "Recording sessions reopened camera");
+    source.stop();
+    system->clean();
+}
+#endif
 void lifecycle(const std::string &directory, const std::string &executable) {
     CameraFormat format{}; format.width = 8; format.height = 4;
     const auto descriptors{descriptorCount()};
@@ -187,6 +280,10 @@ int main(int argc, char **argv) {
         std::array<char, 4096> path{};
         const auto size{::readlink("/proc/self/exe", path.data(), path.size() - 1)};
         require(size > 0, "Test executable unavailable");
+#ifdef RECORDING_TEST_CAMERA_CONTROL
+        liveCameraControl(argv[1], std::string{path.data(), static_cast<std::size_t>(size)});
+#endif
+        dispatcherBoundary();
         lifecycle(argv[1], std::string{path.data(), static_cast<std::size_t>(size)});
         std::cout << "20 lifecycle rounds, slot states, kill, recovery and bounded timeout tests passed\n";
         return 0;

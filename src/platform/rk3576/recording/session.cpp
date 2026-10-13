@@ -57,6 +57,7 @@ std::string configJson(const FrameSourceConfig &config, const CameraFormat &f, s
         << ",\"bitrate_bps\":" << c.bitrate_bps << ",\"segment_seconds\":" << c.segment_seconds
         << ",\"sync_interval_ms\":" << c.sync_interval_ms << ",\"max_total_bytes\":" << c.max_total_bytes
         << ",\"min_free_bytes\":" << c.min_free_bytes << ",\"round\":" << round
+        << ",\"stream_id\":" << c.stream_id << ",\"tracking_round\":" << c.tracking_round
         << ",\"width\":" << f.width << ",\"height\":" << f.height << ",\"stride\":" << f.stride
         << ",\"cpu_policy_version\":" << (policy.configured ? 1 : 0)
         << ",\"cpu_policy_mode\":" << quote(policy.configured
@@ -127,7 +128,7 @@ struct Session::Impl {
     FrameSourceConfig config{};
     std::string executable{};
     ReapProcess reap{};
-    std::unique_ptr<RecordingSlots> slots{};
+    std::shared_ptr<RecordingSlots> slots{};
     mutable std::mutex mutex{};
     std::thread monitor{};
     std::atomic<bool> monitor_stop{false};
@@ -137,6 +138,7 @@ struct Session::Impl {
     std::uint64_t round{};
     std::int64_t terminate_us{};
     CameraRecordingStatus record{};
+    FrameSourceStatus start_status{};
 
     Impl(FrameSourceConfig input, std::string worker, ReapProcess reap_process)
         : config{std::move(input)}, executable{std::move(worker)}, reap{std::move(reap_process)} {
@@ -184,7 +186,7 @@ struct Session::Impl {
         }
     }
     void spawn(const CameraFormat &format) {
-        slots = std::make_unique<RecordingSlots>(format.width, format.height, ++round);
+        slots = std::make_shared<RecordingSlots>(format.width, format.height, ++round);
         const auto text{configJson(config, format, round)};
         int config_fd{::memfd_create("recording-config", MFD_CLOEXEC)};
         std::array<int, 2> sockets{{-1, -1}};
@@ -279,6 +281,8 @@ void Session::start(const CameraFormat &format) noexcept {
             }
             impl_->spawn(format);
             impl_->record.round = impl_->round;
+            impl_->record.stream_id = impl_->config.camera_recording.stream_id;
+            impl_->record.tracking_round = impl_->config.camera_recording.tracking_round;
         }
         while (RecordingSlots::monotonicUs() - begin < 3000000) {
             {
@@ -302,9 +306,10 @@ void Session::start(const CameraFormat &format) noexcept {
     }
 }
 void Session::stopAccepting() noexcept {
+    std::lock_guard<std::mutex> lock{impl_->mutex};
     if (impl_->slots) { impl_->slots->header().stop_accepting.store(true, std::memory_order_release); }
 }
-void Session::stop(const FrameSourceStatus &camera) noexcept {
+void Session::stop(const FrameSourceStatus &camera, const std::string &reason) noexcept {
     if (!impl_->record.enabled) { return; }
     const auto begin{RecordingSlots::monotonicUs()};
     stopAccepting();
@@ -314,7 +319,8 @@ void Session::stop(const FrameSourceStatus &camera) noexcept {
         auto &h{impl_->slots->header()};
         if (h.stopping.load() && impl_->record.stop_us != 0) { return; }
         if (!h.stopping.load()) {
-            const auto text{cameraSummary(camera)};
+            const auto text{cameraSummary(camera, impl_->start_status,
+                impl_->config.camera_recording.stream_id, impl_->config.camera_recording.tracking_round, reason)};
             std::copy(text.begin(), text.end(), h.camera_summary.begin());
             h.summary_size.store(text.size(), std::memory_order_release);
             h.stopping.store(true, std::memory_order_release);
@@ -336,6 +342,16 @@ void Session::stop(const FrameSourceStatus &camera) noexcept {
     impl_->fail("Recording shutdown exceeded 3 seconds; old resources isolated");
     if (impl_->pid > 0) { ::kill(impl_->pid, SIGTERM); }
     impl_->record.stop_us = RecordingSlots::monotonicUs() - begin;
+}
+void Session::setContext(std::uint64_t stream, std::uint64_t tracking_round, FrameSourceStatus start) {
+    std::lock_guard<std::mutex> lock{impl_->mutex};
+    impl_->config.camera_recording.stream_id = stream;
+    impl_->config.camera_recording.tracking_round = tracking_round;
+    impl_->start_status = std::move(start);
+}
+std::shared_ptr<CameraNv12Sink> Session::sharedSink() noexcept {
+    std::lock_guard<std::mutex> lock{impl_->mutex};
+    return impl_->record.phase == "waiting_for_qualified_input" ? impl_->slots : nullptr;
 }
 CameraNv12Sink *Session::sink() noexcept {
     std::lock_guard<std::mutex> lock{impl_->mutex};

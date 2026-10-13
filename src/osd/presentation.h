@@ -60,13 +60,23 @@ struct DisplayBox {
     double x{}, y{}, width{}, height{};
     std::string label{};
 };
-/** @brief 一次消费结果的完整所有权包，状态数值与 TrackerState 一致。 */
+/** @brief Video stream and tracking round have independent lifetimes. */
+enum class PacketKind { Tracking, Preview };
+enum class TrackingPhase { Idle, Starting, Running, Stopping, Failed };
+/**
+ * @brief Owns one immutable image and its optional same-image algorithm result.
+ * stream/source_sequence identify the original image across ON/OFF. round identifies
+ * an algorithm run. control_version rejects work prepared before a mode transition.
+ * Preview packets have no tracker_state and cannot imply Detecting (state 0).
+ */
 struct PresentationPacket {
     FrameRef frame{};
     std::uint64_t round{}, sequence{}, frame_time_us{};
-    std::int8_t tracker_state{};
+    std::optional<std::int8_t> tracker_state{};
     std::vector<DisplayBox> boxes{};
     SteadyClock::time_point accepted{};
+    std::uint64_t stream{}, source_sequence{}, control_version{};
+    PacketKind kind{PacketKind::Tracking};
 };
 enum class DisplayStatus { WaitingInput, WaitingFirst, Live, Stale, Stopped, Eof, InputFailure };
 /** @brief 不持有源帧的画面元数据，后端自行保留最后实际显示的纯视频底图。 */
@@ -78,6 +88,10 @@ struct PresentationState {
     DisplayStatus status{DisplayStatus::WaitingInput};
     bool has_video{};
     bool new_video{};
+    std::uint64_t stream{}, source_sequence{}, control_version{};
+    PacketKind kind{PacketKind::Tracking};
+    TrackingPhase tracking_phase{TrackingPhase::Running};
+    bool has_tracking_result{true};
     TelemetrySnapshot telemetry{};
     /** @brief 当前轮内、两秒有效的 ON/OFF 显示提示；空串表示没有有效事件。 */
     std::string trigger{};

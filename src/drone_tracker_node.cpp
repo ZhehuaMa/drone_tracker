@@ -106,6 +106,9 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
 #else
     if (diagnostic_mode != "off") { throw std::invalid_argument("Diagnostics backend requires rk3576"); }
 #endif
+#ifdef DRONE_TRACKER_RK3576
+    continuous_preview_ = camera_input_ && get_parameter("osd.enabled").as_bool();
+#endif
     parameter_guard_ = add_on_set_parameters_callback([](const std::vector<rclcpp::Parameter> &parameters) {
         rcl_interfaces::msg::SetParametersResult result{};
         result.successful = true;
@@ -146,15 +149,8 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
 }
 
 DroneTrackerNode::~DroneTrackerNode() {
-    stop();
-    osd_telemetry_.reset();
-    if (osd_presenter_) {
-        osd_presenter_->shutdown();
-        osd_presenter_->reportTiming();
-    }
-    if (mv_camera_) { mv_camera_->stop(); }
+    shutdown();
     tracker_.reset();
-    closeRecording();
 #ifdef DRONE_TRACKER_RK3576
     diagnostic_timer_.reset();
     if (diagnostic_client_ && !diagnostic_client_->finish()) {
@@ -167,6 +163,14 @@ void DroneTrackerNode::run() { run(static_cast<builtin_interfaces::msg::Time>(no
 
 void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
     std::lock_guard<std::mutex> control{control_mutex_};
+    if (continuous_preview_) {
+        if (!service_started_ || service_shutdown_) { return; }
+        if (!desired_on_) { desired_stamp_ = stamp; }
+        desired_on_ = true;
+        osd_presenter_->showTrigger(osd_round_, true);
+        control_changed_.notify_all();
+        return;
+    }
     if (run_state_.load() != RunState::Idle) {
         if (osd_presenter_) { osd_presenter_->showTrigger(osd_round_, true); }
         return;
@@ -218,7 +222,28 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
 
 void DroneTrackerNode::stop() {
     const auto before{std::chrono::steady_clock::now()};
-    std::lock_guard<std::mutex> control{control_mutex_};
+    std::unique_lock<std::mutex> control{control_mutex_};
+    if (continuous_preview_) {
+        desired_on_ = false;
+        running = false;
+        ready_request_ = false;
+        if (!round_source_end_) {
+            round_source_end_ = mv_camera_->status();
+            round_dispatch_end_ = std::make_pair(dispatched_, tracking_replaced_);
+        }
+        std::optional<TrackingTask> discarded{};
+        discarded.swap(tracking_pending_);
+        display_version_ = osd_presenter_->controlTracking(osd_round_, osd::TrackingPhase::Idle);
+        osd_presenter_->showTrigger(osd_round_, false);
+        if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false); }
+        sealRecording();
+        control_changed_.notify_all();
+        RCLCPP_INFO(get_logger(), "Tracking OFF accepted stream=%lu round=%lu accept_us=%ld video=running",
+            static_cast<unsigned long>(stream_id_), static_cast<unsigned long>(osd_round_), static_cast<long>(
+                std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - before).count()));
+        control.unlock();
+        return;
+    }
     if (osd_presenter_) {
         osd_presenter_->endRound(osd_round_, osd::DisplayStatus::Stopped);
         osd_presenter_->showTrigger(osd_round_, false);
@@ -230,6 +255,245 @@ void DroneTrackerNode::stop() {
     if (camera_input_) {
         RCLCPP_INFO(get_logger(), "Node OFF total_us=%ld", static_cast<long>(
             std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - before).count()));
+    }
+}
+
+std::string DroneTrackerNode::serviceFailure() const {
+    std::lock_guard<std::mutex> lock{control_mutex_};
+    return service_failure_;
+}
+void DroneTrackerNode::startService() {
+    if (!continuous_preview_) { return; }
+    {
+        std::lock_guard<std::mutex> lock{control_mutex_};
+        if (service_started_) { return; }
+        if (service_shutdown_) { throw std::logic_error("Service already shut down"); }
+        service_started_ = true;
+        stream_id_ = 1;
+        osd_presenter_->beginStream(stream_id_);
+        display_version_ = osd_presenter_->controlTracking(0, osd::TrackingPhase::Idle);
+    }
+    try {
+        if (auto recording = mv_camera_->recordingControl()) { recording->useSessionControl(stream_id_); }
+        if (!mv_camera_->start()) { throw std::runtime_error("Camera service start failed: " + mv_camera_->status().reason); }
+        service_running_ = true;
+        round_metrics_start_ = std::chrono::steady_clock::now();
+        dispatcher_thread_ = cpu_affinity::start(cpu_affinity::Role::Capture,
+            [this] { dispatchFrames(); }, launcher_, stream_id_);
+        if (!dispatcher_thread_.joinable()) { throw std::runtime_error("No frame dispatcher thread"); }
+        worker_thread_ = cpu_affinity::start(cpu_affinity::Role::Tracking,
+            [this] { continuousWorker(); }, launcher_);
+        if (!worker_thread_.joinable()) { throw std::runtime_error("No tracking service thread"); }
+        RCLCPP_INFO(get_logger(), "Camera service started stream=%lu dispatcher_role=Capture tracking=OFF recording=OFF",
+            static_cast<unsigned long>(stream_id_));
+    } catch (...) {
+        shutdown();
+        throw;
+    }
+}
+void DroneTrackerNode::shutdown() noexcept {
+    if (continuous_preview_) {
+        std::optional<TrackingTask> discarded{};
+        {
+            std::lock_guard<std::mutex> lock{control_mutex_};
+            if (service_shutdown_) { return; }
+            service_shutdown_ = true;
+            desired_on_ = false;
+            ready_request_ = false;
+            running = false;
+            service_running_ = false;
+            discarded.swap(tracking_pending_);
+            if (osd_presenter_) { osd_presenter_->endStream(stream_id_, osd::DisplayStatus::Stopped); }
+            if (mv_camera_) {
+                if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false, RecordingEndReason::ServiceExit); }
+            }
+            sealRecording();
+        }
+        control_changed_.notify_all();
+        if (mv_camera_ && !mv_camera_->stop()) {
+            std::lock_guard<std::mutex> lock{control_mutex_};
+            service_failure_ = "Camera shutdown failed: " + mv_camera_->status().reason;
+            service_failed_ = true;
+        }
+        if (dispatcher_thread_.joinable()) { dispatcher_thread_.join(); }
+        if (worker_thread_.joinable()) { worker_thread_.join(); }
+        if (tracker_) { tracker_->finishRound(); }
+        if (mv_camera_) {
+            if (auto recording = mv_camera_->recordingControl()) { recording->finishRecording(); }
+        }
+        closeRecording();
+        reportAcquisition(true);
+    } else {
+        stop();
+        if (mv_camera_) { mv_camera_->stop(); }
+        closeRecording();
+    }
+    osd_telemetry_.reset();
+    if (osd_presenter_) { osd_presenter_->shutdown(); osd_presenter_->reportTiming(); }
+}
+void DroneTrackerNode::dispatchFrames() noexcept {
+    // The dispatcher owns Control while live; client run boundaries use it only before/after service threads.
+    diagnostics::current_producer = diagnostics::Producer::Control;
+    try {
+        while (service_running_) {
+            FrameRef frame{};
+            if (!waitForLatestFrame(*mv_camera_, frame, 20ms, [] {})) {
+                const auto source{mv_camera_->status()};
+                if (source.state == FrameSourceState::Running) { continue; }
+                if (!service_running_) { break; }
+                throw std::runtime_error("Camera stream failed: " + source.reason);
+            }
+            std::optional<TrackingTask> replaced{};
+            std::optional<osd::PresentationPacket> preview{};
+            {
+                std::lock_guard<std::mutex> lock{control_mutex_};
+                if (!service_running_) { break; }
+                const auto sequence{++source_sequence_};
+                ++dispatched_;
+                if (ready_request_ && desired_on_ && running) {
+                    ready_request_ = false;
+                    display_version_ = osd_presenter_->controlTracking(osd_round_, osd::TrackingPhase::Running,
+                        sequence - 1);
+                    run_state_ = RunState::Running;
+                    control_changed_.notify_all();
+                }
+                if (run_state_ == RunState::Running && desired_on_ && running) {
+                    if (tracking_pending_) { ++tracking_replaced_; }
+                    replaced.swap(tracking_pending_);
+                    tracking_pending_ = TrackingTask{frame, osd_round_, sequence, display_version_};
+                    control_changed_.notify_all();
+                } else {
+                    osd::PresentationPacket packet{frame, osd_round_, sequence, frame->timestampUs(), std::nullopt, {}};
+                    packet.stream = stream_id_; packet.source_sequence = sequence;
+                    packet.control_version = display_version_; packet.kind = osd::PacketKind::Preview;
+                    preview = std::move(packet);
+                }
+            }
+            if (replaced) {
+                auto skipped{diagnostics::event(diagnostics::Type::FrameSkip, diagnostics::Reason::LatestSkip)};
+                skipped.frame = replaced->frame->diagnosticIdentity();
+                skipped.frame_time_us = replaced->frame->timestampUs();
+                skipped.flags |= diagnostics::FrameTimeKnown;
+                diagnostics::emit(skipped);
+            }
+            if (preview && osd_presenter_->submit(std::move(*preview))) { ++preview_submitted_; }
+            reportAcquisition(false);
+        }
+    } catch (const std::exception &error) {
+        {
+            std::lock_guard<std::mutex> lock{control_mutex_};
+            service_failure_ = error.what();
+            service_failed_ = true;
+            service_running_ = false;
+            desired_on_ = false;
+            running = false;
+            if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false, RecordingEndReason::CameraFailure); }
+            sealRecording();
+            osd_presenter_->endStream(stream_id_, osd::DisplayStatus::InputFailure);
+        }
+        RCLCPP_ERROR(get_logger(), "Video service failed: %s", error.what());
+        control_changed_.notify_all();
+    }
+}
+bool DroneTrackerNode::takeTrackingFrame(FrameRef &frame, std::uint64_t &sequence, std::uint64_t &version) {
+    std::optional<TrackingTask> task{};
+    {
+        std::unique_lock<std::mutex> lock{control_mutex_};
+        control_changed_.wait_for(lock, 20ms, [this] { return !running || tracking_pending_; });
+        if (!running || !tracking_pending_) { return false; }
+        task.swap(tracking_pending_);
+    }
+    frame = std::move(task->frame);
+    sequence = task->sequence;
+    version = task->version;
+    return true;
+}
+void DroneTrackerNode::continuousWorker() noexcept {
+    diagnostics::current_producer = diagnostics::Producer::Node;
+    while (service_running_) {
+        builtin_interfaces::msg::Time stamp{};
+        {
+            std::unique_lock<std::mutex> lock{control_mutex_};
+            control_changed_.wait(lock, [this] { return !service_running_ || desired_on_; });
+            if (!service_running_) { break; }
+            stamp = desired_stamp_;
+            ++round_number_;
+            osd_round_ = round_number_.load();
+            diagnostics::current_round.store(osd_round_, std::memory_order_release);
+#ifdef DRONE_TRACKER_RK3576
+            if (diagnostic_client_ && diagnostic_client_->region()) {
+                diagnostic_client_->region()->round_id.store(osd_round_, std::memory_order_release);
+            }
+#endif
+            round_source_start_ = mv_camera_->status();
+            round_source_end_.reset();
+            round_dispatch_end_.reset();
+            round_dispatched_start_ = dispatched_;
+            round_replaced_start_ = tracking_replaced_;
+            running = true;
+            run_state_ = RunState::Starting;
+            display_version_ = osd_presenter_->controlTracking(osd_round_, osd::TrackingPhase::Starting);
+        }
+        auto round{diagnostics::event(diagnostics::Type::RoundStart)};
+        round.prediction_us = now().nanoseconds() / 1000;
+        round.flags |= diagnostics::PredictionKnown;
+        diagnostics::emit(round);
+        round.type = diagnostics::Type::ClockRelation;
+        diagnostics::emit(round);
+        bool failed{};
+        try {
+            tracker_->finishRound();
+            tracker_->reset();
+            last_tracker_state = -1;
+            consumed_frames_ = 0;
+            {
+                std::lock_guard<std::mutex> metrics{acquisition_mutex_};
+                round_metrics_start_ = std::chrono::steady_clock::now();
+                round_display_start_ = osd_presenter_->counters();
+            }
+            {
+                std::lock_guard<std::mutex> lock{control_mutex_};
+                if (running && desired_on_) {
+                    openRecording(stamp);
+                    if (auto recording = mv_camera_->recordingControl()) {
+                        recording->requestRecording(osd_round_, true);
+                    }
+                    ready_request_ = true;
+                }
+            }
+            control_changed_.notify_all();
+            processFrames();
+        } catch (const std::exception &error) {
+            failed = true;
+            RCLCPP_ERROR(get_logger(), "Tracking failed: %s; preview continues", error.what());
+        }
+        const auto cleanup{std::chrono::steady_clock::now()};
+        std::optional<TrackingTask> discarded{};
+        {
+            std::lock_guard<std::mutex> lock{control_mutex_};
+            running = false;
+            ready_request_ = false;
+            if (failed) { desired_on_ = false; }
+            if (!round_source_end_) {
+            round_source_end_ = mv_camera_->status();
+            round_dispatch_end_ = std::make_pair(dispatched_, tracking_replaced_);
+        }
+            run_state_ = RunState::Stopping;
+            discarded.swap(tracking_pending_);
+            display_version_ = osd_presenter_->controlTracking(osd_round_,
+                failed ? osd::TrackingPhase::Failed : osd::TrackingPhase::Idle);
+            if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false,
+                failed ? RecordingEndReason::TrackingFailure : RecordingEndReason::UserOff); }
+            sealRecording();
+        }
+        tracker_->finishRound();
+        closeRecording();
+        reportAcquisition(true);
+        RCLCPP_INFO(get_logger(), "Tracking cleanup complete stream=%lu round=%lu model_bag_wait_us=%ld",
+            static_cast<unsigned long>(stream_id_), static_cast<unsigned long>(osd_round_), static_cast<long>(
+                std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - cleanup).count()));
+        diagnostics::emit(diagnostics::event(diagnostics::Type::RoundEnd));
+        run_state_ = RunState::Idle;
     }
 }
 
@@ -702,6 +966,7 @@ void DroneTrackerNode::worker() {
 void DroneTrackerNode::reportAcquisition(bool final) {
 #ifdef DRONE_TRACKER_RK3576
     if (!camera_input_) { return; }
+    std::lock_guard<std::mutex> metrics{acquisition_mutex_};
     const auto now{std::chrono::steady_clock::now()};
     const auto state{mv_camera_->status()};
     const bool transition{state.camera.phase != last_camera_phase_
@@ -715,10 +980,34 @@ void DroneTrackerNode::reportAcquisition(bool final) {
         "hdmi_replaced=%lu hdmi_rejected=%lu",
         static_cast<unsigned long>(round_number_), static_cast<long>(
             std::chrono::duration_cast<std::chrono::microseconds>(now - round_metrics_start_).count()),
-        static_cast<unsigned long>(consumed_frames_),
+        static_cast<unsigned long>(consumed_frames_.load()),
         static_cast<unsigned long>(display.displayed - round_display_start_.displayed),
         static_cast<unsigned long>(display.replaced - round_display_start_.replaced),
         static_cast<unsigned long>(display.rejected - round_display_start_.rejected));
+    if (continuous_preview_) {
+        std::uint64_t dispatched{}, replaced{}, source_sequence{}, round{}, window_dispatched{}, window_replaced{};
+        FrameSourceStatus window_start{}, window_end{};
+        {
+            std::lock_guard<std::mutex> lock{control_mutex_};
+            dispatched = dispatched_; replaced = tracking_replaced_;
+            source_sequence = source_sequence_; round = osd_round_;
+            window_start = round_source_start_;
+            window_end = round_source_end_.value_or(state);
+            const auto end_counts{round_dispatch_end_.value_or(std::make_pair(dispatched_, tracking_replaced_))};
+            window_dispatched = end_counts.first - round_dispatched_start_;
+            window_replaced = end_counts.second - round_replaced_start_;
+        }
+        RCLCPP_INFO(get_logger(), "Stream counters stream=%lu round=%lu source_sequence=%lu dispatched=%lu "
+            "tracking_replaced=%lu preview_submitted=%lu paired_submitted=%lu window_read=%lu window_dequeued=%lu "
+            "window_dispatched=%lu window_replaced=%lu",
+            static_cast<unsigned long>(stream_id_), static_cast<unsigned long>(round),
+            static_cast<unsigned long>(source_sequence), static_cast<unsigned long>(dispatched),
+            static_cast<unsigned long>(replaced), static_cast<unsigned long>(preview_submitted_.load()),
+            static_cast<unsigned long>(paired_submitted_.load()),
+            static_cast<unsigned long>(window_end.read - window_start.read),
+            static_cast<unsigned long>(window_end.camera.dequeued_total - window_start.camera.dequeued_total),
+            static_cast<unsigned long>(window_dispatched), static_cast<unsigned long>(window_replaced));
+    }
     const auto &recording{state.recording};
     if (recording.enabled) {
         const auto lag{recording.synced_known
@@ -750,7 +1039,7 @@ void DroneTrackerNode::reportAcquisition(bool final) {
         static_cast<unsigned long>(state.trigger_errors), static_cast<unsigned long>(state.trigger_skipped),
         static_cast<unsigned long>(state.read), static_cast<unsigned long>(state.enqueued),
         static_cast<unsigned long>(state.dropped), static_cast<unsigned long>(state.sequence_gaps),
-        static_cast<unsigned long>(consumed_frames_), state.time_source.c_str(),
+        static_cast<unsigned long>(consumed_frames_.load()), state.time_source.c_str(),
         static_cast<long>(state.trigger_success) - static_cast<long>(state.read),
         static_cast<long>(state.clock_offset_delta_us), static_cast<long>(state.stop_us), state.controls_restored, static_cast<int>(state.state), state.reason.c_str());
     const auto &camera{state.camera};
@@ -799,7 +1088,10 @@ void DroneTrackerNode::processFrames() {
 #else
         constexpr auto frame_timeout{1s};
 #endif
-        if (!waitForLatestFrame(*mv_camera_, frame_buffer, frame_timeout, [&] { start_time = this->now(); })) {
+        std::uint64_t source_sequence{}, display_version{};
+        if (continuous_preview_) {
+            if (!takeTrackingFrame(frame_buffer, source_sequence, display_version)) { continue; }
+        } else if (!waitForLatestFrame(*mv_camera_, frame_buffer, frame_timeout, [&] { start_time = this->now(); })) {
             const auto status{mv_camera_->status()};
             if (status.state == FrameSourceState::Running) { continue; }
             if (status.state == FrameSourceState::Failed) {
@@ -872,10 +1164,20 @@ void DroneTrackerNode::processFrames() {
 
         if (out.consumed)
         {
+            std::unique_lock<std::mutex> publication{control_mutex_, std::defer_lock};
+            if (continuous_preview_) {
+                publication.lock();
+                if (!running || !desired_on_ || display_version != display_version_) { continue; }
+            }
             ++consumed_frames_;
             if (osd_presenter_) {
                 osd::PresentationPacket packet{frame_buffer, osd_round_, ++osd_sequence_,
                     frame_buffer->timestampUs(), static_cast<std::int8_t>(out.state), {}};
+                if (continuous_preview_) {
+                    packet.sequence = source_sequence;
+                    packet.stream = stream_id_; packet.source_sequence = source_sequence;
+                    packet.control_version = display_version; packet.kind = osd::PacketKind::Tracking;
+                }
                 const auto &box{out.display_box};
                 if (box.is_valid && box.width > 0 && box.height > 0) {
                     const double left{std::max(0.0, box.cx - box.width / 2.0)};
@@ -886,14 +1188,19 @@ void DroneTrackerNode::processFrames() {
                         packet.boxes.push_back({left, top, right - left, bottom - top, {}});
                     }
                 }
+                if (continuous_preview_) { publication.unlock(); }
                 const auto submit_start{osd::SteadyClock::now()};
-                osd_presenter_->submit(std::move(packet));
+                if (osd_presenter_->submit(std::move(packet)) && continuous_preview_) { ++paired_submitted_; }
                 const auto elapsed{static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
                     osd::SteadyClock::now() - submit_start).count())};
                 // 只测完整 submit 调用（含旧包释放）；不把此耗时当作屏幕显示延迟。
                 osd_submit_ns_.fetch_add(elapsed);
                 if (elapsed > osd_submit_max_ns_.load()) { osd_submit_max_ns_.store(elapsed); }
                 osd_submit_calls_.fetch_add(1);
+                if (continuous_preview_) {
+                    publication.lock();
+                    if (!running || !desired_on_ || display_version != display_version_) { continue; }
+                }
             }
             // 发布实时预测框（KF predict_only(now) 外推），空 frame_id 表示无效检测。
             // 时间戳用外推时刻（与外推框同 epoch，避免下游对已外推的测量二次外推）
@@ -905,11 +1212,12 @@ void DroneTrackerNode::processFrames() {
             detection_msg->bbox.size_x = out.realtime_box.width;
             detection_msg->bbox.size_y = out.realtime_box.height;
             record(detection_msg, TOPIC_TARGET_BBOX, detection_msg->header.stamp);
-            auto publication{diagnostics::event(diagnostics::Type::PublishStart)};
-            publication.frame = frame_buffer->diagnosticIdentity(); publication.prediction_us = ctx.now_us;
-            publication.frame_time_us = frame_buffer->timestampUs(); publication.values[0] = this->now().nanoseconds();
-            publication.flags |= diagnostics::PredictionKnown | diagnostics::FrameTimeKnown;
-            diagnostics::observePublication(publication, [&] { detection_pub_->publish(*detection_msg); });
+            auto publication_event{diagnostics::event(diagnostics::Type::PublishStart)};
+            publication_event.frame = frame_buffer->diagnosticIdentity(); publication_event.prediction_us = ctx.now_us;
+            publication_event.frame_time_us = frame_buffer->timestampUs();
+            publication_event.values[0] = this->now().nanoseconds();
+            publication_event.flags |= diagnostics::PredictionKnown | diagnostics::FrameTimeKnown;
+            diagnostics::observePublication(publication_event, [&] { detection_pub_->publish(*detection_msg); });
 
             // 状态仅变化时发布
             int8_t tracker_state_int = static_cast<int8_t>(out.state);
@@ -992,6 +1300,11 @@ void DroneTrackerNode::processFrames() {
                 cv_img.image = frame;
                 auto img_msg = std::make_shared<sensor_msgs::msg::Image>();
                 cv_img.toImageMsg(*img_msg);
+                std::unique_lock<std::mutex> publication{control_mutex_, std::defer_lock};
+                if (continuous_preview_) {
+                    publication.lock();
+                    if (!running || !desired_on_ || display_version != display_version_) { continue; }
+                }
                 record(img_msg, TOPIC_TRACKER_IMAGE, rclcpp::Time(frame_ts*1000),
                     sizeof(sensor_msgs::msg::Image) + img_msg->data.size());
                 image_pub_->publish(*img_msg);

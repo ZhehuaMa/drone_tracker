@@ -114,6 +114,8 @@ public:
     virtual ~FrameSource() = default;
     /** @brief 启动原采集线程；重复停止必须安全。 */
     virtual bool start() = 0;
+    /** @brief Borrowed optional capability; lifetime equals this frame source. */
+    virtual CameraRecordingControl *recordingControl() noexcept { return nullptr; }
     virtual bool stop() = 0;
     virtual bool isRunning() const = 0;
     /** @brief 并发只读查询，不消费帧；未适配的平台默认返回 Unknown。 */

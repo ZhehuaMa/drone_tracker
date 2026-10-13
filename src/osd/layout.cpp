@@ -177,7 +177,7 @@ std::string warningText(const TelemetrySnapshot &telemetry) {
 }
 void addTarget(Elements &elements, const PresentationState &state, const VideoGeometry &geometry,
                int width, int height) {
-    if (state.status != DisplayStatus::Live || state.boxes.empty()) { return; }
+    if (!state.has_tracking_result || state.status != DisplayStatus::Live || state.boxes.empty()) { return; }
     const auto mapped{geometry.mapBox(state.boxes.front())};
     if (!mapped) { return; }
     const cv::Rect box{mapped->x, mapped->y, mapped->width, mapped->height};
@@ -321,6 +321,12 @@ Elements scene(const PresentationState &state, const VideoGeometry &geometry, in
     addText(elements, "frame", 22, 430,
         short_text::frameNumber(state.has_video ? std::optional<std::uint64_t>{state.sequence} : std::nullopt),
         WHITE, true);
+    if (!state.has_tracking_result) {
+        const std::string phase{state.tracking_phase == TrackingPhase::Failed ? "TRK ERROR"
+            : (state.tracking_phase == TrackingPhase::Starting || state.tracking_phase == TrackingPhase::Running) ? "TRK STARTING" : "TRK OFF"};
+        addText(elements, "tracking_phase", 250, 365, phase,
+            state.tracking_phase == TrackingPhase::Failed ? RED : WHITE);
+    }
     const auto status{OsdLayout::statusText(state.status, state.has_video)};
     if (!status.empty()) {
         addGraphic(elements, "status", std::to_string(static_cast<int>(state.status))
@@ -382,7 +388,13 @@ cv::Mat elementPixels(const Element &element, int width, int height, cv::Rect &b
 } // namespace
 
 std::string statusBarText(const PresentationState &state) {
-    return state.mission_active ? "ON MISSION" : stateText(state.tracker_state);
+    if (state.mission_active) { return "ON MISSION"; }
+    if (!state.has_tracking_result) {
+        if (state.tracking_phase == TrackingPhase::Starting || state.tracking_phase == TrackingPhase::Running) { return "TRK STARTING"; }
+        if (state.tracking_phase == TrackingPhase::Failed) { return "TRK ERROR"; }
+        return "TRK OFF";
+    }
+    return stateText(state.tracker_state);
 }
 
 std::string targetLabelText(const PresentationState &) {

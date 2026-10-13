@@ -492,7 +492,8 @@ void sharedRecordingSlots() {
     next_round.header().stop_accepting.store(true);
     next_round.publish();
     require(attached.acquire() == -1 && next_round.header().accepted.load() == 1
-        && next_round.header().dropped.load() == 1, "Stop between stage and publish accepted a new frame");
+        && next_round.header().cancelled.load() == 1 && next_round.header().dropped.load() == 0,
+        "Stop between stage and publish did not cancel candidate");
     rejects([] { RecordingSlots too_large{8192, 8192, 1}; }, "64 MiB");
 }
 

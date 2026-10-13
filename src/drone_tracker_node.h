@@ -63,6 +63,12 @@ public:
     void run();
     void run(const builtin_interfaces::msg::Time &stamp);
     void stop();
+    /** @brief Start capture only after construction succeeds; legacy inputs remain idle. */
+    void startService();
+    /** @brief Idempotent final service shutdown; OFF only requests a tracking stop. */
+    void shutdown() noexcept;
+    bool serviceFailed() const noexcept { return service_failed_.load(); }
+    std::string serviceFailure() const;
 
 private:
     friend struct DroneTrackerNodeTestAccess;
@@ -157,15 +163,37 @@ private:
     void setupDisplay(std::unique_ptr<osd::DisplayBackend> backend);
     std::unique_ptr<osd::OsdPresenter> osd_presenter_{};
     std::unique_ptr<osd::OsdTelemetryAdapter> osd_telemetry_{};
-    std::uint64_t osd_round_{}, osd_sequence_{};
+    std::atomic<std::uint64_t> osd_round_{0};
+    std::uint64_t osd_sequence_{};
     bool osd_failure_reported_{};
     osd::SteadyClock::time_point osd_last_report_{};
     std::atomic<std::uint64_t> osd_submit_calls_{0}, osd_submit_ns_{0}, osd_submit_max_ns_{0};
     void worker();
+    void dispatchFrames() noexcept;
+    void continuousWorker() noexcept;
+    bool takeTrackingFrame(FrameRef &frame, std::uint64_t &sequence, std::uint64_t &version);
+    struct TrackingTask {
+        FrameRef frame{};
+        std::uint64_t round{}, sequence{}, version{};
+    };
+    bool continuous_preview_{}, desired_on_{}, ready_request_{}, service_started_{}, service_shutdown_{};
+    std::atomic_bool service_running_{false}, service_failed_{false};
+    std::string service_failure_{};
+    builtin_interfaces::msg::Time desired_stamp_{};
+    std::thread dispatcher_thread_{};
+    std::condition_variable control_changed_{};
+    std::optional<TrackingTask> tracking_pending_{};
+    std::uint64_t stream_id_{}, source_sequence_{}, display_version_{}, dispatched_{}, tracking_replaced_{};
+    FrameSourceStatus round_source_start_{};
+    std::optional<FrameSourceStatus> round_source_end_{};
+    std::uint64_t round_dispatched_start_{}, round_replaced_start_{};
+    std::optional<std::pair<std::uint64_t, std::uint64_t>> round_dispatch_end_{};
+    std::mutex acquisition_mutex_{};
+    std::atomic<std::uint64_t> preview_submitted_{0}, paired_submitted_{0};
     void processFrames();
     void reportAcquisition(bool final);
     bool camera_input_{};
-    std::uint64_t consumed_frames_{};
+    std::atomic<std::uint64_t> consumed_frames_{0};
     std::chrono::steady_clock::time_point round_metrics_start_{};
     osd::PresentationCounters round_display_start_{};
     std::chrono::steady_clock::time_point last_acquisition_report_{};
@@ -194,7 +222,7 @@ private:
     }
     enum class RunState { Idle, Starting, Running, Stopping };
     std::atomic<RunState> run_state_{RunState::Idle};
-    std::mutex control_mutex_{}; // 仅控制侧持有；worker 收尾不需要此锁。
+    mutable std::mutex control_mutex_{}; // 仅控制侧持有；worker 收尾不需要此锁。
     std::mutex bag_mutex_{};
 #ifdef DRONE_TRACKER_RK3576
     std::mutex bag_status_mutex_{};
@@ -246,7 +274,7 @@ private:
     RotationHistory gimbal_history_;
     mutable std::mutex gimbal_mtx_;
 
-    std::uint64_t round_number_{};
+    std::atomic<std::uint64_t> round_number_{0};
     std::thread worker_thread_;
     std::atomic_bool running = false;
     int8_t last_tracker_state = -1;

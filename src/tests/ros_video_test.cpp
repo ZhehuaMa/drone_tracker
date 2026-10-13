@@ -14,6 +14,10 @@ std::unique_ptr<PlatformFactory> CreatePlatformFactory() { throw std::logic_erro
 struct DroneTrackerNodeTestAccess {
     static const diagnostics::SharedRegion *diagnostics(const DroneTrackerNode &node) { return node.diagnostic_client_ ? node.diagnostic_client_->region() : nullptr; }
     static bool idle(const DroneTrackerNode &node) { return node.run_state_ == DroneTrackerNode::RunState::Idle; }
+    static std::uint64_t round(const DroneTrackerNode &node) { return node.round_number_.load(); }
+    static std::uint64_t replacements(DroneTrackerNode &node) {
+        std::lock_guard<std::mutex> lock{node.control_mutex_}; return node.tracking_replaced_;
+    }
     static CameraIntrinsics intrinsics(const DroneTrackerNode &node) { return node.cam_intrinsics_; }
     static BagSession::Status bagStatus(DroneTrackerNode &node) {
         std::lock_guard<std::mutex> lock{node.bag_status_mutex_};
@@ -47,14 +51,22 @@ struct SourceTrace {
     std::atomic<std::uint64_t> fixed_timestamp{};
     std::atomic_bool warming_up{};
     std::atomic_bool recording_failed{};
-    std::atomic<int> legacy_recording_requests{};
+    std::atomic<int> legacy_recording_requests{}, session_starts{}, session_stops{};
+    std::atomic_bool session_control{}, session_active{};
     std::mutex mutex{};
     std::vector<std::uint64_t> timestamps{};
     std::vector<FrameRef> frames{};
 };
-class Source final : public FrameSource {
+class Source final : public FrameSource, public CameraRecordingControl {
 public:
     explicit Source(std::shared_ptr<SourceTrace> trace) : trace_{std::move(trace)} {}
+    CameraRecordingControl *recordingControl() noexcept override { return this; }
+    void useSessionControl(std::uint64_t) override { trace_->session_control = true; }
+    void requestRecording(std::uint64_t, bool enabled, RecordingEndReason) override {
+        if (!trace_->config.camera_recording.enabled) { return; }
+        if (trace_->session_active.exchange(enabled) == enabled) { return; }
+        if (enabled) { ++trace_->session_starts; } else { ++trace_->session_stops; }
+    }
     bool start() override {
         ++trace_->starts;
         trace_->delivered = 0;
@@ -181,6 +193,7 @@ struct Harness {
         source->video = video;
         node = std::make_shared<DroneTrackerNode>(config, std::make_unique<Factory>(trace, source, paths),
                                                 launch, hook, std::move(display));
+        node->startService();
         detection = observer->create_subscription<vision_msgs::msg::Detection2D>("/fpv/target_bbox", 100,
             [this](vision_msgs::msg::Detection2D::SharedPtr msg) { detections.push_back(*msg); });
         image = observer->create_subscription<sensor_msgs::msg::Image>("/fpv/tracker_image", 100,
@@ -192,7 +205,7 @@ struct Harness {
         executor.add_node(observer);
         pump(150ms);
     }
-    ~Harness() { node->stop(); }
+    ~Harness() { node->shutdown(); }
     void trigger(const std::string &command) {
         std_msgs::msg::Header message{};
         message.stamp = observer->now();
@@ -815,6 +828,7 @@ void bagWithoutImagesAndDualRecording() {
     require(failed.source->active && failed.source->config.camera_recording.enabled,
         "bag write fault stopped independent recording");
     failed.node->stop();
+    failed.until([&] { return DroneTrackerNodeTestAccess::idle(*failed.node); }, "continuous bag fault close");
     require(DroneTrackerNodeTestAccess::bagStatus(*failed.node).phase == "failed",
         "dual recording bag fault was not isolated");
     {
@@ -1003,12 +1017,226 @@ void diagnosticBoundaries() {
         require(tail_index == 3, "EOF 补取缺少实际帧去向记录");
     }
 }
+
+rclcpp::NodeOptions continuousOptions(bool images, const std::string &path = "cached-overlay") {
+    return options({{"video_source", "/dev/video10"}, {"mv_camera.sensor_model", "sc233hgs"},
+        {"mv_camera.capture_mode", "continuous"}, {"mv_camera.trigger_rate_hz", 0.0},
+        {"mv_camera.media_device", "/dev/media0"}, {"mv_camera.sensor_entity", "sc233hgs test"},
+        {"osd.enabled", true}, {"osd.render_path", path}, {"visualized_result", images},
+        {"recording.enabled", true}, {"mv_camera.width_px", 100}, {"mv_camera.height_px", 80},
+        {"mv_camera.output_width_px", 0}, {"mv_camera.output_height_px", 0}});
+}
+std::uint64_t displayedSequence(const std::shared_ptr<DisplayTrace> &display) {
+    std::lock_guard<std::mutex> lock{display->mutex};
+    return display->states.empty() ? 0 : display->states.back().sequence;
+}
+void continuousDiagnosticBoundaries() {
+    for (const char *mode : {"basic", "detail"}) {
+        auto config{continuousOptions(false)};
+        auto parameters{config.parameter_overrides()};
+        parameters.emplace_back("diagnostics.mode", mode);
+        config.parameter_overrides(parameters);
+        auto display{std::make_shared<DisplayTrace>()};
+        Harness h{config, {}, {}, {}, std::make_unique<TestDisplay>(display)};
+        const auto *region{DroneTrackerNodeTestAccess::diagnostics(*h.node)};
+        require(region, "Continuous preview lost diagnostics initialization");
+        require(region->producers[0].position.generated.load() == 0,
+            "Preview submitted tracking events to the Node producer");
+        h.trace->target = true;
+        h.node->run();
+        h.until([&] { return std::find(h.states.begin(), h.states.end(), 2) != h.states.end(); },
+            "Diagnostic continuous round did not reach Tracking");
+        {
+            std::lock_guard<std::mutex> lock{h.trace->mutex};
+            h.trace->block_nano = true;
+        }
+        h.until([&] { std::lock_guard<std::mutex> lock{h.trace->mutex}; return h.trace->nano_entered; },
+            "Diagnostic continuous round did not block NanoTrack");
+        h.pump(80ms);
+        h.node->stop();
+        const auto sequence{displayedSequence(display)};
+        h.until([&] { return displayedSequence(display) > sequence + 2; },
+            "Diagnostic dispatch blocked OFF preview");
+        {
+            std::lock_guard<std::mutex> lock{h.trace->mutex};
+            h.trace->release_nano = true;
+            h.trace->block_nano = false;
+        }
+        h.trace->cv.notify_all();
+        h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); },
+            "First diagnostic continuous round did not finish");
+        const auto published{h.detections.size()};
+        h.node->run();
+        h.until([&] { return h.detections.size() > published; },
+            "Second diagnostic continuous round did not publish");
+        h.node->stop();
+        h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); },
+            "Second diagnostic continuous round did not finish");
+        h.node->shutdown();
+        const auto &node_ring{region->producers[static_cast<std::size_t>(diagnostics::Producer::Node)].normal};
+        std::array<unsigned, 3> starts{}, ends{}, publications{};
+        for (std::uint64_t index{}; index < node_ring.write.load(std::memory_order_acquire); ++index) {
+            const auto &value{node_ring.events[index % diagnostics::NORMAL_CAPACITY]};
+            require(value.type != diagnostics::Type::FrameSelect && value.type != diagnostics::Type::FrameSkip,
+                "Dispatcher shared the tracking diagnostic producer");
+            require(value.round_id == 1 || value.round_id == 2, "Continuous diagnostics lost tracking round identity");
+            if (value.type == diagnostics::Type::RoundStart) { ++starts[value.round_id]; }
+            if (value.type == diagnostics::Type::RoundEnd) { ++ends[value.round_id]; }
+            if (value.type == diagnostics::Type::PublishEnd) { ++publications[value.round_id]; }
+        }
+        require(starts[1] == 1 && starts[2] == 1 && ends[1] == 1 && ends[2] == 1
+            && publications[1] > 0 && publications[2] > 0, "Continuous diagnostic round boundaries changed");
+        const auto &control_ring{region->producers[static_cast<std::size_t>(diagnostics::Producer::Control)].normal};
+        bool selected{}, replaced{};
+        for (std::uint64_t index{}; index < control_ring.write.load(std::memory_order_acquire); ++index) {
+            const auto &value{control_ring.events[index % diagnostics::NORMAL_CAPACITY]};
+            require(value.type == diagnostics::Type::RunStart || value.type == diagnostics::Type::FrameSelect
+                || value.type == diagnostics::Type::FrameSkip, "Tracking wrote to the dispatcher producer");
+            if (value.type == diagnostics::Type::FrameSelect || value.type == diagnostics::Type::FrameSkip) {
+                require(value.flags & diagnostics::FrameTimeKnown, "Dispatcher diagnostic lost frame time");
+            }
+            selected = selected || value.type == diagnostics::Type::FrameSelect;
+            replaced = replaced || (value.type == diagnostics::Type::FrameSkip
+                && value.reason == diagnostics::Reason::LatestSkip);
+        }
+        require(selected && replaced, "Dispatcher diagnostic selection/replacement missing");
+    }
+}
+void continuousCameraLifecycle() {
+    for (bool images : {false, true}) {
+        for (const std::string path : {"legacy", "cached-overlay"}) {
+            auto display{std::make_shared<DisplayTrace>()};
+            Harness h{continuousOptions(images, path), {}, {}, {}, std::make_unique<TestDisplay>(display)};
+            h.until([&] { return displayedSequence(display) > 5; }, "automatic camera preview missing");
+            require(h.source->starts == 1 && h.source->session_starts == 0
+                && h.trace->calls == 0 && h.detections.empty() && h.images.empty() && h.states.empty(),
+                "Preview began tracking or recording");
+            {
+                std::lock_guard<std::mutex> lock{h.trace->mutex};
+                h.trace->block = true;
+            }
+            h.node->run(); h.node->run();
+            h.until([&] { std::lock_guard<std::mutex> lock{h.trace->mutex}; return h.trace->entered; },
+                "controlled YOLO did not start");
+            h.node->stop();
+            const auto before{displayedSequence(display)};
+            h.until([&] { return displayedSequence(display) > before + 3; }, "OFF waited for YOLO cleanup");
+            h.node->run(); h.node->stop(); h.node->run();
+            h.pump(100ms);
+            require(DroneTrackerNodeTestAccess::round(*h.node) == 1 && h.trace->active == 1,
+                "Rapid requests started a round before old YOLO returned");
+            {
+                std::lock_guard<std::mutex> lock{display->mutex};
+                require(display->states.back().status == osd::DisplayStatus::Live
+                    && display->states.back().boxes.empty() && !display->states.back().has_tracking_result,
+                    "Stopping preview froze or revived old target");
+            }
+            {
+                std::lock_guard<std::mutex> lock{h.trace->mutex};
+                h.trace->release = true;
+            }
+            h.trace->cv.notify_all();
+            h.until([&] { return DroneTrackerNodeTestAccess::round(*h.node) == 2 && !h.detections.empty(); },
+                "Last desired ON did not create one next round");
+            h.pump(100ms);
+            require(DroneTrackerNodeTestAccess::round(*h.node) == 2 && h.source->starts == 1,
+                "Requests accumulated rounds or reopened camera");
+            require(h.images.empty() == !images, "Continuous camera changed image switch");
+            h.node->stop();
+            h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "continuous round did not finish");
+            h.pump(80ms);
+            const auto detections{h.detections.size()}, image_count{h.images.size()};
+            h.pump(80ms);
+            require(h.detections.size() == detections && h.images.size() == image_count && h.source->active,
+                "OFF continued business output or stopped stream");
+            h.node->shutdown(); h.node->shutdown();
+            require(!h.source->active && h.trace->assemblies == 1 && h.trace->unsafe_destroy == 0,
+                "Final shutdown left capture or destroyed active models");
+        }
+    }
+}
+void continuousBlockedNanoAndTelemetry() {
+    auto display{std::make_shared<DisplayTrace>()};
+    Harness h{continuousOptions(true), {}, {}, {}, std::make_unique<TestDisplay>(display)};
+    h.trace->target = true;
+    {
+        std::lock_guard<std::mutex> lock{h.trace->mutex}; h.trace->block_nano = true;
+    }
+    h.node->run();
+    h.until([&] { std::lock_guard<std::mutex> lock{h.trace->mutex}; return h.trace->nano_entered; },
+        "NanoTrack did not reach controlled block");
+    h.pump(100ms);
+    require(DroneTrackerNodeTestAccess::replacements(*h.node) > 0, "Slow tracking did not replace bounded slot");
+    const auto sequence{displayedSequence(display)};
+    h.trigger("MISSION");
+    const auto stop_begin{std::chrono::steady_clock::now()};
+    h.trigger("OFF");
+    require(std::chrono::steady_clock::now() - stop_begin < 500ms, "OFF callback blocked on NanoTrack");
+    auto battery{h.observer->create_publisher<sensor_msgs::msg::BatteryState>("/mavros/battery", 10)};
+    auto failsafe{h.observer->create_publisher<std_msgs::msg::Bool>("/fpv/failsafe", 10)};
+    sensor_msgs::msg::BatteryState value{}; value.present = true; value.voltage = 24;
+    h.until([&] {
+        battery->publish(value);
+        std_msgs::msg::Bool alert{}; alert.data = true; failsafe->publish(alert);
+        std::lock_guard<std::mutex> lock{display->mutex};
+        return !display->states.empty() && display->states.back().sequence > sequence + 3
+            && display->states.back().telemetry.battery.value
+            && display->states.back().telemetry.battery.value->voltage == 24
+            && display->states.back().telemetry.failsafe.value == true;
+    }, "Telemetry or preview stopped while NanoTrack still blocked");
+    {
+        std::lock_guard<std::mutex> lock{display->mutex};
+        require(display->states.back().mission_active && display->states.back().boxes.empty(),
+            "OFF changed MISSION or left target decorations");
+    }
+    h.pump(100ms);
+    const auto output_count{h.detections.size()};
+    {
+        std::lock_guard<std::mutex> lock{h.trace->mutex}; h.trace->release_nano = true;
+    }
+    h.trace->cv.notify_all();
+    h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "Nano round did not close");
+    h.pump(80ms);
+    require(h.detections.size() == output_count, "Late Nano result published after OFF");
+    h.trace->throw_frame = true;
+    h.node->run();
+    h.until([&] { return DroneTrackerNodeTestAccess::round(*h.node) == 2
+        && DroneTrackerNodeTestAccess::idle(*h.node); }, "Tracking failure did not isolate round");
+    const auto failed_sequence{displayedSequence(display)};
+    h.until([&] { return displayedSequence(display) > failed_sequence + 2; }, "Tracking failure stopped preview");
+    h.source->fail_input = true;
+    h.until([&] { return h.node->serviceFailed(); }, "Camera failure did not notify main execution");
+    require(h.node->serviceFailure().find("Camera") != std::string::npos, "Camera failure cause lost");
+    h.node->shutdown();
+}
+void continuousStartupFailures() {
+    auto calls{std::make_shared<int>(0)};
+    auto display{std::make_shared<DisplayTrace>()};
+    bool rejected{};
+    try {
+        Harness h{continuousOptions(false), [calls](std::function<void()> work) {
+            if (++*calls == 2) { throw std::runtime_error("injected dispatcher launch failure"); }
+            return std::thread{std::move(work)};
+        }, {}, {}, std::make_unique<TestDisplay>(display)};
+    } catch (const std::exception &) { rejected = true; }
+    require(rejected, "Dispatcher thread launch failure was ignored");
+    require(display->shutdowns == 1, "Partial startup did not close display");
+}
 } // namespace
 int main(int argc, char **argv) {
     const bool diagnostic_only{argc == 2 && std::string{argv[1]} == "--diagnostic-boundaries"};
     if (diagnostic_only) { argc = 1; }
     rclcpp::init(argc, argv);
     try {
+        const bool continuous_only{argc > 1 && std::string{argv[1]} == "--continuous-camera"};
+        if (continuous_only) {
+            continuousDiagnosticBoundaries();
+            continuousCameraLifecycle();
+            continuousBlockedNanoAndTelemetry();
+            continuousStartupFailures();
+            rclcpp::shutdown();
+            return 0;
+        }
         diagnosticBoundaries();
         if (diagnostic_only) {
             std::cout << "真实节点重复时间与 EOF 三帧补取的时间有效位检查通过\n";

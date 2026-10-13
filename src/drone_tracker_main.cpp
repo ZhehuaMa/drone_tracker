@@ -21,7 +21,15 @@ int main(int argc, char *argv[]) {
         cpu_affinity::initializeControl();
         rclcpp::init(argc, argv);
         auto node{std::make_shared<DroneTrackerNode>()};
-        rclcpp::spin(node);
+        node->startService();
+        rclcpp::executors::SingleThreadedExecutor executor{};
+        executor.add_node(node);
+        while (rclcpp::ok()) {
+            executor.spin_once(std::chrono::milliseconds{100});
+            if (node->serviceFailed()) { throw std::runtime_error(node->serviceFailure()); }
+        }
+        node->shutdown();
+        if (node->serviceFailed()) { throw std::runtime_error(node->serviceFailure()); }
     } catch (const std::exception &error) {
         std::cerr << "drone_tracker initialization/execution failed: " << error.what() << '\n';
         result = 1;

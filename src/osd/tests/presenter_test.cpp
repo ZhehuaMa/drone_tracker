@@ -2,6 +2,7 @@
 #include "osd/layout.h"
 #include "platform/rk3576/osd/pipeline_state.h"
 
+#include <algorithm>
 #include <atomic>
 #include <iostream>
 #include <stdexcept>
@@ -483,10 +484,163 @@ void labelChangesDoNotLog(bool cached) {
     presenter.shutdown();
     require(resources.frames == 0 && resources.views == 0, "label test leaked frames");
 }
+void continuousPreview(bool cached) {
+    BackendState state{};
+    Resources resources{};
+    TimingCapture timing{};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms,
+        osd::SteadyClock::now, [&](const osd::TimingWindow &window) { timing.record(window); }};
+    presenter.start();
+    presenter.beginStream(71);
+    auto version{presenter.controlTracking(0, osd::TrackingPhase::Idle)};
+    const auto send{[&](int sequence, std::uint64_t round, osd::PacketKind kind, std::uint64_t control) {
+        auto p{packet(round, sequence, resources)};
+        p.stream = 71;
+        p.source_sequence = sequence;
+        p.control_version = control;
+        p.kind = kind;
+        if (kind == osd::PacketKind::Preview) { p.tracker_state.reset(); p.boxes.clear(); }
+        return presenter.submit(std::move(p));
+    }};
+    require(send(100, 0, osd::PacketKind::Preview, version), "preview rejected");
+    waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().sequence == 100; });
+    require(!state.outputs.back().has_tracking_result, "preview manufactured algorithm result");
+    version = presenter.controlTracking(1, osd::TrackingPhase::Starting);
+    require(send(101, 1, osd::PacketKind::Preview, version), "starting preview rejected");
+    waitFor(state, [&] { return state.outputs.back().sequence == 101; });
+    version = presenter.controlTracking(1, osd::TrackingPhase::Running, 101);
+    require(!send(100, 1, osd::PacketKind::Tracking, version), "boundary went backwards");
+    require(!send(102, 1, osd::PacketKind::Preview, version), "Running accepted preview");
+    require(send(103, 1, osd::PacketKind::Tracking, version), "paired frame rejected");
+    waitFor(state, [&] { return state.outputs.back().sequence == 103 && !state.outputs.back().boxes.empty(); });
+    presenter.showMission();
+    const auto stopped{osd::SteadyClock::now()};
+    const auto old_version{version};
+    version = presenter.controlTracking(1, osd::TrackingPhase::Idle);
+    require(!send(104, 1, osd::PacketKind::Tracking, old_version), "late tracking restored boxes");
+    require(send(105, 1, osd::PacketKind::Preview, version), "OFF closed video stream");
+    waitFor(state, [&] { return state.outputs.back().sequence == 105 && state.outputs.back().boxes.empty(); });
+    require(osd::SteadyClock::now() - stopped < 500ms, "preview clear exceeded deadline");
+    require(state.outputs.back().mission_active, "OFF cleared MISSION");
+    require(state.outputs.back().status == osd::DisplayStatus::Live, "OFF froze preview");
+    presenter.shutdown();
+    presenter.reportTiming();
+    require(timing.count(0, osd::TimingStage::NewFrameInterval) == 3,
+        "ON/OFF broke continuous video interval chain");
+    require(resources.frames == 0, "continuous frame leak");
+}
+void continuousManyTimingRounds(bool cached) {
+    BackendState state{};
+    Resources resources{};
+    TimingCapture timing{};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms,
+        osd::SteadyClock::now, [&](const osd::TimingWindow &window) { timing.record(window); }};
+    presenter.start();
+    presenter.beginStream(71);
+    for (std::uint64_t round{1}; round <= 20; ++round) {
+        presenter.controlTracking(round, osd::TrackingPhase::Starting);
+        const auto version{presenter.controlTracking(round, osd::TrackingPhase::Running, round - 1)};
+        auto p{packet(round, static_cast<int>(round), resources)};
+        p.stream = 71; p.source_sequence = round; p.control_version = version;
+        require(presenter.submit(std::move(p)), "rapid timed round rejected");
+        presenter.controlTracking(round, osd::TrackingPhase::Idle);
+    }
+    presenter.shutdown();
+    presenter.reportTiming();
+    std::uint64_t submitted{};
+    for (const auto &window : timing.windows) { submitted += window.submitted; }
+    require(submitted == 20, "rapid rounds lost timing submissions");
+}
+void continuousInFlightInterval(bool cached) {
+    BackendState state{};
+    Resources resources{};
+    TimingCapture timing{};
+    std::atomic<int> clock_ms{10};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms,
+        [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{clock_ms.load()}}; },
+        [&](const osd::TimingWindow &window) { timing.record(window); }};
+    presenter.start();
+    presenter.beginStream(71);
+    auto version{presenter.controlTracking(0, osd::TrackingPhase::Idle)};
+    const auto send{[&](int sequence, std::uint64_t round, osd::PacketKind kind, std::uint64_t control) {
+        auto p{packet(round, sequence, resources)};
+        p.stream = 71;
+        p.source_sequence = sequence;
+        p.control_version = control;
+        p.kind = kind;
+        if (kind == osd::PacketKind::Preview) { p.tracker_state.reset(); p.boxes.clear(); }
+        return presenter.submit(std::move(p));
+    }};
+    const auto wait_displayed{[&](std::uint64_t count) {
+        const auto deadline{osd::SteadyClock::now() + 2s};
+        while (presenter.counters().displayed < count && osd::SteadyClock::now() < deadline) {
+            std::this_thread::yield();
+        }
+        require(presenter.counters().displayed == count, "continuous timed display timeout");
+    }};
+    const auto interval{[&] {
+        osd::TimingHistogram result{};
+        std::lock_guard<std::mutex> lock{timing.mutex};
+        for (const auto &window : timing.windows) {
+            const auto &stage{window.groups[0].stages[static_cast<std::size_t>(osd::TimingStage::NewFrameInterval)]};
+            result.count += stage.count;
+            result.total_us += stage.total_us;
+            result.max_us = std::max(result.max_us, stage.max_us);
+        }
+        return result;
+    }};
+    require(send(1, 0, osd::PacketKind::Preview, version), "timed preview rejected");
+    wait_displayed(1);
+    version = presenter.controlTracking(1, osd::TrackingPhase::Running, 1);
+    {
+        std::lock_guard<std::mutex> lock{state.mutex};
+        state.block_present = true;
+        state.presenting = false;
+    }
+    require(send(2, 1, osd::PacketKind::Tracking, version), "timed tracking packet rejected");
+    waitFor(state, [&] { return state.presenting; });
+    require(resources.frames == 0 && resources.views == 0, "in-flight display retained source pixels");
+    require(presenter.counters().displayed == 1, "blocked display completed early");
+    const auto old_version{version};
+    version = presenter.controlTracking(1, osd::TrackingPhase::Idle);
+    require(!send(4, 1, osd::PacketKind::Tracking, old_version), "in-flight OFF accepted old tracking result");
+    {
+        std::lock_guard<std::mutex> lock{state.mutex};
+        require(state.preparations == 2, "in-flight display buffer reused");
+        clock_ms = 20;
+        state.block_present = false;
+        state.changed.notify_all();
+    }
+    wait_displayed(2);
+    waitFor(state, [&] { return state.outputs.back().tracking_phase == osd::TrackingPhase::Idle; });
+    {
+        std::lock_guard<std::mutex> lock{state.mutex};
+        require(state.outputs.back().sequence == 2 && state.pixels.back() == 2,
+            "authorized in-flight frame lost after OFF");
+        require(state.outputs.back().boxes.empty() && !state.outputs.back().has_tracking_result,
+            "in-flight OFF restored tracking decorations");
+    }
+    presenter.reportTiming();
+    const auto first_interval{interval()};
+    require(first_interval.count == 1 && first_interval.total_us == 10000 && first_interval.max_us == 10000,
+        "in-flight OFF omitted the 10 ms interval");
+    clock_ms = 40;
+    require(send(3, 1, osd::PacketKind::Preview, version), "post-OFF timed preview rejected");
+    wait_displayed(3);
+    presenter.shutdown();
+    presenter.reportTiming();
+    const auto both_intervals{interval()};
+    require(both_intervals.count == 2 && both_intervals.total_us == 30000 && both_intervals.max_us == 20000,
+        "post-OFF preview did not retain the 20 ms interval");
+    require(resources.frames == 0 && resources.views == 0, "continuous interval test leaked source pixels");
+}
 } // namespace
 int main() {
     try {
         for (bool cached : {false, true}) {
+            continuousInFlightInterval(cached);
+            continuousManyTimingRounds(cached);
+            continuousPreview(cached);
             pairingAndOwnership(cached);
             stopBeforeHandoff(cached);
             stopInFlightAndRestart(cached);

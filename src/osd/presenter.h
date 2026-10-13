@@ -27,6 +27,16 @@ public:
     /** @brief 同步确认显示初始化，失败时抛异常并回收线程。 */
     void start();
     void shutdown() noexcept;
+    /** @brief Open continuous video reception; this does not open tracking reception. */
+    void beginStream(std::uint64_t stream);
+    void endStream(std::uint64_t stream, DisplayStatus reason);
+    /**
+     * @brief Atomically invalidate old-mode packages without closing the video stream.
+     * Running accepts only Tracking packets after cutoff; other phases accept Preview.
+     * The returned version must be captured before creating a packet. Control changes
+     * invalidate prepared work; hardware already authorized completes safely.
+     */
+    std::uint64_t controlTracking(std::uint64_t round, TrackingPhase phase, std::uint64_t cutoff = 0);
     /** @brief 重复 ON 返回同一轮次；新轮返回递增编号。 */
     std::uint64_t beginRound();
     /** @brief 只停止指定轮，防止旧工作线程的 EOF 关闭新轮。 */
@@ -71,9 +81,12 @@ private:
     bool mission_active_{};
     PresentationCounters counters_{};
     std::uint64_t round_{}, version_{}, last_sequence_{};
+    std::uint64_t stream_{}, cutoff_{};
+    TrackingPhase tracking_phase_{TrackingPhase::Idle};
+    bool continuous_{};
     bool active_{}, stopping_{}, initialized_{}, finished_{}, started_{};
     DisplayStatus status_{DisplayStatus::WaitingInput};
-    SteadyClock::time_point last_received_{};
+    SteadyClock::time_point last_received_{}, tracking_control_received_{};
     std::string failure_{};
 };
 } // namespace osd

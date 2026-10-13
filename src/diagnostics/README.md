@@ -18,6 +18,9 @@
 
 四个预注册生产者分别用于节点、相机、YOLO 和控制路径。每个生产者只有一个写线程。每个线程拥有普通及关键两个 SPSC 环；SPSC 表示单写者、单读者。关键容量占槽容量的三分之一。总业务诊断预分配预算小于 8 MiB。事件不得含指针、字符串、图像或额外帧引用。既有业务锁内只取得数值快照，在锁外提交。不允许热路径文件 I/O（文件读写）、动态分配或文本格式化。
 
+Continuous camera preview uses the Control producer for the persistent frame dispatcher and the Node producer for tracking. Each remains a single writer. Client RunStart/RunEnd use Control before dispatcher startup and after its join. Capture and YOLO retain their separate producers. Tracking rounds update the shared round identity and emit RoundStart/RoundEnd without reopening capture. Dispatcher FrameSelect events describe source selection; replacing a pending tracking task emits FrameSkip/LatestSkip.
+
+
 满缓冲立即拒收，不覆盖未读槽。共享区累计丢失总数、首末序号和最多 32 段连续范围。范围表耗尽后明确标记详情不完整。关键区同样可能满，因此不能保证故障事件必然留存。异常退出且没有结束事件时，尾部未知，不能当成已知缺口。
 
 `eventfd` 是非阻塞唤醒计数器。通知合并且普通通知节流；通知失败不撤销事件。收集器以 10 ms 为主动轮询目标。这不是存储拥塞时的保证。业务不新增专用日志线程。连接准备最多 500 ms，正常业务退出最多等待 2 秒。既有控制定时器每 5 秒至多重连一次，仅在旧消费者的 `pidfd` 确认退出后接管。`pidfd` 代表确定进程实例，避免进程编号复用造成误认。收集器最多接收两份共享区，输出批次为 512 KiB。

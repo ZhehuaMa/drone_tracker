@@ -1,3 +1,5 @@
+# With osd.enabled=true, service startup begins live camera/HDMI preview.
+# ON still starts tracking and enabled recording/bag sessions; OFF keeps preview running.
 # SC233HGS 生产模板：以 HZ-RK3576_WuKong Board 当前 camera.yaml 为参数基线。
 # /opt/drone_tracker/... 是目标生产板运行路径，不是本机或打包容器路径。
 # camera 内参是模拟值，并非镜头实测标定；正式使用前须标定并替换。

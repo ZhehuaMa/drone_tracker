@@ -74,10 +74,17 @@ int main() {
             assert(worked);
             worked = false;
         }
+        auto dispatcher{start(p, Role::Capture, [&] {
+            const auto actual{mask()};
+            worked = CPU_ISSET(first, &actual) && CPU_COUNT(&actual) == 1;
+        })};
+        dispatcher.join();
+        assert(worked);
+        worked = false;
         Policy impossible{p};
-        impossible.yolo = CPU_SETSIZE - 1;
+        impossible.capture = CPU_SETSIZE - 1;
         bool failed{};
-        try { auto thread{start(impossible, Role::Yolo, [&] { worked = true; })}; thread.join(); }
+        try { auto thread{start(impossible, Role::Capture, [&] { worked = true; })}; thread.join(); }
         catch (const std::exception &) { failed = true; }
         assert(failed && !worked);
         apply(p, Role::Recording, 3);

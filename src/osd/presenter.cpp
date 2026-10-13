@@ -67,6 +67,67 @@ void OsdPresenter::shutdown() noexcept {
         thread_.join();
     }
 }
+void OsdPresenter::beginStream(std::uint64_t stream) {
+    std::optional<PresentationPacket> discarded{};
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (stopping_ || !failure_.empty()) { throw std::runtime_error("Presenter unavailable"); }
+        continuous_ = true;
+        stream_ = stream;
+        round_ = 0;
+        last_sequence_ = 0;
+        tracking_phase_ = TrackingPhase::Idle;
+        active_ = true;
+        status_ = DisplayStatus::WaitingInput;
+        last_display_.reset();
+        ++interval_generation_;
+        ++version_;
+        discarded.swap(pending_);
+    }
+    wake_.notify_all();
+}
+void OsdPresenter::endStream(std::uint64_t stream, DisplayStatus reason) {
+    std::optional<PresentationPacket> discarded{};
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (!continuous_ || stream != stream_) { return; }
+        active_ = false;
+        status_ = reason;
+        ++version_;
+        ++interval_generation_;
+        last_display_.reset();
+        discarded.swap(pending_);
+    }
+    wake_.notify_all();
+}
+std::uint64_t OsdPresenter::controlTracking(std::uint64_t round, TrackingPhase phase, std::uint64_t cutoff) {
+    std::lock_guard<std::mutex> round_lock{round_mutex_};
+    bool new_round{};
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        new_round = round > round_;
+    }
+    // Keep the existing bounded current/in-flight timing windows without breaking the stream interval chain.
+    if (new_round) { reportTiming(); }
+    std::optional<PresentationPacket> discarded{};
+    std::uint64_t version{};
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (!continuous_ || !active_) { return version_; }
+        if (round < round_) { return version_; }
+        round_ = round;
+        tracking_phase_ = phase;
+        tracking_control_received_ = now_();
+        cutoff_ = cutoff;
+        ++version_;
+        version = version_;
+        discarded.swap(pending_);
+    }
+    wake_.notify_all();
+    emitDiagnostic("OSD control event=tracking round=" + std::to_string(round)
+        + " phase=" + std::to_string(static_cast<int>(phase)) + " version=" + std::to_string(version));
+    return version;
+}
 std::uint64_t OsdPresenter::beginRound() {
     std::lock_guard<std::mutex> round_lock{round_mutex_};
     reportTiming();
@@ -99,7 +160,7 @@ void OsdPresenter::showTrigger(std::uint64_t round, bool on) {
     if (round != round_ || stopping_ || !failure_.empty()) { return; }
     trigger_ = on ? "TRIG ON" : "TRIG OFF";
     trigger_until_ = now_() + std::chrono::seconds{2};
-    ++version_;
+    if (!continuous_) { ++version_; }
     wake_.notify_all();
 }
 void OsdPresenter::showMission() {
@@ -111,7 +172,7 @@ void OsdPresenter::showMission() {
         accepted = !stopping_ && failure_.empty();
         if (accepted) {
             mission_active_ = true;
-            ++version_;
+            if (!continuous_) { ++version_; }
             wake_.notify_all();
         }
     }
@@ -127,7 +188,7 @@ void OsdPresenter::trackerStatePublished() {
         cleared = mission_active_;
         if (cleared) {
             mission_active_ = false;
-            ++version_;
+            if (!continuous_) { ++version_; }
             wake_.notify_all();
         }
     }
@@ -164,7 +225,13 @@ bool OsdPresenter::submit(PresentationPacket packet) {
     {
         std::lock_guard<std::mutex> lock{mutex_};
         if (!active_ || stopping_ || !failure_.empty() || incoming->round != round_
-            || !incoming->frame || incoming->sequence <= last_sequence_) {
+            || !incoming->frame || incoming->sequence <= last_sequence_
+            || (continuous_ && (incoming->stream != stream_ || incoming->control_version != version_
+                || (tracking_phase_ == TrackingPhase::Running
+                    ? (incoming->kind != PacketKind::Tracking || !incoming->tracker_state
+                        || incoming->source_sequence <= cutoff_)
+                    : (incoming->kind != PacketKind::Preview || incoming->tracker_state
+                        || !incoming->boxes.empty()))))) {
             ++counters_.rejected;
             if (timing_sink_) { ++timingWindow(round_).rejected; }
             return false;
@@ -173,7 +240,10 @@ bool OsdPresenter::submit(PresentationPacket packet) {
         last_received_ = now_();
         if (timing_sink_) {
             incoming->accepted = last_received_;
-            ++timingWindow(round_).submitted;
+            auto &window{timingWindow(round_)};
+            ++window.submitted;
+            if (incoming->kind == PacketKind::Preview) { ++window.preview_submitted; }
+            else { ++window.tracking_submitted; }
         }
         ++counters_.submitted;
         if (pending_) {
@@ -206,6 +276,7 @@ TimingWindow &OsdPresenter::timingWindow(std::uint64_t round) {
         if (!window) {
             window.emplace();
             window->round = round;
+            window->stream = stream_;
             window->id = ++timing_window_id_;
             window->start = timing_window_start_;
             return *window;
@@ -245,9 +316,9 @@ void OsdPresenter::render() noexcept {
             std::optional<PresentationPacket> packet{};
             PresentationState next{last};
             std::uint64_t version{}, timing_round{}, generation{};
-            SteadyClock::time_point render_start{}, accepted{};
+            SteadyClock::time_point render_start{}, accepted{}, control_received{};
             TimingSample sample{};
-            bool first_video{};
+            bool first_video{}, continuous{};
             {
                 std::unique_lock<std::mutex> lock{mutex_};
                 wake_.wait_for(lock, std::chrono::milliseconds{100}, [&] {
@@ -257,6 +328,7 @@ void OsdPresenter::render() noexcept {
                     break;
                 }
                 version = version_;
+                continuous = continuous_;
                 packet.swap(pending_);
                 if (timing_sink_) {
                     render_start = now_();
@@ -270,6 +342,14 @@ void OsdPresenter::render() noexcept {
                 }
                 next.telemetry = telemetry_;
                 next.round = round_;
+                next.stream = stream_;
+                next.control_version = version_;
+                control_received = tracking_control_received_;
+                next.tracking_phase = continuous_ ? tracking_phase_ : TrackingPhase::Running;
+                if (continuous_ && tracking_phase_ != TrackingPhase::Running) {
+                    next.boxes.clear();
+                    next.has_tracking_result = false;
+                }
                 next.trigger = !trigger_.empty() && now_() < trigger_until_ ? trigger_ : "";
                 next.mission_active = mission_active_;
                 next.status = status_;
@@ -301,8 +381,12 @@ void OsdPresenter::render() noexcept {
                     ++window.commits;
                     if (new_video) {
                         ++window.displayed;
+                        if (next.kind == PacketKind::Preview) { ++window.preview_displayed; }
+                        else { ++window.tracking_displayed; }
                         sample.add(TimingStage::SubmitToDisplay, end - accepted);
-                        if (generation == interval_generation_ && version == version_ && active_) {
+                        // Tracking controls do not break a completed frame's continuous stream interval.
+                        const bool same_segment{continuous ? next.stream == stream_ : version == version_};
+                        if (generation == interval_generation_ && same_segment && active_) {
                             if (last_display_) { sample.add(TimingStage::NewFrameInterval, end - *last_display_); }
                             last_display_ = end;
                         }
@@ -317,7 +401,11 @@ void OsdPresenter::render() noexcept {
                     next.round = packet->round;
                     next.sequence = packet->sequence;
                     next.frame_time_us = packet->frame_time_us;
-                    next.tracker_state = packet->tracker_state;
+                    next.tracker_state = packet->tracker_state.value_or(0);
+                    next.has_tracking_result = packet->tracker_state.has_value();
+                    next.kind = packet->kind;
+                    next.source_sequence = packet->source_sequence;
+                    next.stream = packet->stream;
                     next.boxes = std::move(packet->boxes);
                     next.has_video = true;
                     next.status = DisplayStatus::Live;
@@ -341,13 +429,20 @@ void OsdPresenter::render() noexcept {
                         const std::string hud{statusBarText(next)};
                         const std::string target{targetLabelText(next)};
                         if (next.status != last.status || next.has_video != last.has_video
-                            || hud != statusBarText(last) || target != targetLabelText(last)) {
+                            || hud != statusBarText(last) || target != targetLabelText(last)
+                            || next.tracking_phase != last.tracking_phase
+                            || next.boxes.empty() != last.boxes.empty()
+                            || (continuous && next.control_version != last.control_version)) {
                             std::ostringstream message{};
                             message << "OSD display round=" << next.round << " sequence=" << next.sequence
                                     << " status=" << statusName(next.status)
                                     << " hud=\"" << hud << "\" target_label=\"" << target << "\""
                                     << " boxes=" << next.boxes.size() << " has_video=" << next.has_video
-                                    << " new_video=" << next.new_video << " mission=" << next.mission_active;
+                                    << " new_video=" << next.new_video << " mission=" << next.mission_active
+                                    << " stream=" << next.stream << " source_sequence=" << next.source_sequence
+                                    << " kind=" << (next.kind == PacketKind::Preview ? "preview" : "tracking")
+                                    << " control_version=" << next.control_version << " control_to_display_us="
+                                    << std::chrono::duration_cast<std::chrono::microseconds>(now_() - control_received).count();
                             emitDiagnostic(message.str());
                         }
                     } catch (...) {

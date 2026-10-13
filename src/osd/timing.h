@@ -50,7 +50,8 @@ struct TimingGroup {
     std::array<TimingHistogram, TIMING_STAGES> stages{};
 };
 struct TimingWindow {
-    std::uint64_t round{}, id{};
+    std::uint64_t round{}, id{}, stream{};
+    std::uint64_t preview_submitted{}, tracking_submitted{}, preview_displayed{}, tracking_displayed{};
     TimingClock::time_point start{}, end{};
     std::array<TimingGroup, 6> groups{};
     std::uint64_t submitted{}, replaced{}, displayed{}, rejected{}, commits{};

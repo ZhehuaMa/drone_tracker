@@ -153,3 +153,26 @@ sudo systemctl stop drone-tracker-diagnostics.service
 空间不足、写入失败或同步落后超过 500 ms 会使诊断退化。业务继续；满缓冲计入缺口。维护者应先备份原件，再用匹配的 `rk3576_diagnostic_inspect` 导出至新目录。100 ms 同步周期不保证固定最大掉电损失时间。
 
 回退使用新包内的 `sudo deployment/rollback.sh /opt/drone_tracker/backups/<备份名>`。该脚本恢复原业务、程序链接、入口、配置、服务和启用/运行状态；回退到没有诊断能力的旧版本时停止并移除新诊断服务。所有发布目录和历史诊断原件保留。读取新格式日志时使用已保留新发布目录中的匹配检查器，不能使用旧程序猜测格式。
+
+### Continuous preview upgrade and rollback
+
+`enabled` means the service is configured to start at boot. It does not mean the
+node is currently running. With the production RK3576 camera configuration and
+`osd.enabled=true`, actually starting the node immediately occupies the camera
+and HDMI and begins preview. ON still controls tracking and explicitly enabled
+recording/bag sessions; service startup itself creates neither. OFF leaves the
+camera and HDMI occupied and keeps the desktop stopped. Stop the service and
+confirm device release before restoring the desktop or using another camera tool.
+
+`deploy.sh --check` remains a read-only preflight: it does not stop the desktop,
+start a node, capture images or create any session. Preserve the selected model,
+algorithm, capture, bag, recording, HDMI and CPU policy values when upgrading.
+The existing CPU policy also applies to the persistent frame dispatcher as the
+Capture role; ON/OFF do not recreate capture or dispatcher threads.
+
+To restore the previous ON/start and OFF/freeze lifecycle, stop the new service
+and confirm it has exited and released devices. Then restore the complete old
+release, its matching configuration and launch entry using the backup procedure
+above. Restore the previous enabled/active service state and restart if it was
+running. `osd.render_path=legacy` only selects the legacy renderer and cannot
+restore the old lifecycle.

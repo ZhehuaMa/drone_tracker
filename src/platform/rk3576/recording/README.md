@@ -29,3 +29,28 @@ cmake --build build-recording -j4
 `CameraNv12Sink` 定义 `stage/publish/cancel` 三步接口：暂存期间编码器不可读取，最终检查成功才发布，归还失败、停止或最终超时均撤销。默认调用不传接收器，原灰度路径不复制额外像素。`RecordingSlots` 使用四槽共享内存，发布/读取状态通过无需互斥锁的原子操作交接；消费者复制完成后才能释放槽。当前仅独立探测器接入，尚未装配正式节点。
 
 验证限制：此程序是受外部 `timeout` 限时的实验入口，线程退出不提供正式录像子进程的故障隔离。没有 TS 封装、周期持久化、会话证据及 ROS 生命周期。峰值 RSS 为进程驻留内存，不代表全部硬件内部内存。退出成功只表示探测流程完成，还须检查丢帧、通用解码和资源结果；不能据此宣布整项录像验收完成。
+
+### Continuous preview sessions
+
+For the RK3576 ROS camera with `osd.enabled=true`, service startup opens capture and
+HDMI preview. It does not prepare a recording process or copy recording pixels.
+ON requests a recording session only when `recording.enabled=true`. Preparation
+runs on a serial recording controller. Tracking and preview continue during it.
+Frames seen before preparation completes are never replayed into the session.
+
+A fixed capture dispatcher pins the same session from candidate staging through
+publish/cancel and frame disposition. OFF closes reception immediately. A staged
+candidate that has not passed the final boundary is cancelled. Already accepted
+frames finish within the existing parent close budget of three seconds. Resource
+preparation retains its separate three-second budget. An unreaped process keeps
+its mapping isolated and prevents another recording process from being created.
+OFF leaves the camera and HDMI preview running.
+
+Each session records a stream identity, tracking round, reception start/end count
+snapshots and an independent end reason. Stream warmup can precede multiple
+sessions; it is recorded as stream evidence, without repeating warmup on ON.
+`camera_running_at_end=true` means that recording ended while preview continued.
+PTS (video presentation time) zero belongs to the first frame accepted by that
+session. Subsequent timestamps retain actual capture gaps. These timestamps have
+not been validated as exposure times. Recording failures remain isolated from
+healthy capture, tracking and display.

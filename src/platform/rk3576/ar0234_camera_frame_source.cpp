@@ -173,6 +173,11 @@ struct Ar0234CameraFrameSource::Impl {
             std::uint64_t last_gaps{};
             while (!stopped.load()) {
                 diagnostics::current_producer = diagnostics::Producer::Camera;
+
+                struct FrameVisit {
+                    CameraNv12Sink *sink{};
+                    ~FrameVisit() { if (sink) { sink->finishFrame(); } }
+                } visit{recording};
                 auto sample{device->next(100, dependencies.compare_pixels, recording ? &deferred : nullptr)};
                 auto capture_event{diagnostics::event(diagnostics::Type::Capture)};
                 capture_event.frame = {sample.capture_id, diagnostics::current_round.load(), sample.sequence,

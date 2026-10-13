@@ -567,7 +567,9 @@ ros2 launch drone_tracker rk3576_camera.launch.py \
 
 设置和恢复控制值后，每项最多等待 100 毫秒，每隔 5 毫秒读回一次，首次一致即继续。等待期间不会重复写入。超时仍不一致时报告设备、控制名、预期值、实际读回值和等待耗时；系统调用本身报错仍按设备错误处理。该时间限制不保证能中断阻塞的驱动调用。
 
-软件命令使用已核实控制接口，直接调用 V4L2，不为每帧启动 shell。周期按本轮起点安排，落后时跳过过期周期，不突发补发。OFF 或工作线程故障会唤醒等待；生命周期所有者先回收命令和采集线程，再停流、恢复、关闭。驱动调用若无法返回，不能保证停止期限，须判为实机失败，不能强制关闭在途句柄。
+软件命令使用已核实控制接口，直接调用 V4L2，不为每帧启动 shell。周期按本轮起点安排，落后时跳过过期周期，不突发补发。For independent tools and cameras without OSD, OFF or worker failure wakes the wait and stops capture.
+In continuous ROS preview, OFF closes tracking/recording reception; only service exit or camera failure stops capture.
+The capture owner joins command/capture threads before stopping, restoring and closing the device. 驱动调用若无法返回，不能保证停止期限，须判为实机失败，不能强制关闭在途句柄。
 
 首帧或后续连续两秒无成功出队为采集故障，短暂等待不等于文件结束。ROS 每秒最多输出一次常规采集汇总，终态另输出完整统计。相机停止耗时与包含模型等待的节点停止耗时分别报告。输入故障和 OFF 不伪造算法的 TargetLost 状态。
 
@@ -583,7 +585,9 @@ SC233HGS 每次成功开流后，先观察驱动时间，再交付图像。固�
 - 连续 8 帧时间严格递增才开始输出。第 8 帧就是首个合格帧。
 - 预热时允许相等时间，但会将连续计数重置为 1。此前观察帧归还驱动，不复制灰度图像，也不进入跟踪队列。
 - 到期优先于就绪；第 120 帧若在期限内达到连续条件，允许成功。否则归还后失败，不读取第 121 个观察帧。
-- OFF 可唤醒等待；已观察到停止请求时优先停止。新轮重新计时和计数，模型跨轮复用。
+- A real capture stop wakes the wait and takes priority. A new stream resets warmup time/counters.
+  Continuous-preview ON/OFF retains one stream and warmup; other inputs keep OFF mapped to capture stop.
+  Models are reused across tracking rounds.
 
 例如时间为 `100,100,117,117,134,151,168,185,202,219,236` 微秒时，前十帧被丢弃，第十一帧输出 `236 + 本轮固定偏移`。预热结束不重新采样偏移，不按帧率补时间，也不对重复时间人工加一。未知时钟域继续使用既有 `dequeue_fallback`：时间仅表示主机取得帧的时刻。AR0234 不启用此观察期。
 
@@ -666,7 +670,8 @@ RGA 阶段包含 CPU 调度和同步等待，不能称为纯硬件执行耗时�
 
 优化路径使用两个显示平面。主平面只保存视频，覆盖平面保存带透明度的文字和目标框。
 两者各有两个缓冲，只有对应的翻页事件确认后，后备缓冲才变为已显示缓冲。
-仅遥测更新或 OFF 冻结时复用当前主平面，只准备新的覆盖平面。
+Telemetry-only refreshes and non-continuous OFF freezes reuse the current primary plane.
+Continuous-camera OFF accepts fresh preview video and clears target overlays.
 超时意味着设备状态未知；后端停止显示并同步释放设备，不能继续覆盖可能仍在扫描的缓冲。
 
 布局使用持久画布和字形缓存。字段变化时恢复旧、新区域，再重画受影响字段；
@@ -690,7 +695,8 @@ ros2 run drone_tracker drone_tracker_node --ros-args \
   -p osd.enabled:=true -p osd.render_path:=cached-overlay -p osd.timing_enabled:=true
 ```
 
-节点等待原有 ON 控制。回退时先正常退出该节点，再执行相同命令，
+The video-file example waits for ON. A camera input with OSD begins preview at service startup.
+To select the legacy renderer, exit this node and repeat the command,
 仅将 `osd.render_path:=cached-overlay` 改成 `osd.render_path:=legacy`。
 模型、话题、输入和系统调度设置保持原值。`osd.enabled:=false` 则完全不建立显示后端。
 
@@ -704,3 +710,61 @@ ros2 run drone_tracker drone_tracker_node --ros-args \
 `osd_pipeline_probe` 是需独占 HDMI 的板端验证工具，不注册为无设备 CTest。
 它检查翻页确认后的扫描缓冲、源内存复用、颜色与步长、覆盖配对及冻结索引；
 该结果不能替代带真实模型的性能和持续负载验收。
+
+### Continuous HDMI camera service
+
+The RK3576 ROS camera uses continuous preview when `osd.enabled=true`. The main
+entry starts capture after parameters, models, ROS interfaces and display are
+initialized. Before its first qualified frame, HDMI shows a black waiting image
+and available telemetry. A healthy stream then shows preview even before ON.
+ON starts tracking and the explicitly enabled recording sessions. OFF stops new
+tracking output and recording reception while capture and preview continue.
+Stop the service to release camera and HDMI devices.
+
+For example: start the camera launch → see preview → send ON → see same-frame
+tracking images → send OFF → see fresh images without targets. During Starting
+and Stopping, preview continues. In Running, HDMI displays only images actually
+consumed by the tracker, paired with their own `display_box`. A camera capturing
+60 fps and a tracker consuming 25 fps can produce 25 new HDMI images per second.
+HDMI refreshes of the same image are measured separately. A stalled Running
+inference can cause the existing stale-frame wait; OFF resumes preview before
+that inference has finished.
+
+This lifecycle applies to both `cached-overlay` and `legacy`. The rendering path
+selects pixel processing, not capture lifetime. Cameras with OSD disabled, finite
+MJPEG video files, Jetson and independent camera tools retain their original
+ON/start, OFF/stop and EOF behavior. Continuous preview does not publish ROS
+tracking images or detection/state messages. `visualized_result` still controls
+only consumed tracking image output. Original image time and predicted-box time
+retain their distinct meanings.
+
+ON/OFF messages are requests, not completion acknowledgements. Duplicate ON
+keeps the active round. While old model accesses are finishing, only the latest
+desired ON/OFF is retained. ON → OFF → ON during this wait creates at most one
+next round, after the old accesses end. OFF closes the publication boundary and
+requests target clearing immediately. Model and recording cleanup run separately.
+Messages already handed to ROS middleware can still arrive late; receiving clients
+retain their existing drain/discard rules.
+
+`TRIG ON/OFF` indicates the last control event for two seconds. `ON MISSION` is
+the mission text overlay and remains until the next actual tracking state
+publication. Neither implies that tracking is running. Preview displays `TRK OFF`,
+`TRK STARTING` or `TRK ERROR` in a separate hint area, including while MISSION is
+visible. Algorithm values remain Detecting=0, TargetFound=1, Tracking=2,
+TargetLost=3. Preview has no algorithm result and does not report Detecting.
+
+Diagnostics use monotonic time, which does not jump when wall-clock time changes.
+`stream` and `source_sequence` identify one real camera open and its images across
+ON/OFF. `round` identifies a tracking run. `Stream counters` reports cumulative
+dispatch/replacement and preview/paired submissions, plus camera window differences.
+`Tracking OFF accepted` records control handoff; `OSD display` records successful
+clear/mode submissions; `Tracking cleanup complete` records model/bag wait, and
+camera recording reports its separate prepare/stop times. Display completion is
+not a measurement of light reaching the physical screen.
+
+A camera startup or runtime failure terminates the service with a nonzero result
+so the existing service restart policy can recover. ON does not reopen a failed
+stream. Tracking exceptions end only that round and show error preview; after
+safe cleanup, another ON can retry. Recording/bag and display failures retain
+isolated error reports. Display failure makes HDMI unavailable without stopping
+healthy tracking or automatically reconnecting the display.

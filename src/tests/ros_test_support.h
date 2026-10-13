@@ -11,6 +11,7 @@ struct Trace {
     std::array<std::atomic<int>, 5> destroyed{};
     std::atomic_bool target{false};
     std::atomic_bool nano_ok{true};
+    std::atomic_bool throw_frame{false};
     std::atomic<int> assemblies{};
     std::atomic<int> begins{};
     std::atomic<int> calls{};
@@ -22,6 +23,7 @@ struct Trace {
     bool block{};
     bool entered{};
     bool release{};
+    bool block_nano{}, nano_entered{}, release_nano{}, throw_nano{};
 };
 struct Lifetime {
     std::shared_ptr<Trace> trace;
@@ -72,6 +74,7 @@ class Compatibility final : public FrameCompatibility {
 public:
     explicit Compatibility(std::shared_ptr<Trace> trace) : lifetime_{std::move(trace), 4} {}
     PlatformDiagnostic validate(const FrameRef &frame) const override {
+        if (lifetime_.trace->throw_frame) { throw std::runtime_error("injected tracking frame failure"); }
         if (!std::dynamic_pointer_cast<const TestFrame<1>>(frame)) {
             return {"mock", "FrameCompatibility", {}, "PlatformTypeMismatch"};
         }
@@ -153,6 +156,14 @@ public:
     explicit Nano(std::shared_ptr<Trace> trace) : lifetime_{std::move(trace), 2} {}
     model::Status setTemplate(const PreparedInputRef &) override { return {true}; }
     model::Result<model::NanoPrediction> search(const PreparedInputRef &) override {
+        {
+            auto &trace{*lifetime_.trace};
+            std::unique_lock<std::mutex> lock{trace.mutex};
+            trace.nano_entered = true;
+            trace.cv.notify_all();
+            trace.cv.wait(lock, [&] { return !trace.block_nano || trace.release_nano; });
+            if (trace.throw_nano) { throw std::runtime_error("injected tracking failure"); }
+        }
         if (!lifetime_.trace->nano_ok) {
             return model::Result<model::NanoPrediction>::failure(
                 {model::ModelError::ExecutionFailure, "test", {}, {}, {}, "injected lost target"});

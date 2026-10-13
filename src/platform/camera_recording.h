@@ -18,6 +18,7 @@ struct CameraRecordingConfig {
     std::string identity{};
     /** @brief 身份等录像专属准备失败；本轮报告失败，不阻止健康的跟踪启动。 */
     std::string preparation_error{};
+    std::uint64_t stream_id{}, tracking_round{};
 };
 
 /** @brief 与跟踪状态独立的录像快照；同步未知时不得把落后量当作零。 */
@@ -26,7 +27,7 @@ struct CameraRecordingStatus {
     std::string phase{"disabled"};
     std::string reason{};
     std::string session{};
-    std::uint64_t round{};
+    std::uint64_t round{}, stream_id{}, tracking_round{};
     std::uint64_t attempted{};
     std::uint64_t accepted{};
     std::uint64_t dropped{};
@@ -43,6 +44,22 @@ struct CameraRecordingStatus {
     std::int64_t sync_duration_us{};
     std::int64_t prepare_us{};
     std::int64_t stop_us{};
+};
+
+/**
+ * @brief Optional camera recording commands, independent of capture start/stop.
+ * Commands only change desired session state. Resource preparation and close run on
+ * the camera's control executor. OFF closes reception before returning.
+ */
+enum class RecordingEndReason { UserOff, TrackingFailure, CameraFailure, ServiceExit };
+class CameraRecordingControl {
+public:
+    virtual ~CameraRecordingControl() = default;
+    virtual void useSessionControl(std::uint64_t stream) = 0;
+    /** @brief Final shutdown waits for the serial controller's bounded close, never from OFF. */
+    virtual void finishRecording() noexcept {}
+    virtual void requestRecording(std::uint64_t tracking_round, bool enabled,
+        RecordingEndReason reason = RecordingEndReason::UserOff) = 0;
 };
 
 #endif // PLATFORM_CAMERA_RECORDING_H

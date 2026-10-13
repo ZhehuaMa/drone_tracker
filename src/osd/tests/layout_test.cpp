@@ -152,6 +152,21 @@ int main(int argc, char **argv) {
             compare(720, 480);
             require(osd::targetLabelText(state).empty(), "non-live label reported");
         }
+        state.status = osd::DisplayStatus::Live;
+        state.has_tracking_result = false;
+        state.mission_active = true;
+        state.telemetry.warning = "FAILSAFE";
+        for (auto phase : {osd::TrackingPhase::Idle, osd::TrackingPhase::Starting, osd::TrackingPhase::Failed}) {
+            state.tracking_phase = phase;
+            compare(720, 480);
+            const auto preview{layout.draw(state, geometry, 720, 480, wall)};
+            require(cv::countNonZero(preview.target.reshape(1)) == 0, "preview retained target decorations");
+            require(osd::statusBarText(state) == "ON MISSION", "phase removed mission text");
+            require(cv::countNonZero(preview.hud(cv::Rect{250, 360, 200, 25}).reshape(1)) > 0,
+                "independent tracking phase hint missing");
+        }
+        state.has_tracking_result = true;
+        state.mission_active = false;
         state.status = osd::DisplayStatus::Stopped;
         const auto legacy_status{layout.draw(state, geometry, 720, 480, wall)};
         const auto &cached_status{cached.draw(state, geometry, 720, 480, wall)};

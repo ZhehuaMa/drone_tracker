@@ -57,6 +57,10 @@ target_link_libraries(rk3576_recording_storage_tests PRIVATE cpu_affinity PkgCon
     ${OpenCV_LIBS} Threads::Threads)
 add_executable(rk3576_recording_inspect inspect.cpp)
 add_executable(rk3576_recording_session_tests session_test.cpp session.cpp)
+if(TARGET rk3576_sc233hgs_camera)
+    target_compile_definitions(rk3576_recording_session_tests PRIVATE RECORDING_TEST_CAMERA_CONTROL)
+    target_link_libraries(rk3576_recording_session_tests PRIVATE rk3576_sc233hgs_camera)
+endif()
 target_compile_features(rk3576_recording_session_tests PRIVATE cxx_std_17)
 target_compile_options(rk3576_recording_session_tests PRIVATE -Wall -Wextra -Wpedantic)
 target_include_directories(rk3576_recording_session_tests PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../.."

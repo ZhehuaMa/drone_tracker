@@ -61,5 +61,24 @@ inline std::string cameraSummary(const FrameSourceStatus &status) {
     }
     return out.str();
 }
+/** @brief Session window snapshots retain the actual running camera state and stream warmup. */
+inline std::string cameraSummary(const FrameSourceStatus &end, const FrameSourceStatus &start,
+                                std::uint64_t stream, std::uint64_t tracking_round,
+                                const std::string &reason) {
+    auto text{cameraSummary(end)};
+    text.pop_back();
+    text += ",\"stream_id\":" + std::to_string(stream)
+        + ",\"tracking_round\":" + std::to_string(tracking_round)
+        + ",\"end_reason\":" + quote(reason)
+        + ",\"camera_running_at_end\":" + (end.state == FrameSourceState::Running ? "true" : "false")
+        + ",\"start_dequeued\":" + std::to_string(start.camera.dequeued_total)
+        + ",\"end_dequeued\":" + std::to_string(end.camera.dequeued_total)
+        + ",\"window_dequeued\":" + std::to_string(end.camera.dequeued_total - start.camera.dequeued_total)
+        + ",\"start_qualified\":" + std::to_string(start.read)
+        + ",\"end_qualified\":" + std::to_string(end.read)
+        + ",\"window_qualified\":" + std::to_string(end.read - start.read)
+        + ",\"warmup_from_stream\":" + (stream ? "true" : "false") + "}";
+    return text;
+}
 } // namespace rk3576::recording
 #endif // RK3576_RECORDING_METADATA_H
