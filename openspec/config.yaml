@@ -1,5 +1,5 @@
 context: |
-  Write all artifacts in Simplified Chinese.
+  Write all artifacts in English.
 
   Treat every artifact as a standalone document. Do not assume that the reader
   has read the conversation or understands the implementation.

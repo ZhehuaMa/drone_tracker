@@ -3,5 +3,6 @@
 .github/
 .vscode/
 build/
+__pycache__/
 *.engine
 AGENTS.local.md
