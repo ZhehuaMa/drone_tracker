@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 构建 RK3576 正式发布/日常编译共用的 Docker 镜像。
+# Build the explicit ARM64 fallback and the SDK-source image.
+# The default x86_64 compiler image is built by build-image-amd64.sh.
 # 镜像固定使用 RKNN Runtime 2.3.2（与生产开发板系统库位级一致），
 # 以及与生产板一致的 ROS 2 Humble、GCC 11.4.0、CMake 3.22.1 工具链。
 set -euo pipefail
@@ -8,7 +9,8 @@ usage() {
   cat <<'EOF'
 用法：./build-image.sh [--tag <镜像名:标签>] [--help]
 
-默认镜像标签：drone-tracker-rk3576:humble-arm64-rknn2.3.2
+ARM64 fallback/SDK-source tag: drone-tracker-rk3576:humble-arm64-rknn2.3.2
+Default x86_64 development image: use ./build-image-amd64.sh instead.
 
 构建前会先执行 scripts/download-firefly-media-debs.sh 补齐 vendor/ 下的
 librga、mpp 依赖包（若已存在且哈希匹配则跳过下载）。

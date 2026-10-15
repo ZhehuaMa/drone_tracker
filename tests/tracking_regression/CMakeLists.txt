@@ -19,8 +19,19 @@ target_link_libraries(rk3576_tracking_regression PRIVATE tracking_regression_sou
 install(TARGETS rk3576_tracking_regression DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ DESTINATION share/${PROJECT_NAME}/tracking_regression
     PATTERN "__pycache__" EXCLUDE PATTERN "*.cpp" EXCLUDE PATTERN "*.h" EXCLUDE)
+set(TRACKING_REGRESSION_PYTHON_LAUNCHER "" CACHE FILEPATH "Optional target Python launcher for cross-built extension tests")
+if(TRACKING_REGRESSION_PYTHON_LAUNCHER)
+    if(NOT EXISTS "${TRACKING_REGRESSION_PYTHON_LAUNCHER}")
+        message(FATAL_ERROR "Target Python launcher does not exist: ${TRACKING_REGRESSION_PYTHON_LAUNCHER}")
+    endif()
+    set(regression_python_command "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/sdk_python_tests.py"
+        --target-launcher "${TRACKING_REGRESSION_PYTHON_LAUNCHER}")
+else()
+    set(regression_python_command "${Python3_EXECUTABLE}" -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_*.py)
+endif()
 add_test(NAME tracking_regression_python
-    COMMAND ${Python3_EXECUTABLE} -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}/tests -p test_*.py)
+    COMMAND ${regression_python_command})
 set_tests_properties(tracking_regression_python PROPERTIES TIMEOUT 30
     ENVIRONMENT "DRONE_TRACKER_TEST_PROGRAM=$<TARGET_FILE:rk3576_tracking_regression>")
 add_executable(tracking_regression_source_tests tests/realtime_source_test.cpp)
@@ -29,6 +40,13 @@ target_compile_definitions(tracking_regression_source_tests PRIVATE
     TRACKING_REGRESSION_FFMPEG="${TRACKING_REGRESSION_FFMPEG}")
 add_test(NAME tracking_regression_source_tests COMMAND tracking_regression_source_tests)
 set_tests_properties(tracking_regression_source_tests PROPERTIES TIMEOUT 90)
+if(NOT CMAKE_CROSSCOMPILING)
+    # An ARM64 image may still be emulated on an x86 host. Retain this real
+    # OS-limit assertion there; a QEMU limitation must remain a visible failure.
+    add_test(NAME tracking_regression_os_resource_limit
+        COMMAND tracking_regression_source_tests --resource-limit-only)
+    set_tests_properties(tracking_regression_os_resource_limit PROPERTIES TIMEOUT 90)
+endif()
 add_executable(tracking_regression_round_tests tests/node_round_test.cpp)
 target_link_libraries(tracking_regression_round_tests PRIVATE drone_tracker_ros yaml-cpp)
 add_test(NAME tracking_regression_round_tests COMMAND tracking_regression_round_tests)

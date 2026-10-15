@@ -6,13 +6,15 @@ OSD（屏幕信息叠加）在 `drone_tracker_node` 进程内显示跟踪器已�
 
 ## 构建
 
-既有无 HDMI 部署仍使用默认构建：
+The current default entry point cross-compiles ARM64 with the x86_64 image. It enables HDMI and recording at build time; the runtime `osd.enabled` parameter still controls display operation:
 
 ```sh
 ./build.sh --test
 ```
 
-在具备生产板 SDK 的 ARM64 ROS 2 Humble 环境构建 HDMI 版本：
+Use `./build.sh --backend arm64 --test` for the explicit ARM64-image fallback. For native x86_64 portable OSD checks, use the standalone command below. Complete paths, target libraries and packaging limits are in [the x86_64 image guide](../dockerfiles/README.amd64.md).
+
+The following manual configuration is for a native ARM64 SDK environment. In the x86_64 image the repository entry point supplies the cross toolchain and target SDK paths automatically:
 
 ```sh
 source /opt/ros/humble/setup.bash

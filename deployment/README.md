@@ -1,6 +1,6 @@
 # RK3576 生产部署包
 
-部署包由本机 ARM64 构建容器生成，不读取生产源板的已安装文件。它包含主节点、录像工作进程、录像检查器、ROS 包发现文件、明确选定的原样配置及配置引用的 RKNN 模型。随包包含程序依赖的 ROS 共享库和 vision_msgs 非 Python 类型支持库，存放在版本目录的 `lib/bundled-ros`。预检和启动优先使用这些库，不覆盖系统 ROS。包内没有源码、基准测试程序、RKNN Runtime 或基础系统共享库。
+ARM64 input programs are now compiled by the default x86_64 image, or explicitly by the ARM64 fallback. The separate `deployment/package.sh` collector still runs inside the ARM64 image to resolve and bundle genuine ARM ROS libraries. This is an intentional remaining ARM64-image dependency, not a compilation restriction. The packager reads the selected local installation and does not read an installed production board. 它包含主节点、录像工作进程、录像检查器、ROS 包发现文件、明确选定的原样配置及配置引用的 RKNN 模型。随包包含程序依赖的 ROS 共享库和 vision_msgs 非 Python 类型支持库，存放在版本目录的 `lib/bundled-ros`。预检和启动优先使用这些库，不覆盖系统 ROS。包内没有源码、基准测试程序、RKNN Runtime 或基础系统共享库。
 
 ## 从开发机校时
 
@@ -95,18 +95,21 @@ sudo systemctl daemon-reload
 
 ## 在本机重新打包
 
-先启动 Docker，并用仓库的 `./build.sh --clean --test` 在 `drone-tracker-rk3576:humble-arm64-rknn2.3.2` 镜像中生成 ARM64 安装目录。把四个已批准的模型放到本机目录。例如，若生产配置引用 `/opt/drone_tracker/models/fp16/head.rknn`，则本机文件应为 `<模型目录>/fp16/head.rknn`。该目录还须包含 YOLO、模板 Backbone 和搜索 Backbone 文件。共享 `nano_backbone` 保持空值。
+Run `./build.sh --clean --test` to generate ARM64 output with the default x86_64 compiler image. Use `--backend arm64` only when deliberately selecting the previous ARM64-image workflow. The new per-backend install must be selected explicitly when packaging. 把四个已批准的模型放到本机目录。例如，若生产配置引用 `/opt/drone_tracker/models/fp16/head.rknn`，则本机文件应为 `<模型目录>/fp16/head.rknn`。该目录还须包含 YOLO、模板 Backbone 和搜索 Backbone 文件。共享 `nano_backbone` 保持空值。
 
 在仓库根目录运行：
 
 ```bash
-./deployment/package.sh .docker-artifacts/packages --model-root "$PWD/.docker-artifacts/production-models"
+./deployment/package.sh .docker-artifacts/packages \
+  --install-root "$PWD/.docker-artifacts/backends/amd64/install/drone_tracker" \
+  --model-root "$PWD/.docker-artifacts/production-models"
 ```
 
 默认相机配置是 `parameters/rk3576_sc233hgs_production_params.yaml`；默认安装目录是 `.docker-artifacts/install/drone_tracker`；默认 CPU 策略是 `deployment/cpu-affinity.yaml`。三个路径可分别用 `--camera-config`、`--install-root`、`--cpu-policy` 指定存在的绝对路径。例如，切换到 AR0234 时先在该模板中填好四个目标板模型路径，再执行：
 
 ```bash
 ./deployment/package.sh .docker-artifacts/packages \
+  --install-root "$PWD/.docker-artifacts/backends/amd64/install/drone_tracker" \
   --model-root "$PWD/.docker-artifacts/production-models" \
   --camera-config "$PWD/parameters/rk3576_ar0234_camera_params.yaml"
 ```

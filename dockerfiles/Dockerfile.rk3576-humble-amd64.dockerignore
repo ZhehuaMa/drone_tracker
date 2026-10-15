@@ -1,0 +1,13 @@
+*
+!toolchains/
+!toolchains/aarch64-humble.cmake
+!patches/
+!patches/qemu-8.2.2-close-truncated-rights.patch
+!scripts/
+!scripts/verify-patched-qemu.py
+!vendor/
+!vendor/qemu-user/
+!vendor/qemu-user/bin/
+!vendor/qemu-user/bin/qemu-aarch64
+!vendor/qemu-user/manifest.json
+!vendor/qemu-user/SHA256SUMS

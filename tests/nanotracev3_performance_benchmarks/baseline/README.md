@@ -6,9 +6,11 @@ FP16 指导出模型采用 16 位浮点精度。主机前处理和模型之间�
 
 ## 构建
 
-使用仓库 `AGENTS.local.md` 指定的 ARM64 镜像。仓库入口为 `./build.sh --test`，安装结果在 `.docker-artifacts/install/drone_tracker/lib/drone_tracker/nanotrackv3_baseline`。
+Use `./build.sh --test`, which defaults to the x86_64 compiler image and produces ARM64 output. The installed benchmark is `.docker-artifacts/backends/amd64/install/drone_tracker/lib/drone_tracker/nanotrackv3_baseline`. Select `--backend arm64` explicitly for the ARM64-image fallback and its separate `backends/arm64` tree. Read `../../../dockerfiles/README.amd64.md` for cross-toolchain/test-launcher details; real NPU measurements still require the board.
 
 也可在具有 OpenCV、FFmpeg、JPEG、OpenSSL 和 RKNN SDK 的 ARM64 环境独立构建，不需要 ROS：
+
+The standalone commands below use a native ARM64 SDK environment. In the x86_64 image, add `-DCMAKE_TOOLCHAIN_FILE=/opt/toolchains/aarch64-humble.cmake`, set RKNN headers/library under `/opt/arm64-sysroot/opt/rknn-runtime`, and run ARM tests with the target QEMU launcher. Prefer the repository entry point to receive the configured launchers and native fixture tools automatically. When using a container, put standalone build directories outside its read-only source mount.
 
 ```sh
 cmake -S tests/nanotracev3_performance_benchmarks/baseline -B build-baseline \

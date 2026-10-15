@@ -20,15 +20,17 @@
 
 ## 构建
 
-仓库入口（推荐，使用 `AGENTS.local.md` 指定的 ARM64 镜像）：
+Recommended repository entry point: the default x86_64 image cross-compiles ARM64 programs. `--backend arm64` explicitly selects the preserved ARM64 image. See `../../../dockerfiles/README.amd64.md` for target SDK and QEMU details:
 
 ```sh
 ./build.sh --test
 ```
 
-产物在 `.docker-artifacts/install/drone_tracker/lib/drone_tracker/` 下，包含 `nanotrackv3_search_direct` 和比较工具 `nanotrackv3_benchmark_compare`。
+产物在 `.docker-artifacts/backends/amd64/install/drone_tracker/lib/drone_tracker/` 下，包含 `nanotrackv3_search_direct` 和比较工具 `nanotrackv3_benchmark_compare`。
 
 也可在具备 OpenCV、FFmpeg、JPEG、OpenSSL 和 RKNN SDK 的 ARM64 环境独立构建，不需要 ROS：
+
+The standalone commands below use a native ARM64 SDK environment. In the x86_64 image, add `-DCMAKE_TOOLCHAIN_FILE=/opt/toolchains/aarch64-humble.cmake`, set RKNN headers/library under `/opt/arm64-sysroot/opt/rknn-runtime`, and run ARM tests with the target QEMU launcher. Prefer the repository entry point to receive the configured launchers and native fixture tools automatically. When using a container, put standalone build directories outside its read-only source mount.
 
 ```sh
 cmake -S tests/nanotracev3_performance_benchmarks/search_direct -B build-search-direct \

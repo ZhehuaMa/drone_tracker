@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Dependency identity must be inspected by the executable's real architecture loader.
+set -euo pipefail
+if /usr/bin/readelf -h "$1" 2>/dev/null | grep -q 'Machine:.*AArch64'; then
+  exec "${DRONE_QEMU_AARCH64:-/opt/qemu-arm64/bin/qemu-aarch64}" -L /opt/arm64-sysroot \
+    /opt/arm64-sysroot/lib/ld-linux-aarch64.so.1 --list "$@"
+fi
+exec /usr/bin/ldd "$@"

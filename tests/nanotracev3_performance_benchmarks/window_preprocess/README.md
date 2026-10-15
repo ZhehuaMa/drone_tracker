@@ -26,9 +26,11 @@ nanotrack_window_recovery --check-inputs experiment/config.yaml
 
 ## 构建与独立数值检查
 
-在已有 ARM64 RKNN 2.3.2 验证环境中，仓库入口为 `./build.sh --test`。worktree 的 `.git` 文件指向主仓库时，还需让容器只读访问对应主仓库 Git 元数据路径，否则既有源码身份收集会失败。不要改写 Git 身份或用其他 checkout 冒充当前代码。
+The repository entry point is `./build.sh --test`: the default x86_64 image cross-compiles ARM64 output using the real RKNN Runtime 2.3.2 SDK. `--backend arm64` explicitly selects the ARM64-image fallback. Read `../../../dockerfiles/README.amd64.md` for target SDK and test launchers. worktree 的 `.git` 文件指向主仓库时，还需让容器只读访问对应主仓库 Git 元数据路径，否则既有源码身份收集会失败。不要改写 Git 身份或用其他 checkout 冒充当前代码。
 
 也可以在同一 SDK 环境独立构建本目录：
+
+The standalone commands below use a native ARM64 SDK environment. In the x86_64 image, add `-DCMAKE_TOOLCHAIN_FILE=/opt/toolchains/aarch64-humble.cmake`, set RKNN headers/library under `/opt/arm64-sysroot/opt/rknn-runtime`, and run ARM tests with the target QEMU launcher. Prefer the repository entry point to receive the configured launchers and native fixture tools automatically. When using a container, put standalone build directories outside its read-only source mount.
 
 ```bash
 cmake -S tests/nanotracev3_performance_benchmarks/window_preprocess \
@@ -52,7 +54,7 @@ source /opt/ros/humble/setup.bash
 build/window-preprocess/nanotrack_window_recovery --measure experiment/config.yaml
 ```
 
-完整 ROS 构建的工具位置为 `.docker-artifacts/build/drone_tracker/tests/nanotracev3_performance_benchmarks/window_preprocess/nanotrack_window_recovery`，不是安装目录。将隔离诊断程序与必要项目动态库提供给实验环境，不切换正式节点版本。
+完整 ROS 构建的工具位置为 `.docker-artifacts/backends/amd64/build/drone_tracker/tests/nanotracev3_performance_benchmarks/window_preprocess/nanotrack_window_recovery`，不是安装目录。将隔离诊断程序与必要项目动态库提供给实验环境，不切换正式节点版本。
 
 程序先检查输入、模型和系统库身份。正式预热之前，使用真实跟踪轨迹的窗口逐次精确比较新旧输入；这批额外恢复和张量比较位于正式计时外。模型加载、图像解码、帧复制、每批 reset 和写盘位于计时外。每条路径预热至少两批，正式执行至少十对恢复；每对交替先后顺序。CPU 核心与 OpenCV 线程数由配置固定。每批执行初始化一次和按时间戳顺序的 24 次更新；任何更新失败或输出差异都使指定用例失败。
 

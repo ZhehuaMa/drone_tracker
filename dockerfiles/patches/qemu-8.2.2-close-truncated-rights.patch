@@ -1,0 +1,75 @@
+--- a/linux-user/syscall.c
++++ b/linux-user/syscall.c
+@@ -1829,6 +1829,23 @@
+     return 0;
+ }
+ 
++/* recvmsg installs host descriptors before guest ancillary conversion. Linux
++ * closes SCM_RIGHTS descriptors which do not fit the caller's control buffer.
++ * Close the corresponding host descriptors when the guest cannot receive them.
++ */
++static void close_remaining_scm_rights(struct msghdr *msg, struct cmsghdr *cmsg)
++{
++    for (; cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
++        if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS) {
++            int *fds = (int *)CMSG_DATA(cmsg);
++            size_t count = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
++            for (size_t index = 0; index < count; index++) {
++                close(fds[index]);
++            }
++        }
++    }
++}
++
+ static inline abi_long host_to_target_cmsg(struct target_msghdr *target_msgh,
+                                            struct msghdr *msgh)
+ {
+@@ -1844,8 +1861,10 @@
+     target_cmsg_addr = tswapal(target_msgh->msg_control);
+     target_cmsg = lock_user(VERIFY_WRITE, target_cmsg_addr, msg_controllen, 0);
+     target_cmsg_start = target_cmsg;
+-    if (!target_cmsg)
++    if (!target_cmsg) {
++        close_remaining_scm_rights(msgh, cmsg);
+         return -TARGET_EFAULT;
++    }
+ 
+     while (cmsg && target_cmsg) {
+         void *data = CMSG_DATA(cmsg);
+@@ -1862,6 +1881,7 @@
+          */
+         if (msg_controllen < sizeof(struct target_cmsghdr)) {
+             target_msgh->msg_flags |= tswap32(MSG_CTRUNC);
++            msgh->msg_flags |= MSG_CTRUNC;
+             break;
+         }
+ 
+@@ -1892,6 +1912,7 @@
+ 
+         if (msg_controllen < TARGET_CMSG_LEN(tgt_len)) {
+             target_msgh->msg_flags |= tswap32(MSG_CTRUNC);
++            msgh->msg_flags |= MSG_CTRUNC;
+             tgt_len = msg_controllen - sizeof(struct target_cmsghdr);
+         }
+ 
+@@ -1911,6 +1932,9 @@
+ 
+                 for (i = 0; i < numfds; i++) {
+                     __put_user(fd[i], target_fd + i);
++                }
++                for (; i < len / sizeof(int); i++) {
++                    close(fd[i]);
+                 }
+                 break;
+             }
+@@ -2057,6 +2081,10 @@
+     }
+     unlock_user(target_cmsg, target_cmsg_addr, space);
+  the_end:
++    if (cmsg) {
++        msgh->msg_flags |= MSG_CTRUNC;
++        close_remaining_scm_rights(msgh, cmsg);
++    }
+     target_msgh->msg_controllen = tswapal(space);
+     return 0;
+ }

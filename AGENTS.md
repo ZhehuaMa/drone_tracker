@@ -33,8 +33,8 @@
 ## 构建与验证
 
 - 本项目是 C++17 的 ROS 2 `ament_cmake` 包。保留相邻代码风格，避免顺手格式化无关代码。
-- 开始开发或构建前，若仓库根目录存在 `AGENTS.local.md`，先读取其中的本地工具、路径和容器约定。本地系统专属信息只写入该文件，不要写入本文件。
-- 在匹配的目标架构和 SDK 环境中构建。常规入口为 `colcon build --packages-select drone_tracker --cmake-args -DCMAKE_BUILD_TYPE=Release`；RK3576 的本地构建方式以 `AGENTS.local.md` 为准。
+- 开始开发或构建前，若仓库根目录存在 `AGENTS.local.md`，先读取其中的本地工具、路径和容器约定，并读取父目录的 `AGENTS.local.md`。本地系统专属信息只写入该文件，不要写入本文件。
+- For RK3576, use `./build.sh` or `./build.sh --test`. The default x86_64 image cross-compiles ARM64 output; `--backend arm64` explicitly selects the ARM64-image fallback. ARM64 target restrictions do not require an ARM64 container. Read `AGENTS.local.md` and `dockerfiles/README.amd64.md` for SDK paths, separate caches, portable native checks and packaging boundaries.
 - Jetson 参考实现应在匹配的 Jetson 硬件和 SDK 环境中构建。常规入口同样是 `colcon build --packages-select drone_tracker --cmake-args -DCMAKE_BUILD_TYPE=Release`；当前 Jetson 源实现还要求 ROS 2 依赖、OpenCV、CUDA、TensorRT、VPI、FFmpeg 和 Jetson Multimedia API。
 - 需要测试目标时增加 `-DDRONE_TRACKER_BUILD_TESTS=ON`。`hybrid_tracker_tests` 覆盖算法级逻辑；`vpi_race_repro` 依赖 VPI/CUDA；`hybrid_tracker_stress` 和 `replay_harness` 需要真实模型，回放测试还需要录制视频。
 - 不要用非目标主机上的编译结果代替实机验证。交付时说明使用的平台、模型和输入数据，并明确列出因缺少 RK3576/Jetson 硬件、SDK、模型或录像而未运行的检查。

@@ -76,7 +76,7 @@ Continuous camera preview uses the Control producer for the persistent frame dis
 
 结果包括中文 `timeline.txt`、逐行 JSON 记录 `events.jsonl`、按列组织的 `events.csv` 和 `identities.txt` 身份清单。未知身份、重复事件、已知缺口、缺少结束标志及损坏尾部均显式报告。原件不修改。请求开始可见但结束缺失时只能报告“结果未知”，不能计为检测失败或断言推理仍在执行。
 
-受控检查入口为 `diagnostic_tests`。外部截止入口 `tests/bounded_run.py` 将准备、预热、测量和收尾全部计入预算；超时返回失败，不延长窗口。性能或稳定性单次最多 600 秒，相机最多 180 秒，故障实例最多 120 秒。生产计划采用 150 秒窗口。ARM64 容器结果只证明构建和受控检查，不替代生产板真实模型、相机或性能验收。
+受控检查入口为 `diagnostic_tests`。外部截止入口 `tests/bounded_run.py` 将准备、预热、测量和收尾全部计入预算；超时返回失败，不延长窗口。性能或稳定性单次最多 600 秒，相机最多 180 秒，故障实例最多 120 秒。生产计划采用 150 秒窗口。Current builds use `./build.sh --test` in the default x86_64 compiler image to produce ARM64 programs. `--backend arm64` selects the preserved fallback. Native portable process checks and ARM/QEMU checks have separate roles; see `../../dockerfiles/README.amd64.md`. Results from either image prove only the checks actually run and do not replace production-board model, camera or performance acceptance.
 ## 实机验收的独立采样入口
 
 `DRONE_TRACKER_ACCEPTANCE_DIRECTORY` 是验收脚本专用环境变量。未设置时不启用测量数组。设置时须指向外部控制器刚创建、没有既有输出的新目录。它在模型运行前分配并预触及定长数组。业务停止、节点销毁后才导出 CSV，不在跟踪热路径写文件。

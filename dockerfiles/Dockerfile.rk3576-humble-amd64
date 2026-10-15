@@ -1,0 +1,74 @@
+# Native x86_64 tools plus an isolated, genuine ARM64 target sysroot.
+# ARM64 libraries are never installed into the native loader search path.
+ARG ARM64_SDK_IMAGE=drone-tracker-rk3576:humble-arm64-rknn2.3.2
+ARG NATIVE_BASE_IMAGE=ros:humble-ros-base-jammy
+FROM --platform=linux/arm64 ${ARM64_SDK_IMAGE} AS arm64-sdk
+FROM ${NATIVE_BASE_IMAGE}
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ENV DEBIAN_FRONTEND=noninteractive
+ARG NATIVE_DEPS_PREINSTALLED=0
+
+RUN if [[ "$NATIVE_DEPS_PREINSTALLED" == 1 ]]; then \
+      dpkg-query -W build-essential cmake ninja-build gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+        libopencv-dev ffmpeg python3-colcon-common-extensions ros-humble-mavros-msgs; \
+    else \
+    test "$(dpkg --print-architecture)" = amd64 \
+    && mkdir -p /etc/apt/trusted.gpg.d /etc/apt/apt.conf.d /usr/local/share/ca-certificates \
+        /var/lib/dpkg/updates /var/lib/dpkg/alternatives /var/log/apt /var/cache/debconf \
+    && ln -sf /usr/share/keyrings/ubuntu-archive-keyring.gpg /etc/apt/trusted.gpg.d/ubuntu-archive.gpg \
+    && if [[ -f /usr/share/keyrings/ros2-archive-keyring.gpg && -f /etc/apt/sources.list.d/ros2.sources ]]; then \
+        printf 'Types: deb\nURIs: http://packages.ros.org/ros2/ubuntu\nSuites: jammy\nComponents: main\nSigned-By: /usr/share/keyrings/ros2-archive-keyring.gpg\n' > /etc/apt/sources.list.d/ros2.sources; \
+       fi \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential cmake ninja-build git curl ca-certificates file pkg-config mawk \
+        gcc-aarch64-linux-gnu g++-aarch64-linux-gnu qemu-user-static \
+        libopencv-dev libeigen3-dev libyaml-cpp-dev libssl-dev libdrm-dev \
+        libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libjpeg-dev \
+        ffmpeg python3-colcon-common-extensions python3-rosdep python3-vcstool \
+        python3-pip python3-serial python3-numpy python3-yaml python3-pytest \
+        ros-humble-cv-bridge ros-humble-mavros-msgs ros-humble-vision-msgs \
+        ros-humble-tf2-geometry-msgs ros-humble-rosidl-default-generators \
+        ros-humble-ament-cmake-gtest ros-humble-ament-lint-auto ros-humble-ament-lint-common \
+    && update-ca-certificates \
+    && ldconfig \
+    && rm -rf /var/lib/apt/lists/*; \
+    fi \
+    && test "$(dpkg --print-architecture)" = amd64
+
+COPY --from=arm64-sdk /usr/ /opt/arm64-sysroot/usr/
+COPY --from=arm64-sdk /lib/ /opt/arm64-sysroot/lib/
+COPY --from=arm64-sdk /opt/ros/ /opt/arm64-sysroot/opt/ros/
+COPY --from=arm64-sdk /opt/rknn-runtime/ /opt/arm64-sysroot/opt/rknn-runtime/
+COPY toolchains/aarch64-humble.cmake /opt/toolchains/aarch64-humble.cmake
+
+# Preserve the original SDK's selected BLAS/LAPACK implementations without
+# resolving its absolute /etc/alternatives links against the native filesystem.
+# ROS also exports an absolute, architecture-specific Python library path.
+RUN test -f /opt/arm64-sysroot/usr/lib/aarch64-linux-gnu/blas/libblas.so.3 \
+    && test -f /opt/arm64-sysroot/usr/lib/aarch64-linux-gnu/lapack/liblapack.so.3 \
+    && ln -sfn blas/libblas.so.3 /opt/arm64-sysroot/usr/lib/aarch64-linux-gnu/libblas.so.3 \
+    && ln -sfn lapack/liblapack.so.3 /opt/arm64-sysroot/usr/lib/aarch64-linux-gnu/liblapack.so.3 \
+    && mkdir -p /usr/lib/aarch64-linux-gnu \
+    && ln -sfn /opt/arm64-sysroot/usr/lib/aarch64-linux-gnu/libpython3.10.so /usr/lib/aarch64-linux-gnu/libpython3.10.so
+
+# The copied SDK keeps its original Runtime 2.3.2 fingerprint.
+RUN echo 'd31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /opt/arm64-sysroot/opt/rknn-runtime/lib/librknnrt.so' | sha256sum -c - \
+    && mkdir -p /etc/apt/trusted.gpg.d \
+    && ln -sf /usr/share/keyrings/ubuntu-archive-keyring.gpg /etc/apt/trusted.gpg.d/ubuntu-archive.gpg \
+    && file /usr/bin/cmake /opt/arm64-sysroot/opt/rknn-runtime/lib/librknnrt.so
+
+# Explicitly prepared native static emulator; never replace host binfmt handlers.
+COPY vendor/qemu-user/ /opt/qemu-arm64/
+COPY patches/qemu-8.2.2-close-truncated-rights.patch /opt/qemu-arm64/close-truncated-rights.patch
+COPY scripts/verify-patched-qemu.py /opt/qemu-arm64/verify-provenance.py
+RUN python3 /opt/qemu-arm64/verify-provenance.py /opt/qemu-arm64 /opt/qemu-arm64/close-truncated-rights.patch \
+    && cd /opt/qemu-arm64 && sha256sum -c SHA256SUMS \
+    && file bin/qemu-aarch64 \
+    && ! readelf -l bin/qemu-aarch64 | grep -q INTERP \
+    && bin/qemu-aarch64 --version
+ENV DRONE_QEMU_AARCH64=/opt/qemu-arm64/bin/qemu-aarch64
+
+WORKDIR /work/ros2_ws
+CMD ["bash"]

@@ -6,3 +6,6 @@ build/
 __pycache__/
 *.engine
 AGENTS.local.md
+
+# Generated checksum-pinned native emulator; prepare explicitly before image build.
+/dockerfiles/vendor/

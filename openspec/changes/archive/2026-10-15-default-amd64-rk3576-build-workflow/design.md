@@ -1,0 +1,46 @@
+# Design
+
+## Context
+
+The ordinary scripts cannot use the new native compiler image, and the ordinary test option lacks its own fixture prerequisites. The intended result is a single build/test command with an explicit compiler backend and unchanged ARM64 deployment output. See proposal.md for the user impact.
+
+The amd64 image runs x86_64 programs directly and contains a cross-compiler, which produces ARM64 executables. ARM target libraries live under `/opt/arm64-sysroot`. The arm64 image runs the existing ARM compiler under emulation on this host. QEMU is the CPU emulator used to execute ARM subprocesses; its success does not establish physical-device behavior.
+
+## Goals / Non-Goals
+
+**Goals:** one shared selection/preflight/cache policy, correct native-versus-target subprocess environments, read-only sources, and ordinary test commands with actionable prerequisites.
+
+**Non-Goals:** changing production algorithms, widening test deadlines, changing deployment package defaults, deleting migrated caches, or automatically changing backends after a failure.
+
+## Decisions
+
+1. **Select `--backend amd64|arm64`, default amd64.** This names the container/compiler architecture independently from the fixed ARM64 deployment target. A `--native` switch was rejected because it could imply native x86 deployment output. Optional `--image` overrides are inspected for architecture compatibility.
+2. **Use one shared host helper and one container runner.** `build.sh` owns the public interface; `run_sdk_tests.sh` delegates to it with tests enabled. Duplicate container command strings were rejected because prerequisite and environment fixes would drift. `--regression-only` remains a real CTest selection rather than a different build mode.
+3. **Use `ARTIFACT_ROOT/backends/BACKEND/{build,install,log}`.** `--artifacts-dir` selects the root. A cache lock covers preflight, backup, and build. The old `.docker-artifacts/{build,install,log}` paths are preserved. Reusing those directories was rejected because CMake caches contain compiler architecture and absolute paths. `--clean` backs up only the selected backend directories and their environment manifest. Cache reuse checks the immutable image ID, target architecture, and toolchain checksum. A mismatch or populated cache without that manifest fails before configuration and requires `--clean`; it never silently reuses objects from another image.
+4. **Mount source at its original absolute path, read-only.** This preserves relative or absolute Git pointers in ordinary repositories and managed worktrees. External Git metadata is mounted at its original path read-only. Outputs use separate writable mounts. Copying or rewriting `.git` was rejected because it would falsify provenance or change user state.
+5. **Use native FFmpeg in the amd64 container.** These tools create synthetic fixture inputs and do not need ARM emulation. The explicit ARM64 fallback reuses or builds private ARM tools through its preparation script. Routine `--test` never downloads source; missing ARM tools fail early with the preparation command. Preparation is an explicitly invoked setup operation and may download the checksum-pinned official source.
+6. **Keep native Python for build generators; select target Python only for target-import tests.** A coordinator partitions all discovered Python test IDs without loss or duplication. Portable tests run on native Python, including real Linux orphan supervision and freshly compiled native loader fixtures. The actual ARM middleware identity case runs on genuine ARM Python. Its launcher sets target paths, target-only loader variables, and an architecture-aware `ldd` shim. A native executable shim for `sys.executable` explicitly reenters that launcher for ARM Python children, avoiding the host registered emulator. Both groups share the existing aggregate 30-second CTest deadline. Any group failure or skipped test fails the aggregate check. QEMU 8.2 does not implement the ARM Python child-subreaper call; native supervision therefore tests the real host kernel instead of claiming that unsupported guest syscall passed. A global ARM `LD_LIBRARY_PATH` was rejected because it could contaminate native compilers and CMake. The CMake regression test registration accepts the launcher while retaining its existing timeout and assertions.
+7. **Make failure injection test the actual failure under test.** QEMU can report success for an address-space limit without enforcing the guest limit. The target source test will inject a real OpenCV allocation exception and assert that injection fired, while retaining the existing evidence, failure-state, and no-playback-clock checks. A separate native test retains the actual OS `RLIMIT_AS` limit. Ignoring the failed target assertion or extending its deadline was rejected. Production allocators remain unchanged.
+8. **Observe stable public test state without weakening acceptance.** Diagnostic descriptor counts can include two transient directory descriptors from an idle storage scan. Sample the minimum idle baseline within the existing one-second bound, then retain exact descriptor equality and the original cleanup deadline. A retained-descriptor negative control must still fail. In the OSD test, refresh frames through the same three-second fake-clock interval using sub-staleness increments and keep the exact 1000 ms stale limit. Observe the public displayed counter within each original deadline: two seconds for the existing general checks and 200 ms for the mission-following check. Each deadline starts before the associated submission and is shared by both observations, rather than adding a second wait budget. Widening limits or accepting fewer assertions was rejected; production diagnostics and presenters remain unchanged.
+9. **Select the real board's Cortex-A72 CPU model for emulated test subprocesses.** `QEMU_CPU=cortex-a72` avoids QEMU's default maximum-feature CPU model selecting paths that do not describe the production CPU. Native fixture encoding remains native. Extending the source test's deadline was rejected; the same complete source check must finish under its existing limit.
+10. **Repair and pin the emulator's Linux descriptor semantics.** The original QEMU 6.2 lacks the required process-descriptor syscall. Unpatched QEMU 8.2 supports that call but leaks host descriptors when a Unix socket transfers more descriptors than fit in the guest buffer. A descriptor is an operating-system handle to an open resource. Build a checksum-pinned QEMU 8.2 source with the smallest isolated correction that closes handles not delivered to the guest. Preserve the original package/source checksums, patch diff, resulting binary checksum, and strict positive/negative-control results. Accepting a leak allowance or weakening production cleanup was rejected.
+11. **Route required ARM subprocesses explicitly.** Updating a container binary does not replace the host's already registered emulator. Generate native shell launchers for the diagnostic worker and inspector, and use explicit selected-emulator invocations for the main diagnostic test and target Python processes. Native subprocesses remain native. Host `binfmt` registration, which selects an emulator for an otherwise unsupported executable, remains untouched. Rebuild and verify the final image only after the isolated correctness patch passes strict controls.
+
+The default test sequence is:
+
+1. Validate Docker image architecture, test tools, target Python, and backend cache lock.
+2. Configure the tracker using the real ARM cross toolchain and native Python generators; pass explicit native fixture tool paths.
+3. Build and install ARM64 binaries, verify their ELF architecture, then run the existing CTest selection.
+4. Use native Python for pure scripting checks and the target launcher for regression cases that import ARM extensions. Propagate any failure and retain logs.
+
+## Risks / Trade-offs
+
+- QEMU can differ from real Linux ARM process behavior → retain failing assertions, investigate emulator or test compatibility separately, and keep explicit ARM-image selection available.
+- Native and target Python both use Python 3.10 but incompatible extension binaries → scope target paths to the target launcher and verify its message imports.
+- Production packaging still defaults to the preserved legacy install → show the selected install root at completion and document `deployment/package.sh --install-root ...` explicitly.
+- Read-only sources expose tests that write bytecode or output beside source → disable Python bytecode writes and direct temporary test output into the selected log or temporary directory.
+- A stale lock can remain after an uncatchable process kill → report its path and owner PID; require deliberate operator cleanup after checking that no build remains active.
+
+## Migration Plan
+
+Existing legacy caches remain untouched. The first new invocation creates the selected backend cache. Switching to `--backend arm64` is an explicit compatibility path, with no shared CMake cache. Reverting the scripts restores their prior behavior without deleting either new cache. Deployment packaging continues to use explicit inputs for newly built output.

@@ -2,7 +2,13 @@
 
 `PlatformFactory` 是生产程序统一创建平台资源的入口。它创建帧源、帧创建器和整套跟踪依赖。公共算法只使用接口，不链接硬件实现。
 
-生产构建默认使用 `DRONE_TRACKER_PLATFORM=jetson`，也支持显式选择 `rk3576` 的本地 MJPEG 视频与相机节点。未知值在硬件依赖发现前拒绝。RK3576 相机支持连续及软件触发；硬件解码和 RGA 图像加速仍未提供。可控模型仅在测试中注入，生产程序没有假模型选项。
+The raw CMake default is `DRONE_TRACKER_PLATFORM=jetson`. The supported RK3576 repository entry point `./build.sh` explicitly selects `rk3576`, including local MJPEG video and camera nodes. 未知值在硬件依赖发现前拒绝。RK3576 相机支持连续及软件触发；硬件解码和 RGA 图像加速仍未提供。可控模型仅在测试中注入，生产程序没有假模型选项。
+
+## Current container and output architectures
+
+Use `./build.sh --test` in the tracker root. It defaults to the x86_64 image and cross-compiles complete ARM64 RK3576 outputs, including recording, OSD and diagnostics. Use `--backend arm64` for the preserved ARM64-image fallback. Neither image supplies physical devices. Read `../../dockerfiles/README.amd64.md` and `../../AGENTS.local.md` for exact container commands and target SDK paths.
+
+Portable OSD, preprocessing and camera-only targets can instead be compiled and tested as native x86_64 programs. Full RKNN and HDMI output still requires ARM64 target libraries. A native camera-only test does not validate a real sensor. The standalone SDK examples below use native ARM64 SDK paths; when cross-compiling them in the x86_64 image, add `-DCMAKE_TOOLCHAIN_FILE=/opt/toolchains/aarch64-humble.cmake` and use the SDK paths under `/opt/arm64-sysroot`. Run resulting ARM tests through the selected QEMU launcher, or on the target board. Keep output directories outside source.
 
 ## RK3576 SC233HGS 独立录像
 
@@ -65,7 +71,7 @@ rk3576_recording_inspect /var/lib/drone_tracker/recordings /var/lib/drone_tracke
 
 ## RK3576 独立 YOLO 使用
 
-在 ARM64 环境使用 C++17、OpenCV（core、imgproc、dnn、video、imgcodecs、videoio）、线程库及 RKNN SDK。目标兼容性基线为 Runtime 2.3.2、驱动 0.9.8。本次沿用既有 2.3.0 构建 SDK（编译所用的头文件与链接库），产物在目标板 Runtime 2.3.2 上验证，不要求重建 SDK 镜像。此入口无需 ROS、CUDA、TensorRT 或 VPI。开发机的容器和挂载约定见仓库根目录 `AGENTS.local.md`；以下命令在该 ARM64 环境内执行，SDK 路径按实际安装位置填写：
+Standalone YOLO requires C++17, OpenCV (core/imgproc/dnn/video/imgcodecs/videoio), threads and the genuine ARM64 RKNN SDK. Current images provide Runtime 2.3.2 headers and library; target driver compatibility remains 0.9.8. Historical 2.3.0-SDK validation is retained in dated reports and is not the current image version. No ROS, CUDA, TensorRT or VPI is needed for this standalone entry point. The following example is for a native ARM64 SDK environment; use the cross-toolchain and sysroot paths described above on x86_64.
 
 ```sh
 cmake -S src/platform/rk3576 -B build/rk3576-yolo \
@@ -223,7 +229,7 @@ ctest --test-dir build/platform-contracts --output-on-failure
 
 新增独立入口 `rk3576_tracker_replay` 通过统一工厂创建四个模型文件对应的组件，并运行真实公共 `HybridTracker`。它从自动检测开始，无需人工首帧框。四文件分别为 YOLO、模板 Backbone、搜索 Backbone 和 Head；两个 Backbone 分别提取模板和搜索图像的特征，Head 比较两者。原有两个 probe 继续保留。
 
-此入口使用上述独立 ARM64 CMake 构建，额外需要 OpenSSL Crypto 开发库，用于计算 SHA-256 文件内容指纹。公共算法和旧 probe 不链接 Crypto。根目录生产构建现已支持 Jetson 和 RK3576 ROS 视频；独立 RK3576 工厂拒绝相机请求，视频请求按下文的 MJPEG 帧源契约提供。原录像回放工具继续使用单独的同步解码器，不提供 ROS、相机采集或 RGA 加速。
+This entry point uses the ARM64-target standalone build above, through either the x86_64 cross compiler or a native ARM SDK. It additionally needs target OpenSSL Crypto for SHA-256 file fingerprints. 公共算法和旧 probe 不链接 Crypto。根目录生产构建现已支持 Jetson 和 RK3576 ROS 视频；独立 RK3576 工厂拒绝相机请求，视频请求按下文的 MJPEG 帧源契约提供。原录像回放工具继续使用单独的同步解码器，不提供 ROS、相机采集或 RGA 加速。
 
 ### 单文件配置与调用
 
@@ -280,13 +286,13 @@ CSV 整数直接写入，JSON 的计数与帧号均保存为十进制字符串�
 
 不可写目录可能导致完全没有报告。SIGKILL、断电或设备致命失败不能保证最终汇总；已有 `running` 文件可显示未正常结束。普通模型推理失败仍由原算法处理，未发现目标不能单独证明设备故障。成功退出也不代表找到目标或质量合格。
 
-### 本次验证范围
+### Historical assembly verification scope
 
 本次新增实机矩阵仅包含纯 FP16 和纯 INT8；每组模板、搜索、Head 必须采用同一精度。两组使用相同 YOLO、录像和算法参数。已有混合精度后端支持保持不变，但不作为本次新增实机前置条件。
 
 待实机验收时，每组重复三次并覆盖 DCF 开/关，分别检查自动捕获、离开返回、无目标、至少 20 轮实例创建销毁、至少 30 分钟资源负载和失败退出。真实异步运行比较状态切换帧差异，不要求 CSV 字节相同。缺少场景素材或标注时保留未覆盖，不用持续跟踪录像替代丢失恢复验收。
 
-当前仅执行 ARM64 容器构建及可控无设备测试。按照本次任务要求，开发板运行与依赖其结果的质量评估尚未执行，详见 [实施验证记录](../../openspec/changes/assemble-rk3576-tracker-replay/validation.md)。Jetson、ROS 和真实相机也不在这次验证范围内。
+The original assembly snapshot used an ARM64 container and controlled no-device tests. This historical scope is recorded in [assembly validation](../../openspec/changes/assemble-rk3576-tracker-replay/validation.md), including later board follow-up. It does not define the current default compiler image or establish current hardware acceptance. Use the current architecture section above and the dated reports for their respective evidence.
 
 ## RK3576 持续视频帧源
 
@@ -317,7 +323,7 @@ MJPEG 是每帧独立压缩为 JPEG 的视频。帧源使用 FFmpeg 读取容器
 
 ### 无模型测试入口
 
-独立构建额外需要 JPEG、libavformat、libavcodec 和 libavutil 开发库。这些依赖由 `rk3576_video` 目标声明，不反向链接 RKNN 或公共算法。独立顶层配置仍需要既有 ARM64/RKNN 构建 SDK；下面的视频测试不加载模型、不执行 NPU 推理。NPU 是开发板的神经网络计算设备。
+独立构建额外需要 JPEG、libavformat、libavcodec 和 libavutil 开发库。这些依赖由 `rk3576_video` 目标声明，不反向链接 RKNN 或公共算法。The complete standalone configuration needs ARM64/RKNN target SDK files, which the default x86_64 image supplies through its cross toolchain. The separate camera-only configuration supports native x86_64 video tests without RKNN. The tests below do not load models or perform NPU inference. NPU 是开发板的神经网络计算设备。
 
 构建启用测试后，运行以下命令。`BUILD` 表示独立 CMake 构建目录，例如容器内 `/work/ros2_ws/build/video-source`：
 
@@ -338,7 +344,7 @@ Linux 实机另提供 `video_board_validation FIXTURE_DIRECTORY 600`。它先检
 
 ## RK3576 ROS 视频节点
 
-在满足依赖的 ARM64 ROS 2 Humble 环境中，从工作区根目录构建：
+For current development, use `./build.sh --test` in the tracker root. It defaults to the x86_64 image and cross-compiles the ARM64 ROS node. Select `--backend arm64` for the preserved ARM64-image fallback. The following manual example assumes a native ARM64 ROS 2 Humble SDK environment; it is not the default host workflow:
 
 ```bash
 colcon build --packages-select drone_tracker --cmake-args \
@@ -350,7 +356,7 @@ export LD_LIBRARY_PATH=/path/to/rknn-runtime/lib:${LD_LIBRARY_PATH}
 ctest --test-dir build/drone_tracker --output-on-failure
 ```
 
-节点沿用 `vision_msgs`、`mavros_msgs`、`cv_bridge` 和 `rosbag2_cpp` 等 ROS 依赖。RKNN 编译依赖默认位于 `/opt/rknn-runtime/include` 和 `/opt/rknn-runtime/lib/librknnrt.so`，可用 `RKNN_INCLUDE_DIR`、`RKNN_LIBRARY` 显式覆盖。目标版本仍为 Runtime 2.3.2、驱动 0.9.8；现有 2.3.0 编译 SDK 不需要重建。开发机环境补充约定见 `AGENTS.local.md`。
+节点沿用 `vision_msgs`、`mavros_msgs`、`cv_bridge` 和 `rosbag2_cpp` 等 ROS 依赖。RKNN 编译依赖默认位于 `/opt/rknn-runtime/include` 和 `/opt/rknn-runtime/lib/librknnrt.so`，可用 `RKNN_INCLUDE_DIR`、`RKNN_LIBRARY` 显式覆盖。Current images provide the Runtime 2.3.2 target SDK; the board compatibility baseline remains driver 0.9.8. The x86_64 image stores target SDK files under `/opt/arm64-sysroot`; use the cross toolchain rather than substituting native libraries. Historical 2.3.0 SDK results remain dated evidence. Read `AGENTS.local.md` for current host commands.
 
 先复制安装目录中的 `parameters/rk3576_video_params.yaml`，填写四个模型角色和视频内参。示例保留空模型路径和无效内参，以免误用后静默启动：
 
@@ -450,7 +456,7 @@ ctest --test-dir build/camera-only --output-on-failure
 
 该入口需要 C++17、线程库、OpenCV，以及 JPEG、libavformat、libavcodec、libavutil 开发库。保留视频依赖是为了复用同一个公共平台工厂及其视频功能。该入口不查找 RKNN、ROS、RGA、DRM 或 Jetson SDK。运行相机时还需要 `media-ctl` 配置工具、可用驱动，以及对显式配置设备的访问权限。构建完整 RK3576 后端仍使用原入口，不添加 `DRONE_TRACKER_CAMERA_ONLY`。
 
-本机按 `AGENTS.local.md` 使用临时 ARM64 容器。测试不访问真实相机。构建所得 `ar0234_camera_source_driver` 是 Linux ARM64 程序，不能直接在 macOS 上执行。
+The camera-only configuration above supports native x86_64 compilation and software tests in the default x86_64 image. Its native `ar0234_camera_source_driver` is an x86_64 executable. The full repository build cross-compiles an ARM64 driver, which instead needs an ARM64 system or QEMU. These are separate build directories and neither no-device test accesses a real camera.
 
 ### 独立工具与实机验收命令
 
@@ -545,7 +551,7 @@ ros2 launch drone_tracker rk3576_camera.launch.py \
 
 ### 独立有限触发工具
 
-在上文的独立 ARM64 构建完成后，使用 `ar0234_camera_source_driver`，无需加载模型。下面的命令只作为后续实机步骤，本次未执行：
+After building the driver for ARM64 with either compiler image, use `ar0234_camera_source_driver` on the board without loading a model. 下面的命令只作为后续实机步骤，本次未执行：
 
 ```bash
 ./ar0234_camera_source_driver \

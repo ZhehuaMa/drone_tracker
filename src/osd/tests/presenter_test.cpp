@@ -186,6 +186,7 @@ void pairingAndOwnership(bool cached) {
     waitFor(state, [&] { return state.preparing; });
     require(resources.views == 1, "view not retained while reading");
     require(presenter.submit(packet(round, 2, resources)), "B rejected");
+    const auto completed_deadline{osd::SteadyClock::now() + 2s};
     require(presenter.submit(packet(round, 3, resources)), "C rejected");
     require(resources.frames == 2, "replaced source frame retained");
     require(presenter.counters().replaced == 1, "replacement counter");
@@ -195,6 +196,10 @@ void pairingAndOwnership(bool cached) {
         state.changed.notify_all();
     }
     waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().sequence == 3; });
+    while (presenter.counters().displayed < 2 && osd::SteadyClock::now() < completed_deadline) {
+        std::this_thread::yield();
+    }
+    require(presenter.counters().displayed == 2, "display completion timeout");
     require(resources.frames == 1 && resources.views == 0, "display retained source/view");
     require(detector->mapRead()->mat().at<unsigned char>(0, 0) == 1, "source mutated");
     {
@@ -407,8 +412,13 @@ void missionLifetime(bool cached) {
     const auto round{presenter.beginRound()};
     auto first{packet(round, 1, resources)};
     first.boxes.front().label.clear();
+    const auto initial_deadline{osd::SteadyClock::now() + 2s};
     require(presenter.submit(std::move(first)), "mission initial packet rejected");
     waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().new_video; });
+    while (presenter.counters().displayed < 1 && osd::SteadyClock::now() < initial_deadline) {
+        std::this_thread::yield();
+    }
+    require(presenter.counters().displayed == 1, "initial mission frame not committed");
     require(diagnostics.waitFor("hud=\"TRK TRACKING\" target_label=\"\""),
         "initial display did not report empty target label");
     presenter.showMission();
@@ -417,15 +427,24 @@ void missionLifetime(bool cached) {
     require(diagnostics.waitFor("hud=\"ON MISSION\" target_label=\"\""),
         "mission display missing from diagnostics");
     const std::size_t display_logs_before_following{diagnostics.countDisplay()};
-    time_ms = 3000;
-    auto following{packet(round, 2, resources)};
-    following.boxes.front().label.clear();
-    require(presenter.submit(std::move(following)), "mission following packet rejected");
-    waitFor(state, [&] { return state.outputs.back().new_video && state.outputs.back().sequence == 2; });
-    for (int attempt{0}; attempt < 200 && presenter.counters().displayed < 2; ++attempt) {
-        std::this_thread::sleep_for(1ms);
+    // Keep video alive while advancing the mission clock. An instantaneous three-second
+    // gap legitimately emits a stale transition before the following submit can run.
+    int following_sequence{1};
+    for (const int next_time : {750, 1500, 2250, 3000}) {
+        time_ms = next_time;
+        auto following{packet(round, ++following_sequence, resources)};
+        following.boxes.front().label.clear();
+        const auto completed_deadline{osd::SteadyClock::now() + 200ms};
+        require(presenter.submit(std::move(following)), "mission following packet rejected");
+        waitFor(state, [&] { return state.outputs.back().new_video
+            && state.outputs.back().sequence == static_cast<std::uint64_t>(following_sequence); });
+        while (presenter.counters().displayed < static_cast<std::uint64_t>(following_sequence)
+               && osd::SteadyClock::now() < completed_deadline) {
+            std::this_thread::yield();
+        }
+        require(presenter.counters().displayed == static_cast<std::uint64_t>(following_sequence),
+            "following frame not committed");
     }
-    require(presenter.counters().displayed >= 2, "following frame not committed");
     require(diagnostics.countDisplay() == display_logs_before_following,
         "unchanged video frame produced diagnostic log");
     {
@@ -518,11 +537,16 @@ void continuousPreview(bool cached) {
     const auto old_version{version};
     version = presenter.controlTracking(1, osd::TrackingPhase::Idle);
     require(!send(104, 1, osd::PacketKind::Tracking, old_version), "late tracking restored boxes");
+    const auto completion_deadline{osd::SteadyClock::now() + 2s};
     require(send(105, 1, osd::PacketKind::Preview, version), "OFF closed video stream");
     waitFor(state, [&] { return state.outputs.back().sequence == 105 && state.outputs.back().boxes.empty(); });
     require(osd::SteadyClock::now() - stopped < 500ms, "preview clear exceeded deadline");
     require(state.outputs.back().mission_active, "OFF cleared MISSION");
     require(state.outputs.back().status == osd::DisplayStatus::Live, "OFF froze preview");
+    while (presenter.counters().displayed < 4 && osd::SteadyClock::now() < completion_deadline) {
+        std::this_thread::yield();
+    }
+    require(presenter.counters().displayed == 4, "continuous preview completion timeout");
     presenter.shutdown();
     presenter.reportTiming();
     require(timing.count(0, osd::TimingStage::NewFrameInterval) == 3,

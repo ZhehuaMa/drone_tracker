@@ -1,5 +1,6 @@
 #include "diagnostics/client.h"
 #include "diagnostics/storage.h"
+#include <algorithm>
 #include <cassert>
 #include <cerrno>
 #include <csignal>
@@ -253,7 +254,15 @@ std::size_t descriptorCount(pid_t pid) {
                                                 std::filesystem::directory_iterator{}));
 }
 void rejectedConnections(const std::string &socket, pid_t worker, Client &healthy) {
-    const auto baseline{descriptorCount(worker)};
+    // Healthy storage scans briefly open traversal descriptors; do not mistake
+    // their later closure for a malformed-request leak. Persistent leaks must
+    // still return to this exact pre-request minimum within the existing bound.
+    const auto baseline_deadline{monotonicNs() + 1000000000ULL};
+    auto baseline{descriptorCount(worker)};
+    while (monotonicNs() < baseline_deadline) {
+        baseline = std::min(baseline, descriptorCount(worker));
+        std::this_thread::sleep_for(std::chrono::milliseconds{1});
+    }
     for (unsigned repeat{}; repeat < 2; ++repeat) {
         for (unsigned scenario{}; scenario < 12; ++scenario) {
             const int connection{::socket(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0)};

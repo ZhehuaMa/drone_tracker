@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# 从本机 ARM64 构建产物生成生产部署包；不访问生产板。
+# Package local ARM64 output from either compiler backend; no board access.
+# Dependency collection still runs in the ARM64 image below. Pass --install-root
+# explicitly for the selected .docker-artifacts/backends/BACKEND/install tree.
 set -euo pipefail
 
 usage() {

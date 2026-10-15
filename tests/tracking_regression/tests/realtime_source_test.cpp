@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <new>
 #include <set>
 #include <stdexcept>
 #include <sys/resource.h>
@@ -255,7 +256,7 @@ void optionValidation(const std::filesystem::path &root) {
     RealtimeSource source{config};
     require(source.status().state == FrameSourceState::Ready, "old 256 MiB queue limit remains");
 }
-void allocationFailure(const std::filesystem::path &root) {
+void resourceLimitAllocationFailure(const std::filesystem::path &root) {
     auto config{options(root, "allocation-failure")};
     const int pid{::fork()};
     require(pid >= 0, "allocation test fork failed");
@@ -281,6 +282,68 @@ void allocationFailure(const std::filesystem::path &root) {
     while (::waitpid(pid, &result, 0) < 0 && errno == EINTR) {}
     require(WIFEXITED(result) && WEXITSTATUS(result) == 0, "allocation failure did not cleanly reject preparation");
 }
+// Reject the fourth real cached image allocation and verify cleanup of the first three.
+class RejectCacheAllocation final : public cv::MatAllocator {
+public:
+    explicit RejectCacheAllocation(cv::MatAllocator &delegate) : delegate_{delegate} {}
+    cv::UMatData *allocate(int dimensions, const int *sizes, int type, void *data,
+                          std::size_t *step, cv::AccessFlag flags, cv::UMatUsageFlags usage) const override {
+        const bool cache_pixels{!data && dimensions == 2 && sizes[0] == 1200 && sizes[1] == 1920
+            && type == CV_8UC1};
+        if (cache_pixels && allocations_ == 3) {
+            ++rejections_;
+            throw std::bad_alloc{};
+        }
+        cv::UMatData *allocation{delegate_.allocate(dimensions, sizes, type, data, step, flags, usage)};
+        if (cache_pixels) {
+            ++allocations_;
+            allocation->currAllocator = this;
+        }
+        return allocation;
+    }
+    bool allocate(cv::UMatData *data, cv::AccessFlag flags, cv::UMatUsageFlags usage) const override {
+        return delegate_.allocate(data, flags, usage);
+    }
+    void deallocate(cv::UMatData *data) const override {
+        ++deallocations_;
+        delegate_.deallocate(data);
+    }
+    unsigned allocations() const { return allocations_; }
+    unsigned deallocations() const { return deallocations_; }
+    unsigned rejections() const { return rejections_; }
+private:
+    cv::MatAllocator &delegate_;
+    mutable unsigned allocations_{}, deallocations_{}, rejections_{};
+};
+class ScopedMatAllocator final {
+public:
+    explicit ScopedMatAllocator(cv::MatAllocator &allocator) : previous_{cv::Mat::getDefaultAllocator()} {
+        cv::Mat::setDefaultAllocator(&allocator);
+    }
+    ~ScopedMatAllocator() { cv::Mat::setDefaultAllocator(previous_); }
+    ScopedMatAllocator(const ScopedMatAllocator &) = delete;
+    ScopedMatAllocator &operator=(const ScopedMatAllocator &) = delete;
+private:
+    cv::MatAllocator *previous_;
+};
+void allocationFailure(const std::filesystem::path &root) {
+    auto config{options(root, "allocation-failure")};
+    RejectCacheAllocation allocator{*cv::Mat::getDefaultAllocator()};
+    ScopedMatAllocator scoped{allocator};
+    {
+        RealtimeSource source{config};
+        require(!source.prepare(), "allocation-limited preparation incorrectly succeeded");
+        require(allocator.rejections() == 1 && allocator.allocations() == 3,
+            "failure injection did not reject the fourth real preparation cache allocation");
+        source.stop();
+        require(source.status().state == FrameSourceState::Failed, "allocation failure was not retained");
+        require(!std::filesystem::exists(config.output / "input-clock.json"), "allocation failure started playback");
+        const auto record{YAML::LoadFile((config.output / "preparation.json").string())};
+        require(!record["ready"].as<bool>() && !record["reason"].as<std::string>().empty(),
+            "allocation failure evidence missing");
+    }
+    require(allocator.deallocations() == 3, "failed preparation retained partial cached pixels");
+}
 void pixelFailure(const std::filesystem::path &root) {
     const auto damaged{root / "pixel-damaged"};
     std::filesystem::create_directory(damaged);
@@ -304,10 +367,17 @@ void pixelFailure(const std::filesystem::path &root) {
         "preparation failure evidence missing");
 }
 } // namespace
-int main() {
+int main(int argc, char **argv) {
     try {
+        require(argc == 1 || (argc == 2 && std::string{argv[1]} == "--resource-limit-only"),
+            "usage: tracking_regression_source_tests [--resource-limit-only]");
         TemporaryDirectory temporary{};
         generateFixture(temporary.path / "fixture");
+        if (argc == 2) {
+            resourceLimitAllocationFailure(temporary.path);
+            std::cout << "Native OS address-space allocation rejection passed\n";
+            return 0;
+        }
         optionValidation(temporary.path);
         decodeFailure(temporary.path);
         pixelFailure(temporary.path);
