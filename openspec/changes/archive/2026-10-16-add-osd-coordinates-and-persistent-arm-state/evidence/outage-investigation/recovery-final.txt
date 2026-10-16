@@ -1,0 +1,63 @@
+2026-10-16T16:57:36+08:00
+62b4c6ba-0fa7-4996-8aca-f8c522b548f4
+ 16:57:36 up 5 min,  0 users,  load average: 0.99, 0.95, 0.48
+-11 f2afa950f7994343bdcc0dae9bf77b09 Wed 2026-07-29 21:41:35 CST—Wed 2026-09-23 09:43:29 CST
+-10 07e3d8fd7d1d4d04988937b652df8ce0 Wed 2026-09-23 09:50:10 CST—Wed 2026-09-23 09:50:31 CST
+ -9 86c18f0cacb446db9d87f020adcce9a6 Wed 2026-09-23 09:51:27 CST—Wed 2026-09-23 20:53:44 CST
+ -8 72d6f1f28e614ec0b75c5105f92410c2 Wed 2026-09-23 21:06:31 CST—Thu 2026-09-24 00:49:05 CST
+ -7 305f6315e2364e7e87c9772eda18f6c2 Thu 2026-09-24 02:03:24 CST—Thu 2026-09-24 02:13:10 CST
+ -6 1fd800d97ef84ecd96ca9af19906fad3 Thu 2026-09-24 13:25:08 CST—Thu 2026-09-24 15:53:44 CST
+ -5 faa64322fda94ee9be64a1ef3787011d Sun 2026-09-27 12:57:03 CST—Sun 2026-09-27 13:11:10 CST
+ -4 78da879cf8244e41874e487ea21b9ef1 Sun 2026-09-27 13:11:14 CST—Sun 2026-09-27 13:55:25 CST
+ -3 4c12c4759bf043e28ec254b4e3f49df9 Sun 2026-09-27 15:07:55 CST—Sun 2026-09-27 15:13:54 CST
+ -2 9d489cc6748b41a8ae86fb2bff06e3df Sun 2026-09-27 16:49:32 CST—Sun 2026-09-27 17:06:59 CST
+ -1 b84cc9e913e143fa9fce8cc66bfbde55 Mon 2026-10-12 14:06:26 CST—Fri 2026-10-16 14:36:49 CST
+  0 62b4c6ba0fa749968acaf8c522b548f4 Fri 2026-10-16 16:52:15 CST—Fri 2026-10-16 16:57:36 CST
+root     pts/0        192.168.77.210   Fri Oct 16 16:54 - 16:54  (00:00)
+runlevel (to lvl 5)   6.1.141-rt36     Wed Jul 29 21:41   still running
+reboot   system boot  6.1.141-rt36     Wed Jul 29 21:41   still running
+shutdown system down  6.1.141-rt36     Fri Oct 16 16:46 - 21:41 (-78+19:04)
+root     pts/0        192.168.77.210   Fri Oct 16 16:35 - 16:35  (00:00)
+runlevel (to lvl 5)   6.1.141-rt36     Wed Jul 29 21:41 - 16:46 (78+19:04)
+reboot   system boot  6.1.141-rt36     Wed Jul 29 21:41 - 16:46 (78+19:04)
+shutdown system down  6.1.141-rt36     Fri Oct 16 16:22 - 21:41 (-78+18:40)
+root     pts/0        192.168.77.210   Fri Oct 16 15:46 - 15:46  (00:00)
+root     pts/1        192.168.77.210   Thu Oct 15 19:30 - 19:30  (00:00)
+root     pts/0        192.168.77.81    Thu Oct 15 19:29 - 20:06  (00:37)
+root     pts/0        192.168.77.81    Tue Oct 13 15:27 - 15:27  (00:00)
+
+wtmp begins Wed Jul 29 21:41:26 2026
+/sys/fs/pstore:
+总计 0
+drwxr-x---  2 root root 0  7月 29 21:41 .
+drwxr-xr-x 11 root root 0  1月  1  1970 ..
+
+/var/lib/systemd/pstore:
+总计 8
+drwxr-xr-x  2 root root 4096  7月 29 21:41 .
+drwxr-xr-x 10 root root 4096  7月 29 21:41 ..
+/sys/class/leds/mmc0::
+0
+255
+none kbd-scrolllock kbd-numlock kbd-capslock kbd-kanalock kbd-shiftlock kbd-altgrlock kbd-ctrllock kbd-altlock kbd-shiftllock kbd-shiftrlock kbd-ctrlllock kbd-ctrlrlock timer oneshot heartbeat gpio [mmc0]
+/sys/firmware/devicetree/base/mmc@2a330000
+Id=drone-tracker.service
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+Id=apm-bridge.service
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+Id=drone-interceptor.service
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+Id=lightdm.service
+ActiveState=inactive
+SubState=dead
+UnitFileState=indirect
+/opt/drone_tracker/releases/bundle-20260927T070059Z-2281
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /usr/lib/librknnrt.so
+f909ec82c2c3c45a82b1c85fb616e2f1f7a97b2da4159c7755af195f2e05298c  /opt/drone_tracker/config/camera.yaml
+4f46293201355131c1e72c8a72cdfaafa2c3121eaa48fe0b5ad69ac442e4f01b  /opt/drone_tracker/config/cpu-affinity.yaml

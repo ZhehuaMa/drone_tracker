@@ -1,0 +1,105 @@
+CPU policy loaded mode=role-pinned
+CPU affinity pid=2515 tid=2515 role=control requested=4 actual=4 round=0
+[INFO] [1792139918.754632243] [drone_tracker_node]: Opening video file: /home/hzhy/hdmi-hud-acceptance-20260924/fixed-drone-1920x1200-650s-60fps.avi
+rk3576 video [/home/hzhy/hdmi-hud-acceptance-20260924/fixed-drone-1920x1200-650s-60fps.avi] state=0 frame=1 pts=0 read=0 enqueued=0 dropped=0 reason=
+[INFO] [1792139918.848559323] [drone_tracker_node]: Camera Intrinsics: fx=1875.00, fy=1875.00, px=960.00, py=600.00
+[INFO] [1792139918.848653488] [drone_tracker_node]: Camera FOV: horizontal=54.22 deg, vertical=35.49 deg
+Package share directory: /home/hzhy/osd-gps-armed-status-20261016/install/share/drone_tracker
+yolo
+model=/opt/drone_tracker/models/yolo.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 images [1,640,640,3,] rank=4 type=INT8 format=NHWC quant=AFFINE zp=-128 scale=0.00392157 elems=1228800 bytes=1228800 w_stride=640 h_stride=0 size_with_stride=1228800 pass_through=0 fl=0
+output #0 /model.22/cv2.0/cv2.0.2/Conv_output_0 [1,64,80,80,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=43 scale=0.525238 elems=409600 bytes=409600 w_stride=0 h_stride=0 size_with_stride=409600 pass_through=0 fl=0
+output #1 /model.22/cv3.0/cv3.0.2/Conv_output_0 [1,4,80,80,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=25600 bytes=51200 w_stride=0 h_stride=0 size_with_stride=102400 pass_through=0 fl=0
+output #2 /model.22/cv2.1/cv2.1.2/Conv_output_0 [1,64,40,40,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=91 scale=0.995673 elems=102400 bytes=102400 w_stride=0 h_stride=0 size_with_stride=122880 pass_through=0 fl=0
+output #3 /model.22/cv3.1/cv3.1.2/Conv_output_0 [1,4,40,40,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6400 bytes=12800 w_stride=0 h_stride=0 size_with_stride=25600 pass_through=0 fl=0
+output #4 /model.22/cv2.2/cv2.2.2/Conv_output_0 [1,64,20,20,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=-12 scale=0.368377 elems=25600 bytes=25600 w_stride=0 h_stride=0 size_with_stride=40960 pass_through=0 fl=0
+output #5 /model.22/cv3.2/cv3.2.2/Conv_output_0 [1,4,20,20,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=1600 bytes=3200 w_stride=0 h_stride=0 size_with_stride=7680 pass_through=0 fl=0
+C=4
+submission: UINT8 NHWC [1,640,640,3], 1228800 bytes, pass_through=0; Runtime performs input conversion
+compatibility requires mean=0/std=255 (not verified by attribute query)
+template Backbone
+model=/opt/drone_tracker/models/fp16/template_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,127,127,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=48387 bytes=96774 w_stride=128 h_stride=0 size_with_stride=97536 pass_through=0 fl=0
+output #0 output [1,96,8,8,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=0 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+search Backbone
+model=/opt/drone_tracker/models/fp16/search_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,255,255,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=195075 bytes=390150 w_stride=256 h_stride=0 size_with_stride=391680 pass_through=0 fl=0
+output #0 output [1,96,16,16,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=0 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+Head
+model=/opt/drone_tracker/models/fp16/head.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input1 [1,8,8,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=8 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+input #1 input2 [1,16,16,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=16 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+output #0 output1 [1,2,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=450 bytes=900 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+output #1 output2 [1,4,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=900 bytes=1800 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+roles: template_input=0 search_input=1 classification_output=0 location_output=1
+submission: Float32, pass_through=0, native logical layout; outputs: want_float=1
+CPU affinity pid=2515 tid=2538 role=yolo requested=5 actual=5 round=0
+YOLO worker thread started.
+[INFO] [1792139919.325764693] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=0
+[INFO] [1792139919.325870012] [drone_tracker_node]: Round starting
+CPU affinity pid=2515 tid=2539 role=tracking requested=4 actual=4 round=1
+rk3576 video [/home/hzhy/hdmi-hud-acceptance-20260924/fixed-drone-1920x1200-650s-60fps.avi] state=1 frame=1 pts=0 read=0 enqueued=0 dropped=0 reason=
+CPU affinity pid=2515 tid=2540 role=capture requested=7 actual=7 round=1
+[INFO] [1792139919.350337985] [drone_tracker_node]: Tracker state published round=0 value=0
+Tracker initialized at [1292.73, 651.034, 54.4863, 41.719] and caught up 4 frames
+[INFO] [1792139919.458701885] [drone_tracker_node]: Tracker state published round=0 value=1
+[INFO] [1792139919.468720017] [drone_tracker_node]: Tracker state published round=0 value=2
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (2)! IOU=0
+YOLO detection jump (3)! IOU=0
+Accepting jumped YOLO detection after consecutive jumps
+YOLO detection jump (1)! IOU=0.158875
+YOLO detection jump (1)! IOU=0.123431
+YOLO detection jump (1)! IOU=0.143808
+Target lost (unconfirmed streak 5). Re-initializing detection.
+[INFO] [1792139939.206125170] [drone_tracker_node]: Tracker state published round=0 value=3
+[INFO] [1792139939.214409225] [drone_tracker_node]: Tracker state published round=0 value=0
+Tracker initialized at [990.611, 521.711, 65.502, 54.4636] and caught up 6 frames
+[INFO] [1792139939.636231255] [drone_tracker_node]: Tracker state published round=0 value=1
+[INFO] [1792139939.645901629] [drone_tracker_node]: Tracker state published round=0 value=2
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (2)! IOU=0
+YOLO detection jump (3)! IOU=0
+Accepting jumped YOLO detection after consecutive jumps
+YOLO detection jump (1)! IOU=0.243904
+YOLO detection jump (1)! IOU=0.252151
+Target lost (unconfirmed streak 5). Re-initializing detection.
+[INFO] [1792139949.856633221] [drone_tracker_node]: Tracker state published round=0 value=3
+[INFO] [1792139949.864361196] [drone_tracker_node]: Tracker state published round=0 value=0
+Tracker initialized at [990.611, 521.711, 65.502, 54.4636] and caught up 8 frames
+[INFO] [1792139950.003262120] [drone_tracker_node]: Tracker state published round=0 value=1
+[INFO] [1792139950.013582217] [drone_tracker_node]: Tracker state published round=0 value=2
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (2)! IOU=0
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (2)! IOU=0
+Target lost (unconfirmed streak 5). Re-initializing detection.
+[INFO] [1792139950.989991769] [drone_tracker_node]: Tracker state published round=0 value=3
+[INFO] [1792139950.997882393] [drone_tracker_node]: Tracker state published round=0 value=0
+Tracker initialized at [1289.28, 575.837, 61.025, 51.4009] and caught up 9 frames
+[INFO] [1792139951.144478185] [drone_tracker_node]: Tracker state published round=0 value=1
+[INFO] [1792139951.154476566] [drone_tracker_node]: Tracker state published round=0 value=2
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (2)! IOU=0
+YOLO detection jump (3)! IOU=0
+Accepting jumped YOLO detection after consecutive jumps
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (2)! IOU=0
+YOLO detection jump (3)! IOU=0
+Accepting jumped YOLO detection after consecutive jumps
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (2)! IOU=0
+YOLO detection jump (3)! IOU=0
+Accepting jumped YOLO detection after consecutive jumps
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (1)! IOU=0
+YOLO detection jump (2)! IOU=0
+YOLO detection jump (3)! IOU=0
+Accepting jumped YOLO detection after consecutive jumps
+[INFO] [1792139994.411314474] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=0
+Average tracking time per frame: 9.10 ms
+[INFO] [1792139994.414159223] [drone_tracker_node]: Round ended: stop requested
+rk3576 video [/home/hzhy/hdmi-hud-acceptance-20260924/fixed-drone-1920x1200-650s-60fps.avi] state=2 frame=4505 pts=4504 read=4505 enqueued=4505 dropped=0 reason=Stopped by caller
+[INFO] [1792139995.032258435] [rclcpp]: signal_handler(SIGINT/SIGTERM)

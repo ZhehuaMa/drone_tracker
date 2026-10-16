@@ -1,0 +1,492 @@
+[
+  {
+    "source": "evidence/comparison-0-off.json",
+    "samples": 70,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "first_c": 67.461,
+        "max_c": 86.811,
+        "last_c": 86.811
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "first_c": 62.846,
+        "max_c": 81.307,
+        "last_c": 81.307
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "first_c": 66.538,
+        "max_c": 84.999,
+        "last_c": 84.999
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "first_c": 63.769,
+        "max_c": 82.23,
+        "last_c": 82.23
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "first_c": 65.615,
+        "max_c": 84.999,
+        "last_c": 84.076
+      },
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "first_c": 63.769,
+        "max_c": 82.23,
+        "last_c": 82.23
+      }
+    },
+    "rss_kb": {
+      "first": 157568,
+      "max": 214736,
+      "last": 199720
+    },
+    "fds": {
+      "first": 44,
+      "last": 44
+    },
+    "threads": {
+      "first": 15,
+      "last": 15
+    }
+  },
+  {
+    "source": "evidence/comparison-2-cached-overlay.json",
+    "samples": 71,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "first_c": 96.589,
+        "max_c": 103.7,
+        "last_c": 102.811
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "first_c": 92.111,
+        "max_c": 99.222,
+        "last_c": 98.333
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "first_c": 95.7,
+        "max_c": 101.923,
+        "last_c": 101.923
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "first_c": 93.034,
+        "max_c": 99.256,
+        "last_c": 99.256
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "first_c": 95.7,
+        "max_c": 101.923,
+        "last_c": 101.923
+      },
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "first_c": 92.145,
+        "max_c": 98.367,
+        "last_c": 98.367
+      }
+    },
+    "rss_kb": {
+      "first": 169628,
+      "max": 218264,
+      "last": 209572
+    },
+    "fds": {
+      "first": 52,
+      "last": 52
+    },
+    "threads": {
+      "first": 16,
+      "last": 16
+    }
+  },
+  {
+    "source": "evidence/comparison-4-legacy.json",
+    "samples": 70,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "first_c": 101.923,
+        "max_c": 111.7,
+        "last_c": 111.7
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "first_c": 97.444,
+        "max_c": 106.333,
+        "last_c": 106.333
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "first_c": 100.145,
+        "max_c": 109.923,
+        "last_c": 109.923
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "first_c": 98.367,
+        "max_c": 107.256,
+        "last_c": 107.256
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "first_c": 101.034,
+        "max_c": 112.589,
+        "last_c": 110.811
+      },
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "first_c": 97.478,
+        "max_c": 106.367,
+        "last_c": 106.367
+      }
+    },
+    "rss_kb": {
+      "first": 168804,
+      "max": 226760,
+      "last": 216948
+    },
+    "fds": {
+      "first": 56,
+      "last": 56
+    },
+    "threads": {
+      "first": 16,
+      "last": 16
+    }
+  },
+  {
+    "source": "evidence/comparison-1-legacy.json",
+    "samples": 70,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "first_c": 84.999,
+        "max_c": 100.145,
+        "last_c": 100.145
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "first_c": 80.384,
+        "max_c": 94.777,
+        "last_c": 94.777
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "first_c": 84.076,
+        "max_c": 98.367,
+        "last_c": 98.367
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "first_c": 80.384,
+        "max_c": 95.7,
+        "last_c": 95.7
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "first_c": 84.999,
+        "max_c": 100.145,
+        "last_c": 100.145
+      },
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "first_c": 80.384,
+        "max_c": 94.811,
+        "last_c": 94.811
+      }
+    },
+    "rss_kb": {
+      "first": 167168,
+      "max": 219196,
+      "last": 207444
+    },
+    "fds": {
+      "first": 56,
+      "last": 56
+    },
+    "threads": {
+      "first": 16,
+      "last": 16
+    }
+  },
+  {
+    "source": "evidence/comparison-3-off.json",
+    "samples": 71,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "first_c": 97.478,
+        "max_c": 103.7,
+        "last_c": 103.7
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "first_c": 93.0,
+        "max_c": 99.222,
+        "last_c": 99.222
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "first_c": 96.589,
+        "max_c": 102.811,
+        "last_c": 101.923
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "first_c": 94.811,
+        "max_c": 100.145,
+        "last_c": 100.145
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "first_c": 96.589,
+        "max_c": 101.923,
+        "last_c": 101.923
+      },
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "first_c": 93.923,
+        "max_c": 99.256,
+        "last_c": 99.256
+      }
+    },
+    "rss_kb": {
+      "first": 157368,
+      "max": 205620,
+      "last": 192496
+    },
+    "fds": {
+      "first": 44,
+      "last": 44
+    },
+    "threads": {
+      "first": 15,
+      "last": 15
+    }
+  },
+  {
+    "source": "interrupted-formal-comparison/comparison-0-off.json",
+    "samples": 71,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "first_c": 96.589,
+        "max_c": 108.145,
+        "last_c": 107.256
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "first_c": 93.0,
+        "max_c": 103.666,
+        "last_c": 103.666
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "first_c": 94.811,
+        "max_c": 106.367,
+        "last_c": 106.367
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "first_c": 93.034,
+        "max_c": 103.7,
+        "last_c": 103.7
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "first_c": 95.7,
+        "max_c": 106.367,
+        "last_c": 106.367
+      },
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "first_c": 93.034,
+        "max_c": 103.7,
+        "last_c": 102.811
+      }
+    },
+    "rss_kb": {
+      "first": 157588,
+      "max": 206124,
+      "last": 197208
+    },
+    "fds": {
+      "first": 44,
+      "last": 44
+    },
+    "threads": {
+      "first": 15,
+      "last": 15
+    }
+  },
+  {
+    "source": "preliminary-cpu0-3/comparison-0-off.json",
+    "samples": 71,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "first_c": 84.076,
+        "max_c": 92.145,
+        "last_c": 92.145
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "first_c": 79.461,
+        "max_c": 86.777,
+        "last_c": 86.777
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "first_c": 83.153,
+        "max_c": 90.367,
+        "last_c": 90.367
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "first_c": 80.384,
+        "max_c": 87.7,
+        "last_c": 87.7
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "first_c": 81.307,
+        "max_c": 88.589,
+        "last_c": 88.589
+      },
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "first_c": 80.384,
+        "max_c": 87.7,
+        "last_c": 87.7
+      }
+    },
+    "rss_kb": {
+      "first": 146340,
+      "max": 224312,
+      "last": 216124
+    },
+    "fds": {
+      "first": 44,
+      "last": 44
+    },
+    "threads": {
+      "first": 18,
+      "last": 18
+    }
+  },
+  {
+    "source": "preliminary-cpu0-3/comparison-2-cached-overlay.json",
+    "samples": 69,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "first_c": 93.034,
+        "max_c": 98.367,
+        "last_c": 97.478
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "first_c": 88.555,
+        "max_c": 93.0,
+        "last_c": 93.0
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "first_c": 92.145,
+        "max_c": 96.589,
+        "last_c": 96.589
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "first_c": 90.367,
+        "max_c": 93.923,
+        "last_c": 93.923
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "first_c": 90.367,
+        "max_c": 94.811,
+        "last_c": 94.811
+      },
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "first_c": 89.478,
+        "max_c": 93.034,
+        "last_c": 93.034
+      }
+    },
+    "rss_kb": {
+      "first": 158756,
+      "max": 238856,
+      "last": 230148
+    },
+    "fds": {
+      "first": 52,
+      "last": 52
+    },
+    "threads": {
+      "first": 19,
+      "last": 19
+    }
+  },
+  {
+    "source": "preliminary-cpu0-3/comparison-1-legacy.json",
+    "samples": 69,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "first_c": 89.478,
+        "max_c": 96.589,
+        "last_c": 96.589
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "first_c": 85.0,
+        "max_c": 90.333,
+        "last_c": 90.333
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "first_c": 88.589,
+        "max_c": 94.811,
+        "last_c": 94.811
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "first_c": 85.923,
+        "max_c": 92.145,
+        "last_c": 92.145
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "first_c": 86.811,
+        "max_c": 93.034,
+        "last_c": 93.034
+      },
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "first_c": 84.999,
+        "max_c": 91.256,
+        "last_c": 91.256
+      }
+    },
+    "rss_kb": {
+      "first": 159796,
+      "max": 240124,
+      "last": 213544
+    },
+    "fds": {
+      "first": 56,
+      "last": 56
+    },
+    "threads": {
+      "first": 19,
+      "last": 19
+    }
+  },
+  {
+    "source": "preliminary-cpu0-3/comparison-3-off.json",
+    "samples": 71,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": {
+        "first_c": 94.811,
+        "max_c": 99.256,
+        "last_c": 98.367
+      },
+      "/sys/class/thermal/thermal_zone0/temp": {
+        "first_c": 90.333,
+        "max_c": 93.888,
+        "last_c": 93.0
+      },
+      "/sys/class/thermal/thermal_zone5/temp": {
+        "first_c": 93.923,
+        "max_c": 97.478,
+        "last_c": 96.589
+      },
+      "/sys/class/thermal/thermal_zone3/temp": {
+        "first_c": 92.145,
+        "max_c": 94.811,
+        "last_c": 94.811
+      },
+      "/sys/class/thermal/thermal_zone1/temp": {
+        "first_c": 92.145,
+        "max_c": 95.7,
+        "last_c": 94.811
+      },
+      "/sys/class/thermal/thermal_zone4/temp": {
+        "first_c": 91.256,
+        "max_c": 93.923,
+        "last_c": 93.923
+      }
+    },
+    "rss_kb": {
+      "first": 148136,
+      "max": 226440,
+      "last": 195720
+    },
+    "fds": {
+      "first": 44,
+      "last": 44
+    },
+    "threads": {
+      "first": 18,
+      "last": 18
+    }
+  }
+]

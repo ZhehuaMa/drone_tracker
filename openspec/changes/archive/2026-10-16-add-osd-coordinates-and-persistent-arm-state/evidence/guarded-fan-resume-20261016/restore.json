@@ -1,0 +1,13 @@
+{
+  "services": {
+    "drone-tracker": "active",
+    "apm-bridge": "active",
+    "drone-interceptor": "active",
+    "lightdm": "inactive"
+  },
+  "config_and_release_unchanged": true,
+  "node_exit_code": 0,
+  "rounds": 20,
+  "service_active": true,
+  "services_restored": true
+}

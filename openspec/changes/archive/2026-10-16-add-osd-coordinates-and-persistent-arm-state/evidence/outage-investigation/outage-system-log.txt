@@ -1,0 +1,167 @@
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.376094] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.376132] thermal thermal_zone2: Failed to set trips: -34
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.376157] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.376161] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.437180] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.437201] thermal thermal_zone2: Failed to set trips: -34
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.437216] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.437220] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.458109] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.458123] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.462379] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.462398] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.484141] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.484153] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.487564] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.487576] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.498991] rga: 57677  57686 : [tgid:57677] Destroy handle[117323] when the user exits
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.499002] rga: 57677  57686 : [tgid:57677] Destroy handle[117324] when the user exits
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.499007] rga: 57677  57686 : [tgid:57677] Destroy handle[117325] when the user exits
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.499010] rga: 57677  57686 : [tgid:57677] Destroy handle[117326] when the user exits
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.499014] rga: 57677  57686 : [tgid:57677] Destroy handle[117327] when the user exits
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.499018] rga: 57677  57686 : [tgid:57677] Destroy handle[117328] when the user exits
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.499022] rga: 57677  57686 : [tgid:57677] Destroy handle[117329] when the user exits
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.499025] rga: 57677  57686 : [tgid:57677] Destroy handle[117330] when the user exits
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.499029] rga: 57677  57686 : [tgid:57677] Destroy handle[117331] when the user exits
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.529375] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.529399] thermal thermal_zone2: Failed to set trips: -34
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.529417] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.529420] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.544262] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:22:18 hzhy kernel: [353760.544275] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.767546] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.767578] thermal thermal_zone2: Failed to set trips: -34
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.767598] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.767602] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.788578] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.788591] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.803872] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.803889] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.824631] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.824659] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.829055] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.829082] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.850613] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.850636] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.854263] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.854280] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.874593] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.874613] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.879460] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.879475] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.901680] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.901705] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.904645] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:14 hzhy kernel: [  661.904657] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.926566] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.926581] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.929852] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.929874] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.935947] rga: 3183   3192  : [tgid:3183] Destroy handle[4435] when the user exits
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.935958] rga: 3183   3192  : [tgid:3183] Destroy handle[4436] when the user exits
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.935962] rga: 3183   3192  : [tgid:3183] Destroy handle[4437] when the user exits
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.935966] rga: 3183   3192  : [tgid:3183] Destroy handle[4438] when the user exits
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.935969] rga: 3183   3192  : [tgid:3183] Destroy handle[4439] when the user exits
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.951571] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.951584] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.955052] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.955065] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.976566] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.976579] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.980253] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/syslog:Oct 16 16:46:15 hzhy kernel: [  661.980267] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.376094] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.376132] thermal thermal_zone2: Failed to set trips: -34
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.376157] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.376161] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.437180] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.437201] thermal thermal_zone2: Failed to set trips: -34
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.437216] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.437220] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.458109] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.458123] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.462379] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.462398] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.484141] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.484153] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.487564] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.487576] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.498991] rga: 57677  57686 : [tgid:57677] Destroy handle[117323] when the user exits
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.499002] rga: 57677  57686 : [tgid:57677] Destroy handle[117324] when the user exits
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.499007] rga: 57677  57686 : [tgid:57677] Destroy handle[117325] when the user exits
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.499010] rga: 57677  57686 : [tgid:57677] Destroy handle[117326] when the user exits
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.499014] rga: 57677  57686 : [tgid:57677] Destroy handle[117327] when the user exits
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.499018] rga: 57677  57686 : [tgid:57677] Destroy handle[117328] when the user exits
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.499022] rga: 57677  57686 : [tgid:57677] Destroy handle[117329] when the user exits
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.499025] rga: 57677  57686 : [tgid:57677] Destroy handle[117330] when the user exits
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.499029] rga: 57677  57686 : [tgid:57677] Destroy handle[117331] when the user exits
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.529375] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.529399] thermal thermal_zone2: Failed to set trips: -34
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.529417] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.529420] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.544262] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:22:18 hzhy kernel: [353760.544275] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.767546] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.767578] thermal thermal_zone2: Failed to set trips: -34
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.767598] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.767602] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.788578] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.788591] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.803872] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.803889] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.824631] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.824659] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.829055] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.829082] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.850613] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.850636] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.854263] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.854280] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.874593] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.874613] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.879460] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.879475] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.901680] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.901705] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.904645] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:14 hzhy kernel: [  661.904657] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.926566] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.926581] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.929852] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.929874] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.935947] rga: 3183   3192  : [tgid:3183] Destroy handle[4435] when the user exits
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.935958] rga: 3183   3192  : [tgid:3183] Destroy handle[4436] when the user exits
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.935962] rga: 3183   3192  : [tgid:3183] Destroy handle[4437] when the user exits
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.935966] rga: 3183   3192  : [tgid:3183] Destroy handle[4438] when the user exits
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.935969] rga: 3183   3192  : [tgid:3183] Destroy handle[4439] when the user exits
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.951571] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.951584] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.955052] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.955065] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.976566] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.976579] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.980253] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+/var/log/kern.log:Oct 16 16:46:15 hzhy kernel: [  661.980267] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/var/log/auth.log:Oct 16 16:20:14 hzhy systemd-logind[675]: New session c463 of user root.
+/var/log/auth.log:Oct 16 16:20:15 hzhy systemd-logind[675]: Session c463 logged out. Waiting for processes to exit.
+/var/log/auth.log:Oct 16 16:20:15 hzhy systemd-logind[675]: Removed session c463.
+/var/log/auth.log:Oct 16 16:21:44 hzhy systemd-logind[675]: New session c464 of user root.
+/var/log/auth.log:Oct 16 16:21:44 hzhy systemd-logind[675]: Session c464 logged out. Waiting for processes to exit.
+/var/log/auth.log:Oct 16 16:21:44 hzhy systemd-logind[675]: Removed session c464.
+/var/log/auth.log:Oct 16 16:22:02 hzhy systemd-logind[675]: New session c465 of user root.
+/var/log/auth.log:Oct 16 16:22:02 hzhy systemd-logind[675]: Session c465 logged out. Waiting for processes to exit.
+/var/log/auth.log:Oct 16 16:22:02 hzhy systemd-logind[675]: Removed session c465.
+/var/log/auth.log:Oct 16 16:22:10 hzhy systemd-logind[675]: New session c466 of user root.
+/var/log/auth.log:Oct 16 16:22:10 hzhy systemd-logind[675]: Session c466 logged out. Waiting for processes to exit.
+/var/log/auth.log:Oct 16 16:22:10 hzhy systemd-logind[675]: Removed session c466.
+/var/log/auth.log:Oct 16 16:43:47 hzhy systemd-logind[708]: New session c13 of user root.
+/var/log/auth.log:Oct 16 16:43:48 hzhy systemd-logind[708]: Session c13 logged out. Waiting for processes to exit.
+/var/log/auth.log:Oct 16 16:43:48 hzhy systemd-logind[708]: Removed session c13.
+/var/log/auth.log:Oct 16 16:44:44 hzhy systemd-logind[708]: New session c14 of user root.
+/var/log/auth.log:Oct 16 16:44:44 hzhy systemd-logind[708]: Session c14 logged out. Waiting for processes to exit.
+/var/log/auth.log:Oct 16 16:44:44 hzhy systemd-logind[708]: Removed session c14.
+/var/log/auth.log:Oct 16 16:45:22 hzhy systemd-logind[708]: New session c15 of user root.
+/var/log/auth.log:Oct 16 16:45:22 hzhy systemd-logind[708]: Session c15 logged out. Waiting for processes to exit.
+/var/log/auth.log:Oct 16 16:45:22 hzhy systemd-logind[708]: Removed session c15.
+/var/log/auth.log:Oct 16 16:46:14 hzhy systemd-logind[708]: New session c16 of user root.
+/var/log/auth.log:Oct 16 16:46:15 hzhy sudo: pam_unix(sudo:session): session closed for user root

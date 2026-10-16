@@ -1,0 +1,20 @@
+[
+  {
+    "width": 720,
+    "height": 480,
+    "arm_foreground_unchanged_across_trigger_and_expiry": true,
+    "unknown_state_consistent": true,
+    "coordinate_unknown_and_recovery": true,
+    "frozen_central_video_unchanged": true,
+    "visual_inspection": "Full coordinates, main font, centered states, independent trigger/freeze/alerts readable in actual readback."
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "arm_foreground_unchanged_across_trigger_and_expiry": true,
+    "unknown_state_consistent": true,
+    "coordinate_unknown_and_recovery": true,
+    "frozen_central_video_unchanged": true,
+    "visual_inspection": "Full coordinates, main font, centered states, independent trigger/freeze/alerts readable in actual readback."
+  }
+]

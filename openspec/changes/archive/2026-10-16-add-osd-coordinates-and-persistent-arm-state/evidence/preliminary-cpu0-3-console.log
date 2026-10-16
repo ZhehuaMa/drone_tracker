@@ -1,0 +1,38 @@
+START comparison-0-off pid 56779
+DONE comparison-0-off messages 3892 valid 3811
+START comparison-1-legacy pid 56895
+DONE comparison-1-legacy messages 3630 valid 3580
+START comparison-2-cached-overlay pid 57013
+DONE comparison-2-cached-overlay messages 3665 valid 3613
+START comparison-3-off pid 57115
+DONE comparison-3-off messages 3767 valid 3699
+START comparison-4-legacy pid 57269
+Traceback (most recent call last):
+  File "/home/hzhy/osd-gps-armed-status-20261016/board-comparison.py", line 99, in <module>
+    result['end']=time.monotonic();result['end_wall']=time.time();command('OFF');spin(.6)
+  File "/home/hzhy/osd-gps-armed-status-20261016/board-comparison.py", line 37, in spin
+    rclpy.spin_once(n,timeout_sec=.02)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 208, in spin_once
+    executor.spin_once(timeout_sec=timeout_sec)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 812, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 801, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 784, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 681, in _wait_for_ready_callbacks
+    wait_set.wait(timeout_nsec)
+KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/hzhy/osd-gps-armed-status-20261016/board-comparison.py", line 119, in <module>
+    n.destroy_node();rclpy.shutdown()
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 130, in shutdown
+    _shutdown(context=context)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/utilities.py", line 58, in shutdown
+    return context.shutdown()
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/context.py", line 102, in shutdown
+    self.__context.shutdown()
+rclpy._rclpy_pybind11.RCLError: failed to shutdown: rcl_shutdown already called on the given context, at ./src/rcl/init.c:241

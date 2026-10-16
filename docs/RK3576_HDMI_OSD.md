@@ -143,3 +143,40 @@ OSD 整个运行期间保持桌面关闭。OFF 只停止采集，HDMI 仍显示�
 回退方法一：在同一安装中设置 `osd.enabled=false` 并重启。回退方法二：若缺少显示动态库导致进程无法启动，切回已保留的 OSD 关闭安装和配置。两种方法均不更换系统 RKNN 库。恢复桌面之前，均须确认原 OSD 进程退出并释放显示设备。
 
 新 HUD 部署时先保留当前 `/opt/drone_tracker/current` 所指发布目录、配置和模型指纹，再把新包部署到独立发布目录。若屏幕不可读、配对异常或负载不达标，切回原 `current` 目标和原配置，并确认 OSD 进程已退出后再恢复桌面。当前实施与实机验收记录见 [HUD 对齐验证记录](../openspec/changes/archive/2026-09-27-align-hud-with-rk-hdmi-osd/validation.md)。模拟测试、RGA 调用成功或参考程序曾经运行，均不能替代本项目的屏幕配对和生产负载验收。
+
+### Coordinates and persistent arm status
+
+The right column now includes `LAT` and `LON` below `MAH`. Position comes from
+`/mavros/global_position/global` (`sensor_msgs/msg/NavSatFix`). For example,
+`(31.2304, 121.4737)` displays `LAT +31.230400` and `LON +121.473700`.
+These are signed decimal degrees: a minus sign means south latitude or west
+longitude. Six decimal places describe display formatting, not GPS accuracy.
+A valid zero coordinate displays `+0.000000`; rounded negative zero uses the
+same spelling. No arm state, home position, or GPSRAW message is required.
+Missing, invalid, or expired position displays `LAT --` and `LON --` together.
+Position keeps the existing monotonic timeout (`osd.telemetry_timeout_ms`,
+2000 ms by default), independently of battery or other telemetry.
+
+Both coordinate rows use the same white 16×32 main font and black outline as
+`MAH`. On the 720×480 logical canvas they start at y=314 and y=350. Their full
+text bounds, including the outline, end at x=702. The longest valid longitude,
+`LON -180.000000`, starts at x=458. Output resizing scales the whole layout.
+
+The bottom center always shows one arm status, using the main font and black
+outline. Its text bounds are centered at x=360, with their top at y=430:
+
+| Current flight state | Text | Color |
+|---|---|---|
+| Fresh, connected, armed | `ARMED` | Green |
+| Fresh, connected, disarmed | `DISARMED` | White |
+| Missing, expired, or disconnected | `ARM --` | Amber |
+
+This state comes from `/mavros/state` (`mavros_msgs/msg/State`), and continues to
+update during preview, tracking, waiting, and frozen video. It has no blink or
+three-second limit. Tracking `ON`, `OFF`, and `MISSION` do not arm or disarm the
+aircraft. The separate cyan `TRIG ON/OFF` hint now starts at (22,80), below the
+left subtitle and above altitude. Its existing two-second lifetime is unchanged.
+The right-side `ON MISSION` banner, tracking phase hints, freeze text, warnings,
+and target drawing keep their existing rules. Both `legacy` and `cached-overlay`
+renderers share these fields; cached updates clear old longer text when values
+become shorter or unknown.

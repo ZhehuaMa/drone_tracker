@@ -259,6 +259,13 @@ Elements scene(const PresentationState &state, const VideoGeometry &geometry, in
     addText(elements, "cell", 554, 200, cell ? cell_buffer : "CELL --", battery_color);
     addText(elements, "current", 554, 238, short_text::current(battery.current_amp), WHITE);
     addText(elements, "used", 554, 276, short_text::milliampHours(battery.consumed_mah), WHITE);
+    const auto position{telemetry.position.value};
+    const std::string latitude{short_text::latitude(position ? std::optional<double>{position->latitude_deg}
+        : std::nullopt)};
+    const std::string longitude{short_text::longitude(position ? std::optional<double>{position->longitude_deg}
+        : std::nullopt)};
+    addText(elements, "latitude", 702 - (static_cast<int>(latitude.size()) * FONT_W + 4), 314, latitude, WHITE);
+    addText(elements, "longitude", 702 - (static_cast<int>(longitude.size()) * FONT_W + 4), 350, longitude, WHITE);
     addText(elements, "altitude", 22, 118, optionalInt(telemetry.altitude_m, "ALT %04dM", "ALT --M"), WHITE);
     addText(elements, "speed", 22, 156, short_text::speedKmh(gps.speed_mps), WHITE);
     addText(elements, "heading", 22, 194,
@@ -337,13 +344,12 @@ Elements scene(const PresentationState &state, const VideoGeometry &geometry, in
             telemetry.warning == "FAILSAFE" || telemetry.warning == "BATTERY CRITICAL" ? RED : BLUE);
     }
     const auto milliseconds{std::chrono::duration_cast<std::chrono::milliseconds>(wall_time.time_since_epoch()).count()};
-    if (!state.trigger.empty()) { addText(elements, "trigger", 296, 430, state.trigger, CYAN); }
-    else if (telemetry.flight.value && !telemetry.flight.value->armed) {
-        addText(elements, "arm", 296, 430, "DISARMED", WHITE);
-    } else if (telemetry.flight.value && telemetry.flight.value->armed && telemetry.armed_seconds
-        && *telemetry.armed_seconds < 3 && ((milliseconds / 300) % 2 == 0)) {
-        addText(elements, "arm", 296, 430, "ARMED", GREEN);
-    }
+    if (!state.trigger.empty()) { addText(elements, "trigger", 22, 80, state.trigger, CYAN); }
+    const bool connected{telemetry.flight.value && telemetry.flight.value->connected};
+    const bool armed{connected && telemetry.flight.value->armed};
+    const std::string arm{connected ? (armed ? "ARMED" : "DISARMED") : "ARM --"};
+    addText(elements, "arm", (WIDTH - (static_cast<int>(arm.size()) * FONT_W + 4)) / 2, 430, arm,
+        connected ? (armed ? GREEN : WHITE) : AMBER);
     const std::string warning{warningText(telemetry)};
     if (!warning.empty() && ((milliseconds / 300) % 2 == 0)) {
         addText(elements, "warning", 570, 430, warning,

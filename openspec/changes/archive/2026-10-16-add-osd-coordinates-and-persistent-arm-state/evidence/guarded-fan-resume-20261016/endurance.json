@@ -1,0 +1,11 @@
+{
+  "live": 952.57642232,
+  "live_wall": 1792143238.4064982,
+  "end": 1562.706656985,
+  "end_wall": 1792143848.5367327,
+  "duration_sec": 610.1302346650001,
+  "new_boxes": 35829,
+  "valid_boxes": 35613,
+  "rounds_same_process": 20,
+  "pid": 4566
+}

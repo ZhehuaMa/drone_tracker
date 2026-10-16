@@ -1,0 +1,234 @@
+2026-10-16T17:17:36+08:00
+7月 29 21:41:35 hzhy systemd[2988]: Queued start job for default target Main User Target.
+7月 29 21:41:35 hzhy systemd[2988]: Created slice User Application Slice.
+7月 29 21:41:35 hzhy systemd[2988]: Created slice User Core Session Slice.
+7月 29 21:41:35 hzhy systemd[2988]: Reached target Paths.
+7月 29 21:41:35 hzhy systemd[2988]: Reached target Timers.
+7月 29 21:41:35 hzhy systemd[2988]: Listening on PipeWire Multimedia System Socket.
+7月 29 21:41:35 hzhy systemd[2988]: Listening on Sound System.
+7月 29 21:41:35 hzhy systemd[2988]: Reached target Sockets.
+7月 29 21:41:35 hzhy systemd[2988]: Reached target Basic System.
+7月 29 21:41:35 hzhy systemd[2988]: Started PipeWire Multimedia Service.
+7月 29 21:41:35 hzhy systemd[2988]: Starting Sound Service...
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: RTKit error: org.freedesktop.DBus.Error.ServiceUnknown
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: could not set nice-level to -11: 没有那个文件或目录
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: RTKit error: org.freedesktop.DBus.Error.ServiceUnknown
+7月 29 21:41:35 hzhy pipewire[2997]: spa.dbus: Failed to connect to session bus: Unable to autolaunch a dbus-daemon without a $DISPLAY for X11
+7月 29 21:41:35 hzhy pipewire[2997]: mod.portal: Failed to connect to session bus: 输入/输出错误
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: RTKit error: org.freedesktop.DBus.Error.ServiceUnknown
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: RTKit error: org.freedesktop.DBus.Error.ServiceUnknown
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: could not make thread 3010 realtime using RTKit: 没有那个文件或目录
+7月 29 21:41:35 hzhy pulseaudio[2998]: Error opening hctl device: 没有那个设备
+7月 29 21:41:36 hzhy dbus-daemon[3052]: [session uid=1000 pid=3050] Activating service name='org.freedesktop.systemd1' requested by ':1.0' (uid=1000 pid=3047 comm="dbus-update-activation-environment --systemd XAUTH")
+7月 29 21:41:36 hzhy dbus-daemon[3052]: [session uid=1000 pid=3050] Activated service 'org.freedesktop.systemd1' failed: Process org.freedesktop.systemd1 exited with status 1
+7月 29 21:41:36 hzhy pulseaudio[2998]: Unable to contact D-Bus: org.freedesktop.DBus.Error.NotSupported: Unable to autolaunch a dbus-daemon without a $DISPLAY for X11
+7月 29 21:41:36 hzhy pulseaudio[2998]: Unable to contact D-Bus: org.freedesktop.DBus.Error.NotSupported: Unable to autolaunch a dbus-daemon without a $DISPLAY for X11
+7月 29 21:41:36 hzhy systemd[2988]: Started Sound Service.
+7月 29 21:41:36 hzhy systemd[2988]: Reached target Main User Target.
+7月 29 21:41:36 hzhy systemd[2988]: Startup finished in 855ms.
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.xfce.Xfconf' requested by ':1.1' (uid=1000 pid=3000 comm="xfce4-session ")
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.xfce.Xfconf'
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gnome.ScreenSaver' requested by ':1.1' (uid=1000 pid=3000 comm="xfce4-session ")
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activated service 'org.gnome.ScreenSaver' failed: Failed to execute program org.gnome.ScreenSaver: No such file or directory
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.freedesktop.systemd1' requested by ':1.3' (uid=1000 pid=3074 comm="dbus-update-activation-environment --systemd SSH_A")
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activated service 'org.freedesktop.systemd1' failed: Process org.freedesktop.systemd1 exited with status 1
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gtk.vfs.Daemon' requested by ':1.5' (uid=1000 pid=3077 comm="xfwm4 ")
+7月 29 21:41:40 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gtk.vfs.Daemon'
+7月 29 21:41:45 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gtk.vfs.UDisks2VolumeMonitor' requested by ':1.14' (uid=1000 pid=3121 comm="xfdesktop ")
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gtk.vfs.UDisks2VolumeMonitor'
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='ca.desrt.dconf' requested by ':1.20' (uid=1000 pid=3142 comm="light-locker ")
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'ca.desrt.dconf'
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gnome.ScreenSaver' requested by ':1.16' (uid=1000 pid=3127 comm="xfce4-power-manager ")
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activated service 'org.gnome.ScreenSaver' failed: Failed to execute program org.gnome.ScreenSaver: No such file or directory
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gtk.vfs.Metadata' requested by ':1.14' (uid=1000 pid=3121 comm="xfdesktop ")
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gtk.vfs.Metadata'
+7月 29 21:41:47 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gnome.evolution.dataserver.Sources5' requested by ':1.32' (uid=1000 pid=3138 comm="/usr/libexec/evolution-data-server/evolution-alarm")
+7月 29 21:41:47 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gnome.evolution.dataserver.Sources5'
+7月 29 21:41:47 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gnome.evolution.dataserver.Calendar8' requested by ':1.32' (uid=1000 pid=3138 comm="/usr/libexec/evolution-data-server/evolution-alarm")
+7月 29 21:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.bluez.obex' requested by ':1.34' (uid=1000 pid=3130 comm="/usr/bin/python3 /usr/bin/blueman-applet ")
+7月 29 21:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gnome.evolution.dataserver.Calendar8'
+7月 29 21:41:48 hzhy obexd[3244]: OBEX daemon 5.64
+7月 29 21:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.bluez.obex'
+7月 29 21:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gnome.evolution.dataserver.AddressBook10' requested by ':1.42' (uid=1000 pid=3228 comm="/usr/libexec/evolution-calendar-factory ")
+7月 29 21:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gnome.evolution.dataserver.AddressBook10'
+7月 29 21:42:01 hzhy pulseaudio[2998]: GetManagedObjects() failed: org.freedesktop.DBus.Error.NoReply: Did not receive a reply. Possible causes include: the remote application did not send a reply, the message bus security policy blocked the reply, the reply timeout expired, or the network connection was broken.
+7月 29 22:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.freedesktop.secrets' requested by ':1.35' (uid=1000 pid=3198 comm="/usr/libexec/evolution-source-registry ")
+7月 29 22:41:48 hzhy gnome-keyring-daemon[3546]: couldn't access control socket: /run/user/1000/keyring/control: 没有那个文件或目录
+7月 29 22:41:48 hzhy gnome-keyring-d[3546]: couldn't access control socket: /run/user/1000/keyring/control: 没有那个文件或目录
+7月 29 22:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.freedesktop.secrets'
+7月 30 00:11:20 hzhy pulseaudio[2998]: ICE I/O error handler called
+7月 30 00:11:20 hzhy pulseaudio[2998]: X11 I/O error handler called
+7月 30 00:11:20 hzhy pulseaudio[2998]: X11 I/O error exit handler called, preparing to tear down X11 modules
+7月 30 00:11:20 hzhy systemd[2988]: Stopped target Main User Target.
+7月 30 00:11:20 hzhy systemd[2988]: Stopping PipeWire Multimedia Service...
+7月 30 00:11:20 hzhy systemd[2988]: Stopping Sound Service...
+7月 30 00:11:20 hzhy systemd[2988]: Stopped PipeWire Multimedia Service.
+7月 30 00:11:20 hzhy systemd[2988]: Stopped Sound Service.
+7月 30 00:11:20 hzhy systemd[2988]: Removed slice User Core Session Slice.
+7月 30 00:11:20 hzhy systemd[2988]: Stopped target Basic System.
+7月 30 00:11:20 hzhy systemd[2988]: Stopped target Paths.
+7月 30 00:11:20 hzhy systemd[2988]: Stopped target Sockets.
+7月 30 00:11:20 hzhy systemd[2988]: Stopped target Timers.
+7月 30 00:11:20 hzhy systemd[2988]: Closed PipeWire Multimedia System Socket.
+7月 30 00:11:20 hzhy systemd[2988]: Closed Sound System.
+7月 30 00:11:20 hzhy systemd[2988]: Removed slice User Application Slice.
+7月 30 00:11:20 hzhy systemd[2988]: Reached target Shutdown.
+7月 30 00:11:20 hzhy systemd[2988]: Finished Exit the Session.
+7月 30 00:11:20 hzhy systemd[2988]: Reached target Exit the Session.
+Oct 16 17:17:30 hzhy run-camera[1699]:   repeat result=success count=8 first_frames=0 scale_convert{count=0} layout{count=8,mean=607.125,max=860,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=8,mean=65.25,max=67,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:3:5:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=8,mean=15442.5,max=15507,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=8,mean=16370.6,max=16384,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=8,mean=6.625,max=8,p95_approx=8,p99_approx=8,buckets=0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=8,mean=249.125,max=274,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:6:2:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:30 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:30 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:30 hzhy run-camera[1699]: [INFO] [1792142250.591426541] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=331 rejected=0
+Oct 16 17:17:31 hzhy run-camera[1699]: [INFO] [1792142251.691264504] [drone_tracker_node]: OSD timing round=0 window_id=40 window_us=1099966 submitted=0 replaced=0 displayed=0 rejected=0 commits=10 unit=us quantiles=approx_pow2
+Oct 16 17:17:31 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:31 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:31 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:31 hzhy run-camera[1699]:   repeat result=success count=10 first_frames=0 scale_convert{count=0} layout{count=10,mean=628.2,max=860,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:10:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=10,mean=66.4,max=86,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:5:5:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=10,mean=15424,max=15506,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:10:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=10,mean=16371.1,max=16381,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:10:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=10,mean=6.8,max=8,p95_approx=8,p99_approx=8,buckets=0:0:0:10:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=10,mean=245.7,max=256,p95_approx=256,p99_approx=256,buckets=0:0:0:0:0:0:0:0:10:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:31 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:31 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:31 hzhy run-camera[1699]: [INFO] [1792142251.691382566] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=341 rejected=0
+Oct 16 17:17:32 hzhy run-camera[1699]: [INFO] [1792142252.691297943] [drone_tracker_node]: OSD timing round=0 window_id=41 window_us=1000034 submitted=0 replaced=0 displayed=0 rejected=0 commits=8 unit=us quantiles=approx_pow2
+Oct 16 17:17:32 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:32 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:32 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:32 hzhy run-camera[1699]:   repeat result=success count=8 first_frames=0 scale_convert{count=0} layout{count=8,mean=642.5,max=863,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=8,mean=65.125,max=67,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:1:7:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=8,mean=15406.5,max=15502,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=8,mean=16370.9,max=16380,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=8,mean=6.125,max=7,p95_approx=8,p99_approx=8,buckets=0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=8,mean=250.625,max=284,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:6:2:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:32 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:32 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:32 hzhy run-camera[1699]: [INFO] [1792142252.691423135] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=349 rejected=0
+Oct 16 17:17:33 hzhy run-camera[1699]: [INFO] [1792142253.691315805] [drone_tracker_node]: OSD timing round=0 window_id=42 window_us=1000017 submitted=0 replaced=0 displayed=0 rejected=0 commits=9 unit=us quantiles=approx_pow2
+Oct 16 17:17:33 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:33 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:33 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:33 hzhy run-camera[1699]:   repeat result=success count=9 first_frames=0 scale_convert{count=0} layout{count=9,mean=636.889,max=863,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=9,mean=66.2222,max=74,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:1:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=9,mean=15411.4,max=15499,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=9,mean=16371.2,max=16385,p95_approx=32768,p99_approx=32768,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:1:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=9,mean=6.66667,max=8,p95_approx=8,p99_approx=8,buckets=0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=9,mean=250,max=294,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:8:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:33 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:33 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:33 hzhy run-camera[1699]: [INFO] [1792142253.691441618] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=358 rejected=0
+Oct 16 17:17:34 hzhy run-camera[1699]: [INFO] [1792142254.691341779] [drone_tracker_node]: OSD timing round=0 window_id=43 window_us=1000023 submitted=0 replaced=0 displayed=0 rejected=0 commits=9 unit=us quantiles=approx_pow2
+Oct 16 17:17:34 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:34 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:34 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:34 hzhy run-camera[1699]:   repeat result=success count=9 first_frames=0 scale_convert{count=0} layout{count=9,mean=605.333,max=860,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=9,mean=66.4444,max=72,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:1:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=9,mean=15449.4,max=15507,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=9,mean=16371.7,max=16376,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=9,mean=6.55556,max=7,p95_approx=8,p99_approx=8,buckets=0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=9,mean=243.889,max=257,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:8:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:34 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:34 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:34 hzhy run-camera[1699]: [INFO] [1792142254.691520792] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=367 rejected=0
+Oct 16 17:17:35 hzhy run-camera[1699]: [INFO] [1792142255.691362973] [drone_tracker_node]: OSD timing round=0 window_id=44 window_us=1000023 submitted=0 replaced=0 displayed=0 rejected=0 commits=8 unit=us quantiles=approx_pow2
+Oct 16 17:17:35 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:35 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:35 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:35 hzhy run-camera[1699]:   repeat result=success count=8 first_frames=0 scale_convert{count=0} layout{count=8,mean=638.875,max=859,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=8,mean=65.875,max=73,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:2:6:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=8,mean=15410.9,max=15503,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=8,mean=16371.5,max=16379,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=8,mean=6.25,max=7,p95_approx=8,p99_approx=8,buckets=0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=8,mean=249.625,max=287,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:7:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:35 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:35 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:35 hzhy run-camera[1699]: [INFO] [1792142255.691480804] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=375 rejected=0
+Oct 16 17:17:36 hzhy run-camera[1699]: [INFO] [1792142256.691394930] [drone_tracker_node]: OSD timing round=0 window_id=45 window_us=1000029 submitted=0 replaced=0 displayed=0 rejected=0 commits=9 unit=us quantiles=approx_pow2
+Oct 16 17:17:36 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:36 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:36 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:36 hzhy run-camera[1699]:   repeat result=success count=9 first_frames=0 scale_convert{count=0} layout{count=9,mean=637.778,max=860,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=9,mean=69,max=75,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:2:7:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=9,mean=15400.9,max=15490,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=9,mean=16372.1,max=16392,p95_approx=32768,p99_approx=32768,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:7:2:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=9,mean=6.44444,max=8,p95_approx=8,p99_approx=8,buckets=0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=9,mean=258,max=292,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:5:4:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:36 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:36 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:36 hzhy run-camera[1699]: [INFO] [1792142256.691520444] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=384 rejected=0
+Oct 16 17:17:37 hzhy run-camera[1699]: [INFO] [1792142257.691415445] [drone_tracker_node]: OSD timing round=0 window_id=46 window_us=1000024 submitted=0 replaced=0 displayed=0 rejected=0 commits=8 unit=us quantiles=approx_pow2
+Oct 16 17:17:37 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:37 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:37 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:37 hzhy run-camera[1699]:   repeat result=success count=8 first_frames=0 scale_convert{count=0} layout{count=8,mean=616.5,max=862,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=8,mean=73,max=82,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=8,mean=15382.4,max=15473,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=8,mean=16370.5,max=16377,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=8,mean=7.125,max=8,p95_approx=8,p99_approx=8,buckets=0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=8,mean=291.5,max=491,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:4:4:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:37 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:37 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:37 hzhy run-camera[1699]: [INFO] [1792142257.691547928] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=392 rejected=0
+Oct 16 17:17:38 hzhy run-camera[1699]: [INFO] [1792142258.691440508] [drone_tracker_node]: OSD timing round=0 window_id=47 window_us=1000021 submitted=0 replaced=0 displayed=0 rejected=0 commits=9 unit=us quantiles=approx_pow2
+Oct 16 17:17:38 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:38 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:38 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:38 hzhy run-camera[1699]:   repeat result=success count=9 first_frames=0 scale_convert{count=0} layout{count=9,mean=634.222,max=865,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=9,mean=69.6667,max=73,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=9,mean=15399.1,max=15488,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=9,mean=16369.3,max=16373,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=9,mean=6.66667,max=8,p95_approx=8,p99_approx=8,buckets=0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=9,mean=259.667,max=285,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:6:3:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:38 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:38 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:38 hzhy run-camera[1699]: [INFO] [1792142258.691573084] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=401 rejected=0
+Oct 16 17:17:39 hzhy run-camera[1699]: [INFO] [1792142259.691468626] [drone_tracker_node]: OSD timing round=0 window_id=48 window_us=1000029 submitted=0 replaced=0 displayed=0 rejected=0 commits=9 unit=us quantiles=approx_pow2
+Oct 16 17:17:39 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:39 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:39 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:39 hzhy run-camera[1699]:   repeat result=success count=9 first_frames=0 scale_convert{count=0} layout{count=9,mean=635.778,max=864,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=9,mean=71,max=78,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=9,mean=15404.4,max=15495,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=9,mean=16369.6,max=16374,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=9,mean=6.22222,max=8,p95_approx=8,p99_approx=8,buckets=0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=9,mean=252.111,max=260,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:5:4:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:39 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:39 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:39 hzhy run-camera[1699]: [INFO] [1792142259.691658151] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=410 rejected=0
+Oct 16 17:17:40 hzhy run-camera[1699]: [INFO] [1792142260.691485328] [drone_tracker_node]: OSD timing round=0 window_id=49 window_us=1000019 submitted=0 replaced=0 displayed=0 rejected=0 commits=8 unit=us quantiles=approx_pow2
+Oct 16 17:17:40 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:40 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:40 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:40 hzhy run-camera[1699]:   repeat result=success count=8 first_frames=0 scale_convert{count=0} layout{count=8,mean=612.5,max=859,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=8,mean=70,max=78,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=8,mean=15421,max=15481,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=8,mean=16370.2,max=16381,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=8,mean=6.5,max=7,p95_approx=8,p99_approx=8,buckets=0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=8,mean=260.25,max=303,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:5:3:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:40 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:40 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:40 hzhy run-camera[1699]: [INFO] [1792142260.691610705] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=418 rejected=0
+Oct 16 17:17:41 hzhy run-camera[1699]: [INFO] [1792142261.791519199] [drone_tracker_node]: OSD timing round=0 window_id=50 window_us=1100030 submitted=0 replaced=0 displayed=0 rejected=0 commits=10 unit=us quantiles=approx_pow2
+Oct 16 17:17:41 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:41 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:41 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:41 hzhy run-camera[1699]:   repeat result=success count=10 first_frames=0 scale_convert{count=0} layout{count=10,mean=629.2,max=856,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:10:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=10,mean=70.4,max=79,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:0:10:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=10,mean=15407.3,max=15489,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:10:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=10,mean=16369.6,max=16374,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:10:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=10,mean=6.7,max=7,p95_approx=8,p99_approx=8,buckets=0:0:0:10:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=10,mean=256,max=266,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:5:5:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:41 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:41 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:41 hzhy run-camera[1699]: [INFO] [1792142261.791647128] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=428 rejected=0
+Oct 16 17:17:42 hzhy run-camera[1699]: [INFO] [1792142262.791539988] [drone_tracker_node]: OSD timing round=0 window_id=51 window_us=1000022 submitted=0 replaced=0 displayed=0 rejected=0 commits=8 unit=us quantiles=approx_pow2
+Oct 16 17:17:42 hzhy run-camera[1699]:   new_video result=success count=0 first_frames=0 samples=none
+Oct 16 17:17:42 hzhy run-camera[1699]:   new_video result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:42 hzhy run-camera[1699]:   new_video result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:42 hzhy run-camera[1699]:   repeat result=success count=8 first_frames=0 scale_convert{count=0} layout{count=8,mean=644.125,max=865,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=8,mean=71.75,max=80,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=8,mean=15391.6,max=15490,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=8,mean=16371,max=16378,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=8,mean=7,max=9,p95_approx=16,p99_approx=16,buckets=0:0:0:7:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=8,mean=256.5,max=272,p95_approx=512,p99_approx=512,buckets=0:0:0:0:0:0:0:0:4:4:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+Oct 16 17:17:42 hzhy run-camera[1699]:   repeat result=rejected count=0 first_frames=0 samples=none
+Oct 16 17:17:42 hzhy run-camera[1699]:   repeat result=failure count=0 first_frames=0 samples=none
+Oct 16 17:17:42 hzhy run-camera[1699]: [INFO] [1792142262.791671505] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=436 rejected=0
+总计 0
+lrwxrwxrwx 1 root root 0  7月 29 21:41 watchdog0 -> ../../devices/platform/2ace0000.watchdog/watchdog/watchdog0
+/sys/class/watchdog/watchdog*/identity /sys/class/watchdog/watchdog*/state /sys/class/watchdog/watchdog*/bootstatus /sys/class/watchdog/watchdog*/status /sys/class/watchdog/watchdog*/timeout /sys/class/watchdog/watchdog*/nowayout RuntimeWatchdogUSec=0
+RebootWatchdogUSec=10min
+[五 10月 16 17:16:42 2026] rk_gmac-dwmac 2a230000.ethernet: Enable RX Mitigation via HW Watchdog Timer
+[五 10月 16 17:16:42 2026] rk806 1-0023: no power-off pinctrl state
+[五 10月 16 17:16:42 2026] rk806 1-0023: no reset-setting pinctrl state
+[五 10月 16 17:16:42 2026] rkvpss_hw 27c30000.vpss: failed to get cru reset
+[五 10月 16 17:16:43 2026] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+[五 10月 16 17:16:43 2026] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+[五 10月 16 17:16:43 2026] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+[五 10月 16 17:16:43 2026] mpp_jpgdec 27910000.jpegd: reset_group->rw_sem_on=0
+[五 10月 16 17:16:43 2026] mpp_jpgdec 27910000.jpegd: reset_group->rw_sem_on=0
+[五 10月 16 17:16:43 2026] mpp_jpgenc 27910800.jpege: reset_group->rw_sem_on=0
+[五 10月 16 17:16:43 2026] mpp_jpgenc 27910800.jpege: reset_group->rw_sem_on=0
+[五 10月 16 17:16:43 2026] rkvdec2_init:1250: No niu aclk reset resource define
+[五 10月 16 17:16:43 2026] rkvdec2_init:1253: No niu hclk reset resource define
+[五 10月 16 17:16:43 2026] rkvdec2_init:1259: No cabac reset resource define
+[五 10月 16 17:16:43 2026] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+[五 10月 16 17:16:43 2026] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+[五 10月 16 17:16:43 2026] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+[五 10月 16 17:16:43 2026] rockchip-vop2 27d00000.vop: Supported VOP aclk dvfs, normal mode:500000000, reset mode:594000000, advanced mode:702000000
+[五 10月 16 17:16:43 2026] W : [File] : drivers/gpu/arm/bifrost/platform/rk/mali_kbase_config_rk.c; [Line] : 144; [Func] : kbase_platform_rk_init(); power-off-delay-ms not available.
+总计 0
+drwx------  47 root root 0  1月  1  1970 .
+drwxr-xr-x  15 root root 0  1月  1  1970 ..
+-r--r--r--   1 root root 0  1月  1  1970 2ab90000.dma-controller
+-r--r--r--   1 root root 0  1月  1  1970 2abb0000.dma-controller
+-r--r--r--   1 root root 0  1月  1  1970 2abd0000.dma-controller
+drwxr-xr-x   2 root root 0  1月  1  1970 2ace0000.watchdog
+-r--r--r--   1 root root 0  1月  1  1970 2add2000.pwm
+-r--r--r--   1 root root 0  1月  1  1970 2ade4000.pwm
+-r--r--r--   1 root root 0  1月  1  1970 2ade6000.pwm
+drwxr-xr-x   3 root root 0  1月  1  1970 asoc
+drwxr-xr-x  15 root root 0  1月  1  1970 bdi
+drwxr-xr-x  14 root root 0  1月  1  1970 block
+drwxr-xr-x   2 root root 0  1月  1  1970 cec
+--w-------   1 root root 0  1月  1  1970 clear_warn_once
+drwxr-xr-x 572 root root 0  1月  1  1970 clk
+-rw-r--r--   1 root root 0  1月  1  1970 debug_enabled
+drwxr-xr-x   2 root root 0  1月  1  1970 devfreq
+drwxr-xr-x   2 root root 0  1月  1  1970 device_component
+-r--r--r--   1 root root 0  1月  1  1970 devices_deferred
+drwxr-xr-x   2 root root 0  1月  1  1970 dma_buf
+drwxr-xr-x   5 root root 0  1月  1  1970 dmaengine
+drwxr-xr-x   2 root root 0  1月  1  1970 dma_pools
+drwxr-xr-x   6 root root 0  1月  1  1970 dri
+drwxr-xr-x   2 root root 0  1月  1  1970 dw-hdmi0
+drwxr-xr-x   2 root root 0  1月  1  1970 dynamic_debug
+drwxr-xr-x   6 root root 0  1月  1  1970 energy_model
+-rw-r--r--   1 root root 0  1月  1  1970 fault_around_bytes
+-r--r--r--   1 root root 0  1月  1  1970 gpio
+drwxr-xr-x   2 root root 0  1月  1  1970 hid
+    104       2 watchdogd       [watchdogd]
+    186       2 irq/94-2ace0000 [irq/94-2ace0000.watchdog]
+   1699       1 drone_tracker_n /opt/drone_tracker/current/lib/drone_tracker/drone_tracker_node --ros-args --params-file /opt/drone_tracker/config/camera.yaml
+   2326    2312 bash            bash -c source /opt/ros/humble/setup.bash; date -Is; journalctl -b -1 --no-pager -n 160; grep -aE "Oct 16 17:(1[56]|17):" /var/log/syslog | tail -n 100; ls -l /sys/class/watchdog; for f in /sys/class/watchdog/watchdog*/{identity,state,bootstatus,status,timeout,nowayout}; do printf "%s " "$f"; cat "$f" 2>/dev/null; done; systemctl show -p RuntimeWatchdogUSec -p RebootWatchdogUSec; dmesg -T | grep -iE "reset|reboot|pmic|under.?vol|power.?off|watchdog|panic|shutdown|voltage"; ls -la /sys/kernel/debug | head -n 30; ps -eo pid,ppid,comm,args | grep -E "[p]ython|[w]atchdog|[d]rone_tracker|[a]cceptance|[b]oard-comparison"

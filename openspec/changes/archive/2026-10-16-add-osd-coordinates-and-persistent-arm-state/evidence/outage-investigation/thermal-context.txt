@@ -1,0 +1,103 @@
+Oct 16 16:22:18 hzhy kernel: [353760.376094] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+Oct 16 16:22:18 hzhy kernel: [353760.376132] thermal thermal_zone2: Failed to set trips: -34
+Oct 16 16:22:18 hzhy kernel: [353760.376157] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.376161] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.437180] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+Oct 16 16:22:18 hzhy kernel: [353760.437201] thermal thermal_zone2: Failed to set trips: -34
+Oct 16 16:22:18 hzhy kernel: [353760.437216] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.437220] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.458109] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.458123] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.462379] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.462398] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.484141] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.484153] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.487564] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.487576] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.498991] rga: 57677  57686 : [tgid:57677] Destroy handle[117323] when the user exits
+Oct 16 16:22:18 hzhy kernel: [353760.499002] rga: 57677  57686 : [tgid:57677] Destroy handle[117324] when the user exits
+Oct 16 16:22:18 hzhy kernel: [353760.499007] rga: 57677  57686 : [tgid:57677] Destroy handle[117325] when the user exits
+Oct 16 16:22:18 hzhy kernel: [353760.499010] rga: 57677  57686 : [tgid:57677] Destroy handle[117326] when the user exits
+Oct 16 16:22:18 hzhy kernel: [353760.499014] rga: 57677  57686 : [tgid:57677] Destroy handle[117327] when the user exits
+Oct 16 16:22:18 hzhy kernel: [353760.499018] rga: 57677  57686 : [tgid:57677] Destroy handle[117328] when the user exits
+Oct 16 16:22:18 hzhy kernel: [353760.499022] rga: 57677  57686 : [tgid:57677] Destroy handle[117329] when the user exits
+Oct 16 16:22:18 hzhy kernel: [353760.499025] rga: 57677  57686 : [tgid:57677] Destroy handle[117330] when the user exits
+Oct 16 16:22:18 hzhy kernel: [353760.499029] rga: 57677  57686 : [tgid:57677] Destroy handle[117331] when the user exits
+Oct 16 16:22:18 hzhy kernel: [353760.529375] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+Oct 16 16:22:18 hzhy kernel: [353760.529399] thermal thermal_zone2: Failed to set trips: -34
+Oct 16 16:22:18 hzhy kernel: [353760.529417] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.529420] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.544262] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.544275] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.554849] ttyFIQ ttyFIQ0: tty_port_close_start: tty->count = 1 port count = 3
+Oct 16 16:46:14 hzhy kernel: [  661.767546] rk_tsadcv2_temp_to_code: invalid temperature, temp=2147482724 error=511
+Oct 16 16:46:14 hzhy kernel: [  661.767578] thermal thermal_zone2: Failed to set trips: -34
+Oct 16 16:46:14 hzhy kernel: [  661.767598] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.767602] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.788578] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.788591] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.803872] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.803889] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.824631] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.824659] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.829055] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.829082] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.850613] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.850636] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.854263] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.854280] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.874593] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.874613] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.879460] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.879475] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.901680] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.901705] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.904645] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.904657] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.926566] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.926581] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.929852] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.929874] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.935947] rga: 3183   3192  : [tgid:3183] Destroy handle[4435] when the user exits
+Oct 16 16:46:15 hzhy kernel: [  661.935958] rga: 3183   3192  : [tgid:3183] Destroy handle[4436] when the user exits
+Oct 16 16:46:15 hzhy kernel: [  661.935962] rga: 3183   3192  : [tgid:3183] Destroy handle[4437] when the user exits
+Oct 16 16:46:15 hzhy kernel: [  661.935966] rga: 3183   3192  : [tgid:3183] Destroy handle[4438] when the user exits
+Oct 16 16:46:15 hzhy kernel: [  661.935969] rga: 3183   3192  : [tgid:3183] Destroy handle[4439] when the user exits
+Oct 16 16:46:15 hzhy kernel: [  661.951571] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.951584] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.955052] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.955065] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.976566] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.976579] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.980253] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.980267] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+/sys/devices/system/cpu/cpufreq/policy0
+performance
+2016000
+2016000
+2016000
+/sys/devices/system/cpu/cpufreq/policy4
+performance
+408000
+2208000
+2208000
+/sys/class/thermal/thermal_zone0
+soc-thermal
+65615
+/sys/class/thermal/thermal_zone1
+bigcore-thermal
+67461
+/sys/class/thermal/thermal_zone2
+little-core-thermal
+69307
+/sys/class/thermal/thermal_zone3
+ddr-thermal
+67461
+/sys/class/thermal/thermal_zone4
+npu-thermal
+66538
+/sys/class/thermal/thermal_zone5
+gpu-thermal
+68384
+lrwxrwxrwx 1 root root 0 10月 16 16:55 /sys/class/thermal/thermal_zone2 -> ../../devices/virtual/thermal/thermal_zone2
+          0

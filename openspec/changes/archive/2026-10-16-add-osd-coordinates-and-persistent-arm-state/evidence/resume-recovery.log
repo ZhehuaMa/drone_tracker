@@ -1,0 +1,55 @@
+10月 16 14:36:45 hzhy run-camera[47141]:   repeat result=failure count=0 first_frames=0 samples=none
+10月 16 14:36:45 hzhy run-camera[47141]: [INFO] [1792132605.424671384] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=2174866 rejected=0
+10月 16 14:36:46 hzhy run-camera[47141]: [INFO] [1792132606.424559553] [drone_tracker_node]: OSD timing round=0 window_id=252475 window_us=1000013 submitted=0 replaced=0 displayed=0 rejected=0 commits=9 unit=us quantiles=approx_pow2
+10月 16 14:36:46 hzhy run-camera[47141]:   new_video result=success count=0 first_frames=0 samples=none
+10月 16 14:36:46 hzhy run-camera[47141]:   new_video result=rejected count=0 first_frames=0 samples=none
+10月 16 14:36:46 hzhy run-camera[47141]:   new_video result=failure count=0 first_frames=0 samples=none
+10月 16 14:36:46 hzhy run-camera[47141]:   repeat result=success count=9 first_frames=0 scale_convert{count=0} layout{count=9,mean=651.444,max=888,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=9,mean=67.7778,max=76,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=9,mean=15400.4,max=15487,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=9,mean=16372,max=16379,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=9,mean=6.44444,max=7,p95_approx=8,p99_approx=8,buckets=0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=9,mean=245.889,max=256,p95_approx=256,p99_approx=256,buckets=0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+10月 16 14:36:46 hzhy run-camera[47141]:   repeat result=rejected count=0 first_frames=0 samples=none
+10月 16 14:36:46 hzhy run-camera[47141]:   repeat result=failure count=0 first_frames=0 samples=none
+10月 16 14:36:46 hzhy run-camera[47141]: [INFO] [1792132606.424681209] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=2174875 rejected=0
+10月 16 14:36:47 hzhy run-camera[47141]: [INFO] [1792132607.424573379] [drone_tracker_node]: OSD timing round=0 window_id=252476 window_us=1000011 submitted=0 replaced=0 displayed=0 rejected=0 commits=9 unit=us quantiles=approx_pow2
+10月 16 14:36:47 hzhy run-camera[47141]:   new_video result=success count=0 first_frames=0 samples=none
+10月 16 14:36:47 hzhy run-camera[47141]:   new_video result=rejected count=0 first_frames=0 samples=none
+10月 16 14:36:47 hzhy run-camera[47141]:   new_video result=failure count=0 first_frames=0 samples=none
+10月 16 14:36:47 hzhy run-camera[47141]:   repeat result=success count=9 first_frames=0 scale_convert{count=0} layout{count=9,mean=620.889,max=882,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=9,mean=66.8889,max=68,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=9,mean=15431.9,max=15487,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=9,mean=16371.2,max=16378,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=9,mean=6.33333,max=7,p95_approx=8,p99_approx=8,buckets=0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=9,mean=245.222,max=255,p95_approx=256,p99_approx=256,buckets=0:0:0:0:0:0:0:0:9:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+10月 16 14:36:47 hzhy run-camera[47141]:   repeat result=rejected count=0 first_frames=0 samples=none
+10月 16 14:36:47 hzhy run-camera[47141]:   repeat result=failure count=0 first_frames=0 samples=none
+10月 16 14:36:47 hzhy run-camera[47141]: [INFO] [1792132607.424696391] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=2174884 rejected=0
+10月 16 14:36:48 hzhy run-camera[47141]: [INFO] [1792132608.424591510] [drone_tracker_node]: OSD timing round=0 window_id=252477 window_us=1000018 submitted=0 replaced=0 displayed=0 rejected=0 commits=8 unit=us quantiles=approx_pow2
+10月 16 14:36:48 hzhy run-camera[47141]:   new_video result=success count=0 first_frames=0 samples=none
+10月 16 14:36:48 hzhy run-camera[47141]:   new_video result=rejected count=0 first_frames=0 samples=none
+10月 16 14:36:48 hzhy run-camera[47141]:   new_video result=failure count=0 first_frames=0 samples=none
+10月 16 14:36:48 hzhy run-camera[47141]:   repeat result=success count=8 first_frames=0 scale_convert{count=0} layout{count=8,mean=662.5,max=885,p95_approx=1024,p99_approx=1024,buckets=0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} commit{count=8,mean=66.5,max=69,p95_approx=128,p99_approx=128,buckets=0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} flip_wait{count=8,mean=15389,max=15480,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} render_total{count=8,mean=16371.2,max=16377,p95_approx=16384,p99_approx=16384,buckets=0:0:0:0:0:0:0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0} pending_wait{count=0} submit_to_display{count=0} new_frame_interval{count=0} other{count=8,mean=6.25,max=7,p95_approx=8,p99_approx=8,buckets=0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0} source_prepare{count=0} overlay_upload{count=8,mean=247,max=255,p95_approx=256,p99_approx=256,buckets=0:0:0:0:0:0:0:0:8:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0}
+10月 16 14:36:48 hzhy run-camera[47141]:   repeat result=rejected count=0 first_frames=0 samples=none
+10月 16 14:36:48 hzhy run-camera[47141]:   repeat result=failure count=0 first_frames=0 samples=none
+10月 16 14:36:48 hzhy run-camera[47141]: [INFO] [1792132608.424716273] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=2174892 rejected=0
+10月 16 14:36:49 hzhy run-camera[47141]: [INFO] [1792132609.424607188] [drone_tracker_node]: OSD timing round=0 window_id=252478 window_us=1000016 submitted=0 replaced=0 displayed=0 rejected=0 commits=9 unit=us quantiles=approx_pow2
+10月 16 14:36:49 hzhy run-camera[47141]:   new_video result=success count=0 first_frames=0 samples=none
+10月 16 14:36:49 hzhy run-camera[47141]:   new_video result=rejected count=0 first_frames=0 samples=none
+10月 16 14:36:49 hzhy run-camera[47141]:   new_video result=failure count=0 first_frames=0 samples=none
+[    7.821116] read strings
+[   11.941783] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_enable] Update mode to 720x480p60, type: 11(if:HDMI0, flag:0x0) for vp0 dclk: 27027000
+[   11.941972] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:41fbe rate:742500
+[   11.942138] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+[   11.942172] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:41fbe rate:270270
+[   11.942337] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+[   11.942340] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_enable] set dclk_vp0 to 27027000, get 27027000
+[   11.942357] dwhdmi-rockchip 27da0000.hdmi: final tmdsclk = 27027000
+[   11.942400] dwhdmi-rockchip 27da0000.hdmi: don't use dsc mode
+[   11.942403] dwhdmi-rockchip 27da0000.hdmi: dw hdmi qp use tmds mode
+[   11.942409] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: bus_width:0x41fbe,bit_rate:270270
+[   11.942543] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy lane locked!
+[   11.942577] rockchip-vop2 27d00000.vop: [drm] vp0 post enable for intf:800
+[   11.942591] dwhdmi-rockchip 27da0000.hdmi: Rate 27027000 missing; compute N dynamically
+[   18.011459] platform mtd_vendor_storage: deferred probe pending
+总计 492
+drwxr-xr-x 2 root root   4096 10月 16 16:20 comparison-0-off
+-rw-r--r-- 1 root root 326695 10月 16 16:21 comparison-0-off.json
+-rw-r--r-- 1 root root   8720 10月 16 16:21 comparison-0-off.log
+-rw-r--r-- 1 root root   2296 10月 16 16:20 comparison-0-off.yaml
+drwxr-xr-x 2 root root   4096 10月 16 16:21 comparison-1-legacy
+-rw-r--r-- 1 root root 142661 10月 16 16:22 comparison-1-legacy.log
+-rw-r--r-- 1 root root   2295 10月 16 16:21 comparison-1-legacy.yaml
+-rw-r--r-- 1 root root   1421 10月 16 16:20 comparison-identity.json
+71be771a0914f3939394dffad120337896ec08c25f27cbbd1ae2bf7aca757ca9  /home/hzhy/osd-gps-armed-status-20261016/install/lib/drone_tracker/drone_tracker_node

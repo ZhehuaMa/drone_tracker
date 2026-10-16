@@ -1,0 +1,97 @@
+{
+  "run": {
+    "live": 952.57642232,
+    "live_wall": 1792143238.4064982,
+    "end": 1562.706656985,
+    "end_wall": 1792143848.5367327,
+    "duration_sec": 610.1302346650001,
+    "new_boxes": 35829,
+    "valid_boxes": 35613,
+    "rounds_same_process": 20,
+    "pid": 4566
+  },
+  "rounds": 20,
+  "each_round_has_results": true,
+  "timing_seconds": 598.912721,
+  "failure_samples": [],
+  "runtime_display_disabled": false,
+  "restore": {
+    "services": {
+      "drone-tracker": "active",
+      "apm-bridge": "active",
+      "drone-interceptor": "active",
+      "lightdm": "inactive"
+    },
+    "config_and_release_unchanged": true,
+    "node_exit_code": 0,
+    "rounds": 20,
+    "service_active": true,
+    "services_restored": true
+  },
+  "failures_during_continuous_load": 0,
+  "started_pids": [
+    4566
+  ],
+  "same_process": true,
+  "hdmi_fps": 58.597853692942344,
+  "stable_window_counters": {
+    "submitted": 35169,
+    "replaced": 75,
+    "displayed": 35095,
+    "rejected": 0,
+    "commits": 35101
+  },
+  "render_total": {
+    "count": 35095,
+    "mean_ms": 15.575260927767484,
+    "max_ms": 22.954,
+    "p95_upper_ms": 32.768
+  },
+  "submit_to_display": {
+    "count": 35095,
+    "mean_ms": 20.012918919504227,
+    "max_ms": 33.202,
+    "p95_upper_ms": 32.768
+  },
+  "pending_wait": {
+    "count": 35095,
+    "mean_ms": 4.437157769081062,
+    "max_ms": 16.669,
+    "p95_upper_ms": 16.384
+  },
+  "new_frame_interval": {
+    "count": 35095,
+    "mean_ms": 17.065018532554493,
+    "max_ms": 182.974,
+    "p95_upper_ms": 32.768
+  },
+  "tracking_fps": 58.72334813752846,
+  "cpu_percent": 186.12966863783993,
+  "rss_kb_range": [
+    200504,
+    228216
+  ],
+  "threads_range": [
+    16,
+    16
+  ],
+  "fds_range": [
+    52,
+    52
+  ],
+  "rss_minute_medians_kb": [
+    208672,
+    210436.0,
+    207092,
+    209188,
+    209956,
+    208562.0,
+    209472,
+    209390.0,
+    209124.0,
+    209358.0
+  ],
+  "max_temperature_c": 63.769,
+  "guard_completed": true,
+  "passed": true
+}

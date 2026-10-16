@@ -1,0 +1,56 @@
+{
+  "settings": {
+    "governors": {
+      "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": "performance",
+      "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": "performance"
+    },
+    "affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "nice": 0
+  },
+  "service_active": true,
+  "config_and_release_unchanged": true
+}Id=drone-tracker.service
+ActiveState=active
+SubState=running
+
+Id=apm-bridge.service
+ActiveState=active
+SubState=running
+
+Id=drone-interceptor.service
+ActiveState=active
+SubState=running
+
+Id=lightdm.service
+ActiveState=inactive
+SubState=dead
+pid 57416 的当前亲和力列表：4
+# RK3576 生产板已验证的职责映射。修改后重启节点生效。
+version: 1
+mode: role-pinned
+allowed_cpus: [4, 5, 6, 7]
+roles:
+  control: 4
+  tracking: 4
+  yolo: 5
+  display: 6
+  capture: 7
+  recording: 7
+#!/usr/bin/env bash
+# 使用与服务相同的 CPU 核心；不修改生产配置。
+set -eo pipefail
+source /opt/ros/humble/setup.bash
+source /opt/drone_tracker/current/share/drone_tracker/local_setup.bash
+export LD_LIBRARY_PATH="/opt/drone_tracker/current/lib/bundled-ros${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+policy=/opt/drone_tracker/config/cpu-affinity.yaml
+cpus=$(python3 "$script_dir/cpu-policy.py" "$policy")
+export DRONE_TRACKER_CPU_CONFIG="$policy"
+python3 "$script_dir/prepare-display.py" /opt/drone_tracker/config/camera.yaml
+exec taskset -c "$cpus" /opt/drone_tracker/current/lib/drone_tracker/drone_tracker_node \
+    --ros-args --params-file /opt/drone_tracker/config/camera.yaml "$@"

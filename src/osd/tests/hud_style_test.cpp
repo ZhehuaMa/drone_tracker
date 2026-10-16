@@ -72,6 +72,7 @@ int main(int argc, char **argv) {
         telemetry.battery.value = osd::Battery{22.2, 4.3, 1.0 - 410.0 / 13000.0, 410, 3.7};
         telemetry.battery_warning.value = 1;
         telemetry.armed_seconds = 75;
+        telemetry.position.value = osd::Position{31.2304, 121.4737};
         telemetry.altitude_m = 102;
         telemetry.temperature_c.value = 31;
         telemetry.home_distance_m = 240;
@@ -198,6 +199,30 @@ int main(int argc, char **argv) {
         const auto wide{osd::fitVideo(1920, 1200, 1280, 720)};
         equivalent(legacy, cached, state, wide, 1280, 720, time);
         equivalent(legacy, cached, state, geometry, 720, 480, time);
+        if (argc > 1) {
+            auto example{state};
+            example.telemetry.position.value = osd::Position{-90, -180};
+            example.telemetry.warning = "FAILSAFE";
+            example.status = osd::DisplayStatus::Stopped;
+            example.tracking_phase = osd::TrackingPhase::Starting;
+            example.has_tracking_result = false;
+            example.mission_active = true;
+            for (const cv::Size size : {cv::Size{720, 480}, cv::Size{1280, 720}}) {
+                const auto geom{osd::fitVideo(1920, 1200, size.width, size.height)};
+                for (const std::string variant : {"armed", "disarmed", "unknown", "trigger"}) {
+                    example.telemetry.flight.value = osd::FlightState{true, variant != "disarmed", "OFFBOARD"};
+                    example.telemetry.position.value = osd::Position{-90, -180};
+                    example.trigger = variant == "trigger" ? "TRIG OFF" : "";
+                    if (variant == "unknown") {
+                        example.telemetry.flight.value.reset(); example.telemetry.position.value.reset();
+                    }
+                    equivalent(legacy, cached, example, geom, size.width, size.height, time);
+                    const auto output{legacy.draw(example, geom, size.width, size.height, time)};
+                    require(cv::imwrite(std::string{argv[1]} + "/coordinates-" + variant + "-"
+                        + std::to_string(size.width) + ".png", combinedOverlay(output)), "coordinate snapshot");
+                }
+            }
+        }
         std::cout << "OSD reference HUD style contracts passed\n";
         return 0;
     } catch (const std::exception &error) {

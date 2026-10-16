@@ -1,0 +1,21 @@
+2026-10-16T17:02:24+08:00
+Connection: ssh firefly-production; source /opt/ros/humble/setup.bash
+Boot ID: 62b4c6ba-0fa7-4996-8aca-f8c522b548f4
+drone-tracker.service active/running
+apm-bridge.service active/running
+drone-interceptor.service active/running
+lightdm.service inactive/dead
+No private board-comparison.py, board-endurance.py or acceptance-node process matched.
+Production current: /opt/drone_tracker/releases/bundle-20260927T070059Z-2281
+SHA-256:
+f909ec82c2c3c45a82b1c85fb616e2f1f7a97b2da4159c7755af195f2e05298c /opt/drone_tracker/config/camera.yaml
+4f46293201355131c1e72c8a72cdfaafa2c3121eaa48fe0b5ad69ac442e4f01b /opt/drone_tracker/config/cpu-affinity.yaml
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8 /usr/lib/librknnrt.so
+Thermal temperatures (millidegrees Celsius):
+thermal_zone0 68384
+thermal_zone1 70230
+thermal_zone2 72076
+thermal_zone3 70230
+thermal_zone4 69307
+thermal_zone5 71153
+Read-only check only; no new workload or service changes.

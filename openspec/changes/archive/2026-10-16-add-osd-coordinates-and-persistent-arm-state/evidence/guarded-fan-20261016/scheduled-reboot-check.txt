@@ -1,0 +1,126 @@
+2026-10-16T17:20:24+08:00
+fbbe7a33-de93-4343-961f-1d4804c8e51c
+ 17:20:24 up 2 min,  0 users,  load average: 1.08, 0.82, 0.34
+NEXT                        LEFT          LAST                        PASSED       UNIT                         ACTIVATES
+Fri 2026-10-16 17:33:05 CST 12min left    n/a                         n/a          systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
+Fri 2026-10-16 17:43:24 CST 23min left    n/a                         n/a          apt-daily-upgrade.timer      apt-daily-upgrade.service
+Fri 2026-10-16 18:50:24 CST 1h 30min left n/a                         n/a          fstrim.timer                 fstrim.service
+Sat 2026-10-17 00:00:00 CST 6h left       Fri 2026-10-16 17:18:21 CST 2min 3s ago  dpkg-db-backup.timer         dpkg-db-backup.service
+Sat 2026-10-17 01:17:57 CST 7h left       n/a                         n/a          motd-news.timer              motd-news.service
+Sat 2026-10-17 04:47:08 CST 11h left      n/a                         n/a          apt-daily.timer              apt-daily.service
+Sat 2026-10-17 05:01:38 CST 11h left      n/a                         n/a          man-db.timer                 man-db.service
+Sun 2026-10-18 03:10:58 CST 1 day 9h left Fri 2026-10-16 17:18:41 CST 1min 42s ago e2scrub_all.timer            e2scrub_all.service
+n/a                         n/a           Fri 2026-10-16 17:19:54 CST 30s ago      anacron.timer                anacron.service
+
+9 timers listed.
+cat: /etc/crontab: 没有那个文件或目录
+ls: 无法访问 '/etc/cron.hourly': 没有那个文件或目录
+/etc/cron.d:
+总计 8
+-rw-r--r-- 1 root root 219 10月 10  2021 anacron
+-rw-r--r-- 1 root root 202  1月  9  2022 e2scrub_all
+
+/etc/cron.daily:
+总计 16
+-rwxr-xr-x 1 root root  311 10月 10  2021 0anacron
+-rwxr-xr-x 1 root root 1478  4月  8  2022 apt-compat
+-rwxr-xr-x 1 root root  123 12月  6  2021 dpkg
+-rwxr-xr-x 1 root root 1330  3月 18  2022 man-db
+
+/etc/cron.weekly:
+总计 8
+-rwxr-xr-x 1 root root  312 10月 10  2021 0anacron
+-rwxr-xr-x 1 root root 1020  3月 18  2022 man-db
+FILE /etc/cron.d/anacron
+# /etc/cron.d/anacron: crontab entries for the anacron package
+
+SHELL=/bin/sh
+
+30 7-23 * * *   root	[ -x /etc/init.d/anacron ] && if [ ! -d /run/systemd/system ]; then /usr/sbin/invoke-rc.d anacron start >/dev/null; fi
+FILE /etc/cron.d/e2scrub_all
+30 3 * * 0 root test -e /run/systemd/system || SERVICE_MODE=1 /usr/lib/aarch64-linux-gnu/e2fsprogs/e2scrub_all_cron
+10 3 * * * root test -e /run/systemd/system || SERVICE_MODE=1 /sbin/e2scrub_all -A -r
+bash: 行 1: crontab: 未找到命令
+  systemd-update-utmp.service                                                                 loaded    active   exited    Record System Boot/Shutdown in UTMP
+  shutdown.target                                                                             loaded    inactive dead      System Shutdown
+RuntimeWatchdogUSec=0
+RebootWatchdogUSec=10min
+# /etc/systemd/system/drone-tracker.service
+[Unit]
+Description=Drone tracker production camera node
+Wants=network-online.target
+After=local-fs.target network-online.target display-manager.service lightdm.service
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/opt/drone_tracker/bin/run-camera
+WorkingDirectory=/opt/drone_tracker
+Environment=ROS_LOG_DIR=/var/log/drone_tracker
+LogsDirectory=drone_tracker
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGINT
+KillMode=mixed
+TimeoutStopSec=30
+UMask=0022
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/apm-bridge.service
+[Unit]
+Description=APM custom-link bridge (prebuilt binary)
+After=local-fs.target network.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+CPUAffinity=0-3
+ExecStartPre=/bin/bash /opt/apm_bridge-binary/current/performance.sh
+ExecStart=/opt/apm_bridge-binary/current/run.sh
+WorkingDirectory=/opt/apm_bridge-binary/current
+Environment=ROS_LOG_DIR=/var/log/apm_bridge
+LogsDirectory=apm_bridge
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=15
+UMask=0022
+
+[Install]
+WantedBy=multi-user.target
+
+# /etc/systemd/system/drone-interceptor.service
+[Unit]
+Description=Drone interceptor relative IMM-UKF node (prebuilt binary)
+After=local-fs.target network.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/opt/drone_interceptor-binary/current/run.sh
+WorkingDirectory=/opt/drone_interceptor-binary/current
+Environment=ROS_LOG_DIR=/var/log/drone_interceptor
+LogsDirectory=drone_interceptor
+# 绑定到隔离的大核 4-7；run.sh 内的 taskset 与此保持一致（双保险）。
+CPUAffinity=4-7
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=15
+UMask=0022
+
+[Install]
+WantedBy=multi-user.target
+    104       2 watchdogd       [watchdogd]
+    191       2 irq/94-2ace0000 [irq/94-2ace0000.watchdog]
+    195       2 kworker/u17:0-k [kworker/u17:0-kbase_pm_poweroff_wait]
+   2432    2408 bash            bash -c source /opt/ros/humble/setup.bash; date -Is; cat /proc/sys/kernel/random/boot_id; uptime; who; systemctl list-timers --all --no-pager; cat /run/systemd/shutdown/scheduled 2>/dev/null; cat /etc/crontab; ls -l /etc/cron.d /etc/cron.daily /etc/cron.hourly /etc/cron.weekly; for f in /etc/cron.d/*; do if [ -f "$f" ]; then printf "FILE %s\n" "$f"; cat "$f"; fi; done; crontab -l; fuser -v /dev/watchdog /dev/watchdog0; systemctl list-units --all --no-pager | grep -iE "watchdog|reboot|shutdown|poweroff"; systemctl show -p RuntimeWatchdogUSec -p RebootWatchdogUSec; systemctl cat drone-tracker apm-bridge drone-interceptor; grep -REn "(^|[[:space:]/])(reboot|poweroff|shutdown|halt)([[:space:]]|$)|RuntimeWatchdog|FailureAction|StartLimitAction" /etc/systemd/system /etc/rc.local /opt/drone_tracker/bin /opt/apm-bridge/bin /opt/drone-interceptor/bin 2>/dev/null | head -n 70; ps -eo pid,ppid,comm,args | grep -E "[p]ython3 /home/hzhy/osd-gps-armed-status|[w]atchdog|[r]eboot|[s]hutdown|[p]oweroff"; systemctl is-active drone-tracker apm-bridge drone-interceptor lightdm; true
+active
+active
+active
+inactive

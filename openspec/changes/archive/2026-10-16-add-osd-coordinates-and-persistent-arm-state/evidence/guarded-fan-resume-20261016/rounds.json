@@ -1,0 +1,502 @@
+[
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 623,
+    "mono": 891.856709804,
+    "rss_kb": 204876,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 177,
+    "valid_boxes": 174,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "48999",
+      "/sys/class/thermal/thermal_zone0/temp": "47153",
+      "/sys/class/thermal/thermal_zone5/temp": "48999",
+      "/sys/class/thermal/thermal_zone3/temp": "48076",
+      "/sys/class/thermal/thermal_zone1/temp": "48999",
+      "/sys/class/thermal/thermal_zone4/temp": "48076"
+    },
+    "round": 1,
+    "new_boxes": 177
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 1112,
+    "mono": 895.048628612,
+    "rss_kb": 210360,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 324,
+    "valid_boxes": 318,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "49923",
+      "/sys/class/thermal/thermal_zone0/temp": "48076",
+      "/sys/class/thermal/thermal_zone5/temp": "49923",
+      "/sys/class/thermal/thermal_zone3/temp": "48999",
+      "/sys/class/thermal/thermal_zone1/temp": "49923",
+      "/sys/class/thermal/thermal_zone4/temp": "48999"
+    },
+    "round": 2,
+    "new_boxes": 147
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 1594,
+    "mono": 898.239615574,
+    "rss_kb": 212628,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 470,
+    "valid_boxes": 461,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "50846",
+      "/sys/class/thermal/thermal_zone0/temp": "49000",
+      "/sys/class/thermal/thermal_zone5/temp": "50846",
+      "/sys/class/thermal/thermal_zone3/temp": "48999",
+      "/sys/class/thermal/thermal_zone1/temp": "49923",
+      "/sys/class/thermal/thermal_zone4/temp": "48999"
+    },
+    "round": 3,
+    "new_boxes": 146
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 2072,
+    "mono": 901.430091209,
+    "rss_kb": 212644,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 616,
+    "valid_boxes": 604,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "50846",
+      "/sys/class/thermal/thermal_zone0/temp": "49000",
+      "/sys/class/thermal/thermal_zone5/temp": "50846",
+      "/sys/class/thermal/thermal_zone3/temp": "49923",
+      "/sys/class/thermal/thermal_zone1/temp": "49923",
+      "/sys/class/thermal/thermal_zone4/temp": "48999"
+    },
+    "round": 4,
+    "new_boxes": 146
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 2550,
+    "mono": 904.622282369,
+    "rss_kb": 212664,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 762,
+    "valid_boxes": 747,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "51769",
+      "/sys/class/thermal/thermal_zone0/temp": "49000",
+      "/sys/class/thermal/thermal_zone5/temp": "50846",
+      "/sys/class/thermal/thermal_zone3/temp": "49923",
+      "/sys/class/thermal/thermal_zone1/temp": "50846",
+      "/sys/class/thermal/thermal_zone4/temp": "49923"
+    },
+    "round": 5,
+    "new_boxes": 146
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 3033,
+    "mono": 907.802263693,
+    "rss_kb": 212680,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 908,
+    "valid_boxes": 890,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "51769",
+      "/sys/class/thermal/thermal_zone0/temp": "49923",
+      "/sys/class/thermal/thermal_zone5/temp": "51769",
+      "/sys/class/thermal/thermal_zone3/temp": "50846",
+      "/sys/class/thermal/thermal_zone1/temp": "50846",
+      "/sys/class/thermal/thermal_zone4/temp": "49923"
+    },
+    "round": 6,
+    "new_boxes": 146
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 3521,
+    "mono": 910.983432923,
+    "rss_kb": 203816,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 1055,
+    "valid_boxes": 1034,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "51769",
+      "/sys/class/thermal/thermal_zone0/temp": "49923",
+      "/sys/class/thermal/thermal_zone5/temp": "51769",
+      "/sys/class/thermal/thermal_zone3/temp": "50846",
+      "/sys/class/thermal/thermal_zone1/temp": "51769",
+      "/sys/class/thermal/thermal_zone4/temp": "49923"
+    },
+    "round": 7,
+    "new_boxes": 147
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 4009,
+    "mono": 914.163827745,
+    "rss_kb": 203828,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 1202,
+    "valid_boxes": 1178,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "52692",
+      "/sys/class/thermal/thermal_zone0/temp": "49923",
+      "/sys/class/thermal/thermal_zone5/temp": "51769",
+      "/sys/class/thermal/thermal_zone3/temp": "50846",
+      "/sys/class/thermal/thermal_zone1/temp": "51769",
+      "/sys/class/thermal/thermal_zone4/temp": "49923"
+    },
+    "round": 8,
+    "new_boxes": 147
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 4488,
+    "mono": 917.358480559,
+    "rss_kb": 212708,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 1348,
+    "valid_boxes": 1321,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "51769",
+      "/sys/class/thermal/thermal_zone0/temp": "49923",
+      "/sys/class/thermal/thermal_zone5/temp": "51769",
+      "/sys/class/thermal/thermal_zone3/temp": "50846",
+      "/sys/class/thermal/thermal_zone1/temp": "50846",
+      "/sys/class/thermal/thermal_zone4/temp": "49923"
+    },
+    "round": 9,
+    "new_boxes": 146
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 4968,
+    "mono": 920.552659176,
+    "rss_kb": 212716,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 1494,
+    "valid_boxes": 1464,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "52692",
+      "/sys/class/thermal/thermal_zone0/temp": "49923",
+      "/sys/class/thermal/thermal_zone5/temp": "51769",
+      "/sys/class/thermal/thermal_zone3/temp": "50846",
+      "/sys/class/thermal/thermal_zone1/temp": "51769",
+      "/sys/class/thermal/thermal_zone4/temp": "50846"
+    },
+    "round": 10,
+    "new_boxes": 146
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 5451,
+    "mono": 923.74554556,
+    "rss_kb": 214836,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 1640,
+    "valid_boxes": 1607,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "51769",
+      "/sys/class/thermal/thermal_zone0/temp": "49923",
+      "/sys/class/thermal/thermal_zone5/temp": "51769",
+      "/sys/class/thermal/thermal_zone3/temp": "50846",
+      "/sys/class/thermal/thermal_zone1/temp": "51769",
+      "/sys/class/thermal/thermal_zone4/temp": "50846"
+    },
+    "round": 11,
+    "new_boxes": 146
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 5938,
+    "mono": 926.941877323,
+    "rss_kb": 203860,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 1787,
+    "valid_boxes": 1751,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "52692",
+      "/sys/class/thermal/thermal_zone0/temp": "50846",
+      "/sys/class/thermal/thermal_zone5/temp": "51769",
+      "/sys/class/thermal/thermal_zone3/temp": "50846",
+      "/sys/class/thermal/thermal_zone1/temp": "51769",
+      "/sys/class/thermal/thermal_zone4/temp": "50846"
+    },
+    "round": 12,
+    "new_boxes": 147
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 6414,
+    "mono": 930.125197738,
+    "rss_kb": 212744,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 1933,
+    "valid_boxes": 1894,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "52692",
+      "/sys/class/thermal/thermal_zone0/temp": "50846",
+      "/sys/class/thermal/thermal_zone5/temp": "51769",
+      "/sys/class/thermal/thermal_zone3/temp": "50846",
+      "/sys/class/thermal/thermal_zone1/temp": "51769",
+      "/sys/class/thermal/thermal_zone4/temp": "50846"
+    },
+    "round": 13,
+    "new_boxes": 146
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 6894,
+    "mono": 933.306626244,
+    "rss_kb": 212752,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 2079,
+    "valid_boxes": 2037,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "52692",
+      "/sys/class/thermal/thermal_zone0/temp": "50846",
+      "/sys/class/thermal/thermal_zone5/temp": "52692",
+      "/sys/class/thermal/thermal_zone3/temp": "51769",
+      "/sys/class/thermal/thermal_zone1/temp": "51769",
+      "/sys/class/thermal/thermal_zone4/temp": "50846"
+    },
+    "round": 14,
+    "new_boxes": 146
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 7385,
+    "mono": 936.490873355,
+    "rss_kb": 205996,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 2226,
+    "valid_boxes": 2181,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "52692",
+      "/sys/class/thermal/thermal_zone0/temp": "50846",
+      "/sys/class/thermal/thermal_zone5/temp": "52692",
+      "/sys/class/thermal/thermal_zone3/temp": "51769",
+      "/sys/class/thermal/thermal_zone1/temp": "52692",
+      "/sys/class/thermal/thermal_zone4/temp": "50846"
+    },
+    "round": 15,
+    "new_boxes": 147
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 7867,
+    "mono": 939.686666284,
+    "rss_kb": 212768,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 2372,
+    "valid_boxes": 2324,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "52692",
+      "/sys/class/thermal/thermal_zone0/temp": "50846",
+      "/sys/class/thermal/thermal_zone5/temp": "52692",
+      "/sys/class/thermal/thermal_zone3/temp": "51769",
+      "/sys/class/thermal/thermal_zone1/temp": "52692",
+      "/sys/class/thermal/thermal_zone4/temp": "50846"
+    },
+    "round": 16,
+    "new_boxes": 146
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 8354,
+    "mono": 942.883757592,
+    "rss_kb": 210524,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 2519,
+    "valid_boxes": 2468,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "52692",
+      "/sys/class/thermal/thermal_zone0/temp": "50846",
+      "/sys/class/thermal/thermal_zone5/temp": "52692",
+      "/sys/class/thermal/thermal_zone3/temp": "51769",
+      "/sys/class/thermal/thermal_zone1/temp": "52692",
+      "/sys/class/thermal/thermal_zone4/temp": "51769"
+    },
+    "round": 17,
+    "new_boxes": 147
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 8839,
+    "mono": 946.08034077,
+    "rss_kb": 210536,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 2666,
+    "valid_boxes": 2612,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "53615",
+      "/sys/class/thermal/thermal_zone0/temp": "50846",
+      "/sys/class/thermal/thermal_zone5/temp": "52692",
+      "/sys/class/thermal/thermal_zone3/temp": "51769",
+      "/sys/class/thermal/thermal_zone1/temp": "52692",
+      "/sys/class/thermal/thermal_zone4/temp": "50846"
+    },
+    "round": 18,
+    "new_boxes": 147
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 9329,
+    "mono": 949.275753435,
+    "rss_kb": 210548,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 2813,
+    "valid_boxes": 2756,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "52692",
+      "/sys/class/thermal/thermal_zone0/temp": "50846",
+      "/sys/class/thermal/thermal_zone5/temp": "52692",
+      "/sys/class/thermal/thermal_zone3/temp": "51769",
+      "/sys/class/thermal/thermal_zone1/temp": "51769",
+      "/sys/class/thermal/thermal_zone4/temp": "50846"
+    },
+    "round": 19,
+    "new_boxes": 147
+  },
+  {
+    "main_affinity": "4",
+    "thread_affinities": [
+      "4",
+      "5",
+      "6"
+    ],
+    "cpu_ticks": 9814,
+    "mono": 952.459464756,
+    "rss_kb": 212800,
+    "threads": 14,
+    "fds": 51,
+    "boxes": 2959,
+    "valid_boxes": 2899,
+    "temps": {
+      "/sys/class/thermal/thermal_zone2/temp": "52692",
+      "/sys/class/thermal/thermal_zone0/temp": "50846",
+      "/sys/class/thermal/thermal_zone5/temp": "52692",
+      "/sys/class/thermal/thermal_zone3/temp": "51769",
+      "/sys/class/thermal/thermal_zone1/temp": "52692",
+      "/sys/class/thermal/thermal_zone4/temp": "50846"
+    },
+    "round": 20,
+    "new_boxes": 146
+  }
+]

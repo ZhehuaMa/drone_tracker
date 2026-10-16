@@ -1,0 +1,12 @@
+START comparison-0-off pid 2515
+DONE comparison-0-off messages 4401 valid 4364
+START comparison-1-legacy pid 2658
+DONE comparison-1-legacy messages 4454 valid 4440
+START comparison-2-cached-overlay pid 2780
+DONE comparison-2-cached-overlay messages 4418 valid 4409
+START comparison-3-off pid 2921
+DONE comparison-3-off messages 4411 valid 4369
+START comparison-4-legacy pid 3077
+DONE comparison-4-legacy messages 4419 valid 4410
+START comparison-5-cached-overlay pid 3183
+Connection to 192.168.77.218 closed by remote host.

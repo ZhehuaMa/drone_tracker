@@ -1,0 +1,140 @@
+{
+  "changeName": "add-osd-coordinates-and-persistent-arm-state",
+  "changeDir": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state",
+  "schemaName": "spec-driven",
+  "contextFiles": {
+    "proposal": [
+      "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/proposal.md"
+    ],
+    "specs": [
+      "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/specs/osd-ros-telemetry/spec.md",
+      "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/specs/rk3576-hdmi-osd/spec.md"
+    ],
+    "design": [
+      "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/design.md"
+    ],
+    "tasks": [
+      "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md"
+    ]
+  },
+  "progress": {
+    "total": 15,
+    "complete": 15,
+    "remaining": 0
+  },
+  "tasks": [
+    {
+      "id": "1",
+      "description": "1.1 提供确定的坐标文字格式，在 `src/osd/short_text.h`、`src/osd/short_text.cpp` 中实现纬度和经度转换；完成标准为显式符号、英文小数点、六位小数、负零规范化及非法数值占位均符合设计。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 7
+    },
+    {
+      "id": "2",
+      "description": "1.2 在右侧 `MAH` 下方绘制完整坐标，修改 `src/osd/layout.cpp` 的统一元素；完成标准为沿用主字号，按设计右对齐，最长合法经度及描边全部位于画布内，并保留既有目标层顺序。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 8
+    },
+    {
+      "id": "3",
+      "description": "1.3 覆盖坐标格式边界，扩展 `src/osd/tests/short_text_test.cpp`；完成标准为正负坐标、有效零值、六位精度、负零、极值、非有限值、越界及缺失值用例通过。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 9
+    },
+    {
+      "id": "4",
+      "description": "1.4 验证已有快照提供可信位置，扩展 `src/osd/tests/telemetry_test.cpp`；完成标准为无定位、任一坐标非法、独立过期和恢复的断言通过，且不改变接收和返航点语义。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 10
+    },
+    {
+      "id": "5",
+      "description": "1.5 说明右侧坐标的读法，更新 `docs/RK3576_HDMI_OSD.md`；完成标准为列出来源、带符号十进制度数、未知文字、主字号和位置，并说明显示精度不代表定位精度。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 11
+    },
+    {
+      "id": "6",
+      "description": "2.1 持续显示可信解锁状态，修改 `src/osd/layout.cpp`；完成标准为底部中央按有效连接状态显示绿色 `ARMED`、白色 `DISARMED` 或琥珀色 `ARM --`，没有三秒限制或闪烁条件，并且不修改解锁计时和返航点逻辑。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 15
+    },
+    {
+      "id": "7",
+      "description": "2.2 让触发提示与解锁状态同时可见，修改 `src/osd/layout.cpp` 的提示位置及互斥分支；完成标准为 `TRIG ON/OFF` 在 `(22,80)` 单独显示并保持原两秒期限，右上角 `ON MISSION` 和跟踪阶段提示保留各自语义。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 16
+    },
+    {
+      "id": "8",
+      "description": "2.3 覆盖持续状态与失联处理，扩展 `src/osd/tests/layout_test.cpp`、必要时扩展 `src/osd/tests/telemetry_test.cpp`；完成标准为解锁后 0 秒、超过 3 秒、75 秒、两个闪烁相位，以及连接中断、超时、恢复和触发共存的断言通过。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 17
+    },
+    {
+      "id": "9",
+      "description": "2.4 说明新的状态与提示规则，更新 `docs/RK3576_HDMI_OSD.md`；完成标准为区分飞行器解锁与跟踪启停，列明三种状态文字、颜色、固定位置和触发提示的新位置。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 18
+    },
+    {
+      "id": "10",
+      "description": "3.1 验证两条路径组合显示一致，扩展现有 `src/osd/tests/hud_style_test.cpp` 和 `src/osd/tests/layout_test.cpp`；完成标准为坐标、解锁状态、任务覆盖、触发提示、告警、跟踪启动及冻结组合在 720×480 与 1280×720 下通过逐像素对照，且长短文字切换不留残影、稳定新增字段不反复重画。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 22
+    },
+    {
+      "id": "11",
+      "description": "3.2 交付真实绘制器生成的示例图，在本变更 `evidence/` 中保存已解锁、未解锁、遥测未知及触发共存快照和生成说明；完成标准为记录输入、命令、时间及输出尺寸，明确区分这些软件快照与 `reference/` 的生成示意图，并附与变更前相同输入的差异范围。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 23
+    },
+    {
+      "id": "12",
+      "description": "4.1 通过原生 OSD 定向检查，按 `dockerfiles/README.amd64.md` 在独立目录构建 `src/osd` 并运行 CTest；完成标准为相关测试通过，记录实际平台、命令、日志及 C++ 静态检查工具的可用性，不把主机绘图结果称为实机验证。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 27
+    },
+    {
+      "id": "13",
+      "description": "4.2 通过 ARM64 目标集成检查，从本工作树使用 `./build.sh --test` 和独立产物目录；完成标准为构建和测试通过，并记录镜像身份、输出架构及模拟运行边界，不复用原工作区的构建缓存。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 28
+    },
+    {
+      "id": "14",
+      "description": "4.3 核对实现与规划工件一致，将结果记录在本变更验收文档；完成标准为逐项核对 proposal、design 和两个 delta spec，执行 `openspec validate add-osd-coordinates-and-persistent-arm-state --strict`，并确认未修改 ROS 输出、模型、采集或设备资源契约。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 29
+    },
+    {
+      "id": "15",
+      "description": "4.4 完成生产板显示验收，在另获部署授权且可访问 `HZ-RK3576_WuKong Board` 后验证主字号可读性、最长坐标、解锁状态持续性、失联占位、触发/冻结/告警共存及适用的既有性能门槛；完成标准为记录具体板卡、程序、配置、模型指纹、输入、显示模式和结果，缺少板卡或授权时保持本项未完成。",
+      "done": true,
+      "sourcePath": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker/openspec/changes/add-osd-coordinates-and-persistent-arm-state/tasks.md",
+      "line": 30
+    }
+  ],
+  "taskTrackingConfigured": true,
+  "state": "all_done",
+  "instruction": "All tracked tasks are complete.\nReview or verify the change as appropriate before archiving.",
+  "context": "Write all artifacts in English.\n\nTreat every artifact as a standalone document. Do not assume that the reader\nhas read the conversation or understands the implementation.\n\nPreserve exact identifiers and normative terms when required, but explain\ntheir role in plain language at their first meaningful use.\n",
+  "root": {
+    "path": "/home/mzh/.codex/worktrees/osd-gps-armed-status/drone_tracker",
+    "source": "nearest"
+  }
+}

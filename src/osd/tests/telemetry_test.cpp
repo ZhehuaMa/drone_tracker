@@ -91,6 +91,49 @@ int main() {
         require(!expired.altitude_m && !expired.home_distance_m, "expired derived state retained");
         temperature.temperature = std::numeric_limits<double>::infinity(); store.receive(temperature);
         require(!store.snapshot().temperature_c.value, "infinite temperature accepted");
+        int position_time{};
+        osd::TelemetryStore coordinates{std::chrono::milliseconds{2000}, 0,
+            [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{position_time}}; }};
+        require(!coordinates.snapshot().position.value && !coordinates.snapshot().flight.value,
+            "startup has invented telemetry");
+        sensor_msgs::msg::NavSatFix fix{};
+        fix.status.status = 0; fix.latitude = 0; fix.longitude = 0;
+        coordinates.receive(fix);
+        require(coordinates.snapshot().position.value && coordinates.snapshot().position.value->latitude_deg == 0
+            && !coordinates.snapshot().home_distance_m && !coordinates.snapshot().gps.value,
+            "zero fix requires arming, home, or GPSRAW");
+        for (int invalid{0}; invalid < 6; ++invalid) {
+            fix.status.status = 0; fix.latitude = 31.2304; fix.longitude = 121.4737;
+            coordinates.receive(fix);
+            switch (invalid) {
+            case 0: fix.status.status = -1; break;
+            case 1: fix.latitude = 91; break;
+            case 2: fix.longitude = -181; break;
+            case 3: fix.latitude = std::numeric_limits<double>::quiet_NaN(); break;
+            case 4: fix.longitude = std::numeric_limits<double>::infinity(); break;
+            case 5: fix.latitude = -91; break;
+            }
+            coordinates.receive(fix);
+            require(!coordinates.snapshot().position.value, "invalid position retained old coordinates");
+        }
+        fix.status.status = 0; fix.latitude = 31.2304; fix.longitude = 121.4737;
+        coordinates.receive(fix);
+        position_time = 2000;
+        require(coordinates.snapshot().position.value.has_value(), "position expires before timeout boundary");
+        position_time = 2001; coordinates.receive(battery);
+        require(!coordinates.snapshot().position.value && coordinates.snapshot().battery.value,
+            "position does not expire independently");
+        coordinates.receive(fix);
+        require(coordinates.snapshot().position.value->longitude_deg == 121.4737, "position did not recover");
+        flight.connected = true; flight.armed = true; coordinates.receive(flight);
+        require(coordinates.snapshot().flight.value->armed, "armed state missing");
+        flight.connected = false; coordinates.receive(flight);
+        require(!coordinates.snapshot().flight.value->connected, "disconnected state hidden");
+        position_time += 2001;
+        require(!coordinates.snapshot().flight.value, "flight state did not expire");
+        flight.connected = true; flight.armed = false; coordinates.receive(flight);
+        require(coordinates.snapshot().flight.value->connected && !coordinates.snapshot().flight.value->armed,
+            "flight state did not recover");
         std::cout << "OSD telemetry contracts passed\n";
         return 0;
     } catch (const std::exception &error) {

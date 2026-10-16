@@ -1,0 +1,349 @@
+{
+  "baseline_median_fps": 58.90067422108966,
+  "rows": [
+    {
+      "label": "comparison-0-off",
+      "path": "off",
+      "duration_sec": 65.02472256299998,
+      "tracking_fps": 58.90067422108966,
+      "valid_boxes": 3819,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 164.96910810109895,
+      "rss_kb_range": [
+        189692,
+        205688
+      ],
+      "threads_range": [
+        15,
+        15
+      ],
+      "fds_range": [
+        44,
+        44
+      ],
+      "tracker_main_affinities": [
+        "4"
+      ],
+      "tracker_thread_affinities": [
+        "4",
+        "5",
+        "7"
+      ],
+      "production_policy_loaded": true,
+      "matching_affinity": true
+    },
+    {
+      "label": "comparison-1-legacy",
+      "path": "legacy",
+      "duration_sec": 65.112533649,
+      "tracking_fps": 58.72909232213127,
+      "valid_boxes": 3786,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 214.50167805220067,
+      "rss_kb_range": [
+        203372,
+        219312
+      ],
+      "threads_range": [
+        16,
+        16
+      ],
+      "fds_range": [
+        56,
+        56
+      ],
+      "tracker_main_affinities": [
+        "4"
+      ],
+      "tracker_thread_affinities": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "production_policy_loaded": true,
+      "matching_affinity": true,
+      "hdmi_fps": 29.748913708354035,
+      "timing_windows": 63,
+      "timing_seconds": 64.103181,
+      "render_total_mean_ms": 33.12862773990561,
+      "render_total_p95_upper_ms": 65.536,
+      "submit_to_display_mean_ms": 41.07398358678553,
+      "submit_to_display_p95_upper_ms": 65.536
+    },
+    {
+      "label": "comparison-2-cached-overlay",
+      "path": "cached-overlay",
+      "duration_sec": 65.00867922400005,
+      "tracking_fps": 58.561411267597684,
+      "valid_boxes": 3774,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 184.7273414446842,
+      "rss_kb_range": [
+        202680,
+        217456
+      ],
+      "threads_range": [
+        16,
+        16
+      ],
+      "fds_range": [
+        52,
+        52
+      ],
+      "tracker_main_affinities": [
+        "4"
+      ],
+      "tracker_thread_affinities": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "production_policy_loaded": true,
+      "matching_affinity": true,
+      "hdmi_fps": 58.468882169612826,
+      "timing_windows": 63,
+      "timing_seconds": 63.503865,
+      "render_total_mean_ms": 15.797178346350659,
+      "render_total_p95_upper_ms": 32.768,
+      "submit_to_display_mean_ms": 20.644828763802852,
+      "submit_to_display_p95_upper_ms": 32.768,
+      "tracking_decline_percent": 0.5759916299404604,
+      "pass": true
+    },
+    {
+      "label": "comparison-3-off",
+      "path": "off",
+      "duration_sec": 65.17532276499998,
+      "tracking_fps": 58.45770819942945,
+      "valid_boxes": 3765,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 160.3916809394635,
+      "rss_kb_range": [
+        190208,
+        211820
+      ],
+      "threads_range": [
+        15,
+        15
+      ],
+      "fds_range": [
+        44,
+        44
+      ],
+      "tracker_main_affinities": [
+        "4"
+      ],
+      "tracker_thread_affinities": [
+        "4",
+        "5",
+        "7"
+      ],
+      "production_policy_loaded": true,
+      "matching_affinity": true
+    },
+    {
+      "label": "comparison-4-legacy",
+      "path": "legacy",
+      "duration_sec": 65.04326732600003,
+      "tracking_fps": 58.79163451051629,
+      "valid_boxes": 3803,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 215.1208274595343,
+      "rss_kb_range": [
+        203464,
+        219528
+      ],
+      "threads_range": [
+        16,
+        16
+      ],
+      "fds_range": [
+        56,
+        56
+      ],
+      "tracker_main_affinities": [
+        "4"
+      ],
+      "tracker_thread_affinities": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "production_policy_loaded": true,
+      "matching_affinity": true,
+      "hdmi_fps": 29.78215115460533,
+      "timing_windows": 60,
+      "timing_seconds": 63.897332,
+      "render_total_mean_ms": 33.12432065160272,
+      "render_total_p95_upper_ms": 65.536,
+      "submit_to_display_mean_ms": 41.28178234366788,
+      "submit_to_display_p95_upper_ms": 65.536
+    },
+    {
+      "label": "comparison-5-cached-overlay",
+      "path": "cached-overlay",
+      "duration_sec": 65.00908491099995,
+      "tracking_fps": 58.60719321331847,
+      "valid_boxes": 3795,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 185.77834795997293,
+      "rss_kb_range": [
+        202428,
+        218468
+      ],
+      "threads_range": [
+        16,
+        16
+      ],
+      "fds_range": [
+        52,
+        52
+      ],
+      "tracker_main_affinities": [
+        "4"
+      ],
+      "tracker_thread_affinities": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "production_policy_loaded": true,
+      "matching_affinity": true,
+      "hdmi_fps": 58.44388812318457,
+      "timing_windows": 59,
+      "timing_seconds": 63.890342,
+      "render_total_mean_ms": 15.258878524370648,
+      "render_total_p95_upper_ms": 32.768,
+      "submit_to_display_mean_ms": 19.28608388859132,
+      "submit_to_display_p95_upper_ms": 32.768,
+      "tracking_decline_percent": 0.49826425869011415,
+      "pass": true
+    },
+    {
+      "label": "comparison-6-off",
+      "path": "off",
+      "duration_sec": 65.05851956799995,
+      "tracking_fps": 58.977671571353866,
+      "valid_boxes": 3815,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 160.3013402685308,
+      "rss_kb_range": [
+        189888,
+        201112
+      ],
+      "threads_range": [
+        15,
+        15
+      ],
+      "fds_range": [
+        44,
+        44
+      ],
+      "tracker_main_affinities": [
+        "4"
+      ],
+      "tracker_thread_affinities": [
+        "4",
+        "5",
+        "7"
+      ],
+      "production_policy_loaded": true,
+      "matching_affinity": true
+    },
+    {
+      "label": "comparison-7-legacy",
+      "path": "legacy",
+      "duration_sec": 65.19225386300002,
+      "tracking_fps": 58.7493110461966,
+      "valid_boxes": 3805,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 215.4097544583319,
+      "rss_kb_range": [
+        203268,
+        225732
+      ],
+      "threads_range": [
+        16,
+        16
+      ],
+      "fds_range": [
+        56,
+        56
+      ],
+      "tracker_main_affinities": [
+        "4"
+      ],
+      "tracker_thread_affinities": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "production_policy_loaded": true,
+      "matching_affinity": true,
+      "hdmi_fps": 29.76885863722927,
+      "timing_windows": 63,
+      "timing_seconds": 65.101589,
+      "render_total_mean_ms": 33.12500319917441,
+      "render_total_p95_upper_ms": 65.536,
+      "submit_to_display_mean_ms": 41.114965479876176,
+      "submit_to_display_p95_upper_ms": 65.536
+    },
+    {
+      "label": "comparison-8-cached-overlay",
+      "path": "cached-overlay",
+      "duration_sec": 65.00873825600002,
+      "tracking_fps": 59.130512345318685,
+      "valid_boxes": 3834,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 186.0543430331083,
+      "rss_kb_range": [
+        202588,
+        218468
+      ],
+      "threads_range": [
+        16,
+        16
+      ],
+      "fds_range": [
+        52,
+        52
+      ],
+      "tracker_main_affinities": [
+        "4"
+      ],
+      "tracker_thread_affinities": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "production_policy_loaded": true,
+      "matching_affinity": true,
+      "hdmi_fps": 59.055377167401915,
+      "timing_windows": 62,
+      "timing_seconds": 63.601321,
+      "render_total_mean_ms": 15.604798272097973,
+      "render_total_p95_upper_ms": 32.768,
+      "submit_to_display_mean_ms": 19.944619225239613,
+      "submit_to_display_p95_upper_ms": 32.768,
+      "tracking_decline_percent": -0.39021306168127284,
+      "pass": true
+    }
+  ],
+  "passed": true,
+  "diagnostics_completed": true
+}

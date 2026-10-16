@@ -1,0 +1,25 @@
+2026-10-16T17:48:37+08:00
+fbbe7a33-de93-4343-961f-1d4804c8e51c
+Id=drone-tracker.service
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+
+Id=apm-bridge.service
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+
+Id=drone-interceptor.service
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+
+Id=lightdm.service
+ActiveState=inactive
+SubState=dead
+UnitFileState=indirect
+/opt/drone_tracker/releases/bundle-20260927T070059Z-2281
+f909ec82c2c3c45a82b1c85fb616e2f1f7a97b2da4159c7755af195f2e05298c  /opt/drone_tracker/config/camera.yaml
+4f46293201355131c1e72c8a72cdfaafa2c3121eaa48fe0b5ad69ac442e4f01b  /opt/drone_tracker/config/cpu-affinity.yaml
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /usr/lib/librknnrt.so

@@ -1,0 +1,24 @@
+{
+  "settings": {
+    "governors": {
+      "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": "performance",
+      "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": "performance"
+    },
+    "affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "nice": 0
+  },
+  "services": {
+    "drone-tracker": "active",
+    "apm-bridge": "active",
+    "drone-interceptor": "active",
+    "lightdm": "inactive"
+  },
+  "config_and_release_unchanged": true,
+  "service_active": true,
+  "services_restored": true
+}

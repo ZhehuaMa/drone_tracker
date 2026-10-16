@@ -1,0 +1,55 @@
+Consolidate compiler generated dependencies of target drone_osd_core
+[  4%] Building CXX object CMakeFiles/drone_osd_core.dir/short_text.cpp.o
+[  9%] Linking CXX static library libdrone_osd_core.a
+[ 27%] Built target drone_osd_core
+Consolidate compiler generated dependencies of target osd_pipeline_state_tests
+Consolidate compiler generated dependencies of target osd_timing_tests
+Consolidate compiler generated dependencies of target osd_hud_style_tests
+Consolidate compiler generated dependencies of target osd_layout_tests
+Consolidate compiler generated dependencies of target osd_presenter_tests
+Consolidate compiler generated dependencies of target osd_config_tests
+Consolidate compiler generated dependencies of target osd_short_text_tests
+Consolidate compiler generated dependencies of target osd_geometry_tests
+[ 31%] Linking CXX executable osd_pipeline_state_tests
+[ 36%] Linking CXX executable osd_timing_tests
+[ 40%] Linking CXX executable osd_layout_tests
+[ 45%] Linking CXX executable osd_config_tests
+[ 50%] Linking CXX executable osd_hud_style_tests
+[ 54%] Linking CXX executable osd_presenter_tests
+[ 59%] Linking CXX executable osd_geometry_tests
+[ 63%] Building CXX object CMakeFiles/osd_short_text_tests.dir/tests/short_text_test.cpp.o
+[ 72%] Built target osd_geometry_tests
+[ 72%] Built target osd_timing_tests
+[ 77%] Built target osd_pipeline_state_tests
+[ 81%] Built target osd_config_tests
+[ 86%] Built target osd_presenter_tests
+[ 95%] Built target osd_hud_style_tests
+[ 95%] Built target osd_layout_tests
+[100%] Linking CXX executable osd_short_text_tests
+[100%] Built target osd_short_text_tests
+Internal ctest changing into directory: /out/docker-native
+Test project /out/docker-native
+    Start 1: osd_yaml_tests
+1/9 Test #1: osd_yaml_tests ...................   Passed    0.04 sec
+    Start 2: osd_pipeline_state_tests
+2/9 Test #2: osd_pipeline_state_tests .........   Passed    0.00 sec
+    Start 3: osd_config_tests
+3/9 Test #3: osd_config_tests .................   Passed    0.00 sec
+    Start 4: osd_timing_tests
+4/9 Test #4: osd_timing_tests .................   Passed    0.00 sec
+    Start 5: osd_presenter_tests
+5/9 Test #5: osd_presenter_tests ..............   Passed    0.59 sec
+    Start 6: osd_geometry_tests
+6/9 Test #6: osd_geometry_tests ...............   Passed    0.00 sec
+    Start 7: osd_layout_tests
+7/9 Test #7: osd_layout_tests .................   Passed    2.23 sec
+    Start 8: osd_short_text_tests
+8/9 Test #8: osd_short_text_tests .............   Passed    0.00 sec
+    Start 9: osd_hud_style_tests
+9/9 Test #9: osd_hud_style_tests ..............   Passed    0.27 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =   3.14 sec
+clang-tidy unavailable
+clangd unavailable

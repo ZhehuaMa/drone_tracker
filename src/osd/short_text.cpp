@@ -4,7 +4,10 @@
 #include <cmath>
 #include <cstdio>
 #include <ctime>
+#include <iomanip>
 #include <limits>
+#include <locale>
+#include <sstream>
 
 namespace osd::short_text {
 namespace {
@@ -14,7 +17,19 @@ std::string fixed(std::optional<double> value, const char *pattern, const char *
     std::snprintf(output, sizeof(output), pattern, *value);
     return output;
 }
+std::string coordinate(std::optional<double> degrees, double limit, const char *label) {
+    if (!degrees || !std::isfinite(*degrees) || std::abs(*degrees) > limit) { return std::string{label} + " --"; }
+    // Normalize values that round to zero, including IEEE negative zero.
+    const double rounded{std::round(*degrees * 1000000.0) / 1000000.0};
+    std::ostringstream output{};
+    output.imbue(std::locale::classic());
+    output << label << ' ' << std::showpos << std::fixed << std::setprecision(6)
+        << (rounded == 0.0 ? 0.0 : rounded);
+    return output.str();
+}
 } // namespace
+std::string latitude(std::optional<double> degrees) { return coordinate(degrees, 90.0, "LAT"); }
+std::string longitude(std::optional<double> degrees) { return coordinate(degrees, 180.0, "LON"); }
 std::string speedKmh(std::optional<double> value) {
     if (!value || !std::isfinite(*value) || *value < 0) { return "SPD --KMH"; }
     const int speed{static_cast<int>(std::min(999.0, std::floor(*value * 3.6 + 0.5)))};

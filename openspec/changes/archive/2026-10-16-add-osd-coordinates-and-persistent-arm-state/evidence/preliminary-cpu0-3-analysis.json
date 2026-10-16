@@ -1,0 +1,88 @@
+{
+  "baseline_median_fps": 51.805842607294565,
+  "rows": [
+    {
+      "label": "comparison-0-off",
+      "path": "off",
+      "duration_sec": 65.2050006329664,
+      "tracking_fps": 51.805842607294565,
+      "valid_boxes": 3303,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 258.4927703444718,
+      "rss_kb_range": [
+        194492,
+        224312
+      ],
+      "threads_range": [
+        18,
+        18
+      ],
+      "fds_range": [
+        44,
+        44
+      ]
+    },
+    {
+      "label": "comparison-1-legacy",
+      "path": "legacy",
+      "duration_sec": 65.00316392601235,
+      "tracking_fps": 48.38226034012267,
+      "valid_boxes": 3101,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 311.4766955340087,
+      "rss_kb_range": [
+        206808,
+        240124
+      ],
+      "threads_range": [
+        19,
+        19
+      ],
+      "fds_range": [
+        56,
+        56
+      ],
+      "hdmi_fps": 17.531223377816755,
+      "timing_windows": 61,
+      "timing_seconds": 63.201522000000004,
+      "render_total_mean_ms": 54.5232835740072,
+      "render_total_p95_upper_ms": 131.072,
+      "submit_to_display_mean_ms": 65.08870902527077,
+      "submit_to_display_p95_upper_ms": 131.072
+    },
+    {
+      "label": "comparison-2-cached-overlay",
+      "path": "cached-overlay",
+      "duration_sec": 65.08018060895847,
+      "tracking_fps": 48.73987703044827,
+      "valid_boxes": 3125,
+      "exit_code": 0,
+      "display_failure": false,
+      "cpu_percent": 286.6689277801808,
+      "rss_kb_range": [
+        206776,
+        238856
+      ],
+      "threads_range": [
+        19,
+        19
+      ],
+      "fds_range": [
+        52,
+        52
+      ],
+      "hdmi_fps": 47.00516150841836,
+      "timing_windows": 61,
+      "timing_seconds": 63.801504,
+      "render_total_mean_ms": 18.146656385461817,
+      "render_total_p95_upper_ms": 32.768,
+      "submit_to_display_mean_ms": 22.58135141713905,
+      "submit_to_display_p95_upper_ms": 65.536,
+      "tracking_decline_percent": 5.918184943129541,
+      "pass": false
+    }
+  ],
+  "passed": false
+}

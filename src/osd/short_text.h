@@ -12,6 +12,9 @@ std::string speedKmh(std::optional<double> metres_per_second);
 std::string voltage(std::optional<double> volts);
 std::string current(std::optional<double> amps);
 std::string milliampHours(std::optional<double> mah);
+/** @brief Format signed degrees to six decimals; missing or invalid values use --. */
+std::string latitude(std::optional<double> degrees);
+std::string longitude(std::optional<double> degrees);
 std::string armedTime(std::optional<double> seconds);
 std::string localClock(std::chrono::system_clock::time_point time);
 std::string frameNumber(std::optional<std::uint64_t> sequence);

@@ -1,0 +1,235 @@
+2026-10-16T16:56:12+08:00
+[    1.280964] thermal_sys: Registered thermal governor 'fair_share'
+[    1.280968] thermal_sys: Registered thermal governor 'step_wise'
+[    1.280970] thermal_sys: Registered thermal governor 'user_space'
+[    1.280972] thermal_sys: Registered thermal governor 'power_allocator'
+[    1.286122] ramoops: dmesg-0	0x18000@0x0000000040110000
+[    1.286130] ramoops: dmesg-1	0x18000@0x0000000040128000
+[    1.286152] ramoops: console	0x80000@0x0000000040140000
+[    1.286167] ramoops: pmsg	0x30000@0x00000000401c0000
+[    1.286311] printk: console [ramoops-1] enabled
+[    1.286315] pstore: Registered ramoops as persistent store backend
+[    1.286317] ramoops: using 0xe0000@0x40110000, ecc: 0
+[    1.286340] printk: console [ramoops-1] printing thread started
+[    1.534229] rockchip-thermal 2ae70000.tsadc: Missing rockchip,grf property
+[    1.536646] thermal thermal_zone0: power_allocator: sustainable_power will be estimated
+[    1.536809] thermal thermal_zone1: power_allocator: sustainable_power will be estimated
+[    1.537097] thermal thermal_zone3: power_allocator: sustainable_power will be estimated
+[    1.537236] thermal thermal_zone4: power_allocator: sustainable_power will be estimated
+[    1.537373] thermal thermal_zone5: power_allocator: sustainable_power will be estimated
+[    1.537928] rockchip-thermal 2ae70000.tsadc: tsadc is probed successfully!
+[    1.658187] rk_gmac-dwmac 2a230000.ethernet: Enable RX Mitigation via HW Watchdog Timer
+[    1.801889] rk806 1-0023: chip id: RK806,ver:0xa, 0x5
+[    1.802780] rk806 1-0023: ON: 0x40 OFF:0x0
+[    1.803232] rk806 1-0023: shutown_by_pwrctrln missing!
+[    1.803239] rk806 1-0023: dvs-suspend-control-by missing!
+[    1.812701] input: rk805 pwrkey as /devices/platform/2ac40000.i2c/i2c-1/1-0023/rk805-pwrkey.1.auto/input/input0
+[    1.873299] rk806 1-0023: no power-off pinctrl state
+[    1.873306] rk806 1-0023: no sleep-setting state
+[    1.873309] rk806 1-0023: no reset-setting pinctrl state
+[    1.873312] rk806 1-0023: no dvs-setting pinctrl state
+[    1.904358] rkvpss_hw 27c30000.vpss: failed to get cru reset
+[    1.913978] cpu cpu0: pvtm-volt-sel=8
+[    1.918967] cpu cpu4: pvtm-volt-sel=7
+[    1.932918] rockchip,bus bus-a72: idc-volt-sel=1
+[    1.947940] sc233hgs 0-0030: Failed to get power-gpios
+[    2.252169] sc233hgs 4-0030: Failed to get power-gpios
+[    2.579762] pstore: Using crash dump compression: deflate
+[    2.615630] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+[    2.615639] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+[    2.615646] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+[    2.616683] mpp_jpgdec 27910000.jpegd: reset_group->rw_sem_on=0
+[    2.616692] mpp_jpgdec 27910000.jpegd: reset_group->rw_sem_on=0
+[    2.617351] mpp_jpgenc 27910800.jpege: reset_group->rw_sem_on=0
+[    2.617356] mpp_jpgenc 27910800.jpege: reset_group->rw_sem_on=0
+[    2.618362] rkvdec2_init:1250: No niu aclk reset resource define
+[    2.618368] rkvdec2_init:1253: No niu hclk reset resource define
+[    2.618378] rkvdec2_init:1259: No cabac reset resource define
+[    2.621149] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+[    2.621154] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+[    2.621157] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+[    2.623053] rockchip-vop2 27d00000.vop: idc-volt-sel=1
+[    2.624990] rockchip-vop2 27d00000.vop: Supported VOP aclk dvfs, normal mode:500000000, reset mode:594000000, advanced mode:702000000
+[    2.633093] mali 27800000.gpu: pvtm-volt-sel=6
+[    2.634132] W : [File] : drivers/gpu/arm/bifrost/platform/rk/mali_kbase_config_rk.c; [Line] : 144; [Func] : kbase_platform_rk_init(); power-off-delay-ms not available.
+[    2.635140] RKNPU 27700000.npu: Adding to iommu group 0
+[    2.635419] RKNPU 27700000.npu: RKNPU: rknpu iommu is enabled, using iommu mode
+[    2.635779] RKNPU 27700000.npu: can't request region for resource [mem 0x27700000-0x27707fff]
+[    2.635799] RKNPU 27700000.npu: can't request region for resource [mem 0x27708000-0x2770ffff]
+[    2.636278] [drm] Initialized rknpu 0.9.8 20240828 for 27700000.npu on minor 1
+[    2.638884] RKNPU 27700000.npu: bin=0
+[    2.639060] RKNPU 27700000.npu: idc=4
+[    2.639107] debugfs: Directory '27700000.npu-rknpu' with parent 'vdd_npu_s0' already present!
+[    2.640814] RKNPU 27700000.npu: pvtm=856
+[    2.641292] RKNPU 27700000.npu: pvtm-volt-sel=7
+[    2.641308] RKNPU 27700000.npu: soc version=0, speed=7
+[    2.641378] debugfs: Directory '27700000.npu-rknpu' with parent 'vdd_npu_s0' already present!
+[    2.642348] RKNPU 27700000.npu: avs=0
+[    2.642485] RKNPU 27700000.npu: EM: OPP:600000 is inefficient
+[    2.642489] RKNPU 27700000.npu: EM: OPP:500000 is inefficient
+[    2.642491] RKNPU 27700000.npu: EM: OPP:400000 is inefficient
+[    2.642671] RKNPU 27700000.npu: EM: created perf domain
+[    2.642997] RKNPU 27700000.npu: l=15000 h=2147483647 hyst=5000 l_limit=0 h_limit=0 h_table=0
+[    2.643961] RKNPU 27700000.npu: RKNPU: nbuf region: [0x000000003fe80000, 0x000000003ff80000), nbuf size: 0x100000
+/sys/class/thermal/thermal_zone0
+/sys/class/thermal/thermal_zone0/type
+soc-thermal
+/sys/class/thermal/thermal_zone0/temp
+65615
+/sys/class/thermal/thermal_zone0/policy
+power_allocator
+/sys/class/thermal/thermal_zone0/mode
+enabled
+/sys/class/thermal/thermal_zone0/trip_point_0_hyst
+2000
+/sys/class/thermal/thermal_zone0/trip_point_0_temp
+115000
+/sys/class/thermal/thermal_zone0/trip_point_0_type
+critical
+/sys/class/thermal/thermal_zone1
+/sys/class/thermal/thermal_zone1/type
+bigcore-thermal
+/sys/class/thermal/thermal_zone1/temp
+67461
+/sys/class/thermal/thermal_zone1/policy
+power_allocator
+/sys/class/thermal/thermal_zone1/mode
+enabled
+/sys/class/thermal/thermal_zone1/trip_point_0_hyst
+2000
+/sys/class/thermal/thermal_zone1/trip_point_0_temp
+115000
+/sys/class/thermal/thermal_zone1/trip_point_0_type
+critical
+/sys/class/thermal/thermal_zone2
+/sys/class/thermal/thermal_zone2/type
+little-core-thermal
+/sys/class/thermal/thermal_zone2/temp
+69307
+/sys/class/thermal/thermal_zone2/policy
+power_allocator
+/sys/class/thermal/thermal_zone2/mode
+enabled
+/sys/class/thermal/thermal_zone2/trip_point_0_hyst
+2000
+/sys/class/thermal/thermal_zone2/trip_point_0_temp
+75000
+/sys/class/thermal/thermal_zone2/trip_point_0_type
+passive
+/sys/class/thermal/thermal_zone2/trip_point_1_hyst
+2000
+/sys/class/thermal/thermal_zone2/trip_point_1_temp
+85000
+/sys/class/thermal/thermal_zone2/trip_point_1_type
+passive
+/sys/class/thermal/thermal_zone2/trip_point_2_hyst
+2000
+/sys/class/thermal/thermal_zone2/trip_point_2_temp
+115000
+/sys/class/thermal/thermal_zone2/trip_point_2_type
+critical
+/sys/class/thermal/thermal_zone3
+/sys/class/thermal/thermal_zone3/type
+ddr-thermal
+/sys/class/thermal/thermal_zone3/temp
+66538
+/sys/class/thermal/thermal_zone3/policy
+power_allocator
+/sys/class/thermal/thermal_zone3/mode
+enabled
+/sys/class/thermal/thermal_zone3/trip_point_0_hyst
+2000
+/sys/class/thermal/thermal_zone3/trip_point_0_temp
+115000
+/sys/class/thermal/thermal_zone3/trip_point_0_type
+critical
+/sys/class/thermal/thermal_zone4
+/sys/class/thermal/thermal_zone4/type
+npu-thermal
+/sys/class/thermal/thermal_zone4/temp
+66538
+/sys/class/thermal/thermal_zone4/policy
+power_allocator
+/sys/class/thermal/thermal_zone4/mode
+enabled
+/sys/class/thermal/thermal_zone4/trip_point_0_hyst
+2000
+/sys/class/thermal/thermal_zone4/trip_point_0_temp
+115000
+/sys/class/thermal/thermal_zone4/trip_point_0_type
+critical
+/sys/class/thermal/thermal_zone5
+/sys/class/thermal/thermal_zone5/type
+gpu-thermal
+/sys/class/thermal/thermal_zone5/temp
+68384
+/sys/class/thermal/thermal_zone5/policy
+power_allocator
+/sys/class/thermal/thermal_zone5/mode
+enabled
+/sys/class/thermal/thermal_zone5/trip_point_0_hyst
+2000
+/sys/class/thermal/thermal_zone5/trip_point_0_temp
+115000
+/sys/class/thermal/thermal_zone5/trip_point_0_type
+critical
+/sys/class/thermal/cooling_device0
+devfreq-27800000.gpu
+0
+6
+/sys/class/thermal/cooling_device1
+devfreq-27700000.npu
+0
+7
+总计 0
+lrwxrwxrwx 1 root root 0  7月 29 21:41 hwmon0 -> ../../devices/virtual/thermal/thermal_zone0/hwmon0
+lrwxrwxrwx 1 root root 0  7月 29 21:41 hwmon1 -> ../../devices/virtual/thermal/thermal_zone1/hwmon1
+lrwxrwxrwx 1 root root 0  7月 29 21:41 hwmon2 -> ../../devices/virtual/thermal/thermal_zone2/hwmon2
+lrwxrwxrwx 1 root root 0  7月 29 21:41 hwmon3 -> ../../devices/virtual/thermal/thermal_zone3/hwmon3
+lrwxrwxrwx 1 root root 0  7月 29 21:41 hwmon4 -> ../../devices/virtual/thermal/thermal_zone4/hwmon4
+lrwxrwxrwx 1 root root 0  7月 29 21:41 hwmon5 -> ../../devices/virtual/thermal/thermal_zone5/hwmon5
+/sys/firmware/devicetree/base/gpu-opp-table/rockchip,pvtm-thermal-zone
+/sys/firmware/devicetree/base/thermal-zones
+/sys/firmware/devicetree/base/thermal-zones/bigcore-thermal
+/sys/firmware/devicetree/base/thermal-zones/little-core-thermal
+/sys/firmware/devicetree/base/thermal-zones/ddr-thermal
+/sys/firmware/devicetree/base/thermal-zones/soc-thermal
+/sys/firmware/devicetree/base/thermal-zones/npu-thermal
+/sys/firmware/devicetree/base/thermal-zones/gpu-thermal
+/sys/firmware/devicetree/base/cluster1-opp-table/rockchip,pvtm-thermal-zone
+/sys/firmware/devicetree/base/npu-opp-table/rockchip,pvtm-thermal-zone
+/sys/firmware/devicetree/base/tsadc@2ae70000/#thermal-sensor-cells
+/sys/firmware/devicetree/base/__symbols__/thermal_zones
+/sys/firmware/devicetree/base/__symbols__/bigcore_thermal
+/sys/firmware/devicetree/base/__symbols__/ddr_thermal
+/sys/firmware/devicetree/base/__symbols__/soc_thermal
+/sys/firmware/devicetree/base/__symbols__/npu_thermal
+/sys/firmware/devicetree/base/__symbols__/gpu_thermal
+/sys/firmware/devicetree/base/__symbols__/little_core_thermal
+/sys/firmware/devicetree/base/cluster0-opp-table/rockchip,pvtm-thermal-zone
+/sys/firmware/devicetree/base/rockchip-system-monitor/rockchip,thermal-zone
+NEXT                        LEFT           LAST                        PASSED       UNIT                         ACTIVATES
+Fri 2026-10-16 17:07:00 CST 10min left     n/a                         n/a          systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
+Fri 2026-10-16 17:07:18 CST 11min left     n/a                         n/a          fstrim.timer                 fstrim.service
+Fri 2026-10-16 17:42:01 CST 45min left     n/a                         n/a          apt-daily-upgrade.timer      apt-daily-upgrade.service
+Fri 2026-10-16 17:48:55 CST 52min left     n/a                         n/a          apt-daily.timer              apt-daily.service
+Fri 2026-10-16 20:33:30 CST 3h 37min left  n/a                         n/a          man-db.timer                 man-db.service
+Fri 2026-10-16 22:43:44 CST 5h 47min left  n/a                         n/a          motd-news.timer              motd-news.service
+Sat 2026-10-17 00:00:00 CST 7h left        Fri 2026-10-16 16:52:16 CST 3min 56s ago dpkg-db-backup.timer         dpkg-db-backup.service
+Sun 2026-10-18 03:10:27 CST 1 day 10h left Fri 2026-10-16 16:52:34 CST 3min 38s ago e2scrub_all.timer            e2scrub_all.service
+n/a                         n/a            Fri 2026-10-16 16:56:08 CST 4s ago       anacron.timer                anacron.service
+
+9 timers listed.
+
+[Login]
+HandlePowerKey=ignore
+0
+0
+/opt/drone_tracker/releases/bundle-20260927T070059Z-2281
+d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8  /usr/lib/librknnrt.so
+f909ec82c2c3c45a82b1c85fb616e2f1f7a97b2da4159c7755af195f2e05298c  /opt/drone_tracker/config/camera.yaml
+4f46293201355131c1e72c8a72cdfaafa2c3121eaa48fe0b5ad69ac442e4f01b  /opt/drone_tracker/config/cpu-affinity.yaml
+active
+active
+active
+inactive

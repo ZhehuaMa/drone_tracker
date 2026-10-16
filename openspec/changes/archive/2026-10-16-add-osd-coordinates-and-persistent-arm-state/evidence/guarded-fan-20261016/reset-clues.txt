@@ -1,0 +1,254 @@
+WATCHDOG
+resolved /sys/devices/platform/2ace0000.watchdog/watchdog/watchdog0 exists True
+identity [Errno 2] No such file or directory: '/sys/class/watchdog/watchdog0/identity'
+state [Errno 2] No such file or directory: '/sys/class/watchdog/watchdog0/state'
+bootstatus [Errno 2] No such file or directory: '/sys/class/watchdog/watchdog0/bootstatus'
+status [Errno 2] No such file or directory: '/sys/class/watchdog/watchdog0/status'
+timeout [Errno 2] No such file or directory: '/sys/class/watchdog/watchdog0/timeout'
+nowayout [Errno 2] No such file or directory: '/sys/class/watchdog/watchdog0/nowayout'
+DEBUG WATCHDOG
+/sys/kernel/debug/2ace0000.watchdog/registers cr = 0x00000008
+torr = 0x00000000
+ccvr = 0x0000ffff
+crr = 0x00000000
+stat = 0x00000000
+param5 = 0x00000000
+param4 = 0x00000000
+param3 = 0x00000000
+param2 = 0x0000ffff
+param1 = 0x10000ac0
+version = 0x3131302a
+type = 0x44570120
+
+TARGET SYSLOG
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 104 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 71 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: message repeated 3 times: [ -----------------------------------------------------------------------------]
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 71 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 71 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 71 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 71 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 71 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 56 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 104 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 52 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 56 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 104 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 71 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 56 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 104 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 71 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 95 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: -----------------------------------------------------------------------------
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 67 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 97 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 71 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 51 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 52 for rebalancing
+Oct 16 17:15:26 hzhy irqbalance[684]: Selecting irq 56 for rebalancing
+Oct 16 17:15:47 hzhy kernel: [ 1427.541314] rockchip-vop2 27d00000.vop: [drm] vop disable intf:800
+Oct 16 17:15:47 hzhy kernel: [ 1427.544688] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_disable] Crtc atomic disable vp0
+Oct 16 17:15:47 hzhy kernel: [ 1427.585616] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:8 rate:270270
+Oct 16 17:15:47 hzhy kernel: [ 1427.585781] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+Oct 16 17:15:47 hzhy kernel: [ 1427.602466] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:8 rate:270270
+Oct 16 17:15:47 hzhy kernel: [ 1427.602630] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+Oct 16 17:15:48 hzhy kernel: [ 1428.439826] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_enable] Update mode to 720x480p60, type: 11(if:HDMI0, flag:0x0) for vp0 dclk: 27027000
+Oct 16 17:15:48 hzhy kernel: [ 1428.440019] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:41fbe rate:270270
+Oct 16 17:15:48 hzhy kernel: [ 1428.440185] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+Oct 16 17:15:48 hzhy kernel: [ 1428.440206] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_enable] set dclk_vp0 to 27027000, get 27027000
+Oct 16 17:15:48 hzhy kernel: [ 1428.440221] dwhdmi-rockchip 27da0000.hdmi: final tmdsclk = 27027000
+Oct 16 17:15:48 hzhy kernel: [ 1428.440258] dwhdmi-rockchip 27da0000.hdmi: don't use dsc mode
+Oct 16 17:15:48 hzhy kernel: [ 1428.440262] dwhdmi-rockchip 27da0000.hdmi: dw hdmi qp use tmds mode
+Oct 16 17:15:48 hzhy kernel: [ 1428.440268] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: bus_width:0x41fbe,bit_rate:270270
+Oct 16 17:15:48 hzhy kernel: [ 1428.440424] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy lane locked!
+Oct 16 17:15:48 hzhy kernel: [ 1428.440457] rockchip-vop2 27d00000.vop: [drm] vp0 post enable for intf:800
+Oct 16 17:15:48 hzhy kernel: [ 1428.440470] dwhdmi-rockchip 27da0000.hdmi: Rate 27027000 missing; compute N dynamically
+Oct 16 17:16:55 hzhy chronyd[1673]: Selected source 119.28.183.184 (0.ubuntu.pool.ntp.org)
+Oct 16 17:16:55 hzhy chronyd[1673]: System clock wrong by 6809715.853951 seconds
+Oct 16 17:16:55 hzhy systemd-resolved[629]: Clock change detected. Flushing caches.
+Oct 16 17:16:55 hzhy chronyd[1673]: System clock was stepped by 6809715.853951 seconds
+Oct 16 17:16:55 hzhy chronyd[1673]: System clock TAI offset set to 37 seconds
+Oct 16 17:16:57 hzhy kernel: [   18.014425] platform mtd_vendor_storage: deferred probe pending
+TARGET AUTH
+Oct 16 17:15:42 hzhy sshd[3705]: Accepted publickey for root from 192.168.77.210 port 56790 ssh2: ED25519 SHA256:dHA2KUbEN+0d688Z4GX18cmzRWVc6vbcROEULTSEulo
+Oct 16 17:15:42 hzhy sshd[3705]: pam_unix(sshd:session): session opened for user root(uid=0) by (uid=0)
+Oct 16 17:15:42 hzhy systemd-logind[701]: New session c24 of user root.
+Oct 16 17:15:44 hzhy sshd[3705]: Received disconnect from 192.168.77.210 port 56790:11: disconnected by user
+Oct 16 17:15:44 hzhy sshd[3705]: Disconnected from user root 192.168.77.210 port 56790
+Oct 16 17:15:44 hzhy sshd[3705]: pam_unix(sshd:session): session closed for user root
+Oct 16 17:15:44 hzhy systemd-logind[701]: Session c24 logged out. Waiting for processes to exit.
+Oct 16 17:15:44 hzhy systemd-logind[701]: Removed session c24.
+RESET ATTRIBUTES
+/sys/firmware/devicetree/base/usb@23000000/resets
+/sys/firmware/devicetree/base/usb@23000000/reset-names
+/sys/firmware/devicetree/base/csi2-dphy1-hw@2b070000/resets
+/sys/firmware/devicetree/base/csi2-dphy1-hw@2b070000/reset-names
+/sys/firmware/devicetree/base/hdmi@27da0000/resets
+/sys/firmware/devicetree/base/hdmi@27da0000/reset-names
+/sys/firmware/devicetree/base/spdif-rx@2a660000/resets
+/sys/firmware/devicetree/base/spdif-rx@2a660000/reset-names
+/sys/firmware/devicetree/base/hdcp@27d90000/resets
+/sys/firmware/devicetree/base/hdcp@27d90000/reset-names
+/sys/firmware/devicetree/base/iommu@27b00800/rockchip,disable-mmu-reset
+/sys/firmware/devicetree/base/iommu@27c33f00/rockchip,disable-mmu-reset
+/sys/firmware/devicetree/base/clock-controller@27200000/#reset-cells
+/sys/firmware/devicetree/base/iommu@27d07e00/rockchip,disable-first-mmu-reset
+/sys/firmware/devicetree/base/spdif-rx@27d30000/resets
+/sys/firmware/devicetree/base/spdif-rx@27d30000/reset-names
+/sys/firmware/devicetree/base/rkvenc-core@27a10000/resets
+/sys/firmware/devicetree/base/rkvenc-core@27a10000/reset-names
+/sys/firmware/devicetree/base/sai@27ef0000/resets
+/sys/firmware/devicetree/base/sai@27ef0000/reset-names
+/sys/firmware/devicetree/base/phy@2b020000/resets
+/sys/firmware/devicetree/base/phy@2b020000/reset-names
+/sys/firmware/devicetree/base/i2c@2ac50000/resets
+/sys/firmware/devicetree/base/i2c@2ac50000/reset-names
+/sys/firmware/devicetree/base/pcie@2a210000/resets
+/sys/firmware/devicetree/base/pcie@2a210000/reset-names
+/sys/firmware/devicetree/base/phy@2b060000/resets
+/sys/firmware/devicetree/base/phy@2b060000/reset-names
+/sys/firmware/devicetree/base/iommu@27c10800/rockchip,disable-mmu-reset
+/sys/firmware/devicetree/base/mipi0-csi2-hw@27c80000/resets
+/sys/firmware/devicetree/base/mipi0-csi2-hw@27c80000/reset-names
+/sys/firmware/devicetree/base/i2c@2ac90000/resets
+/sys/firmware/devicetree/base/i2c@2ac90000/reset-names
+/sys/firmware/devicetree/base/ethernet@2a230000/snps,reset-active-low
+/sys/firmware/devicetree/base/ethernet@2a230000/resets
+/sys/firmware/devicetree/base/ethernet@2a230000/snps,reset-gpio
+/sys/firmware/devicetree/base/ethernet@2a230000/reset-names
+/sys/firmware/devicetree/base/ethernet@2a230000/snps,reset-delays-us
+/sys/firmware/devicetree/base/dp@27e40000/resets
+/sys/firmware/devicetree/base/mmc@2a330000/resets
+/sys/firmware/devicetree/base/mmc@2a330000/reset-names
+/sys/firmware/devicetree/base/sai@2a630000/resets
+/sys/firmware/devicetree/base/sai@2a630000/reset-names
+/sys/firmware/devicetree/base/asrc@2a6b0000/resets
+/sys/firmware/devicetree/base/asrc@2a6b0000/reset-names
+/sys/firmware/devicetree/base/rkcif@27c10000/resets
+/sys/firmware/devicetree/base/rkcif@27c10000/reset-names
+/sys/firmware/devicetree/base/can@2ac10000/resets
+/sys/firmware/devicetree/base/can@2ac10000/reset-names
+/sys/firmware/devicetree/base/i3c-master@2abe0000/resets
+/sys/firmware/devicetree/base/i3c-master@2abe0000/reset-names
+/sys/firmware/devicetree/base/mipi4-csi2-hw@27cc0000/resets
+/sys/firmware/devicetree/base/mipi4-csi2-hw@27cc0000/reset-names
+/sys/firmware/devicetree/base/sai@27d40000/resets
+/sys/firmware/devicetree/base/sai@27d40000/reset-names
+/sys/firmware/devicetree/base/otp@2a580000/resets
+/sys/firmware/devicetree/base/otp@2a580000/reset-names
+/sys/firmware/devicetree/base/i2c@27300000/resets
+/sys/firmware/devicetree/base/i2c@27300000/reset-names
+/sys/firmware/devicetree/base/rng@2a410000/resets
+/sys/firmware/devicetree/base/rng@2a410000/reset-names
+/sys/firmware/devicetree/base/hdcp@27e70000/resets
+/sys/firmware/devicetree/base/hdcp@27e70000/reset-names
+/sys/firmware/devicetree/base/usb@23400000/resets
+/sys/firmware/devicetree/base/usb@23400000/reset-names
+/sys/firmware/devicetree/base/i2c@2ac60000/resets
+/sys/firmware/devicetree/base/i2c@2ac60000/reset-names
+/sys/firmware/devicetree/base/iep@27960000/resets
+/sys/firmware/devicetree/base/iep@27960000/rockchip,resetgroup-node
+/sys/firmware/devicetree/base/iep@27960000/reset-names
+/sys/firmware/devicetree/base/sai@2a600000/resets
+/sys/firmware/devicetree/base/sai@2a600000/reset-names
+/sys/firmware/devicetree/base/ufs@2a2d0000/resets
+/sys/firmware/devicetree/base/ufs@2a2d0000/reset-names
+/sys/firmware/devicetree/base/sai@2a640000/resets
+/sys/firmware/devicetree/base/sai@2a640000/reset-names
+/sys/firmware/devicetree/base/iommu@27a0f000/rockchip,disable-mmu-reset
+/sys/firmware/devicetree/base/asrc@2a6c0000/resets
+/sys/firmware/devicetree/base/asrc@2a6c0000/reset-names
+/sys/firmware/devicetree/base/crypto@2a400000/resets
+/sys/firmware/devicetree/base/crypto@2a400000/reset-names
+/sys/firmware/devicetree/base/npu@27700000/resets
+/sys/firmware/devicetree/base/npu@27700000/reset-names
+/sys/firmware/devicetree/base/vop@27d00000/resets
+/sys/firmware/devicetree/base/vop@27d00000/rockchip,aclk-reset-mode-rates
+/sys/firmware/devicetree/base/vop@27d00000/reset-names
+/sys/firmware/devicetree/base/i3c-master@2abf0000/resets
+/sys/firmware/devicetree/base/i3c-master@2abf0000/reset-names
+/sys/firmware/devicetree/base/csi2-dphy0-hw@2b030000/resets
+/sys/firmware/devicetree/base/csi2-dphy0-hw@2b030000/reset-names
+/sys/firmware/devicetree/base/mipi3-csi2-hw@27cb0000/resets
+/sys/firmware/devicetree/base/mipi3-csi2-hw@27cb0000/reset-names
+/sys/firmware/devicetree/base/sai@27d50000/resets
+/sys/firmware/devicetree/base/sai@27d50000/reset-names
+/sys/firmware/devicetree/base/asrc@2a690000/resets
+/sys/firmware/devicetree/base/asrc@2a690000/reset-names
+/sys/firmware/devicetree/base/i2c@2aca0000/resets
+/sys/firmware/devicetree/base/i2c@2aca0000/reset-names
+/sys/firmware/devicetree/base/sai@27ed0000/resets
+/sys/firmware/devicetree/base/sai@27ed0000/reset-names
+/sys/firmware/devicetree/base/mpp-srv/rockchip,resetgroup-count
+/sys/firmware/devicetree/base/dsmc@2a280000/resets
+/sys/firmware/devicetree/base/dsmc@2a280000/reset-names
+/sys/firmware/devicetree/base/i2c@2ae80000/resets
+/sys/firmware/devicetree/base/i2c@2ae80000/reset-names
+/sys/firmware/devicetree/base/phy@2b000000/resets
+/sys/firmware/devicetree/ba
+/sys/kernel/debug/rknpu/reset
+/sys/kernel/debug/mali0/reset
+/sys/kernel/debug/rkrga/reset
+
+/sys/devices/platform/27800000.gpu/reset_timeout
+
+POWER SUPPLY
+PSTORE []
+CMDLINE storagemedia=emmc androidboot.storagemedia=emmc androidboot.mode=normal  androidboot.verifiedbootstate=orange rw rootwait earlycon=uart8250,mmio32,0x2ad40000 console=ttyFIQ0 root=PARTUUID=614e0000-0000 rcupdate.rcu_expedited=1 net.ifnames=0 isolcpus=4-7 rcu_nocbs=4-7 irqaffinity=0-3 cma=512M androidboot.fwver=ddr-v1.12-ef40306b8f,bl31-v1.24,bl32-v1.08,uboot-g0232af0af-09/15/2026 fsck.repair=yes
+

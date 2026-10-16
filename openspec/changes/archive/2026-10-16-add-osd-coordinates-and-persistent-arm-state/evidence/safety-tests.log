@@ -1,0 +1,13 @@
+test_cleanup_failure_cannot_skip_restore_or_verify (test_acceptance_safety.SafetyTests.test_cleanup_failure_cannot_skip_restore_or_verify) ... ok
+test_failed_restore_is_reported_and_still_verified (test_acceptance_safety.SafetyTests.test_failed_restore_is_reported_and_still_verified) ... ok
+test_invariant_failure_runs_after_restore (test_acceptance_safety.SafetyTests.test_invariant_failure_runs_after_restore) ... ok
+test_missing_sensor_aborts (test_acceptance_safety.SafetyTests.test_missing_sensor_aborts) ... ok
+test_node_timeout_kills_only_owned_process (test_acceptance_safety.SafetyTests.test_node_timeout_kills_only_owned_process) ... ok
+test_signal_uses_same_abort_path (test_acceptance_safety.SafetyTests.test_signal_uses_same_abort_path) ... ok
+test_temperature_abort_is_durable_and_incomplete (test_acceptance_safety.SafetyTests.test_temperature_abort_is_durable_and_incomplete) ... ok
+test_thermal_abort_still_restores_services (test_acceptance_safety.SafetyTests.test_thermal_abort_still_restores_services) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.063s
+
+OK

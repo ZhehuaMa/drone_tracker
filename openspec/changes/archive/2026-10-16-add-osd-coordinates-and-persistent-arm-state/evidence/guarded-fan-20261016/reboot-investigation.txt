@@ -1,0 +1,323 @@
+2026-10-16T17:17:21+08:00
+runlevel (to lvl 5)   6.1.141-rt36     Wed Jul 29 21:41   still running
+reboot   system boot  6.1.141-rt36     Wed Jul 29 21:41   still running
+root     pts/0        192.168.77.210   Fri Oct 16 16:54 - 16:54  (00:00)
+runlevel (to lvl 5)   6.1.141-rt36     Wed Jul 29 21:41 - 21:41  (00:00)
+reboot   system boot  6.1.141-rt36     Wed Jul 29 21:41   still running
+shutdown system down  6.1.141-rt36     Fri Oct 16 16:46 - 21:41 (-78+19:04)
+root     pts/0        192.168.77.210   Fri Oct 16 16:35 - 16:35  (00:00)
+runlevel (to lvl 5)   6.1.141-rt36     Wed Jul 29 21:41 - 16:46 (78+19:04)
+reboot   system boot  6.1.141-rt36     Wed Jul 29 21:41 - 16:46 (78+19:04)
+shutdown system down  6.1.141-rt36     Fri Oct 16 16:22 - 21:41 (-78+18:40)
+root     pts/0        192.168.77.210   Fri Oct 16 15:46 - 15:46  (00:00)
+root     pts/1        192.168.77.210   Thu Oct 15 19:30 - 19:30  (00:00)
+
+wtmp begins Wed Jul 29 21:41:26 2026
+-13 534acc8f742a413da6c3a79e963f11f0 Wed 2026-07-29 21:41:35 CST—Tue 2026-09-22 20:05:27 CST
+-12 cae831ca88b14b93bb571c8dc786a83c Wed 2026-09-23 09:34:28 CST—Wed 2026-09-23 09:34:43 CST
+-11 f2afa950f7994343bdcc0dae9bf77b09 Wed 2026-09-23 09:43:14 CST—Wed 2026-09-23 09:43:29 CST
+-10 07e3d8fd7d1d4d04988937b652df8ce0 Wed 2026-09-23 09:50:10 CST—Wed 2026-09-23 09:50:31 CST
+ -9 86c18f0cacb446db9d87f020adcce9a6 Wed 2026-09-23 09:51:27 CST—Wed 2026-09-23 20:53:44 CST
+ -8 72d6f1f28e614ec0b75c5105f92410c2 Wed 2026-09-23 21:06:31 CST—Thu 2026-09-24 00:49:05 CST
+ -7 305f6315e2364e7e87c9772eda18f6c2 Thu 2026-09-24 02:03:24 CST—Thu 2026-09-24 02:13:10 CST
+ -6 1fd800d97ef84ecd96ca9af19906fad3 Thu 2026-09-24 13:25:08 CST—Thu 2026-09-24 15:53:44 CST
+ -5 faa64322fda94ee9be64a1ef3787011d Sun 2026-09-27 12:57:03 CST—Sun 2026-09-27 13:11:10 CST
+ -4 78da879cf8244e41874e487ea21b9ef1 Sun 2026-09-27 13:11:14 CST—Sun 2026-09-27 13:55:25 CST
+ -3 4c12c4759bf043e28ec254b4e3f49df9 Sun 2026-09-27 15:07:55 CST—Sun 2026-09-27 15:13:54 CST
+ -2 9d489cc6748b41a8ae86fb2bff06e3df Sun 2026-09-27 16:49:32 CST—Sun 2026-09-27 17:06:59 CST
+ -1 b84cc9e913e143fa9fce8cc66bfbde55 Mon 2026-10-12 14:06:26 CST—Fri 2026-10-16 14:36:49 CST
+  0 9e39c5c3bb1248daae427dfcbb2be2ee Fri 2026-10-16 17:16:55 CST—Fri 2026-10-16 17:17:23 CST
+7月 29 21:41:35 hzhy systemd[2988]: Queued start job for default target Main User Target.
+7月 29 21:41:35 hzhy systemd[2988]: Created slice User Application Slice.
+7月 29 21:41:35 hzhy systemd[2988]: Created slice User Core Session Slice.
+7月 29 21:41:35 hzhy systemd[2988]: Reached target Paths.
+7月 29 21:41:35 hzhy systemd[2988]: Reached target Timers.
+7月 29 21:41:35 hzhy systemd[2988]: Listening on PipeWire Multimedia System Socket.
+7月 29 21:41:35 hzhy systemd[2988]: Listening on Sound System.
+7月 29 21:41:35 hzhy systemd[2988]: Reached target Sockets.
+7月 29 21:41:35 hzhy systemd[2988]: Reached target Basic System.
+7月 29 21:41:35 hzhy systemd[2988]: Started PipeWire Multimedia Service.
+7月 29 21:41:35 hzhy systemd[2988]: Starting Sound Service...
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: RTKit error: org.freedesktop.DBus.Error.ServiceUnknown
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: could not set nice-level to -11: 没有那个文件或目录
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: RTKit error: org.freedesktop.DBus.Error.ServiceUnknown
+7月 29 21:41:35 hzhy pipewire[2997]: spa.dbus: Failed to connect to session bus: Unable to autolaunch a dbus-daemon without a $DISPLAY for X11
+7月 29 21:41:35 hzhy pipewire[2997]: mod.portal: Failed to connect to session bus: 输入/输出错误
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: RTKit error: org.freedesktop.DBus.Error.ServiceUnknown
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: RTKit error: org.freedesktop.DBus.Error.ServiceUnknown
+7月 29 21:41:35 hzhy pipewire[2997]: mod.rt: could not make thread 3010 realtime using RTKit: 没有那个文件或目录
+7月 29 21:41:35 hzhy pulseaudio[2998]: Error opening hctl device: 没有那个设备
+7月 29 21:41:36 hzhy dbus-daemon[3052]: [session uid=1000 pid=3050] Activating service name='org.freedesktop.systemd1' requested by ':1.0' (uid=1000 pid=3047 comm="dbus-update-activation-environment --systemd XAUTH")
+7月 29 21:41:36 hzhy dbus-daemon[3052]: [session uid=1000 pid=3050] Activated service 'org.freedesktop.systemd1' failed: Process org.freedesktop.systemd1 exited with status 1
+7月 29 21:41:36 hzhy pulseaudio[2998]: Unable to contact D-Bus: org.freedesktop.DBus.Error.NotSupported: Unable to autolaunch a dbus-daemon without a $DISPLAY for X11
+7月 29 21:41:36 hzhy pulseaudio[2998]: Unable to contact D-Bus: org.freedesktop.DBus.Error.NotSupported: Unable to autolaunch a dbus-daemon without a $DISPLAY for X11
+7月 29 21:41:36 hzhy systemd[2988]: Started Sound Service.
+7月 29 21:41:36 hzhy systemd[2988]: Reached target Main User Target.
+7月 29 21:41:36 hzhy systemd[2988]: Startup finished in 855ms.
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.xfce.Xfconf' requested by ':1.1' (uid=1000 pid=3000 comm="xfce4-session ")
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.xfce.Xfconf'
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gnome.ScreenSaver' requested by ':1.1' (uid=1000 pid=3000 comm="xfce4-session ")
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activated service 'org.gnome.ScreenSaver' failed: Failed to execute program org.gnome.ScreenSaver: No such file or directory
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.freedesktop.systemd1' requested by ':1.3' (uid=1000 pid=3074 comm="dbus-update-activation-environment --systemd SSH_A")
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activated service 'org.freedesktop.systemd1' failed: Process org.freedesktop.systemd1 exited with status 1
+7月 29 21:41:39 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gtk.vfs.Daemon' requested by ':1.5' (uid=1000 pid=3077 comm="xfwm4 ")
+7月 29 21:41:40 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gtk.vfs.Daemon'
+7月 29 21:41:45 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gtk.vfs.UDisks2VolumeMonitor' requested by ':1.14' (uid=1000 pid=3121 comm="xfdesktop ")
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gtk.vfs.UDisks2VolumeMonitor'
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='ca.desrt.dconf' requested by ':1.20' (uid=1000 pid=3142 comm="light-locker ")
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'ca.desrt.dconf'
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gnome.ScreenSaver' requested by ':1.16' (uid=1000 pid=3127 comm="xfce4-power-manager ")
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activated service 'org.gnome.ScreenSaver' failed: Failed to execute program org.gnome.ScreenSaver: No such file or directory
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gtk.vfs.Metadata' requested by ':1.14' (uid=1000 pid=3121 comm="xfdesktop ")
+7月 29 21:41:46 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gtk.vfs.Metadata'
+7月 29 21:41:47 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gnome.evolution.dataserver.Sources5' requested by ':1.32' (uid=1000 pid=3138 comm="/usr/libexec/evolution-data-server/evolution-alarm")
+7月 29 21:41:47 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gnome.evolution.dataserver.Sources5'
+7月 29 21:41:47 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gnome.evolution.dataserver.Calendar8' requested by ':1.32' (uid=1000 pid=3138 comm="/usr/libexec/evolution-data-server/evolution-alarm")
+7月 29 21:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.bluez.obex' requested by ':1.34' (uid=1000 pid=3130 comm="/usr/bin/python3 /usr/bin/blueman-applet ")
+7月 29 21:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gnome.evolution.dataserver.Calendar8'
+7月 29 21:41:48 hzhy obexd[3244]: OBEX daemon 5.64
+7月 29 21:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.bluez.obex'
+7月 29 21:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.gnome.evolution.dataserver.AddressBook10' requested by ':1.42' (uid=1000 pid=3228 comm="/usr/libexec/evolution-calendar-factory ")
+7月 29 21:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.gnome.evolution.dataserver.AddressBook10'
+7月 29 21:42:01 hzhy pulseaudio[2998]: GetManagedObjects() failed: org.freedesktop.DBus.Error.NoReply: Did not receive a reply. Possible causes include: the remote application did not send a reply, the message bus security policy blocked the reply, the reply timeout expired, or the network connection was broken.
+7月 29 22:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Activating service name='org.freedesktop.secrets' requested by ':1.35' (uid=1000 pid=3198 comm="/usr/libexec/evolution-source-registry ")
+7月 29 22:41:48 hzhy gnome-keyring-daemon[3546]: couldn't access control socket: /run/user/1000/keyring/control: 没有那个文件或目录
+7月 29 22:41:48 hzhy gnome-keyring-d[3546]: couldn't access control socket: /run/user/1000/keyring/control: 没有那个文件或目录
+7月 29 22:41:48 hzhy dbus-daemon[3058]: [session uid=1000 pid=3056] Successfully activated service 'org.freedesktop.secrets'
+7月 30 00:11:20 hzhy pulseaudio[2998]: ICE I/O error handler called
+7月 30 00:11:20 hzhy pulseaudio[2998]: X11 I/O error handler called
+7月 30 00:11:20 hzhy pulseaudio[2998]: X11 I/O error exit handler called, preparing to tear down X11 modules
+7月 30 00:11:20 hzhy systemd[2988]: Stopped target Main User Target.
+7月 30 00:11:20 hzhy systemd[2988]: Stopping PipeWire Multimedia Service...
+7月 30 00:11:20 hzhy systemd[2988]: Stopping Sound Service...
+7月 30 00:11:20 hzhy systemd[2988]: Stopped PipeWire Multimedia Service.
+7月 30 00:11:20 hzhy systemd[2988]: Stopped Sound Service.
+7月 30 00:11:20 hzhy systemd[2988]: Removed slice User Core Session Slice.
+7月 30 00:11:20 hzhy systemd[2988]: Stopped target Basic System.
+7月 30 00:11:20 hzhy systemd[2988]: Stopped target Paths.
+7月 30 00:11:20 hzhy systemd[2988]: Stopped target Sockets.
+7月 30 00:11:20 hzhy systemd[2988]: Stopped target Timers.
+7月 30 00:11:20 hzhy systemd[2988]: Closed PipeWire Multimedia System Socket.
+7月 30 00:11:20 hzhy systemd[2988]: Closed Sound System.
+7月 30 00:11:20 hzhy systemd[2988]: Removed slice User Application Slice.
+7月 30 00:11:20 hzhy systemd[2988]: Reached target Shutdown.
+7月 30 00:11:20 hzhy systemd[2988]: Finished Exit the Session.
+7月 30 00:11:20 hzhy systemd[2988]: Reached target Exit the Session.
+[五 10月 16 17:16:45 2026] stream_cif_mipi_id0: update sensor info failed -19
+[五 10月 16 17:16:45 2026] rkcif-mipi-lvds3: rkcif_update_sensor_info: stream[1] get remote terminal sensor failed!
+[五 10月 16 17:16:45 2026] stream_cif_mipi_id1: update sensor info failed -19
+[五 10月 16 17:16:45 2026] rkcif-mipi-lvds3: rkcif_update_sensor_info: stream[1] get remote terminal sensor failed!
+[五 10月 16 17:16:45 2026] rkcif_scale_ch1: update sensor info failed -19
+[五 10月 16 17:16:45 2026] rkcif-mipi-lvds3: rkcif_update_sensor_info: stream[2] get remote terminal sensor failed!
+[五 10月 16 17:16:45 2026] stream_cif_mipi_id2: update sensor info failed -19
+[五 10月 16 17:16:45 2026] rkcif-mipi-lvds3: rkcif_update_sensor_info: stream[0] get remote terminal sensor failed!
+[五 10月 16 17:16:45 2026] rkcif_scale_ch0: update sensor info failed -19
+[五 10月 16 17:16:45 2026] rkcif-mipi-lvds3: rkcif_update_sensor_info: stream[2] get remote terminal sensor failed!
+[五 10月 16 17:16:45 2026] rkcif_tools_id2: update sensor info failed -19
+[五 10月 16 17:16:45 2026] rkcif-mipi-lvds3: rkcif_update_sensor_info: stream[3] get remote terminal sensor failed!
+[五 10月 16 17:16:45 2026] stream_cif_mipi_id3: update sensor info failed -19
+[五 10月 16 17:16:45 2026] rkcif-mipi-lvds3: rkcif_update_sensor_info: stream[1] get remote terminal sensor failed!
+[五 10月 16 17:16:45 2026] rkcif_tools_id1: update sensor info failed -19
+[五 10月 16 17:16:45 2026] rkcif-mipi-lvds3: rkcif_update_sensor_info: stream[0] get remote terminal sensor failed!
+[五 10月 16 17:16:45 2026] rkcif_tools_id0: update sensor info failed -19
+[五 10月 16 17:16:45 2026] rkcif-mipi-lvds3: rkcif_update_sensor_info: stream[3] get remote terminal sensor failed!
+[五 10月 16 17:16:45 2026] rkcif_scale_ch3: update sensor info failed -19
+[五 10月 16 17:16:45 2026] rkcif-mipi-lvds3: rkcif_update_sensor_info: stream[2] get remote terminal sensor failed!
+[五 10月 16 17:16:45 2026] rkcif_scale_ch2: update sensor info failed -19
+[五 10月 16 17:16:45 2026] EXT4-fs (mmcblk0p5): mounted filesystem with ordered data mode. Quota mode: disabled.
+[五 10月 16 17:16:45 2026] ext4 filesystem being mounted at /oem supports timestamps until 2038-01-19 (0x7fffffff)
+[五 10月 16 17:16:45 2026] EXT4-fs (mmcblk0p6): mounted filesystem with ordered data mode. Quota mode: disabled.
+[五 10月 16 17:16:45 2026] ext4 filesystem being mounted at /userdata supports timestamps until 2038-01-19 (0x7fffffff)
+[五 10月 16 17:16:46 2026] rk_gmac-dwmac 2a230000.ethernet eth0: Register MEM_TYPE_PAGE_POOL RxQ-0
+[五 10月 16 17:16:46 2026] rk_gmac-dwmac 2a230000.ethernet eth0: PHY [stmmac-1:01] driver [YT8512B Ethernet] (irq=POLL)
+[五 10月 16 17:16:46 2026] dwmac4: Master AXI performs any burst length
+[五 10月 16 17:16:46 2026] rk_gmac-dwmac 2a230000.ethernet eth0: No Safety Features support found
+[五 10月 16 17:16:46 2026] rk_gmac-dwmac 2a230000.ethernet eth0: IEEE 1588-2008 Advanced Timestamp supported
+[五 10月 16 17:16:46 2026] rk_gmac-dwmac 2a230000.ethernet eth0: registered PTP clock
+[五 10月 16 17:16:46 2026] rk_gmac-dwmac 2a230000.ethernet eth0: FPE workqueue start
+[五 10月 16 17:16:46 2026] rk_gmac-dwmac 2a230000.ethernet eth0: configuring for phy/rmii link mode
+[五 10月 16 17:16:46 2026] 8021q: adding VLAN 0 to HW filter on device eth0
+[五 10月 16 17:16:46 2026] rk_gmac-dwmac 2a230000.ethernet eth0: Link is Up - 100Mbps/Full - flow control off
+[五 10月 16 17:16:46 2026] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+[五 10月 16 17:16:47 2026] EXT4-fs (mmcblk0p5): re-mounted. Quota mode: disabled.
+[五 10月 16 17:16:47 2026] EXT4-fs (mmcblk0p6): re-mounted. Quota mode: disabled.
+[五 10月 16 17:16:47 2026] EXT4-fs (mmcblk0p7): re-mounted. Quota mode: disabled.
+[五 10月 16 17:16:48 2026] dw-apb-uart 2afc0000.serial: got rx and tx dma channels
+[五 10月 16 17:16:48 2026] ttyFIQ ttyFIQ0: tty_port_close_start: tty->count = 1 port count = 2
+[五 10月 16 17:16:48 2026] dw-apb-uart 2adb0000.serial: got rx and tx dma channels
+[五 10月 16 17:16:48 2026] file system registered
+[五 10月 16 17:16:48 2026] read descriptors
+[五 10月 16 17:16:48 2026] read strings
+[五 10月 16 17:16:48 2026] mali 27800000.gpu: Clearing BASE_MEM_UNCACHED_GPU flag to avoid MMA violation
+[五 10月 16 17:16:53 2026] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_enable] Update mode to 720x480p60, type: 11(if:HDMI0, flag:0x0) for vp0 dclk: 27027000
+[五 10月 16 17:16:53 2026] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:41fbe rate:742500
+[五 10月 16 17:16:53 2026] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+[五 10月 16 17:16:53 2026] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:41fbe rate:270270
+[五 10月 16 17:16:53 2026] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+[五 10月 16 17:16:53 2026] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_enable] set dclk_vp0 to 27027000, get 27027000
+[五 10月 16 17:16:53 2026] dwhdmi-rockchip 27da0000.hdmi: final tmdsclk = 27027000
+[五 10月 16 17:16:53 2026] dwhdmi-rockchip 27da0000.hdmi: don't use dsc mode
+[五 10月 16 17:16:53 2026] dwhdmi-rockchip 27da0000.hdmi: dw hdmi qp use tmds mode
+[五 10月 16 17:16:53 2026] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: bus_width:0x41fbe,bit_rate:270270
+[五 10月 16 17:16:53 2026] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy lane locked!
+[五 10月 16 17:16:53 2026] rockchip-vop2 27d00000.vop: [drm] vp0 post enable for intf:800
+[五 10月 16 17:16:53 2026] dwhdmi-rockchip 27da0000.hdmi: Rate 27027000 missing; compute N dynamically
+[五 10月 16 17:16:59 2026] platform mtd_vendor_storage: deferred probe pending
+总计 0
+drwxr-x---  2 root root 0  7月 29 21:41 .
+drwxr-xr-x 11 root root 0  1月  1  1970 ..
+Sep 24 13:20:10 hzhy kernel: [ 3185.115279] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 24 13:20:10 hzhy kernel: [ 3185.115335] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 24 13:20:10 hzhy kernel: [ 3185.115338] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 24 13:20:10 hzhy kernel: [ 3185.115828] thermal thermal_zone1: bigcore-thermal: critical temperature reached, shutting down
+Sep 24 13:20:10 hzhy kernel: [ 3185.115840] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 24 13:20:10 hzhy kernel: [ 3185.115894] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 24 13:20:10 hzhy kernel: [ 3185.115897] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 24 13:20:10 hzhy kernel: [ 3185.137294] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 24 13:20:10 hzhy kernel: [ 3185.137310] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 24 13:20:10 hzhy kernel: [ 3185.140451] thermal thermal_zone1: bigcore-thermal: critical temperature reached, shutting down
+Sep 24 13:20:10 hzhy kernel: [ 3185.140471] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 24 13:20:10 hzhy kernel: [ 3185.140533] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 24 13:20:10 hzhy kernel: [ 3185.140536] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 24 13:20:10 hzhy kernel: [ 3185.141043] thermal thermal_zone1: bigcore-thermal: critical temperature reached, shutting down
+Sep 24 13:20:10 hzhy kernel: [ 3185.141057] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 24 13:20:10 hzhy kernel: [ 3185.141101] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 24 13:20:10 hzhy kernel: [ 3185.141103] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.770754] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.770759] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.784144] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.784165] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.804786] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.804836] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.809378] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.809409] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.830742] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.830764] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.834561] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.834587] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.856738] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.856765] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.859798] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.859822] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.880729] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.880744] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.884935] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.884951] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.905761] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.905776] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.910141] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.910161] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.931725] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.931740] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.935361] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.935388] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.955714] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.955730] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.960549] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.960569] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.981810] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.981829] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8303.985765] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8303.985785] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8304.006752] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8304.006767] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8304.010937] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8304.010954] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8304.031707] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8304.031734] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Sep 27 12:52:51 hzhy kernel: [ 8304.036133] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Sep 27 12:52:51 hzhy kernel: [ 8304.036148] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.376157] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.376161] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.437216] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.437220] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.458109] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.458123] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.462379] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.462398] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.484141] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.484153] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.487564] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.487576] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.529417] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.529420] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:22:18 hzhy kernel: [353760.544262] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:22:18 hzhy kernel: [353760.544275] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.767598] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.767602] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.788578] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.788591] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.803872] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.803889] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.824631] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.824659] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.829055] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.829082] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.850613] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.850636] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.854263] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.854280] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.874593] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.874613] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.879460] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.879475] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.901680] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.901705] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:14 hzhy kernel: [  661.904645] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:14 hzhy kernel: [  661.904657] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.926566] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.926581] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.929852] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.929874] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.951571] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.951584] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.955052] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.955065] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.976566] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.976579] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 16:46:15 hzhy kernel: [  661.980253] thermal thermal_zone2: little-core-thermal: critical temperature reached, shutting down
+Oct 16 16:46:15 hzhy kernel: [  661.980267] reboot: HARDWARE PROTECTION shutdown (Temperature too high)
+Oct 16 17:14:30 hzhy kernel: [ 1351.035992] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_enable] Update mode to 720x480p60, type: 11(if:HDMI0, flag:0x0) for vp0 dclk: 27027000
+Oct 16 17:14:30 hzhy kernel: [ 1351.036219] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:41fbe rate:270270
+Oct 16 17:14:30 hzhy kernel: [ 1351.036385] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+Oct 16 17:14:30 hzhy kernel: [ 1351.036406] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_enable] set dclk_vp0 to 27027000, get 27027000
+Oct 16 17:14:30 hzhy kernel: [ 1351.036423] dwhdmi-rockchip 27da0000.hdmi: final tmdsclk = 27027000
+Oct 16 17:14:30 hzhy kernel: [ 1351.036460] dwhdmi-rockchip 27da0000.hdmi: don't use dsc mode
+Oct 16 17:14:30 hzhy kernel: [ 1351.036463] dwhdmi-rockchip 27da0000.hdmi: dw hdmi qp use tmds mode
+Oct 16 17:14:30 hzhy kernel: [ 1351.036469] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: bus_width:0x41fbe,bit_rate:270270
+Oct 16 17:14:30 hzhy kernel: [ 1351.036603] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy lane locked!
+Oct 16 17:14:30 hzhy kernel: [ 1351.036633] rockchip-vop2 27d00000.vop: [drm] vp0 post enable for intf:800
+Oct 16 17:14:30 hzhy kernel: [ 1351.036645] dwhdmi-rockchip 27da0000.hdmi: Rate 27027000 missing; compute N dynamically
+Oct 16 17:15:47 hzhy kernel: [ 1427.541314] rockchip-vop2 27d00000.vop: [drm] vop disable intf:800
+Oct 16 17:15:47 hzhy kernel: [ 1427.544688] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_disable] Crtc atomic disable vp0
+Oct 16 17:15:47 hzhy kernel: [ 1427.585616] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:8 rate:270270
+Oct 16 17:15:47 hzhy kernel: [ 1427.585781] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+Oct 16 17:15:47 hzhy kernel: [ 1427.602466] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:8 rate:270270
+Oct 16 17:15:47 hzhy kernel: [ 1427.602630] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+Oct 16 17:15:48 hzhy kernel: [ 1428.439826] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_enable] Update mode to 720x480p60, type: 11(if:HDMI0, flag:0x0) for vp0 dclk: 27027000
+Oct 16 17:15:48 hzhy kernel: [ 1428.440019] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx_ropll_cmn_config bus_width:41fbe rate:270270
+Oct 16 17:15:48 hzhy kernel: [ 1428.440185] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy pll locked!
+Oct 16 17:15:48 hzhy kernel: [ 1428.440206] rockchip-vop2 27d00000.vop: [drm:vop2_crtc_atomic_enable] set dclk_vp0 to 27027000, get 27027000
+Oct 16 17:15:48 hzhy kernel: [ 1428.440221] dwhdmi-rockchip 27da0000.hdmi: final tmdsclk = 27027000
+Oct 16 17:15:48 hzhy kernel: [ 1428.440258] dwhdmi-rockchip 27da0000.hdmi: don't use dsc mode
+Oct 16 17:15:48 hzhy kernel: [ 1428.440262] dwhdmi-rockchip 27da0000.hdmi: dw hdmi qp use tmds mode
+Oct 16 17:15:48 hzhy kernel: [ 1428.440268] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: bus_width:0x41fbe,bit_rate:270270
+Oct 16 17:15:48 hzhy kernel: [ 1428.440424] rockchip-hdptx-phy-hdmi 2b000000.hdmiphy: hdptx phy lane locked!
+Oct 16 17:15:48 hzhy kernel: [ 1428.440457] rockchip-vop2 27d00000.vop: [drm] vp0 post enable for intf:800
+Oct 16 17:15:48 hzhy kernel: [ 1428.440470] dwhdmi-rockchip 27da0000.hdmi: Rate 27027000 missing; compute N dynamically
+Oct 16 17:16:57 hzhy kernel: [   18.014425] platform mtd_vendor_storage: deferred probe pending
+Id=drone-tracker.service
+ActiveState=active
+SubState=running
+
+Id=apm-bridge.service
+ActiveState=active
+SubState=running
+
+Id=drone-interceptor.service
+ActiveState=active
+SubState=running
+
+Id=lightdm.service
+ActiveState=inactive
+SubState=dead

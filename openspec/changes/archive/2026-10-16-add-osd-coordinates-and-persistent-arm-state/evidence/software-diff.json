@@ -1,0 +1,82 @@
+{
+  "coordinates-armed-1280.png": {
+    "changed_pixels": 23378,
+    "bounds_xywh": [
+      568,
+      483,
+      677,
+      207
+    ],
+    "outside_approved_regions": 0
+  },
+  "coordinates-armed-720.png": {
+    "changed_pixels": 8745,
+    "bounds_xywh": [
+      319,
+      322,
+      381,
+      138
+    ],
+    "outside_approved_regions": 0
+  },
+  "coordinates-disarmed-1280.png": {
+    "changed_pixels": 23889,
+    "bounds_xywh": [
+      527,
+      483,
+      718,
+      207
+    ],
+    "outside_approved_regions": 0
+  },
+  "coordinates-disarmed-720.png": {
+    "changed_pixels": 8934,
+    "bounds_xywh": [
+      296,
+      322,
+      404,
+      138
+    ],
+    "outside_approved_regions": 0
+  },
+  "coordinates-trigger-1280.png": {
+    "changed_pixels": 29894,
+    "bounds_xywh": [
+      41,
+      132,
+      1204,
+      558
+    ],
+    "outside_approved_regions": 0
+  },
+  "coordinates-trigger-720.png": {
+    "changed_pixels": 11199,
+    "bounds_xywh": [
+      23,
+      88,
+      677,
+      372
+    ],
+    "outside_approved_regions": 0
+  },
+  "coordinates-unknown-1280.png": {
+    "changed_pixels": 7803,
+    "bounds_xywh": [
+      553,
+      483,
+      688,
+      207
+    ],
+    "outside_approved_regions": 0
+  },
+  "coordinates-unknown-720.png": {
+    "changed_pixels": 2944,
+    "bounds_xywh": [
+      311,
+      322,
+      387,
+      138
+    ],
+    "outside_approved_regions": 0
+  }
+}

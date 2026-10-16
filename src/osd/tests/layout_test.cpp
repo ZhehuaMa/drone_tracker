@@ -179,6 +179,63 @@ int main(int argc, char **argv) {
         state.status = osd::DisplayStatus::Live; compare(720, 480);
         ++state.round; compare(720, 480);
         compare(1280, 720); compare(720, 480);
+        // Keep the arm status independent of timing, tracking controls, and frozen video.
+        const cv::Rect arm_area{250, 430, 220, 36};
+        state = {}; state.round = 100; state.has_video = true;
+        state.telemetry.flight.value = osd::FlightState{true, true, "OFFBOARD"};
+        state.telemetry.position.value = osd::Position{-90, -180};
+        const cv::Mat armed{layout.draw(state, geometry, 720, 480, wall).hud(arm_area).clone()};
+        require(cv::countNonZero(armed.reshape(1)) > 0, "persistent armed text missing");
+        bool green{};
+        for (int y{0}; y < armed.rows; ++y) {
+            for (int x{0}; x < armed.cols; ++x) {
+                green |= armed.at<cv::Vec4b>(y, x) == cv::Vec4b{90, 230, 90, 255};
+            }
+        }
+        require(green, "armed text not green");
+        for (double seconds : {0.0, 3.1, 75.0}) {
+            state.telemetry.armed_seconds = seconds;
+            for (const auto delay : {std::chrono::milliseconds{0}, std::chrono::milliseconds{300}}) {
+                for (const auto status : {osd::DisplayStatus::Live, osd::DisplayStatus::WaitingInput,
+                         osd::DisplayStatus::Stopped}) {
+                    state.status = status;
+                    for (const std::string trigger : {"", "TRIG ON", "TRIG OFF"}) {
+                        state.trigger = trigger; state.mission_active = !trigger.empty();
+                        require(cv::norm(armed, layout.draw(state, geometry, 720, 480, wall + delay).hud(arm_area),
+                            cv::NORM_INF) == 0, "arm text changed with time, status, or trigger");
+                    }
+                }
+            }
+        }
+        for (const cv::Size size : {cv::Size{720, 480}, cv::Size{1280, 720}}) {
+            state.status = osd::DisplayStatus::Stopped;
+            state.has_tracking_result = false; state.tracking_phase = osd::TrackingPhase::Starting;
+            state.mission_active = true; state.trigger = "TRIG OFF"; state.telemetry.warning = "FAILSAFE";
+            for (int transition{0}; transition < 6; ++transition) {
+                state.telemetry.flight.value = osd::FlightState{true, transition % 2 != 0, "OFFBOARD"};
+                state.telemetry.position.value = osd::Position{-90, -180};
+                if (transition == 2) { state.telemetry.flight.value->connected = false; }
+                if (transition == 3) { state.telemetry.flight.value.reset(); state.telemetry.position.value.reset(); }
+                if (transition == 4) { state.telemetry.position.value = osd::Position{0, 0}; }
+                compare(size.width, size.height);
+            }
+        }
+        state.telemetry.flight.value.reset(); state.telemetry.position.value.reset();
+        const cv::Mat unknown{layout.draw(state, geometry, 720, 480, wall).hud(arm_area).clone()};
+        state.telemetry.flight.value = osd::FlightState{false, true, "OFFBOARD"};
+        require(cv::norm(unknown, layout.draw(state, geometry, 720, 480, wall).hud(arm_area), cv::NORM_INF) == 0,
+            "disconnected flight still claims armed");
+        state.telemetry.flight.value = osd::FlightState{true, false, "OFFBOARD"};
+        require(cv::norm(unknown, layout.draw(state, geometry, 720, 480, wall).hud(arm_area), cv::NORM_INF) > 0,
+            "connection recovery did not restore disarmed text");
+        state = {}; state.round = 200; state.status = osd::DisplayStatus::Live; state.has_video = true;
+        state.telemetry.flight.value = osd::FlightState{true, true, "OFFBOARD"};
+        state.telemetry.position.value = osd::Position{31.2304, 121.4737};
+        cached.draw(state, geometry, 720, 480, wall);
+        const auto before_blink{cached.work()};
+        cached.draw(state, geometry, 720, 480, wall + std::chrono::milliseconds{300});
+        // The existing clock alone changes between these times. New fields remain cached.
+        require(cached.work().fields == before_blink.fields + 1, "stable arm/coordinates repainted at blink phase");
         cached.setCraftName("NEW THEME");
         osd::CachedOsdLayout theme{"NEW THEME"};
         require(cv::norm(cached.draw(state, geometry, 720, 480, wall),

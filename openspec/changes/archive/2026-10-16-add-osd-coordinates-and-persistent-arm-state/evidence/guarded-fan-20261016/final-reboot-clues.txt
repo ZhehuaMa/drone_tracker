@@ -1,0 +1,95 @@
+2026-10-16T17:19:05+08:00
+Oct 16 17:15:42 hzhy sshd[3705]: Accepted publickey for root from 192.168.77.210 port 56790 ssh2: ED25519 SHA256:dHA2KUbEN+0d688Z4GX18cmzRWVc6vbcROEULTSEulo
+Oct 16 17:15:42 hzhy sshd[3705]: pam_unix(sshd:session): session opened for user root(uid=0) by (uid=0)
+Oct 16 17:15:42 hzhy systemd-logind[701]: New session c24 of user root.
+Oct 16 17:15:44 hzhy sshd[3705]: Received disconnect from 192.168.77.210 port 56790:11: disconnected by user
+Oct 16 17:15:44 hzhy sshd[3705]: Disconnected from user root 192.168.77.210 port 56790
+Oct 16 17:15:44 hzhy sshd[3705]: pam_unix(sshd:session): session closed for user root
+Oct 16 17:15:44 hzhy systemd-logind[701]: Session c24 logged out. Waiting for processes to exit.
+Oct 16 17:15:44 hzhy systemd-logind[701]: Removed session c24.
+Jul 29 21:41:29 hzhy kernel: [    2.622740] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.622747] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.622754] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.623775] mpp_jpgdec 27910000.jpegd: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.623783] mpp_jpgdec 27910000.jpegd: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.624443] mpp_jpgenc 27910800.jpege: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.624448] mpp_jpgenc 27910800.jpege: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.625504] rkvdec2_init:1250: No niu aclk reset resource define
+Jul 29 21:41:29 hzhy kernel: [    2.625510] rkvdec2_init:1253: No niu hclk reset resource define
+Jul 29 21:41:29 hzhy kernel: [    2.625520] rkvdec2_init:1259: No cabac reset resource define
+Jul 29 21:41:29 hzhy kernel: [    2.628307] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.628312] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.628315] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.632211] rockchip-vop2 27d00000.vop: Supported VOP aclk dvfs, normal mode:500000000, reset mode:594000000, advanced mode:702000000
+Jul 29 21:41:29 hzhy kernel: [    2.641232] W : [File] : drivers/gpu/arm/bifrost/platform/rk/mali_kbase_config_rk.c; [Line] : 144; [Func] : kbase_platform_rk_init(); power-off-delay-ms not available.
+Jul 29 21:41:29 hzhy kernel: [    2.858113] EXT4-fs (mmcblk0p7): recovery complete
+Jul 29 21:41:29 hzhy kernel: [    1.275394] thermal_sys: Registered thermal governor 'power_allocator'
+Jul 29 21:41:29 hzhy kernel: [    1.501586] raid6: using neon recovery algorithm
+Jul 29 21:41:29 hzhy kernel: [    1.530789] thermal thermal_zone0: power_allocator: sustainable_power will be estimated
+Jul 29 21:41:29 hzhy kernel: [    1.530953] thermal thermal_zone1: power_allocator: sustainable_power will be estimated
+Jul 29 21:41:29 hzhy kernel: [    1.531243] thermal thermal_zone3: power_allocator: sustainable_power will be estimated
+Jul 29 21:41:29 hzhy kernel: [    1.531381] thermal thermal_zone4: power_allocator: sustainable_power will be estimated
+Jul 29 21:41:29 hzhy kernel: [    1.531517] thermal thermal_zone5: power_allocator: sustainable_power will be estimated
+Jul 29 21:41:29 hzhy kernel: [    1.796998] rk806 1-0023: chip id: RK806,ver:0xa, 0x5
+Jul 29 21:41:29 hzhy kernel: [    1.797888] rk806 1-0023: ON: 0x40 OFF:0x0
+Jul 29 21:41:29 hzhy kernel: [    1.798340] rk806 1-0023: shutown_by_pwrctrln missing!
+Jul 29 21:41:29 hzhy kernel: [    1.798346] rk806 1-0023: dvs-suspend-control-by missing!
+Jul 29 21:41:29 hzhy kernel: [    1.868153] rk806 1-0023: no power-off pinctrl state
+Jul 29 21:41:29 hzhy kernel: [    1.868160] rk806 1-0023: no sleep-setting state
+Jul 29 21:41:29 hzhy kernel: [    1.868162] rk806 1-0023: no reset-setting pinctrl state
+Jul 29 21:41:29 hzhy kernel: [    1.868165] rk806 1-0023: no dvs-setting pinctrl state
+Jul 29 21:41:29 hzhy kernel: [    1.899085] rkvpss_hw 27c30000.vpss: failed to get cru reset
+Jul 29 21:41:29 hzhy kernel: [    1.942163] sc233hgs 0-0030: Failed to get power-gpios
+Jul 29 21:41:29 hzhy kernel: [    2.251392] sc233hgs 4-0030: Failed to get power-gpios
+Jul 29 21:41:29 hzhy kernel: [    2.638096] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.638104] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.638111] mpp-iep2 27960000.iep: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.639121] mpp_jpgdec 27910000.jpegd: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.639129] mpp_jpgdec 27910000.jpegd: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.639806] mpp_jpgenc 27910800.jpege: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.639810] mpp_jpgenc 27910800.jpege: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.640818] rkvdec2_init:1250: No niu aclk reset resource define
+Jul 29 21:41:29 hzhy kernel: [    2.640824] rkvdec2_init:1253: No niu hclk reset resource define
+Jul 29 21:41:29 hzhy kernel: [    2.640833] rkvdec2_init:1259: No cabac reset resource define
+Jul 29 21:41:29 hzhy kernel: [    2.643576] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.643581] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.643585] mpp_vdpp 27961000.vdpp: reset_group->rw_sem_on=0
+Jul 29 21:41:29 hzhy kernel: [    2.647436] rockchip-vop2 27d00000.vop: Supported VOP aclk dvfs, normal mode:500000000, reset mode:594000000, advanced mode:702000000
+Jul 29 21:41:29 hzhy kernel: [    2.656403] W : [File] : drivers/gpu/arm/bifrost/platform/rk/mali_kbase_config_rk.c; [Line] : 144; [Func] : kbase_platform_rk_init(); power-off-delay-ms not available.
+Jul 29 21:41:29 hzhy kernel: [    2.702479] EXT4-fs (mmcblk0p7): recovery complete
+NEXT                        LEFT          LAST                        PASSED  UNIT                         ACTIVATES
+Fri 2026-10-16 17:19:50 CST 43s left      n/a                         n/a     anacron.timer                anacron.service
+Fri 2026-10-16 17:33:05 CST 13min left    n/a                         n/a     systemd-tmpfiles-clean.timer systemd-tmpfiles-clean.service
+Fri 2026-10-16 17:43:24 CST 24min left    n/a                         n/a     apt-daily-upgrade.timer      apt-daily-upgrade.service
+Fri 2026-10-16 18:50:24 CST 1h 31min left n/a                         n/a     fstrim.timer                 fstrim.service
+Sat 2026-10-17 00:00:00 CST 6h left       Fri 2026-10-16 17:18:21 CST 45s ago dpkg-db-backup.timer         dpkg-db-backup.service
+Sat 2026-10-17 01:17:57 CST 7h left       n/a                         n/a     motd-news.timer              motd-news.service
+Sat 2026-10-17 04:47:08 CST 11h left      n/a                         n/a     apt-daily.timer              apt-daily.service
+Sat 2026-10-17 05:01:38 CST 11h left      n/a                         n/a     man-db.timer                 man-db.service
+Sun 2026-10-18 03:10:58 CST 1 day 9h left Fri 2026-10-16 17:18:41 CST 25s ago e2scrub_all.timer            e2scrub_all.service
+
+9 timers listed.
+ls: 无法访问 '/var/crash': 没有那个文件或目录
+/sys/fs/pstore:
+总计 0
+WatchdogUSec=0
+Id=drone-tracker.service
+StartLimitAction=none
+FailureAction=none
+
+WatchdogUSec=0
+Id=apm-bridge.service
+StartLimitAction=none
+FailureAction=none
+
+WatchdogUSec=0
+Id=drone-interceptor.service
+StartLimitAction=none
+FailureAction=none
+crw------- 1 root root  10, 130  7月 29 21:41 /dev/watchdog
+crw------- 1 root root 242,   0  7月 29 21:41 /dev/watchdog0
+    104 watchdogd       [watchdogd]
+    191 irq/94-2ace0000 [irq/94-2ace0000.watchdog]
+   2319 bash            bash -c source /opt/ros/humble/setup.bash; date -Is; grep -aE "Oct 16 17:1[56]:" /var/log/auth.log | tail -n 30; grep -aE "Jul 29 21:41:.*(shutdown|reboot|reset|power|recover|unclean|watchdog|panic|rk806)" /var/log/kern.log | tail -n 50; systemctl list-timers --all --no-pager | head -n 25; ls -l /var/crash /sys/fs/pstore; systemctl show drone-tracker apm-bridge drone-interceptor -p Id -p WatchdogUSec -p FailureAction -p StartLimitAction; ls -l /dev/watchdog*; ps -eo pid,comm,args | grep -E "[w]atchdog|[p]ython3 /home/hzhy"; sha256sum /home/hzhy/osd-gps-armed-status-20261016/board-comparison.py /home/hzhy/osd-gps-armed-status-20261016/acceptance_safety.py
+4db7521e3de31e0cd84f44bd888e463146a886ae12e9645c0e1f8e40941fed80  /home/hzhy/osd-gps-armed-status-20261016/board-comparison.py
+90998176265867cdbe4e93ea3513d85f45abe601e916918fbc3ba841ba9c378f  /home/hzhy/osd-gps-armed-status-20261016/acceptance_safety.py
