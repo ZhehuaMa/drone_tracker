@@ -141,3 +141,15 @@ ROS can load its middleware plugin after initial ELF resolution. A separate proc
 Identity version 2 distinguishes these repaired conditions from earlier raw-file/library identities. The freeze/comparison tools reject missing or legacy identity versions and missing actual node/worker dependency fingerprints. Previous failed qualification evidence is preserved as originally measured and is not rewritten to the new format. These changes require a new comparison group for future measurements.
 
 Concurrent workload identity uses userspace process names and formal service states. Kernel threads are identified from the kernel's `PF_KTHREAD` process flag and retained as separate observations, because their worker names can change without an application workload change. Controller ancestry and known scripts/executables in the private test tree are excluded from the workload group. Unrelated Python, shell and other userspace processes remain conditions; adding one makes the groups differ. Full process metadata remains in `workload_observation` for review. This is a process-name workload check, not exhaustive CPU or I/O profiling.
+
+## Pending replacement and historical comparisons
+
+The current detector admits the newest valid input into its one unstarted slot, while
+leaving the executing request and unread-result protection intact. Each replacement
+emits a supersession link. The tracker retains value-only source boxes, times and round
+identity with every outstanding request, independently of image-history retention.
+Raw `SourceContext` records separate source comparison availability from recovery pixels.
+See the interpretation-2 payload contract in `diagnostic_contract.md` and the metric-2
+extensions in `metrics.md`. Historical logs keep their old metric meanings; fields they
+do not contain remain unavailable. Compare both full/core windows and retain rejected
+attempts, the original supply budget and 120-second total deadline.

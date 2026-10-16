@@ -26,3 +26,37 @@ All event numeric fields (`flags`, producer/run/round/frame/request/update ident
 Each binary storage segment must have valid headers, versions, endian marker and CRC, an actual synchronized commit and a normal end record. No partial tail, duplicate identity, producer sequence gap, `Gap`, `AbnormalEnd`, health error/drop count or unknown tail is qualified. The run and round lifecycle must end normally; required call pairs and request terminal paths must reconcile. `Health.values[0..6]` contains generated/written/synchronized positions, dropped count, oldest unsynchronized age, sync duration and error. An unknown final synchronization state rejects a formal comparison. Raw storage is retained as `events.bin` and its original segments; completion records hash all evidence files.
 
 A missing dependency, unsupported inference-observation field, missing actual publication boundary or unavailable complete raw event export prevents formal measurement. A healthy run with no catch-up events has count zero and duration `null` with reason `no_event`; that is not a diagnostic gap.
+
+## Source-context interpretation 2
+
+The binary record encoding remains version 1 and 256 bytes. Existing event and reason
+numbers are unchanged. `RunStart.values[6] = 2` advertises the append-only interpretation.
+An absent marker means new availability/disposition counts are unavailable, even when
+an old `HistoryLookup/HistoryMiss` remains a valid image-history miss.
+
+`RequestCancel/Superseded` terminates an accepted, unstarted request.
+`request_id` is the cancelled request and `values[0]` is the accepted successor.
+The source frame/update and capture identities still describe the cancelled request.
+It adds no execution, inference, or normal no-target result. Cleanup cancellations
+retain `Cleaning`. Missing terminal evidence still rejects qualification. A superseded
+identity must never execute and must have exactly one supersession record.
+
+`SourceContext` uses the result's request, source frame and source update identities.
+`frame_time_us` is original source capture time; `FrameTimeKnown` marks availability.
+`box` is the clipped source tracker observation (`BoxValid`), and `other_box` is its
+clipped prediction (`OtherBoxValid`). `values[0]` reports source-image availability;
+`values[1]` is the business-owned round generation; `values[2]` is the watchdog after
+its unchanged result-read reset. `iou` is measurable only with `BoxValid`.
+`None` means a usable overlap basis, `ContextUnavailable` means no source tracker
+observation, and `RecoveryUnavailable` records a required recovery with missing pixels.
+The latter is a separate disposition, never an initialization attempt or success.
+The ordinary `Decision` retains detection/source operands, overlap thresholds, and
+before/after unconfirmed and jump counters. `JumpComparison` kinds 2/3 use only source
+prediction/tracker operands; no current or previous display fallback remains.
+
+Accepted `RequestDecision` includes the original capture time with `FrameTimeKnown`.
+`ResultRead` preserves it for capture-to-consumption measurements. Queue wait uses
+accepted-request and `DetectStart` monotonic timestamps. Detection execution uses
+`DetectStart` and `DetectEnd`. Exact request identities join these stages. Only a known
+fixture epoch mapping permits conversion between capture time and monotonic time.
+No age threshold or guarantee is introduced.

@@ -152,6 +152,16 @@ def qualify(events, inputs, clock, source, config, preparation=None):
     terminal={(e['run_id'],e['request_id']) for e in events if e['type'] in ('DetectEnd','RequestCancel')}
     for identity in accepted-terminal:
         reasons.append(f'accepted request has no terminal outcome {identity}')
+    # A superseded request never executes; its successor must be an accepted identity.
+    superseded = [e for e in events if e['type']=='RequestCancel' and e['reason']=='Superseded']
+    executed = {(e['run_id'], e['request_id']) for e in events if e['type']=='DetectStart'}
+    seen = set()
+    for event in superseded:
+        key = (event['run_id'], event['request_id'])
+        successor = (event['run_id'], event['values'][0])
+        if key in seen or key in executed or successor not in accepted or key == successor:
+            reasons.append(f'invalid supersession chain {key} -> {successor}')
+        seen.add(key)
     if len(inputs)!=1200 or [row['fixture_frame_id'] for row in inputs]!=list(range(1200)):
         reasons.append('input: fixture identity set incomplete')
     by_time={row['frame_time_us']:row['fixture_frame_id'] for row in inputs if row['supplied']}

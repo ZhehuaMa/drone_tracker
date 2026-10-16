@@ -204,7 +204,7 @@ def compare(baseline_path, candidate_paths, threshold_path=None):
             continue
         before = _aggregate([_sample(rows, key, index) for index, rows in enumerate(before_rows)])
         after = _aggregate([_sample(rows, key, index) for index, rows in enumerate(after_rows)])
-        row = {"metric": key, "unit": descriptor["unit"], "baseline": before, "candidate": after,
+        row = {"metric": key, "metric_version": descriptor["metric_version"], "unit": descriptor["unit"], "baseline": before, "candidate": after,
                "delta": None, "relative_percent": None, "percentage_points": None,
                "change": "unavailable", "reason": "one_or_more_rounds_unavailable"}
         if before["median"] is not None and after["median"] is not None:

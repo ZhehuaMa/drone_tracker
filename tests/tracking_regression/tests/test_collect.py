@@ -43,6 +43,21 @@ class CollectorTests(unittest.TestCase):
                 path.write_bytes(data)
                 self.assertTrue(collect.scan(path)[1])
 
+    def test_supersession_records_require_successor_and_no_execution(self):
+        def row(kind, request, reason='None', successor=0):
+            return dict(type=kind, reason=reason, request_id=request, run_id=7, round_id=1,
+                        producer_id=0, producer_seq=0, frame_time_us=0, update_id=0, flags=128, values=[successor,0,0,0,0,0,0])
+        rows = [row('RequestDecision', 1), row('RequestDecision', 2), row('RequestDecision', 3),
+                row('RequestCancel',1,'Superseded',2), row('RequestCancel',2,'Superseded',3),
+                row('RequestCancel',3,'Cleaning')]
+        def reasons(events):
+            return collect.qualify(events, [], {'m0_ns':0}, {}, {'max_supply_lateness_us':50000})
+        self.assertFalse(any('terminal outcome' in s or 'supersession' in s for s in reasons(rows)))
+        self.assertTrue(any('terminal outcome' in s for s in reasons(rows[:-1])))
+        self.assertTrue(any('supersession' in s for s in reasons(rows + [row('DetectStart',1)])))
+        bad = [dict(item) for item in rows]; bad[3]['values'] = [99]
+        self.assertTrue(any('supersession' in s for s in reasons(bad)))
+
     def test_pair_missing_end_keeps_unknown(self):
         events=[dict(run_id=7,round_id=1,update_id=3,type='UpdateStart')]
         self.assertIn('unpaired identity',collect.pairs(events,'UpdateStart','UpdateEnd')[0])

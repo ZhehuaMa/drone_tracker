@@ -47,7 +47,7 @@ Continuous camera preview uses the Control producer for the persistent frame dis
 
 带 `NanoCounter` 有效位的 `Decision` 专门记录跟踪跳变。`counts[0..3]` 分别是本次计数修改前值、增加后的值、全部分支执行后的值和容忍次数。没有跳变时第二列保持修改前值，最终值为 0。例如门槛 3 时连续两次跳变记录 0/1/1/3、1/2/2/3；下一次正常记录 2/2/0/3。若已有实际计数 5，下一次跳变并清框记录 5/6/0/3，不能根据阈值伪造为 2/3。记录里的前一框在清框之前取得。`values[1..2]` 保存 KF 与前一框各自跳变判断；KF 是预测运动的卡尔曼滤波器。`score` 和 `threshold` 在此类记录表示位置阈值和尺寸比阈值。
 
-`JumpComparison` 是追加的事件类型，旧类型编号不变。`values[0]` 为 1 时比较 NanoTrack 与当前 KF；为 2 时比较 YOLO 与历史 KF；为 3 时比较 YOLO 与历史跟踪框，缺历史跟踪框时使用前一显示框。`box` 为实际参考框，`other_box` 为本次框；`BoxValid` 为假表示没有可用参考框，原算法采用默认跳变判断。YOLO 比较框已经按图像边界裁剪。`counts[0]` 保存原比较结果，`score` 保存位置阈值，`threshold` 保存尺寸比阈值。所有依据沿同一 `update_id`、`request_id` 和来源身份关联，不重新计算算法结果。
+`JumpComparison` 是追加的事件类型，旧类型编号不变。`values[0]` 为 1 时比较 NanoTrack 与当前 KF；为 2 时比较 YOLO 与历史 KF；为 3 时比较 YOLO 与来源帧跟踪框；缺失时保持无效，不替换为当前或前一显示框。`box` 为实际参考框，`other_box` 为本次框；`BoxValid` 为假表示没有可用参考框，原算法采用默认跳变判断。YOLO 比较框已经按图像边界裁剪。`counts[0]` 保存原比较结果，`score` 保存位置阈值，`threshold` 保存尺寸比阈值。所有依据沿同一 `update_id`、`request_id` 和来源身份关联，不重新计算算法结果。
 
 每次初始化有起止及失败阶段。底层失败事件的 `values[1]` 为错误域：1 是 `PreprocessError`（准备模型输入失败），2 是 `ModelError`（模型执行失败）。`values[2]` 为对应枚举数值，仅 `ErrorCodeKnown` 有效位存在时可解释。预处理错误 6 是输入缓存占用，7 是平台准备失败；模型错误 2 是契约不匹配，5 是执行失败。输入无效、异常或缺少可用底层码时错误域/码未知，不用 0 冒充成功。旧日志无该有效位一律未知。JSONL 输出 `error_code_known`，未知域/码为 `null`；CSV 对应列为空。只保存已有数值，不构造额外错误文本。NanoTrack 第一层失败阶段值为 1 输入、2 模板准备、3 模板推理返回失败、4 模板推理异常。每个 `CatchupStep` 保留来源、帧身份、返回标志、框、分数及耗时。`CatchupEnd.counts[0..2]` 为尝试、成功、失败数量。例如 24 步中 2 步失败，原规则仍可整体成功；汇总应为 24/22/2，而不能声称全部步骤成功。
 

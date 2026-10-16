@@ -10,7 +10,10 @@
   ],
   "properties": {
     "metric_version": {
-      "const": 1
+      "enum": [
+        1,
+        2
+      ]
     },
     "sample_count": {
       "type": "integer"
@@ -20,7 +23,8 @@
         "available",
         "no_event",
         "incomplete",
-        "not_applicable"
+        "not_applicable",
+        "unavailable"
       ]
     }
   }

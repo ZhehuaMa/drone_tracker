@@ -145,3 +145,51 @@ SHA-256 是文件内容校验值。系统 SHALL 保存源录像、逐帧日志�
 #### Scenario: 尚未完成的超时运行
 - **WHEN** 单次运行达到总截止时间仍未完成
 - **THEN** 控制器结束隔离测试实例并保存不完整原因，该轮不进入正式基线；不得扩大截止时间继续等候
+
+### Requirement: Superseded requests reconcile without invented inference
+
+被替换请求是已接受但执行前被更新输入取代的请求。回归收集 SHALL 保留其取消原因及后继请求身份。替换次数 SHALL 与拒绝、执行、正常无目标检测及清理取消分别计数。
+
+#### Scenario: Pending request replaced twice
+- **WHEN** A 正在执行，已接受的 B 被 C 替换，C 又被 D 替换
+- **THEN** B 和 C 各有一个被替换终态，D 保留其接受身份，B 和 C 均不增加推理次数或无目标次数
+
+#### Scenario: Cancellation record missing
+- **WHEN** B 已接受但从未执行，且既没有替换终态，也没有清理取消终态记录
+- **THEN** 该轮仍为不完整，并被排除在正式比较之外
+
+### Requirement: Comparison metadata and recovery pixels have separate availability
+
+来源比较元数据包含用于比较的来源身份与框；恢复像素是重新初始化所需的来源图像。报告 SHALL 区分来源比较元数据不可用和来源图像已淘汰。报告 SHALL 保留与结果关联的比较依据、实际重叠度、恢复资格及未确认计数变化。
+
+#### Scenario: Image miss with usable metadata
+- **WHEN** 请求 62 读取来源帧 744 时，历史图像已推进至帧 748–777，且来源元数据给出的交并比为 0.584
+- **THEN** 报告保留历史图像未命中，标记元数据可用，记录重叠度 0.584；除非实际执行初始化且失败，否则不将该事件标为初始化失败
+
+#### Scenario: Missing comparison does not mean no target
+- **WHEN** 正检测结果因必要元数据不可用而不能比较
+- **THEN** 报告记录检测到了目标以及比较不可用，不将其记为已完成的无目标检测或测得的零重叠
+
+### Requirement: Age evidence preserves original time and statistical boundaries
+
+报告 SHALL 在对应时间戳已知时，分别统计排队等待、检测执行及来源采集到结果消费的年龄。无法确定的时间关系 SHALL 保持未知。年龄证据 MUST NOT 暗示存在按结果年龄拒绝的策略。
+
+#### Scenario: Long queue followed by short detection
+- **WHEN** 请求排队约 497 ms，随后执行约 73 ms
+- **THEN** 报告分别保留两个时间区间，并在计算总年龄时计入结果消费前的延迟
+
+### Requirement: Version comparisons preserve measurement compatibility
+
+正式比较 SHALL 标明请求处置及元数据可用性指标的定义。缺少新字段的历史日志 SHALL 将该字段报告为不可用。除非明确变更指标版本并声明口径变化，既有指标 SHALL 保留其定义。
+
+#### Scenario: Reference predates metadata availability records
+- **WHEN** 参考日志记录了历史图像未命中，但没有独立元数据可用性字段
+- **THEN** 新字段在参考版本中为不可用，既有可比较指标仍可独立使用，且不伪造元数据成功次数
+
+### Requirement: Controlled evaluation includes costs of the new arbitration
+
+评估 SHALL 保留固定用例、模型、参数、具体板卡、Runtime、驱动及合格轮次规则。报告 SHALL 包含输出连续性、发布间隔、恢复工作量、请求延迟、替换次数及进程内存观测。无人工标注的录像 MUST NOT 用于证明跟踪准确率或真实丢失识别延迟。
+
+#### Scenario: More valid output with unchanged watchdog
+- **WHEN** 候选版本有效框比例更高，但仍持续收到会将既有看门狗清零的不可用结果
+- **THEN** 报告同时说明这两项现象，不宣称确认年龄有上限，也不宣称跟踪正确性已获证明

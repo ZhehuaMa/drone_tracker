@@ -74,6 +74,39 @@ class ComparisonTests(unittest.TestCase):
     def candidates(self, values=(240, 250, 270), **fields):
         return [self.run_fixture(f"candidate-{index}", value, **fields) for index, value in enumerate(values)]
 
+    def test_historical_extension_absence_keeps_old_metrics_comparable(self):
+        refs = [self.run_fixture(f"reference-{i}", 10) for i in range(3)]
+        candidates = self.candidates((5, 5, 5))
+        for path in refs + candidates:
+            data = baseline.read_json(path / "metrics.json")
+            for values in data["windows"].values():
+                values["request_superseded_count"] = {
+                    **descriptor(None if path in refs else 4, "count"),
+                    "metric_version": 2, "window": values["max_no_publication_gap_ms"]["window"],
+                    "availability": "unavailable" if path in refs else "available",
+                    "reason": "historical_field_absent" if path in refs else None}
+                values["source_capture_to_consumption_ms"] = {
+                    **descriptor(None), "metric_version": 2,
+                    "window": values["max_no_publication_gap_ms"]["window"],
+                    "availability": "incomplete", "reason": "unknown_sample", "statistics": None}
+            (path / "metrics.json").write_text(json.dumps(data))
+            self.rehash(path)
+        frozen = self.root / "extended-baseline"
+        baseline.freeze(refs, frozen)
+        report = compare.compare(frozen, candidates)
+        self.assertEqual(report["status"], "comparable")
+        rows = {row["metric"]: row for row in report["metrics"]}
+        self.assertEqual(rows["full.max_no_publication_gap_ms"]["delta"], -5)
+        self.assertIsNone(rows["full.request_superseded_count"]["delta"])
+        self.assertIsNone(rows["full.request_superseded_count"]["baseline"]["median"])
+        self.assertEqual(rows["full.request_superseded_count"]["candidate"]["median"], 4)
+        self.assertEqual(rows["full.request_superseded_count"]["metric_version"], 2)
+        data = baseline.read_json(candidates[0] / "metrics.json")
+        data["windows"]["full"]["max_no_publication_gap_ms"]["availability"] = "incomplete"
+        (candidates[0] / "metrics.json").write_text(json.dumps(data)); self.rehash(candidates[0])
+        with self.assertRaisesRegex(ValueError, "incomplete"):
+            baseline.load_run(candidates[0])
+
     def test_numeric_examples_and_even_median(self):
         result = compare.compare_values([380, 400, 420], [240, 250, 270])
         self.assertEqual(result["delta"], -150)

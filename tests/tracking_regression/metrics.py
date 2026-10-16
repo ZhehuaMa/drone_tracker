@@ -13,6 +13,7 @@ import sys
 
 SCHEMA_VERSION = 1
 METRIC_VERSION = 1
+ARBITRATION_METRIC_VERSION = 2
 WINDOWS = {"full": (0, 20_000_000), "core": (13_500_000, 17_500_000)}
 TYPE_NAMES = (
     "RunStart", "RunEnd", "RoundStart", "RoundEnd", "Capture", "FrameSkip",
@@ -21,7 +22,7 @@ TYPE_NAMES = (
     "DetectStage", "DetectEnd", "ResultRead", "ResultOverwrite", "RequestCancel",
     "Decision", "InitializeStart", "InitializeEnd", "CatchupStep", "CatchupEnd",
     "Output", "PublishStart", "PublishEnd", "PublishSkipped", "Timing", "Gap",
-    "AbnormalEnd", "ClockRelation", "Health", "JumpComparison",
+    "AbnormalEnd", "ClockRelation", "Health", "JumpComparison", "SourceContext",
 )
 TYPE_ZH = (
     "运行开始", "运行结束", "轮次开始", "轮次结束", "采集", "节点跳过",
@@ -29,7 +30,7 @@ TYPE_ZH = (
     "未投递", "请求决策", "检测开始", "检测阶段", "检测结束", "结果读取",
     "结果覆盖", "请求取消", "仲裁决策", "初始化开始", "初始化结束", "补跟踪步骤",
     "补跟踪汇总", "输出", "发布开始", "发布结束", "跳过发布", "阶段耗时",
-    "诊断缺口", "异常结束", "时钟对应", "健康", "跳变比较",
+    "诊断缺口", "异常结束", "时钟对应", "健康", "跳变比较", "SourceContext",
 )
 REASON_NAMES = (
     "None", "Unknown", "InvalidInput", "RepeatedTime", "Stopped", "Cleaning",
@@ -38,7 +39,7 @@ REASON_NAMES = (
     "YoloJump", "NanoJump", "NoResultTimeout", "HistoryMiss", "InitFailed",
     "ImagePrepareFailed", "InferenceException", "PublishException", "NotConsumed",
     "BufferFull", "StorageError", "SyncError", "SpaceProtection", "Incomplete",
-    "NanoUpdateFailed",
+    "NanoUpdateFailed", "Superseded", "ContextUnavailable", "RecoveryUnavailable", "PreviousRound",
 )
 REASON_ZH = (
     "无", "未知", "输入无效", "时间重复或倒退", "已停止", "正在清理", "待检测槽占用",
@@ -46,7 +47,7 @@ REASON_ZH = (
     "队列满", "取最新帧跳过", "无目标", "低IoU", "检测跳变", "跟踪跳变",
     "没有新结果超限", "缓存未命中", "初始化失败", "图像准备失败", "推理异常",
     "发布异常", "输入未消费", "记录缓冲满", "写入失败", "同步失败", "空间保护",
-    "不完整", "跟踪更新失败",
+    "不完整", "跟踪更新失败", "Superseded", "ContextUnavailable", "RecoveryUnavailable", "PreviousRound",
 )
 CLEAR_REASONS = {"NoTarget", "LowIou", "YoloJump", "NanoJump", "NoResultTimeout", "NanoUpdateFailed"}
 
@@ -393,6 +394,44 @@ def compute(events, inputs, clock, complete=True):
                 chosen = [e for e in chosen if identity(e, "request_id") in successful_requests]
             ids = sorted({identity(e, "request_id") for e in chosen})
             count(label, len(ids), identities=ids)
+        # Extensions retain v1 formulas above; a capability marker distinguishes old logs from a real zero.
+        capability = any(e["_type"] == "RunStart" and _array(e, "values", 6) >= 2 for e in normalized)
+        for label, predicate in (
+            ("request_superseded_count", lambda e: e["_type"] == "RequestCancel" and e["_reason"] == "Superseded"),
+            ("request_cleanup_cancelled_count", lambda e: e["_type"] == "RequestCancel" and e["_reason"] == "Cleaning"),
+            ("source_metadata_available_count", lambda e: e["_type"] == "SourceContext" and e["_reason"] == "None"),
+            ("source_metadata_unavailable_count", lambda e: e["_type"] == "SourceContext" and e["_reason"] == "ContextUnavailable"),
+            ("recovery_unavailable_count", lambda e: e["_type"] == "SourceContext" and e["_reason"] == "RecoveryUnavailable"),
+        ):
+            chosen = [e for e in normalized if inside(e) and predicate(e)]
+            descriptor = _descriptor(window, "count", len(chosen), record_complete,
+                                     value=len(chosen), samples=[evidence(e) for e in chosen])
+            descriptor["metric_version"] = ARBITRATION_METRIC_VERSION
+            if not capability:
+                descriptor.update(availability="unavailable", reason="historical_field_absent", value=None)
+            metrics[label] = descriptor
+        durations("detection_execution_ms", [
+            {"start": evidence(begin), "end": evidence(end) if end else None,
+             "value_ms": (end["mono_ns"] - begin["mono_ns"]) / 1e6 if end else None}
+            for begin, end in detects if begin and inside(begin)])
+        metrics["detection_execution_ms"]["metric_version"] = ARBITRATION_METRIC_VERSION
+        accepted_by_id = {identity(e, "request_id"): e for e in normalized
+                          if e["_type"] == "RequestDecision" and e.get("flags", 0) & 128}
+        for label, kind in (("request_queue_wait_ms", "DetectStart"), ("source_capture_to_consumption_ms", "ResultRead")):
+            samples = []
+            for event in normalized:
+                if event["_type"] != kind or not inside(event):
+                    continue
+                accepted = accepted_by_id.get(identity(event, "request_id"))
+                value = None
+                if kind == "DetectStart" and accepted:
+                    value = (event["mono_ns"] - accepted["mono_ns"]) / 1e6
+                elif event.get("flags", 0) & 4 and event.get("frame_time_us") in input_by_time:
+                    planned = m0 + (event["frame_time_us"] - e0) * 1000
+                    value = (event["mono_ns"] - planned) / 1e6
+                samples.append({"event": evidence(event), "value_ms": value})
+            durations(label, samples)
+            metrics[label]["metric_version"] = ARBITRATION_METRIC_VERSION
         rejected = [e for e in normalized if e["_type"] == "RequestDecision" and inside(e) and not e.get("flags", 0) & 128]
         rejection_reasons = defaultdict(set)
         for event in rejected:

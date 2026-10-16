@@ -56,8 +56,9 @@ bool Client::prepare(Mode mode, const std::string &endpoint, std::uint64_t run_i
     recorder_ = std::make_unique<Recorder>(*region_, notification_, mode);
     active.store(recorder_.get(), std::memory_order_release);
     const bool connected{connectConsumer()};
-    recorder_->submit(Producer::Control,
-                      event(Type::RunStart, connected ? Reason::None : Reason::Incomplete, !connected));
+    auto started{event(Type::RunStart, connected ? Reason::None : Reason::Incomplete, !connected)};
+    started.values[6] = 2; // Append-only source-context and request-disposition interpretation.
+    recorder_->submit(Producer::Control, started);
     return connected;
 }
 bool Client::connectConsumer() noexcept {

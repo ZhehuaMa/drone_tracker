@@ -98,6 +98,13 @@ def field_differences(left, right, prefix="comparison_group"):
     return []
 
 
+ARBITRATION_METRICS = frozenset({
+    "request_superseded_count", "request_cleanup_cancelled_count", "source_metadata_available_count",
+    "source_metadata_unavailable_count", "recovery_unavailable_count", "request_queue_wait_ms",
+    "detection_execution_ms", "source_capture_to_consumption_ms",
+})
+
+
 def load_run(path):
     """Validate integrity before reading any value into a formal set."""
     run = Path(path).resolve(strict=True)
@@ -157,14 +164,22 @@ def load_run(path):
             fields = {"metric_version", "unit", "window", "sample_count", "availability", "reason"}
             if not isinstance(descriptor, dict) or fields - descriptor.keys():
                 raise ValueError(f"{run}/metrics.json:{window_name}.{name}: incomplete descriptor")
-            if descriptor["availability"] not in ("available", "no_event", "not_applicable"):
+            extension = name in ARBITRATION_METRICS and descriptor["metric_version"] == 2
+            historical_absence = (extension and descriptor["availability"] == "unavailable"
+                                  and descriptor["reason"] == "historical_field_absent")
+            unknown_source_time = (extension and name == "source_capture_to_consumption_ms"
+                                   and descriptor["availability"] == "incomplete"
+                                   and descriptor["reason"] == "unknown_sample")
+            if descriptor["availability"] not in ("available", "no_event", "not_applicable") \
+                    and not historical_absence and not unknown_source_time:
                 raise ValueError(f"{run}/metrics.json:{window_name}.{name}: {descriptor['availability']} ({descriptor['reason']})")
             expected_bounds = (0, 20_000_000) if window_name == "full" else (13_500_000, 17_500_000)
             window = descriptor.get("window", {})
             if (window.get("start_us"), window.get("end_us")) != expected_bounds:
                 raise ValueError(f"{run}/metrics.json:{window_name}.{name}.window: expected {expected_bounds}")
-            if descriptor["metric_version"] != 1:
-                raise ValueError(f"{run}/metrics.json:{window_name}.{name}.metric_version: expected 1")
+            expected_version = 2 if name in ARBITRATION_METRICS else 1
+            if descriptor["metric_version"] != expected_version:
+                raise ValueError(f"{run}/metrics.json:{window_name}.{name}.metric_version: expected {expected_version}")
             if (not isinstance(descriptor["sample_count"], int) or isinstance(descriptor["sample_count"], bool)
                     or descriptor["sample_count"] < 0):
                 raise ValueError(f"{run}/metrics.json:{window_name}.{name}.sample_count: nonnegative integer required")

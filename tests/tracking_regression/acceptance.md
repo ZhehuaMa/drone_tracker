@@ -88,3 +88,20 @@ The earlier five streaming failures remain unchanged under `board-evidence/`, wi
 Large recordings, models, exports and raw measurements remain outside Git in ignored artifact directories. The board evidence root is `/home/hzhy/tracking-pd2-20261013`; the local copy and its manifest are under `predecode-board-final-20261013/`. Exact measured sources/binaries are preserved separately from later delivery-document edits.
 
 The checks establish this regression tool's acceptance on the specified board and fixture. They do not establish an optimization benefit, annotated tracking accuracy, real-flight behavior, full camera/HDMI/recording workload acceptance, Jetson compatibility or the imported diagnostic change's separate off/basic overhead threshold. No applicable production-board task remains incomplete in this change; independent verification will assess the delivered implementation and evidence.
+
+## Missing context and unchanged watchdog
+
+A delayed positive result with a source tracker observation can confirm agreement even
+when its pixels have left the bounded image history. Recovery still requires the source
+image. Missing comparison context leaves the unconfirmed-result counter unchanged.
+A genuine low-overlap result still increments it. Repeated jumps cannot claim successful
+acceptance when recovery pixels are unavailable. A prediction without a tracker observation
+cannot establish overlap agreement.
+
+The existing watchdog resets whenever any result is read during Tracking, including an
+uncomparable positive result and a completed no-target result. With defaults, 60 no-result
+updates do not time out; 61 do. Timeout clears initialization/boxes, resets the counter,
+and resumes Detecting on the next frame without adding TargetLost. Detecting has no
+watchdog. Faster updates shorten this timeout in seconds. Repeated uncomparable results
+can prevent timeout. There is no age cutoff and no freshness guarantee. The fixed footage
+has no target annotations, so output continuity cannot establish tracking accuracy.

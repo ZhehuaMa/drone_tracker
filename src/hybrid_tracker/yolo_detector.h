@@ -32,6 +32,17 @@ struct Detection
     }
 };
 
+/** @brief Value-only comparison context. No frame or image ownership is retained.
+ * A submitted copy is immutable until consumption, overwrite, supersession or round cleanup.
+ * Tracker validity means a genuine observation of this source frame, never a held display box.
+ */
+struct SourceComparison {
+    std::uint64_t generation{}, frame_id{}, update_id{}, capture_time_us{};
+    int width{}, height{};
+    cv::Rect2f tracker_box{}, prediction_box{};
+    bool tracker_valid{}, prediction_valid{};
+};
+
 // 检测结果：单框 + 它所对应的帧号（异步检测延迟的关键——主循环据此找到
 // 历史帧做补帧初始化）
 struct YoloResult
@@ -42,6 +53,7 @@ struct YoloResult
     std::uint64_t request_id{}, source_update_id{};
     diagnostics::FrameIdentity source_identity{};
     diagnostics::Reason reason{};
+    SourceComparison source{};
 };
 
 class YoloV8Detector
@@ -63,9 +75,12 @@ public:
      * @return 如果成功提交检测，则为 true
      */
     bool request(const FrameRef& frame, uint64_t frame_id,
-                 const cv::Rect& roi = cv::Rect());
+                 const cv::Rect& roi = cv::Rect(), const SourceComparison &source = {});
 
-    /** @brief 工作线程是否还有未领取的请求（忙则跳过本帧的检测请求） */
+    /** @brief Report pending occupancy; this does not block replacement or describe execution.
+     * Valid input atomically replaces the one unstarted slot, never executing input.
+     * Unread results, cleanup and stop still block admission. Invalid input preserves the slot.
+     */
     bool isBusy() const;
 
     /** @brief 获取最新的检测结果（可能为空目标，信号本身表示检测已完成）
@@ -132,6 +147,7 @@ private:
         cv::Rect roi;
         std::uint64_t request_id{}, source_update_id{};
         diagnostics::FrameIdentity identity{};
+        SourceComparison source{};
     } m_next_request;
 
     void publishResult(const Request &request, bool has_target, const Detection &best, diagnostics::Reason reason);

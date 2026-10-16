@@ -25,6 +25,27 @@ def publication(milliseconds, update_id, valid=True, **fields):
 
 
 class MetricsTests(unittest.TestCase):
+    def test_source_context_and_supersession_extensions(self):
+        events = [event("RunStart", 0, values=[0,0,0,0,0,0,2]),
+                  event("RequestDecision", 1, request_id=1, flags=128),
+                  event("RequestDecision", 2, request_id=2, flags=128),
+                  event("RequestDecision", 3, request_id=3, flags=128),
+                  event("RequestCancel", 2.1, request_id=1, reason="Superseded", values=[2]),
+                  event("RequestCancel", 3.1, request_id=2, reason="Superseded", values=[3]),
+                  event("DetectStart", 500, request_id=3), event("DetectEnd", 573, request_id=3, flags=128|512),
+                  event("SourceContext", 574, request_id=3, flags=16, iou=.584, values=[0]),
+                  event("HistoryLookup", 574, request_id=3, reason="HistoryMiss")]
+        result = metrics.compute(events, [], CLOCK)["windows"]["full"]
+        self.assertEqual(result["request_superseded_count"]["value"], 2)
+        self.assertEqual(result["request_executed_count"]["value"], 1)
+        self.assertEqual(result["source_metadata_available_count"]["value"], 1)
+        self.assertEqual(result["successful_result_history_miss_count"]["value"], 1)
+        self.assertEqual(result["request_queue_wait_ms"]["statistics"]["max"], 497)
+        old = metrics.compute(events[1:], [], CLOCK)["windows"]["full"]
+        self.assertIsNone(old["source_metadata_available_count"]["value"])
+        self.assertEqual(old["source_metadata_available_count"]["availability"], "unavailable")
+        self.assertEqual(old["successful_result_history_miss_count"]["value"], 1)
+
     def test_quantiles_use_nearest_rank(self):
         stats = metrics.statistics(list(range(1, 21)))
         self.assertEqual(stats["mean"], 10.5)

@@ -14,7 +14,7 @@ const char *typeName(Type type) {
                                          "未投递",     "请求决策", "检测开始", "检测阶段",   "检测结束",   "结果读取",
                                          "结果覆盖",   "请求取消", "仲裁决策", "初始化开始", "初始化结束", "补跟踪步骤",
                                          "补跟踪汇总", "输出",     "发布开始", "发布结束",   "跳过发布",   "阶段耗时",
-                                         "诊断缺口",   "异常结束", "时钟对应", "健康", "跳变比较"};
+                                         "诊断缺口",   "异常结束", "时钟对应", "健康", "跳变比较", "SourceContext"};
     const auto index{static_cast<std::size_t>(type)};
     return index < std::size(names) ? names[index] : "未知事件";
 }
@@ -25,7 +25,7 @@ const char *reasonName(Reason reason) {
         "驱动序号缺口", "队列满",         "取最新帧跳过", "无目标",         "低IoU",        "检测跳变",
         "跟踪跳变",     "没有新结果超限", "缓存未命中",   "初始化失败",     "图像准备失败", "推理异常",
         "发布异常",     "输入未消费",     "记录缓冲满",   "写入失败",       "同步失败",     "空间保护",
-        "不完整", "跟踪更新失败"};
+        "不完整", "跟踪更新失败", "Superseded", "ContextUnavailable", "RecoveryUnavailable", "PreviousRound"};
     const auto index{static_cast<std::size_t>(reason)};
     return index < std::size(names) ? names[index] : "未知理由";
 }

@@ -137,3 +137,35 @@ Provide a separate versioned file when a performance decision is needed:
 Pass it with `--thresholds limits.json`. `lower` allows an increase up to the stated budget; `higher` allows a decrease up to that budget. Types are `absolute` (the metric's unit), `relative_percent` or `percentage_points` (ratios only). Every rule states whether its measurement is required. An unavailable required metric makes the decision `not_evaluated`. A zero-baseline relative threshold cannot be evaluated for a nonzero candidate. The entire rule file, its version and SHA-256 are copied into the comparison evidence; the comparator never modifies it based on results.
 
 The comparison CLI returns 2 for incomparable sets, 1 for failed or unevaluable explicit rules and 0 for a completed comparable report with no rules or passing rules. Reports are written in each case. Input/format errors and existing destinations fail without overwriting evidence.
+
+## Arbitration extensions (metric version 2)
+
+Established descriptors retain metric version 1 and their original formulas.
+`request_cancelled_count` still includes every cancellation. New descriptors use
+metric version 2 and do not change that total:
+
+- `request_superseded_count`: `RequestCancel/Superseded` records in the window.
+- `request_cleanup_cancelled_count`: `RequestCancel/Cleaning` records in the window.
+- `source_metadata_available_count`: `SourceContext/None` records in the window.
+- `source_metadata_unavailable_count`: `SourceContext/ContextUnavailable` records.
+- `recovery_unavailable_count`: `SourceContext/RecoveryUnavailable` records.
+- `request_queue_wait_ms`: `DetectStart.mono_ns - accepted RequestDecision.mono_ns`,
+  joined by exact request identity, attributed to execution start.
+- `detection_execution_ms`: `DetectEnd.mono_ns - DetectStart.mono_ns`, attributed
+  to execution start. This interval includes the whole existing search cascade.
+- `source_capture_to_consumption_ms`: result-read time minus original capture time
+  mapped through the frozen input clock, attributed to consumption.
+
+All five new counts require `RunStart.values[6] = 2`. Without it their values are
+null with `availability=unavailable` and reason `historical_field_absent`. This prevents
+invented zeros for historical logs. Unknown capture/clock relationships retain unknown
+samples. Every new duration retains the raw timestamps and exact identities alongside
+its sample. Superseded requests have no execution or normal no-target samples.
+Image-history misses retain their established meaning independently of source metadata.
+
+Baseline freezing and comparison accept the explicitly named metric-2 extensions.
+A historical-field absence does not invalidate an otherwise qualified run. A metric-2
+capture-to-consumption duration with unknown source timestamps retains unknown samples
+and is excluded from numeric aggregation. This exception applies only to that named new
+measure. Incomplete established metrics, unsupported metric versions, and incomplete raw
+records still prevent formal comparison. Reports retain each descriptor's metric version.

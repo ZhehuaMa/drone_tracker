@@ -5,6 +5,8 @@
 #include "preprocess/reusable_input.h"
 #include "preprocess/target_mean.h"
 
+#include <algorithm>
+#include <mutex>
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
@@ -38,13 +40,13 @@ class MockView final : public FrameReadView {
 };
 class MockFrame final : public Frame {
   public:
-    MockFrame(int value = 20, FramePixelFormat format = FramePixelFormat::Gray8, bool map_failure = false)
-        : image_{80, 100, CV_8UC1, cv::Scalar{static_cast<double>(value)}}, format_{format}, map_failure_{map_failure} {
+    MockFrame(int value = 20, FramePixelFormat format = FramePixelFormat::Gray8, bool map_failure = false, std::uint64_t timestamp = 123)
+        : image_{80, 100, CV_8UC1, cv::Scalar{static_cast<double>(value)}}, format_{format}, map_failure_{map_failure}, timestamp_{timestamp} {
     }
     int width() const noexcept override { return image_.cols; }
     int height() const noexcept override { return image_.rows; }
     FramePixelFormat pixelFormat() const noexcept override { return format_; }
-    std::uint64_t timestampUs() const noexcept override { return 123; }
+    std::uint64_t timestampUs() const noexcept override { return timestamp_; }
     std::unique_ptr<FrameReadView> mapRead() const override {
         if (map_failure_) {
             return {};
@@ -56,6 +58,7 @@ class MockFrame final : public Frame {
     cv::Mat image_;
     FramePixelFormat format_;
     bool map_failure_;
+    std::uint64_t timestamp_;
 };
 class MockInput final : public PreparedModelInput {
   public:
@@ -90,6 +93,8 @@ struct SessionTrace {
     float hit_score{0.9f};
     bool fail_prepare{false};
     std::vector<cv::Rect> regions{};
+    std::vector<int> source_pixels{};
+    std::vector<std::uint64_t> source_times{};
 };
 class MockSession final : public YoloFrameSession {
   public:
@@ -128,6 +133,11 @@ class MockYoloPreprocessor final : public YoloPreprocessor {
         using Result = PreprocessResult<std::unique_ptr<YoloFrameSession>>;
         if (trace_->before_begin) { trace_->before_begin(); }
         ++trace_->begins;
+        if (frame) {
+            const auto view{frame->mapRead()};
+            trace_->source_pixels.push_back(view ? view->mat().at<std::uint8_t>(0, 0) : -1);
+            trace_->source_times.push_back(frame->timestampUs());
+        }
         if (trace_->fail_begin) { return Result::failure(PreprocessError::PlatformFailure, "begin failure"); }
         const auto error{validatePreprocessFrame(frame)};
         if (error != PreprocessError::None) {
@@ -163,11 +173,11 @@ class MockYoloCalls final : public model::YoloBackend {
         data[10] = 32;
         data[20] = 10;
         data[30] = 10;
-        data[(4 + trace_->target) * 10] = trace_->inferences == trace_->hit_call ? trace_->hit_score : 0.0f;
+        data[(4 + trace_->target) * 10] = (trace_->hit_call < 0 || trace_->inferences == trace_->hit_call) ? trace_->hit_score : 0.0f;
         data[40] = 0.99f; // 目标不是 argmax；不能丢弃目标分数。
         data[1] = 32; data[11] = 32; data[21] = 10; data[31] = 10;
         data[2] = 12; data[12] = 12; data[22] = 4; data[32] = 4;
-        data[(4 + trace_->target) * 10 + 2] = trace_->inferences == trace_->hit_call ? trace_->hit_score - 0.1f : 0.0f;
+        data[(4 + trace_->target) * 10 + 2] = (trace_->hit_call < 0 || trace_->inferences == trace_->hit_call) ? trace_->hit_score - 0.1f : 0.0f;
         data[41] = 1.0f; // 高度重叠但目标低分的其他类别，不能参与 NMS。
 
         return {{tensor, 1, 2}};
@@ -176,6 +186,92 @@ class MockYoloCalls final : public model::YoloBackend {
   private:
     std::shared_ptr<SessionTrace> trace_;
 };
+void checkPendingReplacement() {
+    using namespace std::chrono_literals;
+    std::promise<void> launch{};
+    auto gate{launch.get_future().share()};
+    auto trace{std::make_shared<SessionTrace>()}; trace->hit_call = 1;
+    YoloV8Detector detector{std::make_unique<MockYoloCalls>(trace),
+        std::make_unique<MockYoloPreprocessor>(trace), 0.5f, 0.5f, 2, 1.0f, 0.8f,
+        [gate](std::function<void()> work) { return std::thread{[gate, work] { gate.wait(); work(); }}; }};
+    require(detector.init(), "replacement init");
+    std::weak_ptr<const Frame> previous{};
+    SourceComparison source{};
+    for (std::uint64_t id{1}; id <= 200; ++id) {
+        source = {}; source.generation = 7; source.frame_id = id; source.update_id = id + 1000;
+        source.capture_time_us = id * 10000; source.width = 100; source.height = 80;
+        source.tracker_box = {static_cast<float>(id), 2, 10, 10}; source.tracker_valid = true;
+        auto frame{std::make_shared<MockFrame>(static_cast<int>(id), FramePixelFormat::Gray8, false, id * 10000)};
+        require(detector.request(frame, id, {static_cast<int>(id % 20) + 1, 2, 30, 40}, source), "pending not replaced");
+        require(previous.expired(), "superseded input retained pixels");
+        previous = frame;
+        require(!detector.request({}, 999), "invalid replacement accepted");
+    }
+    source.frame_id = 999; source.tracker_box = {};
+    launch.set_value();
+    YoloResult result{}; bool ready{};
+    const auto deadline{std::chrono::steady_clock::now() + 2s};
+    while (!(ready = detector.get_result(result)) && std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::yield();
+    }
+    detector.finishRound();
+    require(ready && result.frame_id == 200 && result.source.frame_id == 200
+                && result.source.update_id == 1200 && result.source.capture_time_us == 2000000
+                && result.source.tracker_box.x == 200 && result.source.generation == 7,
+            "replacement input/source snapshot mixed or mutable");
+    require(previous.expired(), "value-only result retained pixels after cleanup");
+    require(trace->begins == 1 && trace->source_pixels.front() == 200
+                && trace->source_times.front() == result.source.capture_time_us
+                && trace->regions.front() == cv::Rect(1, 2, 30, 40),
+            "superseded input executed or search region association changed");
+}
+
+void checkContinuousReplacementProgress() {
+    using namespace std::chrono_literals;
+    std::promise<void> launch{}, entered{};
+    auto gate{launch.get_future().share()};
+    auto trace{std::make_shared<SessionTrace>()}; trace->hit_call = -1;
+    std::once_flag first{};
+    trace->before_begin = [&] { std::call_once(first, [&] { entered.set_value(); }); };
+    YoloV8Detector detector{std::make_unique<MockYoloCalls>(trace),
+        std::make_unique<MockYoloPreprocessor>(trace), 0.5f, 0.5f, 2, 1.0f, 0.8f,
+        [gate](std::function<void()> work) { return std::thread{[gate, work] { gate.wait(); work(); }}; }};
+    require(detector.init(), "continuous replacement init");
+    std::atomic<bool> stop{};
+    std::atomic<std::uint64_t> offered{};
+    std::thread producer{[&] {
+        for (std::uint64_t id{1}; !stop.load(); ++id) {
+            SourceComparison source{};
+            source.generation = 7; source.frame_id = id; source.capture_time_us = id * 10000;
+            source.tracker_box = {static_cast<float>(id), 2, 10, 10}; source.tracker_valid = true;
+            auto frame{std::make_shared<MockFrame>(static_cast<int>(id % 200),
+                       FramePixelFormat::Gray8, false, source.capture_time_us)};
+            detector.request(frame, id, {static_cast<int>(id % 20) + 1, 2, 30, 40}, source);
+            offered.store(id);
+        }
+    }};
+    const auto deadline{std::chrono::steady_clock::now() + 2s};
+    while (offered.load() < 50 && std::chrono::steady_clock::now() < deadline) { std::this_thread::yield(); }
+    launch.set_value();
+    const bool progressed{entered.get_future().wait_for(2s) == std::future_status::ready};
+    stop = true; producer.join();
+    YoloResult result{}; bool ready{};
+    const auto result_deadline{std::chrono::steady_clock::now() + 2s};
+    while (!(ready = detector.get_result(result)) && std::chrono::steady_clock::now() < result_deadline) {
+        std::this_thread::yield();
+    }
+    detector.stop();
+    require(progressed && ready && offered >= 50, "worker waited for a quiet producer");
+    const auto found{std::find(trace->source_times.begin(), trace->source_times.end(), result.source.capture_time_us)};
+    require(found != trace->source_times.end() && result.frame_id == result.source.frame_id,
+            "picked result lost its actual input timestamp");
+    const auto index{static_cast<std::size_t>(std::distance(trace->source_times.begin(), found))};
+    require(trace->source_pixels[index] == static_cast<int>(result.frame_id % 200)
+                && trace->regions[index] == cv::Rect(static_cast<int>(result.frame_id % 20) + 1, 2, 30, 40)
+                && result.source.tracker_box.x == static_cast<float>(result.frame_id),
+            "pickup/replacement mixed pixels, ROI or source metadata");
+}
+
 void checkRoundCleanup() {
     using namespace std::chrono_literals;
     // 延迟整个工作线程，确定请求尚未执行时可以撤销。
@@ -387,6 +483,8 @@ void checkNano() {
 } // namespace
 
 int main() {
+    checkPendingReplacement();
+    checkContinuousReplacementProgress();
     checkRoundCleanup();
     const ModelInputContract contract{{1, 3, 64, 64}, TensorElementType::Float32, TensorLayout::Nchw, 1.0f / 255.0f};
     require(yoloInputSize(contract).value == cv::Size(64, 64), "Jetson 尺寸解析错误");

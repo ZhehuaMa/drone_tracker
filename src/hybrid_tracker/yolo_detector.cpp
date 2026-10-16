@@ -82,19 +82,27 @@ void YoloV8Detector::stop()
     diagnostics::current_producer = previous;
     m_cv_request.notify_one();
     if (m_worker_thread.joinable()) { m_worker_thread.join(); }
+    std::lock_guard<std::mutex> lock{m_mutex};
+    m_next_request = {}; m_new_request = false;
+    m_last_result = {}; m_result_ready = false;
 }
 
-bool YoloV8Detector::request(const FrameRef& frame, uint64_t frame_id, const cv::Rect& roi)
+bool YoloV8Detector::request(const FrameRef& frame, uint64_t frame_id, const cv::Rect& roi, const SourceComparison &source)
 {
     auto decision{diagnostics::event(diagnostics::Type::RequestDecision)};
     decision.request_id = ++m_request_counter;
     decision.source_update_id = diagnostics::current_update;
     decision.source_tracker_frame_id = frame_id;
-    if (frame) { decision.frame = frame->diagnosticIdentity(); }
+    if (frame) {
+        decision.frame = frame->diagnosticIdentity();
+        decision.frame_time_us = frame->timestampUs();
+        decision.flags |= diagnostics::FrameTimeKnown;
+    }
     if (validatePreprocessFrame(frame) != PreprocessError::None) {
         decision.reason = diagnostics::Reason::InvalidInput; diagnostics::emit(decision); return false;
     }
     bool accepted{};
+    auto superseded{diagnostics::event(diagnostics::Type::RequestCancel, diagnostics::Reason::Superseded)};
     {
         std::lock_guard<std::mutex> lock{m_mutex};
         decision.values[0] = m_executing; decision.values[1] = m_new_request;
@@ -102,14 +110,22 @@ bool YoloV8Detector::request(const FrameRef& frame, uint64_t frame_id, const cv:
         decision.values[4] = m_next_request.request_id; decision.values[5] = m_last_result.request_id;
         if (m_cleaning) { decision.reason = diagnostics::Reason::Cleaning; }
         else if (m_stop_requested) { decision.reason = diagnostics::Reason::Stopped; }
-        else if (m_new_request) { decision.reason = diagnostics::Reason::PendingOccupied; }
         else if (m_result_ready) { decision.reason = diagnostics::Reason::UnreadResult; }
         else {
-            m_next_request = {frame, frame_id, roi, decision.request_id, diagnostics::current_update, decision.frame};
+            if (m_new_request) {
+                superseded.request_id = m_next_request.request_id;
+                superseded.source_tracker_frame_id = m_next_request.frame_id;
+                superseded.source_update_id = m_next_request.source_update_id;
+                superseded.frame = m_next_request.identity;
+                superseded.values[0] = decision.request_id;
+            }
+            m_next_request = {frame, frame_id, roi, decision.request_id, diagnostics::current_update,
+                              decision.frame, source};
             m_new_request = true; m_result_ready = false;
             m_cv_request.notify_one(); accepted = true; decision.flags |= diagnostics::Complete;
         }
     }
+    if (superseded.request_id) { diagnostics::emit(superseded); }
     diagnostics::emit(decision);
     return accepted;
 }
@@ -141,10 +157,12 @@ bool YoloV8Detector::get_result(YoloResult& result)
     {
         std::lock_guard<std::mutex> lock{m_mutex};
         if (!m_result_ready || m_cleaning) { return false; }
-        result = m_last_result; m_result_ready = false;
+        result = m_last_result; m_last_result = {}; m_result_ready = false;
     }
     auto value{diagnostics::event(diagnostics::Type::ResultRead, result.reason)};
     value.request_id = result.request_id; value.source_update_id = result.source_update_id;
+    value.frame_time_us = result.source.capture_time_us;
+    if (result.source.capture_time_us) { value.flags |= diagnostics::FrameTimeKnown; }
     value.source_tracker_frame_id = result.frame_id; value.frame = result.source_identity;
     if (result.has_target) { value.flags |= diagnostics::HasTarget | diagnostics::BoxValid; }
     value.box = {result.best.box.x, result.best.box.y, result.best.box.width, result.best.box.height};
@@ -161,7 +179,7 @@ void YoloV8Detector::publishResult(const Request &request, bool has_target, cons
             overwritten.values[0] = request.request_id;
         }
         m_last_result = YoloResult{request.frame_id, has_target, best, request.request_id,
-            request.source_update_id, request.identity, reason};
+            request.source_update_id, request.identity, reason, request.source};
         m_result_ready = true;
     }
     if (overwritten.request_id) { diagnostics::emit(overwritten); }

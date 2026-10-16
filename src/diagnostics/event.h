@@ -44,7 +44,8 @@ enum class Type : std::uint16_t {
     AbnormalEnd,
     ClockRelation,
     Health,
-    JumpComparison
+    JumpComparison,
+    SourceContext
 };
 enum class Reason : std::uint16_t {
     None,
@@ -78,7 +79,11 @@ enum class Reason : std::uint16_t {
     SyncError,
     SpaceProtection,
     Incomplete,
-    NanoUpdateFailed
+    NanoUpdateFailed,
+    Superseded,
+    ContextUnavailable,
+    RecoveryUnavailable,
+    PreviousRound
 };
 enum Flag : std::uint32_t {
     CaptureKnown = 1U,
