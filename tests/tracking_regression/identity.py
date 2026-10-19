@@ -23,7 +23,7 @@ def workload_processes(repo, proc_root=Path('/proc'), controller_pid=None):
     """
     processes = {}
     test_root = Path(repo).resolve().parent
-    control_names = {'run_batch.py', 'attempt.py', 'run_one.sh', 'restore_guard.py',
+    control_names = {'run_suite.py', 'run_batch.py', 'attempt.py', 'run_one.sh', 'restore_guard.py',
                      'rk3576_tracking_regression', 'rk3576_diagnostic_worker'}
     for directory in proc_root.glob('[0-9]*'):
         try:
@@ -58,6 +58,20 @@ def digest(value):
                                     ensure_ascii=False, allow_nan=False).encode()).hexdigest()
 
 
+def supplier_cpu_condition(config, allowed, cpu_root=Path('/sys/devices/system/cpu')):
+    """Reject unavailable source placement before preparation or model loading."""
+    if 'supplier_cpu' not in config:
+        return {'mode': 'inherit'}
+    cpu = config['supplier_cpu']
+    if type(cpu) is not int or cpu < 0 or cpu not in allowed:
+        raise ValueError('supplier_cpu: nonnegative CPU in controller allowed set required')
+    directory = cpu_root / ('cpu' + str(cpu))
+    if not directory.is_dir() or ((directory / 'online').exists()
+                                  and (directory / 'online').read_text().strip() != '1'):
+        raise ValueError('supplier_cpu: requested CPU is not online')
+    return {'mode': 'single_cpu', 'cpu': cpu}
+
+
 def semantic_inputs(fixture, config):
     """Keep every algorithm value and input identity, excluding only known locators."""
     manifest = common.load(fixture / 'fixture.json')
@@ -90,6 +104,11 @@ def semantic_inputs(fixture, config):
     semantic_fixture['sources'].sort(key=digest)
     run_configuration = copy.deepcopy(config)
     run_configuration.pop('model_paths', None)
+    # The request's spelling and input/output paths are provenance. Only this case
+    # and its resolved numeric range participate in comparison conditions.
+    semantic_fixture.pop('selection_requested', None)
+    semantic_fixture.pop('selection_mode', None)
+    semantic_fixture.pop('tool_sha256', None)
     group = {'identity_version': IDENTITY_VERSION,
              'fixture': digest(semantic_fixture), 'attitude': manifest['files']['attitude.jsonl'],
              'models': {key: algorithm['models'][key]['sha256'] for key in MODEL_KEYS},

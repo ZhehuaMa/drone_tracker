@@ -1,6 +1,6 @@
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/regression-invalid-preflight")
-execute_process(COMMAND "${REGRESSION_PROGRAM}" missing-fixture missing-config
-    "${CMAKE_CURRENT_BINARY_DIR}/regression-invalid-preflight" unused-socket
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/missing-request.json" "{\"fixture\":\"missing-fixture\",\"config\":\"missing-config\",\"output\":\"${CMAKE_CURRENT_BINARY_DIR}/regression-invalid-preflight\",\"diagnostic_socket\":\"unused-socket\"}")
+execute_process(COMMAND "${REGRESSION_PROGRAM}" "${CMAKE_CURRENT_BINARY_DIR}/missing-request.json"
     RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
 if(result EQUAL 0 OR NOT error MATCHES "preflight certificate required")
     message(FATAL_ERROR "Unverified input was not rejected before model loading: ${result} ${output} ${error}")
@@ -19,8 +19,8 @@ function(reject_model_mapping name mapping expected)
     file(MAKE_DIRECTORY "${directory}")
     file(WRITE "${directory}/preflight-fixture.json" "{\"schema_version\":1,\"files_verified\":true,\"fixture_sha256\":\"${fixture_hash}\",\"files\":{\"algorithm.yaml\":\"${algorithm_hash}\"}}")
     file(WRITE "${directory}/config.json" "{\"model_paths\":${mapping}}")
-    execute_process(COMMAND "${REGRESSION_PROGRAM}" "${fixture}" "${directory}/config.json"
-        "${directory}" unused-socket RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
+    file(WRITE "${directory}/request.json" "{\"fixture\":\"${fixture}\",\"config\":\"${directory}/config.json\",\"output\":\"${directory}\",\"diagnostic_socket\":\"unused-socket\"}")
+    execute_process(COMMAND "${REGRESSION_PROGRAM}" "${directory}/request.json" RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
     if(result EQUAL 0 OR NOT error MATCHES "${expected}")
         message(FATAL_ERROR "${name}: model mapping not rejected before loading: ${result} ${output} ${error}")
     endif()

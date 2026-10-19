@@ -20,7 +20,7 @@ def select_frames(rows, start=common.START_US, end=common.END_US):
     chosen = []
     for index, source in enumerate(rows):
         pts = source['pts_us']
-        if not isinstance(pts, int) or pts <= previous:
+        if type(pts) is not int or pts < 0 or pts <= previous:
             raise ValueError(f'frame {index}: pts_us repeated or backwards')
         previous = pts
         zero = source['timestamp_us'] - pts
@@ -89,14 +89,12 @@ def extract_attitude(bag_files, epoch, start=common.START_US, end=common.END_US)
         if previous is not None and stamp <= previous:
             raise ValueError(f'gimbal header.stamp {stamp}: repeated or backwards')
         previous = stamp
-        if row['relative_us'] < 0:
+        if row['relative_us'] <= 0:
             initial = row
         elif row['relative_us'] < end - start:
             selected.append(row)
     if initial is None:
         raise ValueError('gimbal: initial attitude before boundary missing; cannot synthesize it')
-    if not selected:
-        raise ValueError('gimbal: no interval attitude; source epoch cannot be confirmed')
     return [initial] + selected
 
 
@@ -167,72 +165,136 @@ def raw_frames(path, width, height):
         process.wait()
 
 
-def prepare(root, output):
-    source = root / common.SOURCE
-    for name, digest in common.SOURCE_HASHES.items():
-        common.verify_hash(source / name, digest)
-    rows = common.lines(source / '000001.frames.jsonl') + common.lines(source / '000002.frames.jsonl')
-    chosen, epoch = select_frames(rows)
-    expected = (len(chosen), chosen[0]['source_frame_id'], chosen[-1]['source_frame_id'],
-                chosen[0]['relative_us'], chosen[-1]['relative_us'])
-    if expected != (1200, 3302, 4501, 15721, 19992663):
-        raise ValueError(f'fixed frame selection mismatch: {expected}')
-    bag_files = sorted((root / 'test-01-20260929-1513').glob('drone_rosbag_*/*.db3'))
-    if not bag_files:
-        raise ValueError('source bag: missing .db3')
-    attitude = extract_attitude(bag_files, epoch)
-    algorithm = freeze_algorithm(common.load(source / 'session.json'))
+def probe_source(video, rows):
+    """Prove frame correspondence and a tail boundary without using nominal frame rate."""
+    from configuration import seconds_us
+    probe = json.loads(subprocess.check_output([
+        'ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_frames', '-show_streams',
+        '-show_entries', 'frame=best_effort_timestamp,best_effort_timestamp_time,pkt_duration_time,width,height:stream=time_base,start_time,duration,width,height',
+        '-of', 'json', str(video)], text=True))
+    streams, frames = probe.get('streams', []), probe.get('frames', [])
+    if len(streams) != 1 or not frames or len(frames) != len(rows):
+        raise ValueError('source.video: decoded frame count does not match frame_logs')
+    stream = streams[0]
+    def us(value, field):
+        from decimal import Decimal
+        try:
+            return seconds_us(Decimal(value), field)
+        except (TypeError, ValueError, KeyError) as error:
+            raise ValueError(field + ': trustworthy source timing missing') from error
+    pts = [us(frame.get('best_effort_timestamp_time'), f'source.video.frames[{index}].pts')
+           for index, frame in enumerate(frames)]
+    shift = rows[0]['pts_us'] - pts[0]
+    recorded_ticks = any('pts_90k' in row for row in rows)
+    if recorded_ticks and stream.get('time_base') != '1/90000':
+        raise ValueError('source.video: recorded pts_90k requires time_base 1/90000')
+    for index, (row, frame) in enumerate(zip(rows, frames)):
+        if recorded_ticks:
+            # Recording uses av_rescale_q: integer microseconds are rounded to
+            # the nearest 90 kHz tick. Prove that exact conversion and the
+            # encoded tick, rather than treating quantization as missing time.
+            tick = row.get('pts_90k')
+            matches = (type(tick) is int and type(frame.get('best_effort_timestamp')) is int
+                       and tick == frame['best_effort_timestamp']
+                       and tick == (row['pts_us'] * 9 + 50) // 100)
+        else:
+            matches = abs(row['pts_us'] - pts[index] - shift) <= 1
+        if not matches:
+            raise ValueError(f'source.frame_logs[{index}].pts_us: does not match video timing')
+        if frame.get('width') != stream['width'] or frame.get('height') != stream['height']:
+            raise ValueError(f'source.video.frames[{index}]: changing dimensions')
+    start = us(stream.get('start_time'), 'source.video.start_time') + shift
+    duration = frames[-1].get('pkt_duration_time')
+    if duration is not None and us(duration, 'source.video.last_duration') > 0:
+        end = pts[-1] + shift + us(duration, 'source.video.last_duration')
+    elif stream.get('duration') is not None:
+        end = start + us(stream['duration'], 'source.video.duration')
+    else:
+        raise ValueError('source.video: trustworthy tail duration missing')
+    if start < 0 or start > rows[0]['pts_us'] or end <= rows[-1]['pts_us']:
+        raise ValueError('source.video: trustworthy timeline boundaries missing')
+    return {'source_start_us': start, 'source_end_us': end,
+            'width': stream['width'], 'height': stream['height'], 'source_frame_count': len(rows)}
+
+
+def resolve_selection(clip, metadata, rows):
+    requested = clip.get('frame_selection_interval')
+    start = requested['start_us'] if requested else metadata['source_start_us']
+    end = requested['end_us'] if requested else metadata['source_end_us']
+    if end == 'end':
+        end = metadata['source_end_us']
+    if start < metadata['source_start_us'] or end > metadata['source_end_us'] or start >= end:
+        raise ValueError('frame_selection_interval: outside verified source timeline')
+    chosen, epoch = select_frames(rows, start, end)
+    if not chosen:
+        raise ValueError('frame_selection_interval: empty selected frame set')
+    windows = {'full': {'start_us': 0, 'end_us': end - start}, **clip['analysis_windows']}
+    for name, window in windows.items():
+        if not 0 <= window['start_us'] < window['end_us'] <= end - start:
+            raise ValueError(f'analysis_windows.{name}: outside selected duration')
+    return start, end, chosen, epoch, windows
+
+
+def prepare(clip, output):
+    """Build a new variable-length fixture; no source is ever opened for writing."""
+    source = clip['source']
+    files = [Path(source['video']), *(Path(item) for item in source['frame_logs']),
+             *(Path(item) for item in source['attitude_bags']), Path(source['session'])]
+    sources = [{'path': str(file.resolve()), 'sha256': common.sha256(file)} for file in files]
+    rows = [row for file in source['frame_logs'] for row in common.lines(file)]
+    metadata = probe_source(source['video'], rows)
+    start, end, chosen, epoch, windows = resolve_selection(clip, metadata, rows)
+    attitude = extract_attitude([Path(item) for item in source['attitude_bags']], epoch, start, end)
+    algorithm = freeze_algorithm(common.load(source['session']))
+    for name in ('camera.fx', 'camera.fy'):
+        if not isinstance(algorithm['parameters'][name], (int, float)) or algorithm['parameters'][name] <= 0:
+            raise ValueError(f'algorithm.parameters.{name}: positive focal length required')
+    output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
-    clip = output / 'clip.mkv'
-    command = ['ffmpeg', '-v', 'error', '-f', 'rawvideo', '-pix_fmt', 'gray', '-s', '1920x1200',
-               '-r', '60', '-i', '-', '-an', '-c:v', 'ffv1', '-level', '3', '-threads', '8', '-slices', '24', '-coder', '0', '-context', '0', '-slicecrc', '0', '-pix_fmt', 'gray', str(clip)]
-    encoder = subprocess.Popen(command, stdin=subprocess.PIPE)
+    width, height = metadata['width'], metadata['height']
+    encoder = subprocess.Popen(['ffmpeg', '-v', 'error', '-f', 'rawvideo', '-pix_fmt', 'gray',
+        '-s', f'{width}x{height}', '-r', '60', '-i', '-', '-an', '-c:v', 'ffv1', '-level', '3',
+        '-threads', '8', '-pix_fmt', 'gray', str(output / 'clip.mkv')], stdin=subprocess.PIPE)
     try:
         selected = {row['source_frame_id']: row for row in chosen}
-        count = 0
-        for index, pixels in enumerate(raw_frames(source / 'test-01-20260929-1513.mp4', 1920, 1200)):
+        decoded_count = 0
+        for index, pixels in enumerate(raw_frames(source['video'], width, height)):
+            decoded_count += 1
             if index in selected:
                 selected[index]['pixel_sha256'] = hashlib.sha256(pixels).hexdigest()
                 encoder.stdin.write(pixels)
-                count += 1
         encoder.stdin.close()
-        if encoder.wait() != 0 or count != 1200:
-            raise ValueError(f'clip.mkv: encoder failure or missing frames ({count})')
+        if encoder.wait() != 0 or decoded_count != len(rows) or any('pixel_sha256' not in row for row in chosen):
+            raise ValueError('source.video: decode/encoder failure or frame count mismatch')
+        common.write_lines(output / 'frames.jsonl', chosen)
+        common.write_lines(output / 'attitude.jsonl', attitude)
+        common.write(output / 'algorithm.yaml', algorithm)
+        for item in sources:
+            common.verify_hash(item['path'], item['sha256'])
+        fixture = {'schema_version': 2, 'case_id': clip['case_id'], **metadata,
+                   'frame_count': len(chosen), 'pixel_format': 'gray8', 'duration_us': end - start,
+                   'start_us': start, 'end_us': end, 'source_epoch_us': epoch, 'sources': sources,
+                   'selection_mode': 'interval' if 'frame_selection_interval' in clip else 'whole',
+                   'selection_requested': clip.get('frame_selection_interval'), 'analysis_windows': windows,
+                   'time_mapping': 'source_header_us - source_epoch_us - start_us',
+                   'files': {name: common.sha256(output / name) for name in
+                             ('clip.mkv', 'frames.jsonl', 'attitude.jsonl', 'algorithm.yaml')},
+                   'tool_sha256': common.sha256(Path(__file__)),
+                   'ffmpeg_version': subprocess.check_output(['ffmpeg', '-version'], text=True).splitlines()[0]}
+        common.validate_record(fixture, 'fixture')
+        common.write(output / 'fixture.json', fixture)
+        from verify_fixture import verify
+        verify(output, Path('/'))
+        return fixture
+    except BaseException:
+        # A failed directory remains diagnostic evidence, never a runnable fixture.
+        (output / 'fixture.json').unlink(missing_ok=True)
+        raise
     finally:
         if encoder.poll() is None:
             encoder.kill()
         encoder.wait()
-    common.write_lines(output / 'frames.jsonl', chosen)
-    common.write_lines(output / 'attitude.jsonl', attitude)
-    # JSON is a strict YAML subset, also readable by yaml-cpp without PyYAML.
-    common.write(output / 'algorithm.yaml', algorithm)
-    sources = [{'path': str((source / name).relative_to(root)), 'sha256': digest}
-               for name, digest in common.SOURCE_HASHES.items()]
-    sources.append({'path': str((source / 'session.json').relative_to(root)), 'sha256': common.sha256(source / 'session.json')})
-    for file in bag_files:
-        sources.append({'path': str(file.relative_to(root)), 'sha256': common.sha256(file)})
-    fixture = {'schema_version': 1, 'case_id': common.CASE_ID, 'frame_count': 1200,
-               'width': 1920, 'height': 1200, 'pixel_format': 'gray8', 'duration_us': 20_000_000,
-               'start_us': common.START_US, 'end_us': common.END_US, 'source_epoch_us': epoch,
-               'time_mapping': 'source_header_us - source_epoch_us - start_us', 'sources': sources,
-               'files': {name: common.sha256(output / name) for name in ('clip.mkv', 'frames.jsonl', 'attitude.jsonl', 'algorithm.yaml')},
-               'tool_sha256': common.sha256(Path(__file__)),
-               'encoding':{'codec':'ffv1','level':3,'threads':8,'slices':24,'coder':0,'context':0,'slicecrc':0},
-               'ffmpeg_version': subprocess.check_output(['ffmpeg', '-version'], text=True).splitlines()[0]}
-    common.validate_record(fixture, 'fixture')
-    common.write(output / 'fixture.json', fixture)
-    from verify_fixture import verify
-    verify(output, root)
-    return fixture
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--input-root', type=Path, required=True)
-    parser.add_argument('--output', type=Path, required=True)
-    args = parser.parse_args()
-    try:
-        print(json.dumps(prepare(args.input_root, args.output), indent=2))
-    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
-        print(str(error), file=sys.stderr)
-        sys.exit(1)
+    sys.exit('Use run_suite.py CONFIG.yaml with operation: prepare; prepare_fixture.py is an internal component.')

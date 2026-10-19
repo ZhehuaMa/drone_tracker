@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import common
 
 CASE_ID = "wlcb-1513-loss-recovery"
 GROUP_FIELDS = (
@@ -111,11 +112,14 @@ def load_run(path):
     identity = read_json(run / "identity.json")
     completion = read_json(run / "completion.json")
     metrics = read_json(run / "metrics.json")
-    if identity.get("schema_version") != 1:
-        raise ValueError(f"{run}/identity.json:schema_version: expected 1")
-    if identity.get("case_id") != CASE_ID or identity.get("mode") != "realtime":
+    if identity.get('mode') != 'realtime':
+        raise ValueError(f'{run}/identity.json:case_id/mode: expected realtime')
+    common.validate_record(identity, 'identity')
+    version = identity['schema_version']
+    modern = version == 2
+    if (not modern and identity.get("case_id") != CASE_ID) or identity.get("mode") != "realtime":
         raise ValueError(f"{run}/identity.json:case_id/mode: expected {CASE_ID}/realtime")
-    if identity.get("duration_us") != 20_000_000:
+    if not modern and identity.get("duration_us") != 20_000_000:
         raise ValueError(f"{run}/identity.json:duration_us: expected 20000000")
     clock = identity.get("clock")
     if clock is None:
@@ -129,7 +133,7 @@ def load_run(path):
     for field in ("source_sha256", "binary_sha256"):
         if not isinstance(code.get(field), str) or not SHA256_PATTERN.fullmatch(code[field]):
             raise ValueError(f"{run}/identity.json:code.{field}: required SHA-256; commit alone is insufficient")
-    if (completion.get("schema_version") != 1 or completion.get("qualified") is not True
+    if (completion.get("schema_version") != version or completion.get("qualified") is not True
             or completion.get("normal_end") is not True or completion.get("reasons")):
         raise ValueError(f"{run}/completion.json: unqualified or incomplete run: {completion.get('reasons')}")
     files = completion.get("files")
@@ -151,11 +155,23 @@ def load_run(path):
         actual = sha256(file)
         if expected != actual:
             raise ValueError(f"{run}/{relative}: checksum mismatch: expected {expected}, actual {actual}")
-    if metrics.get("schema_version") != 1 or metrics.get("metric_version") != 1:
+    if metrics.get("schema_version") != version or metrics.get("metric_version") != 1:
         raise ValueError(f"{run}/metrics.json: schema_version/metric_version mismatch")
     if metrics.get("record_complete") is not True or metrics.get("issues"):
         raise ValueError(f"{run}/metrics.json: incomplete diagnostic evidence")
-    if set(metrics.get("windows", {})) != {"full", "core"}:
+    bounds = identity['input']['analysis_windows'] if modern else {
+        'full':{'start_us':0,'end_us':20_000_000}, 'core':{'start_us':13_500_000,'end_us':17_500_000}}
+    if modern:
+        data = identity['input']
+        if data['end_us'] - data['start_us'] != identity['duration_us'] or bounds.get('full') != {
+                'start_us':0,'end_us':identity['duration_us']}:
+            raise ValueError(f'{run}/identity.json: input duration/window mismatch')
+        if any(type(data[k]) is not int or data[k] <= 0 for k in ('frame_count','width','height')):
+            raise ValueError(f'{run}/identity.json: invalid input dimensions/count')
+        config = identity['comparison_group']['test_driver']['configuration']
+        if config.get('schema_version') != 3 or config.get('case_id') != identity['case_id'] or config.get('analysis_windows') != bounds:
+            raise ValueError(f'{run}/identity.json: comparison conditions differ from input')
+    if set(metrics.get("windows", {})) != set(bounds):
         raise ValueError(f"{run}/metrics.json:windows: full and core required")
     for window_name, descriptors in metrics["windows"].items():
         if not descriptors:
@@ -173,7 +189,9 @@ def load_run(path):
             if descriptor["availability"] not in ("available", "no_event", "not_applicable") \
                     and not historical_absence and not unknown_source_time:
                 raise ValueError(f"{run}/metrics.json:{window_name}.{name}: {descriptor['availability']} ({descriptor['reason']})")
-            expected_bounds = (0, 20_000_000) if window_name == "full" else (13_500_000, 17_500_000)
+            expected_bounds = (bounds[window_name]['start_us'], bounds[window_name]['end_us'])
+            if not 0 <= expected_bounds[0] < expected_bounds[1] <= identity['duration_us']:
+                raise ValueError(f'{run}/identity.json: invalid analysis window')
             window = descriptor.get("window", {})
             if (window.get("start_us"), window.get("end_us")) != expected_bounds:
                 raise ValueError(f"{run}/metrics.json:{window_name}.{name}.window: expected {expected_bounds}")
@@ -198,7 +216,10 @@ def validate_set(paths):
     if len({run["checksums"]["identity.json"] for run in runs}) != len(runs):
         raise ValueError("runs: duplicated identity.json; independent process identities required")
     first = runs[0]["identity"]["comparison_group"]
+    first_identity = runs[0]["identity"]
     for run in runs[1:]:
+        if any(run['identity'][key] != first_identity[key] for key in ('schema_version','case_id','duration_us')):
+            raise ValueError('runs: mixed record versions, case identities or durations')
         differences = field_differences(first, run["identity"]["comparison_group"])
         if differences:
             raise ValueError(f"{run['path']}: comparison group mismatch: " +
@@ -216,7 +237,7 @@ def freeze(paths, output):
         raise FileExistsError(f"baseline output already exists: {destination}")
     runs = validate_set(paths)
     manifest = {
-        "schema_version": 1, "case_id": CASE_ID, "mode": "realtime", "duration_us": 20_000_000,
+        **{key:runs[0]["identity"][key] for key in ("schema_version","case_id","mode","duration_us")},
         "comparison_group": runs[0]["identity"]["comparison_group"],
         "runs": [{"path": os.path.relpath(run["path"], destination.resolve()),
                   "checksums": run["checksums"], "code": run["identity"]["code"]} for run in runs],
@@ -238,11 +259,14 @@ def load_baseline(path):
     content = {key: value for key, value in manifest.items() if key != "manifest_sha256"}
     if recorded != canonical_digest(content):
         raise ValueError(f"{source}: manifest_sha256: frozen manifest altered")
-    if manifest.get("schema_version") != 1 or manifest.get("case_id") != CASE_ID or manifest.get("mode") != "realtime":
+    common.validate_record(manifest, 'baseline')
+    if (manifest.get("schema_version") == 1 and manifest.get("case_id") != CASE_ID) or manifest.get("mode") != "realtime":
         raise ValueError(f"{source}: schema/case/mode mismatch")
     refs = manifest.get("runs", [])
     runs = validate_set([source.parent / item["path"] for item in refs])
     for reference, run in zip(refs, runs):
+        if any(manifest[key] != run['identity'][key] for key in ('schema_version','case_id','duration_us')):
+            raise ValueError(f'{source}: frozen case/version/range differs from runs')
         if reference["checksums"] != run["checksums"]:
             differences = field_differences(reference["checksums"], run["checksums"], "checksums")
             raise ValueError(f"{run['path']}: frozen run modified: " + ", ".join(d["field"] for d in differences))
@@ -253,17 +277,8 @@ def load_baseline(path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("runs", nargs="+", type=Path)
-    parser.add_argument("--output", required=True, type=Path)
-    args = parser.parse_args(argv)
-    try:
-        freeze(args.runs, args.output)
-        print(args.output / "baseline.json")
-        return 0
-    except (OSError, ValueError, TypeError, KeyError) as error:
-        print(f"baseline: {error}", file=sys.stderr)
-        return 1
+    print('Use run_suite.py CONFIG.yaml with operation: freeze; baseline.py is an internal component.', file=sys.stderr)
+    return 1
 
 
 if __name__ == "__main__":

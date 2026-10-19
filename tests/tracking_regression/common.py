@@ -1,6 +1,7 @@
-"""Versioned, immutable records for the fixed real-time regression case."""
+"""Versioned immutable records, including read-only historical reference contracts."""
 import hashlib
 import json
+import math
 from pathlib import Path
 
 CASE_ID = 'wlcb-1513-loss-recovery'
@@ -45,6 +46,8 @@ def validate(value, schema, field='$'):
     """Validate the documented JSON Schema subset without a host dependency."""
     kinds = {'object': dict, 'array': list, 'string': str, 'integer': int,
              'number': (int, float), 'boolean': bool, 'null': type(None)}
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f'{field}: non-finite number')
     kind = schema.get('type')
     if kind and (not isinstance(value, kinds[kind]) or
                  (kind in ('integer', 'number') and isinstance(value, bool))):
@@ -75,4 +78,8 @@ def validate(value, schema, field='$'):
         raise ValueError(f'{field}: empty string')
 
 def validate_record(value, name):
-    validate(value, load(Path(__file__).parent / 'schema' / (name + '.schema.json')))
+    version = value.get('schema_version') if isinstance(value, dict) else None
+    current = 3 if name == 'run_config' else 2
+    versioned = {'fixture', 'preparation', 'identity', 'completion', 'baseline', 'comparison', 'run_config', 'metrics'}
+    suffix = f'.v{current}' if name in versioned and version == current else ''
+    validate(value, load(Path(__file__).parent / 'schema' / (name + suffix + '.schema.json')))

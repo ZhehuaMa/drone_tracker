@@ -1,6 +1,6 @@
 # Behavior metrics and comparison protocol
 
-These metrics describe program behavior for `wlcb-1513-loss-recovery`. There are no human target labels. A valid publication means a normally returned publication call carrying a tracking flag and a finite box with positive width and height. It does not establish that the box contains the drone. Model scores and overlap between model boxes are not accuracy measurements. Publication return also does not establish receipt by a subscriber.
+These metrics describe program behavior for each independently configured video case. There are no human target labels. A valid publication means a normally returned publication call carrying a tracking flag and a finite box with positive width and height. It does not establish that the box contains the drone. Model scores and overlap between model boxes are not accuracy measurements. Publication return also does not establish receipt by a subscriber.
 
 ## Inputs, identities and clocks
 
@@ -12,9 +12,9 @@ The production `PublishEnd` does not contain the output box. Its matching `Outpu
 
 The calculator requires `DetectStage.Observed` (2048) to identify an actual inference invocation. A stage that fails during input preparation before inference does not count. Successful or inference-failed stages without this marker make the evidence incomplete. A reference build therefore needs the same additive diagnostic marker as its candidate; older ambiguous logs cannot supply a formal inference count.
 
-## Fixed windows and sample placement
+## Configured windows and sample placement
 
-Both windows are half-open: full `[0,20)` seconds and core `[13.5,17.5)` seconds, relative to `m0_ns`. Event times are actual monotonic times, rather than source video positions or prediction message times.
+The `full` window is `[0,D)` for this case’s resolved playback duration D. Extra named windows exist only when declared in the case configuration and must lie within full. The historical reference explicitly declares core `[13.5,17.5)`; a five-second or whole-video case never inherits it. All windows are half-open and relative to `m0_ns`. Event times are actual monotonic times, rather than source video positions or prediction message times.
 
 | Sample family | Window selection |
 |---|---|
@@ -169,3 +169,9 @@ capture-to-consumption duration with unknown source timestamps retains unknown s
 and is excluded from numeric aggregation. This exception applies only to that named new
 measure. Incomplete established metrics, unsupported metric versions, and incomplete raw
 records still prevent formal comparison. Reports retain each descriptor's metric version.
+
+## Multi-case operation and record migration
+
+Use `run_suite.py CONFIG.yaml` with one explicit `prepare`, `run`, `freeze` or `compare` operation. The complete sections and sequence are documented in [README.md](README.md) and [configs/example.yaml](configs/example.yaml). Every case has an independent fixture, at least three qualified reference runs, frozen baseline, at least three independent candidate runs and comparison output. References/candidates match by `case_id` and content, never list position. The specified four-case template requires twelve rounds per cohort and twenty-four total; no cross-case sample pooling or percentage averaging is permitted.
+
+New metrics containers use `schema_version: 2`; unchanged metric formulas retain their original `metric_version` (including existing version-2 diagnostic extensions). Old containers retain fixed full/core validation. Unknown versions, mixed old/new runs, changed numeric selection/windows or changed preparation/cleanup budgets cannot enter one formal group. File/config paths and unrelated case lists remain provenance. Comparison output distinguishes completed operation, comparable evidence and explicit threshold performance decision. Missing cases and unset thresholds cannot yield a suite pass.

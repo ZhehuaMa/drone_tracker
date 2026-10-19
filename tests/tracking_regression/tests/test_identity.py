@@ -98,6 +98,15 @@ class InputIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'only frozen'):
             identity.semantic_inputs(fixture, {'model_paths': {'tracker.lost_max_count': 'x'}})
 
+    def test_supplier_placement_change_requires_new_reference_conditions(self):
+        fixture = self.fixture('supplier-fixture')
+        reference, _, reference_config = identity.semantic_inputs(fixture, {'supplier_cpu': 4})
+        candidate, _, candidate_config = identity.semantic_inputs(fixture, {'supplier_cpu': 5})
+        result = self.cohort_comparison(
+            {**reference, 'test_driver': {'configuration': reference_config}},
+            {**candidate, 'test_driver': {'configuration': candidate_config}})
+        self.assertEqual(result['status'], 'incomparable')
+
     def test_true_model_content_change_is_incomparable(self):
         first = self.fixture('first')
         left, _, _ = identity.semantic_inputs(first, {})
@@ -169,8 +178,10 @@ class WorkloadIdentityTests(unittest.TestCase):
             process(101, 'rkaiq_3A_server', args=['/usr/bin/rkaiq_3A_server'])
             # A misleading name is still a kernel thread when PF_KTHREAD is set.
             process(102, 'worker-original', 0x00200000)
+            process(105, 'python3', args=['python3',str(repo / 'tests/tracking_regression/run_suite.py')])
             first, observations = identity.workload_processes(repo, proc, 100)
             self.assertEqual(first, ['rkaiq_3A_server'])
+            self.assertTrue(next(row for row in observations if row['pid'] == 105)['control_process'])
             self.assertTrue(next(row for row in observations if row['pid'] == 102)['kernel_thread'])
             process(102, 'worker-renamed', 0x00200000)
             second, _ = identity.workload_processes(repo, proc, 100)

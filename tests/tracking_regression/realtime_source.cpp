@@ -8,6 +8,10 @@
 #include <iomanip>
 #include <sstream>
 #include <sys/resource.h>
+#include <sched.h>
+#include <pthread.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 #include <openssl/evp.h>
 #include "diagnostics/recorder.h"
 #include "platform/rk3576/host_frame.h"
@@ -44,6 +48,21 @@ RealtimeSource::RealtimeSource(SourceOptions options) : options_{std::move(optio
     if (options_.queue_capacity == 0 || options_.max_supply_lateness_us == 0) {
         throw std::invalid_argument{"missing queue capacity or lateness budget"};
     }
+    if (options_.supplier_cpu < -1 || options_.supplier_cpu >= CPU_SETSIZE) {
+        throw std::invalid_argument{"supplier_cpu: CPU number outside supported range"};
+    }
+    const auto manifest{YAML::LoadFile((options_.fixture / "fixture.json").string())};
+    schema_version_ = manifest["schema_version"].as<int>();
+    if (schema_version_ != 1 && schema_version_ != 2) {
+        throw std::invalid_argument{"unsupported fixture schema version"};
+    }
+    width_ = manifest["width"].as<int>(); height_ = manifest["height"].as<int>();
+    duration_us_ = manifest["duration_us"].as<std::uint64_t>();
+    if (width_ <= 0 || height_ <= 0 || duration_us_ == 0
+        || manifest["end_us"].as<std::uint64_t>() - manifest["start_us"].as<std::uint64_t>() != duration_us_) {
+        throw std::invalid_argument{"invalid fixture dimensions or range"};
+    }
+    const auto expected_count{manifest["frame_count"].as<std::size_t>()};
     std::ifstream frames{options_.fixture / "frames.jsonl"};
     std::string line{};
     while (std::getline(frames, line)) {
@@ -51,8 +70,19 @@ RealtimeSource::RealtimeSource(SourceOptions options) : options_{std::move(optio
         records_.push_back({row["fixture_frame_id"].as<std::uint64_t>(), row["relative_us"].as<std::uint64_t>()});
         pixel_hashes_.push_back(row["pixel_sha256"].as<std::string>());
     }
-    if (records_.size() != 1200 || records_.front().relative_us != 15721
-        || records_.back().relative_us != 19992663) {
+    if (records_.empty() || records_.size() != expected_count) {
+        throw std::invalid_argument{"fixture frame count mismatch"};
+    }
+    for (std::size_t index{}; index < records_.size(); ++index) {
+        if (records_[index].id != index || records_[index].relative_us >= duration_us_
+            || (index && records_[index - 1].relative_us >= records_[index].relative_us)) {
+            throw std::invalid_argument{"fixture frame identity or time invalid"};
+        }
+    }
+    if ((schema_version_ == 1 || manifest["case_id"].as<std::string>() == "wlcb-1513-loss-recovery")
+        && (records_.size() != 1200 || records_.front().relative_us != 15721
+            || records_.back().relative_us != 19992663 || width_ != 1920 || height_ != 1200
+            || duration_us_ != 20000000)) {
         throw std::invalid_argument{"fixed source frame boundaries are invalid"};
     }
     std::ifstream attitudes{options_.fixture / "attitude.jsonl"};
@@ -74,7 +104,8 @@ RealtimeSource::RealtimeSource(SourceOptions options) : options_{std::move(optio
         message.linear_acceleration.y = linear[1].as<double>(); message.linear_acceleration.z = linear[2].as<double>();
         attitudes_.emplace_back(row["relative_us"].as<std::int64_t>(), std::move(message));
     }
-    if (attitudes_.empty() || attitudes_.front().first >= 0) {
+    if (attitudes_.empty() || attitudes_.front().first > 0
+        || (schema_version_ == 1 && attitudes_.front().first == 0)) {
         throw std::invalid_argument{"initial attitude missing"};
     }
     status_.state = FrameSourceState::Ready;
@@ -111,6 +142,23 @@ bool RealtimeSource::start() {
         std::lock_guard<std::mutex> lock{mutex_};
         status_.state = FrameSourceState::Running;
     }
+    supplier_ = std::thread{[this] {
+        try {
+            configureSupplier();
+            std::unique_lock<std::mutex> lock{mutex_};
+            supplier_ready_ = true;
+            wake_.notify_all();
+            wake_.wait(lock, [&] { return stopping_.load() || playback_released_; });
+            if (stopping_) { return; }
+            lock.unlock();
+            supply();
+        } catch (const std::exception &error) { fail(std::string{"supply: "} + error.what()); }
+    }};
+    {
+        std::unique_lock<std::mutex> lock{mutex_};
+        wake_.wait(lock, [&] { return stopping_.load() || supplier_ready_; });
+        if (stopping_) { return false; }
+    }
     // Source and prediction clock origins are established only after model construction and complete verified preparation.
     m0_ns_ = diagnostics::monotonicNs(); e0_us_ = systemUs();
     for (auto &record : records_) {
@@ -125,11 +173,54 @@ bool RealtimeSource::start() {
         message->header.stamp = rclcpp::Time{static_cast<std::int64_t>((e0_us_ + attitudes_.front().first) * 1000)};
         attitude_callback_(std::move(message));
     }
-    supplier_ = std::thread{[this] {
-        try { supply(); }
-        catch (const std::exception &error) { fail(std::string{"supply: "} + error.what()); }
-    }};
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        playback_released_ = true;
+    }
+    wake_.notify_all();
     return true;
+}
+void RealtimeSource::configureSupplier() {
+    ::pthread_setname_np(::pthread_self(), "regression-src");
+    cpu_set_t inherited{}, actual{};
+    if (::sched_getaffinity(0, sizeof(inherited), &inherited) != 0) {
+        throw std::runtime_error{"supplier CPU affinity read failed"};
+    }
+    if (options_.supplier_cpu >= 0) {
+        if (!CPU_ISSET(options_.supplier_cpu, &inherited)) {
+            throw std::invalid_argument{"supplier_cpu: requested CPU outside inherited allowed set"};
+        }
+        cpu_set_t requested{};
+        CPU_ZERO(&requested);
+        CPU_SET(options_.supplier_cpu, &requested);
+        if (::sched_setaffinity(0, sizeof(requested), &requested) != 0) {
+            throw std::runtime_error{std::string{"supplier CPU affinity set failed: "} + std::strerror(errno)};
+        }
+    }
+    if (::sched_getaffinity(0, sizeof(actual), &actual) != 0
+        || (options_.supplier_cpu >= 0
+            && (CPU_COUNT(&actual) != 1 || !CPU_ISSET(options_.supplier_cpu, &actual)))) {
+        throw std::runtime_error{"supplier CPU affinity readback mismatch"};
+    }
+    struct sched_param scheduling{};
+    if (::sched_getparam(0, &scheduling) != 0) { throw std::runtime_error{"supplier priority read failed"}; }
+    std::ofstream output{options_.output / "source-scheduling.json"};
+    output << "{\"requested_cpu\":";
+    if (options_.supplier_cpu >= 0) { output << options_.supplier_cpu; } else { output << "null"; }
+    output << ",\"tid\":" << ::syscall(SYS_gettid) << ",\"policy\":" << ::sched_getscheduler(0)
+        << ",\"priority\":" << scheduling.sched_priority << ",\"configured_mono_ns\":"
+        << diagnostics::monotonicNs() << ",\"inherited_cpus\":[";
+    bool first{true};
+    for (int cpu{}; cpu < CPU_SETSIZE; ++cpu) {
+        if (CPU_ISSET(cpu, &inherited)) { output << (first ? "" : ",") << cpu; first = false; }
+    }
+    output << "],\"allowed_cpus\":[";
+    first = true;
+    for (int cpu{}; cpu < CPU_SETSIZE; ++cpu) {
+        if (CPU_ISSET(cpu, &actual)) { output << (first ? "" : ",") << cpu; first = false; }
+    }
+    output << "]}\n";
+    if (!output) { throw std::runtime_error{"supplier scheduling evidence output failed"}; }
 }
 void RealtimeSource::fail(const std::string &reason) {
     std::lock_guard<std::mutex> lock{mutex_};
@@ -189,13 +280,13 @@ void RealtimeSource::decode() {
             const int result{avcodec_receive_frame(codec.get(), frame.get())};
             if (result == AVERROR(EAGAIN) || result == AVERROR_EOF) { return; }
             if (result < 0) { throw std::runtime_error{"FFV1 frame decode failed at " + std::to_string(count)}; }
-            if (frame->format != AV_PIX_FMT_GRAY8 || frame->width != 1920 || frame->height != 1200
+            if (frame->format != AV_PIX_FMT_GRAY8 || frame->width != width_ || frame->height != height_
                 || frame->linesize[0] < frame->width) {
-                throw std::invalid_argument{"FFV1 frame must be 1920x1200 native Gray8"};
+                throw std::invalid_argument{"FFV1 frame must match fixture dimensions and native Gray8"};
             }
-            cv::Mat pixels{cv::Size{1920, 1200}, CV_8UC1};
+            cv::Mat pixels{cv::Size{width_, height_}, CV_8UC1};
             for (int row{}; row < frame->height; ++row) {
-                std::memcpy(pixels.ptr(row), frame->data[0] + row * frame->linesize[0], 1920);
+                std::memcpy(pixels.ptr(row), frame->data[0] + row * frame->linesize[0], static_cast<std::size_t>(width_));
             }
             av_frame_unref(frame.get());
             if (count >= records_.size()) { throw std::runtime_error{"FFV1 contains extra frames"}; }
@@ -213,7 +304,7 @@ void RealtimeSource::decode() {
                 throw std::runtime_error{"cached pixel checksum mismatch at frame " + std::to_string(count)};
             }
             decoded_.push_back(std::move(pixels));
-            cached_bytes_ += 1920ULL * 1200;
+            cached_bytes_ += decoded_.back().total() * decoded_.back().elemSize();
             ++count;
         }
     }};
@@ -239,6 +330,7 @@ void RealtimeSource::decode() {
 void RealtimeSource::supply() {
     std::size_t attitude_index{1};
     for (auto &record : records_) {
+        record.iteration_ns = diagnostics::monotonicNs();
         if (stopping_) { break; }
         record.planned_ns = m0_ns_ + record.relative_us * 1000;
         record.frame_time_us = e0_us_ + record.relative_us;
@@ -252,12 +344,19 @@ void RealtimeSource::supply() {
             if (attitude_callback_) {
                 auto message{std::make_shared<sensor_msgs::msg::Imu>(attitude.second)};
                 message->header.stamp = rclcpp::Time{static_cast<std::int64_t>((e0_us_ + attitude.first) * 1000)};
+                const auto callback_begin{diagnostics::monotonicNs()};
                 attitude_callback_(std::move(message));
+                const auto elapsed{diagnostics::monotonicNs() - callback_begin};
+                record.callback_ns += elapsed;
+                record.callback_max_ns = std::max(record.callback_max_ns, elapsed);
             }
         }
         std::unique_lock<std::mutex> lock{mutex_};
+        record.wait_begin_ns = diagnostics::monotonicNs();
         wake_.wait_until(lock, deadline(record.planned_ns), [&] { return stopping_.load(); });
-        if (diagnostics::monotonicNs() >= m0_ns_ + 20000000000ULL) {
+        record.wake_ns = diagnostics::monotonicNs();
+        record.wake_cpu = ::sched_getcpu();
+        if (diagnostics::monotonicNs() >= m0_ns_ + duration_us_ * 1000) {
             status_.reason = "input_deadline_exceeded";
             status_.state = FrameSourceState::Failed;
             stopping_ = true;
@@ -267,8 +366,25 @@ void RealtimeSource::supply() {
         if (stopping_) { break; }
         const cv::Mat &pixels{decoded_.at(record.id)};
         lock.unlock();
+        struct rusage before{}, after{};
+        ::getrusage(RUSAGE_THREAD, &before);
+        struct timespec cpu_before{}, cpu_after{};
+        ::clock_gettime(CLOCK_THREAD_CPUTIME_ID, &cpu_before);
+        record.copy_begin_ns = diagnostics::monotonicNs();
         auto frame{rk3576::copyGrayFrame(pixels, record.frame_time_us)};
+        record.copy_end_ns = diagnostics::monotonicNs();
+        record.copy_cpu = ::sched_getcpu();
+        ::clock_gettime(CLOCK_THREAD_CPUTIME_ID, &cpu_after);
+        ::getrusage(RUSAGE_THREAD, &after);
+        record.copy_cpu_ns = (cpu_after.tv_sec - cpu_before.tv_sec) * 1000000000LL
+            + cpu_after.tv_nsec - cpu_before.tv_nsec;
+        record.minor_faults = after.ru_minflt - before.ru_minflt;
+        record.major_faults = after.ru_majflt - before.ru_majflt;
+        record.voluntary_switches = after.ru_nvcsw - before.ru_nvcsw;
+        record.involuntary_switches = after.ru_nivcsw - before.ru_nivcsw;
         lock.lock();
+        record.lock_ns = diagnostics::monotonicNs();
+        record.lock_cpu = ::sched_getcpu();
         record.supplied_ns = diagnostics::monotonicNs(); record.supplied = true; ++status_.read;
         const auto elapsed_us{(record.supplied_ns - m0_ns_) / 1000};
         const auto system_elapsed{systemUs() - e0_us_};
@@ -283,7 +399,7 @@ void RealtimeSource::supply() {
     }
     while (!stopping_ && attitude_index < attitudes_.size()) {
         const auto &attitude{attitudes_[attitude_index++]};
-        if (attitude.first >= 20000000) { break; }
+        if (attitude.first >= static_cast<std::int64_t>(duration_us_)) { break; }
         std::unique_lock<std::mutex> lock{mutex_};
         wake_.wait_until(lock, deadline(m0_ns_ + attitude.first * 1000), [&] { return stopping_.load(); });
         if (stopping_) { break; }
@@ -295,7 +411,7 @@ void RealtimeSource::supply() {
         }
     }
     std::unique_lock<std::mutex> lock{mutex_};
-    wake_.wait_until(lock, deadline(m0_ns_ + 20000000000ULL), [&] { return stopping_.load(); });
+    wake_.wait_until(lock, deadline(m0_ns_ + duration_us_ * 1000), [&] { return stopping_.load(); });
     if (!stopping_) {
         normal_eof_ = true;
         status_.state = FrameSourceState::Eof;
@@ -320,6 +436,17 @@ bool RealtimeSource::stop() {
     return true;
 }
 void RealtimeSource::exportRecords() {
+    std::ofstream timing{options_.output / "supply-timing.csv"};
+    timing << "frame_id,planned_ns,iteration_ns,wait_begin_ns,wake_ns,copy_begin_ns,copy_end_ns,lock_ns,supplied_ns,callback_ns,callback_max_ns,copy_cpu_ns,minor_faults,major_faults,voluntary_switches,involuntary_switches,wake_cpu,copy_cpu,lock_cpu\n";
+    for (const auto &record : records_) {
+        timing << record.id << ',' << record.planned_ns << ',' << record.iteration_ns << ','
+            << record.wait_begin_ns << ',' << record.wake_ns << ',' << record.copy_begin_ns << ','
+            << record.copy_end_ns << ',' << record.lock_ns << ',' << record.supplied_ns << ','
+            << record.callback_ns << ',' << record.callback_max_ns << ',' << record.copy_cpu_ns << ','
+            << record.minor_faults << ',' << record.major_faults << ',' << record.voluntary_switches << ','
+            << record.involuntary_switches << ',' << record.wake_cpu << ',' << record.copy_cpu << ','
+            << record.lock_cpu << '\n';
+    }
     std::ofstream input{options_.output / "input.jsonl"};
     for (const auto &record : records_) {
         input << "{\"fixture_frame_id\":" << record.id << ",\"relative_us\":" << record.relative_us
@@ -353,11 +480,11 @@ void RealtimeSource::exportPreparation() {
         if (name == "VmRSS:") { resident_kib = value; }
     }
     std::ofstream output{options_.output / "preparation.json"};
-    output << "{\"schema_version\":1,\"input_mode\":\"predecode_all\",\"ready\":"
+    output << "{\"schema_version\":" << schema_version_ << ",\"input_mode\":\"predecode_all\",\"ready\":"
         << (prepared_ ? "true" : "false") << ",\"begin_mono_ns\":" << preparation_begin_ns_
         << ",\"end_mono_ns\":" << preparation_end_ns_ << ",\"duration_ms\":"
         << (preparation_end_ns_ ? (preparation_end_ns_ - preparation_begin_ns_) / 1000000.0 : 0)
-        << ",\"verified_frame_count\":" << (prepared_ ? decoded_.size() : cached_bytes_ / (1920ULL * 1200))
+        << ",\"verified_frame_count\":" << (prepared_ ? decoded_.size() : cached_bytes_ / (static_cast<std::uint64_t>(width_) * height_))
         << ",\"cached_pixel_bytes\":" << cached_bytes_ << ",\"process_rss_kib\":" << resident_kib
         << ",\"process_peak_rss_kib\":" << usage.ru_maxrss << ",\"system_total_kib\":" << memory_total_kib
         << ",\"system_available_kib\":" << memory_available_kib
@@ -366,7 +493,7 @@ void RealtimeSource::exportPreparation() {
 }
 bool RealtimeSource::isRunning() const { return status().state == FrameSourceState::Running; }
 FrameSourceStatus RealtimeSource::status() const { std::lock_guard<std::mutex> lock{mutex_}; return status_; }
-bool RealtimeSource::getImageSize(int &width, int &height) const { width = 1920; height = 1200; return true; }
+bool RealtimeSource::getImageSize(int &width, int &height) const { width = width_; height = height_; return true; }
 bool RealtimeSource::waitFrame(FrameRef &frame, std::chrono::microseconds timeout) {
     std::unique_lock<std::mutex> lock{mutex_};
     wake_.wait_for(lock, timeout, [&] { return !queue_.empty() || status_.state != FrameSourceState::Running; });

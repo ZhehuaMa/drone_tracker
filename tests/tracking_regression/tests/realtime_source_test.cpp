@@ -8,6 +8,7 @@
 #include <set>
 #include <stdexcept>
 #include <sys/resource.h>
+#include <sched.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include "diagnostics/recorder.h"
@@ -30,6 +31,10 @@ struct TemporaryDirectory {
 };
 void generateFixture(const std::filesystem::path &fixture) {
     std::filesystem::create_directory(fixture);
+    std::ofstream manifest{fixture / "fixture.json"};
+    manifest << "{\"schema_version\":1,\"case_id\":\"wlcb-1513-loss-recovery\",\"width\":1920,\"height\":1200,"
+        "\"frame_count\":1200,\"start_us\":55000000,\"end_us\":75000000,\"duration_us\":20000000}";
+    manifest.close();
     std::ofstream frames{fixture / "frames.jsonl"};
     for (std::uint64_t id{}; id < 1200; ++id) {
         const std::uint64_t relative{15721 + (19992663 - 15721) * id / 1199};
@@ -231,6 +236,7 @@ void latenessInvalidates(const std::filesystem::path &root) {
 void decodeFailure(const std::filesystem::path &root) {
     const auto damaged{root / "damaged"};
     std::filesystem::create_directory(damaged);
+    std::filesystem::copy_file(root / "fixture/fixture.json", damaged / "fixture.json");
     std::filesystem::copy_file(root / "fixture/frames.jsonl", damaged / "frames.jsonl");
     std::filesystem::copy_file(root / "fixture/attitude.jsonl", damaged / "attitude.jsonl");
     std::ofstream invalid{damaged / "clip.mkv"}; invalid << "not an FFV1 file"; invalid.close();
@@ -347,6 +353,7 @@ void allocationFailure(const std::filesystem::path &root) {
 void pixelFailure(const std::filesystem::path &root) {
     const auto damaged{root / "pixel-damaged"};
     std::filesystem::create_directory(damaged);
+    std::filesystem::copy_file(root / "fixture/fixture.json", damaged / "fixture.json");
     std::filesystem::copy_file(root / "fixture/frames.jsonl", damaged / "frames.jsonl");
     std::filesystem::copy_file(root / "fixture/attitude.jsonl", damaged / "attitude.jsonl");
     std::filesystem::create_hard_link(root / "fixture/clip.mkv", damaged / "clip.mkv");
@@ -366,6 +373,94 @@ void pixelFailure(const std::filesystem::path &root) {
     require(!preparation["ready"].as<bool>() && preparation["end_mono_ns"].as<std::uint64_t>() > 0,
         "preparation failure evidence missing");
 }
+void variableDimensionsAndDuration(const std::filesystem::path &root) {
+    const auto fixture{root / "small-fixture"};
+    std::filesystem::create_directory(fixture);
+    {
+        std::ofstream manifest{fixture / "fixture.json"};
+        manifest << "{\"schema_version\":2,\"case_id\":\"small\",\"width\":32,\"height\":24,"
+            "\"frame_count\":3,\"start_us\":165000000,\"end_us\":165150000,\"duration_us\":150000}";
+        std::ofstream frames{fixture / "frames.jsonl"};
+        for (unsigned id{}; id < 3; ++id) {
+            frames << "{\"fixture_frame_id\":" << id << ",\"relative_us\":" << id * 50000
+                << ",\"pixel_sha256\":\"ef115a0e0c15cdc41958ca46b5b14b456115f4baec5e3ca68599d2a8f435e3b8\"}\n";
+        }
+        std::ofstream attitude{fixture / "attitude.jsonl"};
+        attitude << "{\"relative_us\":0,\"frame_id\":\"gimbal\",\"orientation\":[0,0,0,1],"
+            "\"orientation_covariance\":[0,0,0,0,0,0,0,0,0],\"angular_velocity\":[0,0,0],"
+            "\"angular_velocity_covariance\":[0,0,0,0,0,0,0,0,0],\"linear_acceleration\":[0,0,0],"
+            "\"linear_acceleration_covariance\":[0,0,0,0,0,0,0,0,0]}\n";
+    }
+    const auto clip{(fixture / "clip.mkv").string()};
+    const int pid{::fork()};
+    require(pid >= 0, "small fixture encoder fork failed");
+    if (pid == 0) {
+        ::execl(TRACKING_REGRESSION_FFMPEG, "ffmpeg", "-v", "error", "-f", "lavfi", "-i",
+            "color=c=black:s=32x24:r=60", "-frames:v", "3", "-an", "-threads", "1",
+            "-c:v", "ffv1", "-pix_fmt", "gray", clip.c_str(), nullptr);
+        ::_exit(127);
+    }
+    int result{};
+    while (::waitpid(pid, &result, 0) < 0 && errno == EINTR) {}
+    require(WIFEXITED(result) && WEXITSTATUS(result) == 0, "small fixture generation failed");
+    auto config{options(root, "small-output")}; config.fixture = fixture;
+    RealtimeSource source{config};
+    int width{}, height{};
+    require(source.getImageSize(width,height) && width == 32 && height == 24, "variable geometry lost");
+    require(source.prepare(), "small fixture preparation failed");
+    const auto preparation{YAML::LoadFile((config.output / "preparation.json").string())};
+    require(preparation["schema_version"].as<int>() == 2
+        && preparation["verified_frame_count"].as<unsigned>() == 3
+        && preparation["cached_pixel_bytes"].as<unsigned>() == 2304, "variable cache accounting failed");
+    require(source.start(), "small source start failed");
+    until([&] { return !source.isRunning(); }, 2s, "small source ignored its own duration");
+    require(source.status().state == FrameSourceState::Eof && source.status().read == 3,
+        "small source did not preserve normal final frame");
+    source.stop();
+    noChild();
+}
+
+void supplierCpuIsolation(const std::filesystem::path &root) {
+    cpu_set_t original{}, after{};
+    require(::sched_getaffinity(0, sizeof(original), &original) == 0, "cannot inspect test CPU set");
+    int selected{-1};
+    for (int cpu{}; cpu < CPU_SETSIZE; ++cpu) {
+        if (CPU_ISSET(cpu, &original)) { selected = cpu; break; }
+    }
+    require(selected >= 0, "test has no allowed CPU");
+    auto config{options(root, "supplier-cpu")};
+    config.fixture = root / "small-fixture";
+    config.supplier_cpu = selected;
+    RealtimeSource source{config};
+    require(source.start(), "explicit supplier CPU start failed");
+    const auto scheduling{YAML::LoadFile((config.output / "source-scheduling.json").string())};
+    const auto clock{YAML::LoadFile((config.output / "input-clock.json").string())};
+    require(scheduling["allowed_cpus"].size() == 1 && scheduling["allowed_cpus"][0].as<int>() == selected,
+        "supplier did not read back its requested single CPU");
+    require(scheduling["configured_mono_ns"].as<std::uint64_t>() < clock["m0_ns"].as<std::uint64_t>(),
+        "supplier affinity was configured after playback clock establishment");
+    require(::sched_getaffinity(0, sizeof(after), &after) == 0 && CPU_EQUAL(&original, &after),
+        "supplier affinity changed the caller CPU set");
+    until([&] { return !source.isRunning(); }, 2s, "explicit CPU source did not finish");
+    source.stop();
+    auto bad{options(root, "supplier-unavailable")};
+    bad.fixture = config.fixture;
+    // A sparse affinity set is a deterministic unavailable-CPU failure control.
+    int unavailable{-1};
+    for (int cpu{}; cpu < CPU_SETSIZE; ++cpu) {
+        if (!CPU_ISSET(cpu, &original)) { unavailable = cpu; break; }
+    }
+    if (unavailable >= 0) {
+        bad.supplier_cpu = unavailable;
+        RealtimeSource rejected{bad};
+        require(!rejected.start(), "unavailable supplier CPU silently fell back");
+        rejected.stop();
+        require(!std::filesystem::exists(bad.output / "input-clock.json"),
+            "unavailable CPU failure started a playback clock");
+    }
+    noChild();
+}
+
 } // namespace
 int main(int argc, char **argv) {
     try {
@@ -378,6 +473,8 @@ int main(int argc, char **argv) {
             std::cout << "Native OS address-space allocation rejection passed\n";
             return 0;
         }
+        variableDimensionsAndDuration(temporary.path);
+        supplierCpuIsolation(temporary.path);
         optionValidation(temporary.path);
         decodeFailure(temporary.path);
         pixelFailure(temporary.path);

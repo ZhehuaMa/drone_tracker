@@ -1,0 +1,88 @@
+# Verified input locations; correspondence evidence is recorded in onboard-test-report-resumed.md.
+{
+  "schema_version": 1,
+  "suite_id": "wlcb-overlay-four-cases",
+  "operation": "prepare",
+  "output_root": "/external/results/wlcb-overlay",
+  "prepare": {},
+  "deadlines": {
+    "preparation_seconds": 90,
+    "cleanup_seconds": 10
+  },
+  "clips": [
+    {
+      "case_id": "wlcb-1605-whole",
+      "source": {
+        "video": "/home/mzh/乌兰察布测试数据/叠框视频_20261010/test-02-20260929-1605.叠框.mp4",
+        "frame_logs": [
+          "/home/mzh/乌兰察布测试数据/test-02-20260929-1605/session-6caefa59765a79530e078228943f735e/000001.frames.jsonl",
+          "/home/mzh/乌兰察布测试数据/test-02-20260929-1605/session-6caefa59765a79530e078228943f735e/000002.frames.jsonl"
+        ],
+        "attitude_bags": [
+          "/home/mzh/乌兰察布测试数据/test-02-20260929-1605/drone_rosbag_1790669110_321340421/drone_rosbag_1790669110_321340421_0.db3"
+        ],
+        "session": "/home/mzh/乌兰察布测试数据/test-02-20260929-1605/session-6caefa59765a79530e078228943f735e/session.json"
+      }
+    },
+    {
+      "case_id": "wlcb-104206-020-035",
+      "source": {
+        "video": "/home/mzh/乌兰察布测试数据/叠框视频_20261010/test-03-20260929-104206.叠框.mp4",
+        "frame_logs": [
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000001.frames.jsonl",
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000002.frames.jsonl",
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000003.frames.jsonl",
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000004.frames.jsonl"
+        ],
+        "attitude_bags": [
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/drone_rosbag_1790649518_172333947/drone_rosbag_1790649518_172333947_0.db3"
+        ],
+        "session": "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/session.json"
+      },
+      "frame_selection_interval": {
+        "start_seconds": 20,
+        "end_seconds": 35
+      }
+    },
+    {
+      "case_id": "wlcb-104206-100-130",
+      "source": {
+        "video": "/home/mzh/乌兰察布测试数据/叠框视频_20261010/test-03-20260929-104206.叠框.mp4",
+        "frame_logs": [
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000001.frames.jsonl",
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000002.frames.jsonl",
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000003.frames.jsonl",
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000004.frames.jsonl"
+        ],
+        "attitude_bags": [
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/drone_rosbag_1790649518_172333947/drone_rosbag_1790649518_172333947_0.db3"
+        ],
+        "session": "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/session.json"
+      },
+      "frame_selection_interval": {
+        "start_seconds": 100,
+        "end_seconds": 130
+      }
+    },
+    {
+      "case_id": "wlcb-104206-165-end",
+      "source": {
+        "video": "/home/mzh/乌兰察布测试数据/叠框视频_20261010/test-03-20260929-104206.叠框.mp4",
+        "frame_logs": [
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000001.frames.jsonl",
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000002.frames.jsonl",
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000003.frames.jsonl",
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/000004.frames.jsonl"
+        ],
+        "attitude_bags": [
+          "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/drone_rosbag_1790649518_172333947/drone_rosbag_1790649518_172333947_0.db3"
+        ],
+        "session": "/home/mzh/乌兰察布测试数据/test-03-20260929-104206/session-aaec3ca79d08e73f9512229bf7ee9246/session.json"
+      },
+      "frame_selection_interval": {
+        "start_seconds": 165,
+        "end_seconds": "end"
+      }
+    }
+  ]
+}

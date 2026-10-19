@@ -1,0 +1,71 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "suite_id",
+    "operation",
+    "output_root",
+    "clips"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "suite_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operation": {
+      "enum": [
+        "prepare",
+        "run",
+        "freeze",
+        "compare"
+      ]
+    },
+    "output_root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "clips": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "source"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "object",
+            "required": [
+              "video",
+              "frame_logs",
+              "attitude_bags",
+              "session"
+            ]
+          },
+          "frame_selection_interval": {
+            "type": "object",
+            "required": [
+              "start_seconds",
+              "end_seconds"
+            ]
+          }
+        }
+      }
+    },
+    "rounds": {},
+    "deadlines": {},
+    "prepare": {},
+    "run": {},
+    "freeze": {},
+    "compare": {}
+  }
+}

@@ -147,6 +147,8 @@ def compare(baseline_path, candidate_paths, threshold_path=None):
     except (OSError, ValueError, KeyError, TypeError) as error:
         result["differences"].append({"field": "baseline", "reason": "invalid_frozen_baseline", "detail": str(error)})
         return result
+    result["schema_version"] = manifest["schema_version"]
+    result["case_id"] = manifest["case_id"]
     result["baseline_manifest_sha256"] = manifest["manifest_sha256"]
     candidates = []
     paths = list(candidate_paths)
@@ -167,6 +169,9 @@ def compare(baseline_path, candidate_paths, threshold_path=None):
         if run["checksums"]["identity.json"] in reference_ids:
             result["differences"].append({"field": f"candidate.runs[{index}]", "reason": "reference_run_reused_as_candidate"})
     for index, run in enumerate(candidates):
+        for field in ('schema_version','case_id','duration_us'):
+            result['differences'].extend(baseline.field_differences(manifest[field],run['identity'][field],
+                                                                  f'candidate.runs[{index}].{field}'))
         result["differences"].extend(baseline.field_differences(
             manifest["comparison_group"], run["identity"]["comparison_group"], f"candidate.runs[{index}].comparison_group"))
         for field in ("source_sha256", "binary_sha256", "project_libraries"):
@@ -186,7 +191,9 @@ def compare(baseline_path, candidate_paths, threshold_path=None):
     for side, runs in (("baseline", reference), ("candidate", candidates)):
         for index, run in enumerate(runs):
             current = run["metrics"]["windows"]
-            for window in ("full", "core"):
+            if set(current) != set(first_metrics):
+                result['differences'].append({'field':f'{side}.runs[{index}].metrics.windows','reason':'window_set_mismatch'})
+            for window in current.keys() & first_metrics.keys():
                 if current[window].keys() != first_metrics[window].keys():
                     result["differences"].append({"field": f"{side}.runs[{index}].metrics.{window}",
                                                   "reason": "metric_set_mismatch"})
@@ -302,22 +309,8 @@ def write_report(report, output):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("baseline", type=Path)
-    parser.add_argument("candidates", nargs="+", type=Path)
-    parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--thresholds", type=Path)
-    args = parser.parse_args(argv)
-    try:
-        if args.output.exists():
-            raise FileExistsError(f"comparison output already exists: {args.output}")
-        report = compare(args.baseline, args.candidates, args.thresholds)
-        write_report(report, args.output)
-        print(args.output / "report.md")
-        return 2 if report["status"] == "incomparable" else 1 if report["decision"]["status"] in ("failed", "not_evaluated") else 0
-    except (OSError, ValueError, TypeError, KeyError) as error:
-        print(f"compare: {error}", file=sys.stderr)
-        return 1
+    print('Use run_suite.py CONFIG.yaml with operation: compare; compare.py is an internal component.', file=sys.stderr)
+    return 1
 
 
 if __name__ == "__main__":

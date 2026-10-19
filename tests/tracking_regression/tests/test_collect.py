@@ -86,4 +86,16 @@ class PreparationQualificationTests(unittest.TestCase):
             self.assertTrue(reasons(changed))
         self.assertTrue(reasons(prepared, origin=20))
 
+class VariablePreparationTests(unittest.TestCase):
+    def test_actual_count_and_bytes_replace_reference_constants(self):
+        manifest={'frame_count':4,'width':32,'height':24}
+        prepared={'ready':True,'input_mode':'predecode_all','verified_frame_count':4,'cached_pixel_bytes':3072,
+                  'begin_mono_ns':10,'end_mono_ns':20,'process_rss_kib':1,'process_peak_rss_kib':1,
+                  'system_total_kib':1,'system_available_kib':1,'reason':''}
+        reasons=collect.qualify([],[],{'m0_ns':30},{},{'max_supply_lateness_us':50000},prepared,manifest)
+        self.assertFalse(any('preparation:' in item for item in reasons))
+        prepared['cached_pixel_bytes']-=1
+        reasons=collect.qualify([],[],{'m0_ns':30},{},{'max_supply_lateness_us':50000},prepared,manifest)
+        self.assertTrue(any('cached frame count or bytes' in item for item in reasons))
+
 if __name__=='__main__':unittest.main()

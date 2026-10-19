@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "metric_version",
+    "record_complete",
+    "issues",
+    "windows"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "metric_version": {
+      "const": 1
+    },
+    "windows": {
+      "type": "object"
+    }
+  }
+}

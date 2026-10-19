@@ -1,0 +1,104 @@
+# Illustrative external paths; provide real source sidecars and build locations.
+{
+  "schema_version": 1,
+  "suite_id": "example",
+  "operation": "prepare",
+  "output_root": "/external/results/example",
+  "rounds": 3,
+  "prepare": {},
+  "deadlines": {
+    "preparation_seconds": 90,
+    "cleanup_seconds": 10
+  },
+  "clips": [
+    {
+      "case_id": "reference-a",
+      "source": {
+        "video": "../recordings/a/video.mp4",
+        "frame_logs": [
+          "../recordings/a/frames.jsonl"
+        ],
+        "attitude_bags": [
+          "../recordings/a/imu.db3"
+        ],
+        "session": "../recordings/a/session.json"
+      },
+      "frame_selection_interval": {
+        "start_seconds": 55,
+        "end_seconds": 75
+      },
+      "analysis_windows": {
+        "core": {
+          "start_seconds": 13.5,
+          "end_seconds": 17.5
+        }
+      }
+    },
+    {
+      "case_id": "whole-b",
+      "source": {
+        "video": "../recordings/b/video.mp4",
+        "frame_logs": [
+          "../recordings/b/frames.jsonl"
+        ],
+        "attitude_bags": [
+          "../recordings/b/imu.db3"
+        ],
+        "session": "../recordings/b/session.json"
+      }
+    }
+  ],
+  "run": {
+    "cohort_id": "reference-a",
+    "source_repo": "../../..",
+    "binary": "../install/lib/drone_tracker/rk3576_tracking_regression",
+    "worker": "../install/lib/drone_tracker/rk3576_diagnostic_worker",
+    "settings": {
+      "input_mode": "predecode_all",
+      "max_supply_lateness_us": 50000,
+      "queue_capacity": 32,
+      "clock_jump_tolerance_us": 5000,
+      "ros_domain_id": 83
+    }
+  },
+  "freeze": {
+    "baseline_id": "baseline-a",
+    "cases": {
+      "reference-a": {
+        "runs": [
+          "/external/results/example/runs/reference-a/reference-a/run-001",
+          "/external/results/example/runs/reference-a/reference-a/run-002",
+          "/external/results/example/runs/reference-a/reference-a/run-003"
+        ]
+      },
+      "whole-b": {
+        "runs": [
+          "/external/results/example/runs/reference-a/whole-b/run-001",
+          "/external/results/example/runs/reference-a/whole-b/run-002",
+          "/external/results/example/runs/reference-a/whole-b/run-003"
+        ]
+      }
+    }
+  },
+  "compare": {
+    "comparison_id": "candidate-a",
+    "cases": {
+      "reference-a": {
+        "baseline": "/external/results/example/baselines/baseline-a/reference-a",
+        "candidates": [
+          "/external/results/example/runs/candidate-a/reference-a/run-001",
+          "/external/results/example/runs/candidate-a/reference-a/run-002",
+          "/external/results/example/runs/candidate-a/reference-a/run-003"
+        ]
+      },
+      "whole-b": {
+        "baseline": "/external/results/example/baselines/baseline-a/whole-b",
+        "candidates": [
+          "/external/results/example/runs/candidate-a/whole-b/run-001",
+          "/external/results/example/runs/candidate-a/whole-b/run-002",
+          "/external/results/example/runs/candidate-a/whole-b/run-003"
+        ]
+      }
+    }
+  }
+}

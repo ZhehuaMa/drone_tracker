@@ -218,5 +218,18 @@ class MetricsTests(unittest.TestCase):
         self.assertEqual(core["detector_duration_ms"]["statistics"]["max"], 388)
 
 
+class ConfigurableWindowsTests(unittest.TestCase):
+    def test_short_and_long_full_windows_do_not_inherit_core(self):
+        for duration in (5_000_000,180_000_000):
+            result=metrics.compute([],[],CLOCK,windows={'full':{'start_us':0,'end_us':duration}})
+            self.assertEqual(set(result['windows']),{'full'})
+            self.assertEqual(result['schema_version'],2)
+            self.assertEqual(result['windows']['full']['no_output_prefix_ms']['value'],duration/1000)
+            self.assertIsNone(result['windows']['full']['valid_publication_ratio']['value'])
+        result=metrics.compute([],[],CLOCK,windows={'full':{'start_us':0,'end_us':5000000},
+                                                  'focus':{'start_us':1000000,'end_us':2000000}})
+        self.assertEqual(result['windows']['focus']['no_output_prefix_ms']['value'],1000)
+        with self.assertRaises(ValueError):metrics.compute([],[],CLOCK,windows={'full':{'start_us':1,'end_us':2}})
+
 if __name__ == "__main__":
     unittest.main()

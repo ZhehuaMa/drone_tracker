@@ -98,12 +98,39 @@ def pairs(events, start, end, field='update_id', skip_detail=False):
             for key in starts.keys()|ends.keys() if starts[key]!=1 or ends[key]!=1]
 
 
-def qualify(events, inputs, clock, source, config, preparation=None):
+def qualify_supplier(config, scheduling, clock):
+    """Require truthful pre-clock readback when a supplier CPU is requested."""
+    if scheduling is None and 'supplier_cpu' not in config:
+        return []  # Historical read-only evidence predates this optional setting.
+    if not isinstance(scheduling, dict):
+        return ['supplier_cpu: scheduling readback missing']
+    requested = config.get('supplier_cpu')
+    allowed = scheduling.get('allowed_cpus')
+    inherited = scheduling.get('inherited_cpus')
+    valid_sets = (isinstance(allowed, list) and bool(allowed) and isinstance(inherited, list)
+                  and all(type(cpu) is int and cpu >= 0 for cpu in allowed + inherited)
+                  and len(set(allowed)) == len(allowed) and set(allowed).issubset(inherited))
+    if (scheduling.get('requested_cpu') != requested or not valid_sets
+            or (requested is not None and allowed != [requested])):
+        return ['supplier_cpu: requested and actual CPU sets differ']
+    if (type(scheduling.get('tid')) is not int or scheduling['tid'] <= 0
+            or type(scheduling.get('policy')) is not int or scheduling['policy'] < 0
+            or type(scheduling.get('priority')) is not int or scheduling['priority'] < 0
+            or type(scheduling.get('configured_mono_ns')) is not int
+            or not 0 < scheduling['configured_mono_ns'] < clock.get('m0_ns', 0)):
+        return ['supplier_cpu: thread identity or pre-clock setup evidence invalid']
+    return []
+
+
+def qualify(events, inputs, clock, source, config, preparation=None, manifest=None):
     reasons = []
     preparation = preparation or {}
+    manifest = manifest or {'frame_count':1200,'width':1920,'height':1200}
+    frame_count = manifest['frame_count']
+    expected_bytes = frame_count * manifest['width'] * manifest['height']
     if not preparation.get('ready') or preparation.get('input_mode') != 'predecode_all':
         reasons.append('preparation: complete verified cache missing')
-    if preparation.get('verified_frame_count') != 1200 or preparation.get('cached_pixel_bytes') != 2764800000:
+    if preparation.get('verified_frame_count') != frame_count or preparation.get('cached_pixel_bytes') != expected_bytes:
         reasons.append('preparation: verified cached frame count or bytes mismatch')
     end = preparation.get('end_mono_ns', 0)
     if not preparation.get('begin_mono_ns', 0) or end < preparation.get('begin_mono_ns', 0) or not end:
@@ -162,7 +189,7 @@ def qualify(events, inputs, clock, source, config, preparation=None):
         if key in seen or key in executed or successor not in accepted or key == successor:
             reasons.append(f'invalid supersession chain {key} -> {successor}')
         seen.add(key)
-    if len(inputs)!=1200 or [row['fixture_frame_id'] for row in inputs]!=list(range(1200)):
+    if len(inputs)!=frame_count or [row['fixture_frame_id'] for row in inputs]!=list(range(frame_count)):
         reasons.append('input: fixture identity set incomplete')
     by_time={row['frame_time_us']:row['fixture_frame_id'] for row in inputs if row['supplied']}
     if len(by_time)!=sum(row['supplied'] for row in inputs):
@@ -233,7 +260,10 @@ def collect(directory, extra_reasons=()):
     try:
         common.validate_record(identity,'identity')
         common.validate_record(preparation,'preparation')
-        reasons.extend(qualify(events,inputs,clock,source,config,preparation))
+        reasons.extend(qualify(events,inputs,clock,source,config,preparation,identity.get('input')))
+        scheduling_file = directory / 'source-scheduling.json'
+        scheduling = common.load(scheduling_file) if scheduling_file.exists() else None
+        reasons.extend(qualify_supplier(config, scheduling, clock))
     except (ValueError,KeyError) as error:
         reasons.append(str(error))
     common.write_lines(directory/'events.jsonl',events)
@@ -263,16 +293,17 @@ def collect(directory, extra_reasons=()):
             for row in (directory/'sampling-status.txt').read_text().splitlines():
                 if int(row.split('=')[1]):reasons.append('observation measurement overflow: '+row)
     else: reasons.append('observation measurement missing')
-    computed=metrics.compute(events,inputs,clock,complete=not reasons)
+    windows = identity.get('input',{}).get('analysis_windows')
+    computed=metrics.compute(events,inputs,clock,complete=not reasons,windows=windows)
     if not computed.get('record_complete') or computed.get('issues'):
         reasons.extend('metrics: '+str(issue) for issue in computed.get('issues',[]))
         if not computed.get('record_complete'):
             reasons.append('metrics: record incomplete')
-        computed=metrics.compute(events,inputs,clock,complete=False)
+        computed=metrics.compute(events,inputs,clock,complete=False,windows=windows)
     common.write(directory/'metrics.json',computed)
     files={str(file.relative_to(directory)):common.sha256(file) for file in directory.rglob('*')
            if file.is_file() and file.name!='completion.json'}
-    completion={'schema_version':1,'normal_end':bool(source.get('normal_eof')),
+    completion={'schema_version':identity['schema_version'],'normal_end':bool(source.get('normal_eof')),
                 'qualified':not reasons,'reasons':sorted(set(reasons)),'files':files}
     common.write(directory/'collection.json',completion)
     return completion

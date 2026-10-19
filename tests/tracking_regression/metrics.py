@@ -189,13 +189,22 @@ def _publication(event, outputs):
     return result
 
 
-def compute(events, inputs, clock, complete=True):
+def compute(events, inputs, clock, complete=True, windows=None):
     """Return full/core metrics, keeping unknown samples and censoring evidence.
 
     ``complete`` is the collector's integrity verdict, never inferred from files.
     The calculator independently rejects gaps, ambiguous identities and missing
     necessary event pairs. Clock origins are integer nanoseconds/microseconds.
     """
+    modern = windows is not None
+    selected_windows = WINDOWS if windows is None else {name:(item['start_us'],item['end_us'])
+                                                       for name,item in windows.items()}
+    if 'full' not in selected_windows or selected_windows['full'][0] != 0:
+        raise ValueError('windows.full: complete [0,D) window required')
+    duration = selected_windows['full'][1]
+    for name, (start, end) in selected_windows.items():
+        if type(start) is not int or type(end) is not int or not 0 <= start < end <= duration:
+            raise ValueError(f'windows.{name}: invalid range')
     m0 = _number(clock.get("m0_ns"), "clock.m0_ns")
     e0 = _number(clock.get("e0_us"), "clock.e0_us")
     normalized, issues = [], []
@@ -282,9 +291,9 @@ def compute(events, inputs, clock, complete=True):
             invalid_start = None
     if invalid_start is not None:
         invalid_intervals.append((invalid_start, None))
-    result = {"schema_version": SCHEMA_VERSION, "metric_version": METRIC_VERSION,
+    result = {"schema_version": 2 if modern else SCHEMA_VERSION, "metric_version": METRIC_VERSION,
               "record_complete": record_complete, "issues": issues, "windows": {}}
-    for window_name, (start_us, end_us) in WINDOWS.items():
+    for window_name, (start_us, end_us) in selected_windows.items():
         start_ns, end_ns = m0 + start_us * 1000, m0 + end_us * 1000
         window = {"start_us": start_us, "end_us": end_us, "boundary": "[start,end)"}
         metrics = {}

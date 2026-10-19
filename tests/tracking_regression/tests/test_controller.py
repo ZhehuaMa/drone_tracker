@@ -96,8 +96,10 @@ class FrozenConfigurationTests(unittest.TestCase):
                     listening.bind(str(output / 'diagnostics.sock'))
                     external.write_text(json.dumps({**config, 'max_supply_lateness_us': 999999}))
                 else:
-                    self.assertEqual(Path(argv[2]), output / 'run-config.json')
-                    self.assertEqual(json.loads(Path(argv[2]).read_text()), config)
+                    self.assertEqual(len(argv),2)
+                    request=json.loads(Path(argv[1]).read_text())
+                    self.assertEqual(Path(request['config']),output/'run-config.json')
+                    self.assertEqual(json.loads(Path(request['config']).read_text()),config)
                 return Process(worker)
 
             request = {'output': str(output), 'fixture': str(fixture), 'repo': str(root),
@@ -115,3 +117,57 @@ class FrozenConfigurationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class PreparationDeadlineTests(unittest.TestCase):
+    def test_outer_preparation_timeout_reaps_hung_controller(self):
+        import tempfile
+        from unittest.mock import patch
+        import common
+        original=subprocess.Popen
+        with tempfile.TemporaryDirectory() as tmp:
+            output=Path(tmp)/'attempt'
+            def launch(argv,**kwargs):
+                return original([sys.executable,'-c','import time; time.sleep(30)'],**kwargs)
+            request={'output':str(output),'duration_us':20_000_000,
+                     'deadlines':{'preparation_seconds':.3,'cleanup_seconds':.5}}
+            with patch.object(run_batch.subprocess,'Popen',side_effect=launch):
+                self.assertFalse(run_batch.supervise(request))
+            deadline=common.load(output/'deadline.json')
+            self.assertTrue(deadline['preparation_timed_out'])
+            self.assertTrue(deadline['resources_recovered'])
+            self.assertIn('preparation_deadline',common.load(output/'completion.json')['reasons'])
+
+class PlaybackBudgetTests(unittest.TestCase):
+    def test_slow_preparation_and_long_playback_use_independent_budgets(self):
+        import tempfile
+        from unittest.mock import patch
+        import common
+        for duration in (20,180):
+            with self.subTest(duration=duration), tempfile.TemporaryDirectory() as tmp:
+                output=Path(tmp)/'attempt'
+                elapsed=[0.0]
+                class Process:
+                    returncode=None
+                    def poll(self):
+                        if elapsed[0]>=45 and not (output/'input-clock.json').exists():
+                            common.write(output/'input-clock.json',{'m0_ns':45000000000})
+                        if elapsed[0]>=45+duration:
+                            self.returncode=0
+                        return self.returncode
+                def launch(*args,**kwargs):
+                    common.write(output/'collection.json',{'schema_version':2,'qualified':True,
+                        'normal_end':True,'reasons':[],'files':{}})
+                    return Process()
+                def advance(seconds):elapsed[0]+=seconds
+                request={'output':str(output),'duration_us':duration*1000000,
+                         'configuration':{'schema_version':3},
+                         'deadlines':{'preparation_seconds':90,'cleanup_seconds':10}}
+                with patch.object(run_batch,'enable_subreaper'), patch.object(run_batch,'stop_children',return_value=True), \
+                     patch.object(run_batch.time,'monotonic',side_effect=lambda:elapsed[0]), \
+                     patch.object(run_batch.time,'sleep',side_effect=advance), \
+                     patch.object(run_batch.subprocess,'Popen',side_effect=launch):
+                    self.assertTrue(run_batch.bounded_attempt(request))
+                deadline=common.load(output/'deadline.json')
+                self.assertFalse(deadline['timed_out'])
+                self.assertFalse(deadline['preparation_timed_out'])
+                self.assertGreaterEqual(deadline['elapsed_seconds'],45+duration)

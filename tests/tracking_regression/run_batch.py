@@ -4,6 +4,7 @@ import argparse
 import ctypes
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -86,6 +87,9 @@ def production_identity(fixture,config,repo,binary,worker):
     if cpu_path:
         cpu={'file_sha256':common.sha256(cpu_path),'text':Path(cpu_path).read_text(),
              'allowed':sorted(os.sched_getaffinity(0))}
+    cpu['supplier'] = run_identity.supplier_cpu_condition(config, cpu['allowed'])
+    isolated = Path('/sys/devices/system/cpu/isolated')
+    cpu['isolated_cpus'] = isolated.read_text().strip() if isolated.exists() else ''
     governors={str(path):path.read_text().strip() for path in sorted(Path('/sys/devices/system/cpu/cpufreq').glob('policy*/scaling_governor'))}
     cpu['governors']=governors
     services={name:subprocess.run(['systemctl','is-active',name],capture_output=True,text=True).stdout.strip()
@@ -142,8 +146,12 @@ def production_identity(fixture,config,repo,binary,worker):
                           'implementation':'native libavformat/libavcodec FFV1 GRAY8 stride copy',
                           'thread_type':'slice','packet_drain':'send/receive EAGAIN and EOF drain'}},'metric_schema':1,
            'metric_calculator':common.sha256(repo/'tests/tracking_regression/metrics.py')}
-    return {'schema_version':1,'case_id':common.CASE_ID,'mode':'realtime','comparison_group':group,
-            'code':code,'duration_us':20_000_000,'workload_observation':workload,
+    manifest = common.load(fixture / 'fixture.json')
+    modern = manifest['schema_version'] == 2
+    group['metric_schema'] = manifest['schema_version']
+    return {'schema_version':2 if modern else 1,'case_id':manifest['case_id'],'mode':'realtime','comparison_group':group,
+            'code':code,'duration_us':manifest['duration_us'],
+            **({'input': {key: manifest[key] for key in ('frame_count','width','height','start_us','end_us','analysis_windows')}} if modern else {}),'workload_observation':workload,
             'dependency_locations':library_locations,'middleware_locations':middleware_locations,
             'input_locations':input_locations,
             'loadavg':Path('/proc/loadavg').read_text().strip(),
@@ -200,7 +208,7 @@ def stop_children(processes,stop_time,deadline):
 def worker_round(request):
     """Run inside the externally bounded child, including validation and collection."""
     output=Path(request['output']);fixture=Path(request['fixture']);repo=Path(request['repo'])
-    config=common.load(Path(request['config']))
+    config=request['configuration'] if 'configuration' in request else common.load(Path(request['config']))
     common.validate_record(config,'run_config')
     verified=verify(fixture,verify_pixels=False)
     common.write(output/'preflight-fixture.json',{'schema_version':1,'files_verified':True,'pixels_verified':False,'pixel_verification':'native cached frames before model loading',
@@ -215,6 +223,8 @@ def worker_round(request):
              DRONE_TRACKER_ACCEPTANCE_DIRECTORY=str(output))
     worker_log=(output/'worker.log').open('xb')
     node_log=(output/'node.log').open('xb')
+    common.write(output/'node-request.json', {'schema_version':1, 'fixture':str(fixture),
+        'config':str(output/'run-config.json'), 'output':str(output), 'diagnostic_socket':socket})
     worker=subprocess.Popen([request['worker'],'--socket',socket,'--directory',str(output/'raw'),
                              '--minimum-free-bytes','0'],stdout=worker_log,stderr=subprocess.STDOUT,env=env,start_new_session=True)
     try:
@@ -223,7 +233,7 @@ def worker_round(request):
             time.sleep(.01)
         if not Path(socket).is_socket():
             raise ValueError('diagnostic worker socket not ready')
-        node=subprocess.Popen([request['binary'],str(fixture),str(output/'run-config.json'),str(output),socket],
+        node=subprocess.Popen([request['binary'],str(output/'node-request.json')],
                               stdout=node_log,stderr=subprocess.STDOUT,env=env,start_new_session=True)
         node_code=node.wait()
         worker.send_signal(signal.SIGINT)
@@ -240,31 +250,49 @@ def worker_round(request):
         worker_log.close();node_log.close()
 
 
+def deadline_plan(request):
+    budgets = request.get('deadlines', {'preparation_seconds':90, 'cleanup_seconds':10})
+    duration = request.get('duration_us', 20_000_000)
+    total = budgets['preparation_seconds'] + math.ceil(duration / 1_000_000) + budgets['cleanup_seconds']
+    return {**budgets, 'duration_us':duration, 'total_seconds':total,
+            'stop_after_seconds':total - budgets['cleanup_seconds']}
+
+
 def bounded_attempt(request):
     enable_subreaper()
     output=Path(request['output'])
     if not output.exists():output.mkdir(parents=True,exist_ok=False)
     common.write(output/'attempt.json',request)
-    begin=time.monotonic();deadline=begin+119.5
+    plan = deadline_plan(request)
+    common.write(output/'deadline-plan.json',plan)
+    total = plan['total_seconds']
+    begin=time.monotonic();deadline=begin+total-min(.5,plan['cleanup_seconds']/4)
     log=(output/'controller.log').open('xb')
     process=subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'--internal',str(output/'attempt.json')],
                              stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
     timeout=False
-    while process.poll() is None and time.monotonic()<begin+110:
-        time.sleep(.05)
+    preparation_timeout = False
+    while process.poll() is None and time.monotonic()<begin+plan['stop_after_seconds']:
+        if not (output/'input-clock.json').exists() and time.monotonic() >= begin+plan['preparation_seconds']:
+            preparation_timeout = True
+            break
+        time.sleep(.01)
     if process.poll() is None: timeout=True
     recovered=stop_children([process],time.monotonic(),deadline)
     log.close()
     elapsed=time.monotonic()-begin
-    deadline_record={'limit_seconds':120,'stop_after_seconds':110,'elapsed_seconds':elapsed,
+    deadline_record={'limit_seconds':total,'stop_after_seconds':plan['stop_after_seconds'],
+                'preparation_seconds':plan['preparation_seconds'],'cleanup_seconds':plan['cleanup_seconds'],
+                'preparation_timed_out':preparation_timeout,'elapsed_seconds':elapsed,
                 'timed_out':timeout,'resources_recovered':recovered,'exit_code':process.returncode}
     common.write(output/'deadline.json',deadline_record)
     result=common.load(output/'collection.json') if (output/'collection.json').exists() else {
-        'schema_version':1,'qualified':False,'normal_end':False,
+        'schema_version':2 if request.get('configuration',{}).get('schema_version') == 3 else 1,'qualified':False,'normal_end':False,
         'reasons':['preflight_or_collection_failed']}
+    if preparation_timeout: result['reasons'].append('preparation_deadline')
     if timeout: result['reasons'].append('external_deadline')
     if not recovered: result['reasons'].append('test_descendants_not_recovered')
-    if elapsed>120: result['reasons'].append('external_deadline_exceeded')
+    if elapsed>total: result['reasons'].append('external_deadline_exceeded')
     result['qualified']=result['qualified'] and not result['reasons']
     # Raw evidence hashes were computed inside the externally bounded collector.
     # Finalization hashes only the two small controller records; it never rereads large logs.
@@ -275,22 +303,29 @@ def bounded_attempt(request):
         result['qualified']=False;result['reasons'].append('deadline_during_finalization')
     common.write(output/'completion.json',result)
     elapsed=time.monotonic()-begin
-    if elapsed>120:
-        raise TimeoutError('external controller finalization exceeded total120-second deadline')
-    return common.load(output/'completion.json')['qualified'] and recovered and not timeout and elapsed<=120
+    if elapsed>total:
+        raise TimeoutError('external controller finalization exceeded configured total deadline')
+    return common.load(output/'completion.json')['qualified'] and recovered and not timeout and elapsed<=total
 
 
-def supervise(request, total_seconds=120):
+def supervise(request, total_seconds=None):
     """An outer process bounds the controller itself, including evidence finalization."""
     enable_subreaper()
     output=Path(request['output'])
+    plan = deadline_plan(request)
+    total_seconds = plan['total_seconds'] if total_seconds is None else total_seconds
     start=time.monotonic()
     output.mkdir(parents=True,exist_ok=False)
     common.write(output/'supervised-request.json',request)
+    common.write(output/'deadline-plan-supervisor.json',plan)
     log=(output/'supervisor.log').open('xb')
     controller=subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'--controller',
         str(output/'supervised-request.json')],stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
-    while controller.poll() is None and time.monotonic()<start+total_seconds-0.5:
+    preparation_timeout = False
+    while controller.poll() is None and time.monotonic()<start+total_seconds-min(.5,total_seconds/10):
+        if not (output/'input-clock.json').exists() and time.monotonic() >= start+plan['preparation_seconds']:
+            preparation_timeout = True
+            break
         time.sleep(.01)
     timed_out=controller.poll() is None
     cleanup_deadline=start+total_seconds-0.1
@@ -310,7 +345,7 @@ def supervise(request, total_seconds=120):
     log.close()
     completion_path=output/'completion.json'
     result=common.load(completion_path) if completion_path.exists() else {
-        'schema_version':1,'qualified':False,'normal_end':False,
+        'schema_version':2 if request.get('configuration',{}).get('schema_version') == 3 else 1,'qualified':False,'normal_end':False,
         'reasons':['external_controller_deadline_or_failure'],'files':{}}
     if completion_path.exists():
         common.write(output/'controller-completion.json',result)
@@ -319,17 +354,20 @@ def supervise(request, total_seconds=120):
         common.write(output/'controller-deadline.json',common.load(deadline_path))
         deadline_path.unlink()
     elapsed=time.monotonic()-start
-    deadline_record={'limit_seconds':total_seconds,'stop_after_seconds':min(110,total_seconds),
+    deadline_record={'limit_seconds':total_seconds,'stop_after_seconds':min(plan['stop_after_seconds'],total_seconds),
+        'preparation_seconds':plan['preparation_seconds'],'cleanup_seconds':plan['cleanup_seconds'],
         'elapsed_seconds':elapsed,'timed_out':timed_out,'resources_recovered':recovered,
+        'preparation_timed_out':preparation_timeout,
         'controller_exit_code':controller.returncode,'scope':'includes controller finalization'}
     common.write(deadline_path,deadline_record)
+    if preparation_timeout:result['reasons'].append('preparation_deadline')
     if timed_out:result['reasons'].append('external_controller_deadline')
     if controller.returncode!=0:result['reasons'].append('controller_abnormal_exit')
     if not recovered:result['reasons'].append('test_descendants_not_recovered')
     if elapsed>total_seconds:result['reasons'].append('external_deadline_exceeded')
     result['qualified']=result['qualified'] and not result['reasons']
     for name in ('attempt.json','supervised-request.json','controller.log','supervisor.log',
-                 'controller-completion.json','controller-deadline.json','deadline.json'):
+                 'controller-completion.json','controller-deadline.json','deadline.json','deadline-plan-supervisor.json'):
         if (output/name).exists():result['files'][name]=common.sha256(output/name)
     temporary=output/'completion-supervised.json'
     common.write(temporary,result)
@@ -350,19 +388,7 @@ def main():
         return worker_round(common.load(args.internal))
     if args.controller:
         return 0 if bounded_attempt(common.load(args.controller)) else 1
-    if args.rounds<3:
-        raise ValueError('rounds: predeclare at least three attempts')
-    args.output.mkdir(parents=True,exist_ok=False)
-    attempts=[]
-    for index in range(args.rounds):
-        request={key:str(getattr(args,key).resolve()) for key in ('fixture','config','binary','worker','repo')}
-        request['output']=str((args.output/f'run-{index+1:03d}').resolve())
-        ok=supervise(request)
-        attempts.append({'run':request['output'],'qualified':ok,'completion_sha256':common.sha256(Path(request['output'])/'completion.json'),
-                         'deadline_sha256':common.sha256(Path(request['output'])/'deadline.json')})
-        print(f'Run {index+1}/{args.rounds}: {"qualified" if ok else "incomplete; evidence preserved"}',flush=True)
-    common.write(args.output/'batch.json',{'schema_version':1,'planned_rounds':args.rounds,'attempts':attempts})
-    return 0 if all(row['qualified'] for row in attempts) else 1
+    raise ValueError('Use run_suite.py CONFIG.yaml; run_batch.py is an internal controller.')
 
 if __name__=='__main__':
     try: sys.exit(main())

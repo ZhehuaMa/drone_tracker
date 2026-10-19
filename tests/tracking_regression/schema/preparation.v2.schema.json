@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "input_mode",
+    "ready",
+    "begin_mono_ns",
+    "end_mono_ns",
+    "duration_ms",
+    "verified_frame_count",
+    "cached_pixel_bytes",
+    "process_rss_kib",
+    "process_peak_rss_kib",
+    "system_total_kib",
+    "system_available_kib",
+    "reason"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "input_mode": {
+      "type": "string",
+      "const": "predecode_all"
+    },
+    "ready": {
+      "type": "boolean"
+    },
+    "begin_mono_ns": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "end_mono_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "duration_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "verified_frame_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cached_pixel_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "process_rss_kib": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "process_peak_rss_kib": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "system_total_kib": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "system_available_kib": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reason": {
+      "type": "string"
+    }
+  }
+}

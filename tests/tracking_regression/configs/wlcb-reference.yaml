@@ -1,0 +1,38 @@
+# Retained reference contract; replace the bag locator with the verified original.
+{
+  "schema_version": 1,
+  "suite_id": "wlcb-reference",
+  "operation": "prepare",
+  "output_root": "/external/results/wlcb-reference",
+  "prepare": {},
+  "deadlines": {
+    "preparation_seconds": 90,
+    "cleanup_seconds": 10
+  },
+  "clips": [
+    {
+      "case_id": "wlcb-1513-loss-recovery",
+      "source": {
+        "video": "../recordings/test-01-20260929-1513/session-ac89d6c15b83faf1c92abed84a07ab02/test-01-20260929-1513.mp4",
+        "frame_logs": [
+          "../recordings/test-01-20260929-1513/session-ac89d6c15b83faf1c92abed84a07ab02/000001.frames.jsonl",
+          "../recordings/test-01-20260929-1513/session-ac89d6c15b83faf1c92abed84a07ab02/000002.frames.jsonl"
+        ],
+        "attitude_bags": [
+          "../recordings/test-01-20260929-1513/TODO_explicit_verified_bag.db3"
+        ],
+        "session": "../recordings/test-01-20260929-1513/session-ac89d6c15b83faf1c92abed84a07ab02/session.json"
+      },
+      "frame_selection_interval": {
+        "start_seconds": 55,
+        "end_seconds": 75
+      },
+      "analysis_windows": {
+        "core": {
+          "start_seconds": 13.5,
+          "end_seconds": 17.5
+        }
+      }
+    }
+  ]
+}
