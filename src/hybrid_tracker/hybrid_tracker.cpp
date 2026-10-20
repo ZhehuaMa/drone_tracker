@@ -11,6 +11,9 @@
 #include "nano_tracker.h"
 #include "dcf_tracker.h"
 #include "rotation_kf.h"
+#ifdef DRONE_TRACKER_DIAGNOSTIC_TESTING
+#include "tests/diagnostic_test_access.h"
+#endif
 
 namespace {
 std::array<float, 4> diagnosticBox(const cv::Rect2f &box) { return {box.x, box.y, box.width, box.height}; }
@@ -398,6 +401,14 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
         m_display_color = cv::Scalar(0, 255, 255); // 黄色
         m_state = TrackerState::Detecting;
 
+        // Take one snapshot to release unread-result admission before this frame's request.
+        // Submit before costly recovery; results completing later belong to a later update.
+        YoloResult res{};
+        const bool has_result{m_detector->get_result(res)};
+#ifdef DRONE_TRACKER_DIAGNOSTIC_TESTING
+        HybridTrackerDiagnosticTestAccess::afterSnapshot();
+#endif
+
         {
             cv::Rect roi;
             if (has_kf_pred)
@@ -410,8 +421,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
             m_detector->request(ctx.frame, current_frame_id, roi, source);
         }
 
-        YoloResult res;
-        if (m_detector->get_result(res) && res.has_target && res.source.generation == m_generation)
+        if (has_result && res.has_target && res.source.generation == m_generation)
         {
             // 找到检测结果对应的缓存帧，补帧初始化并前向追平
             bool found = false;
@@ -583,6 +593,14 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
         m_frame_buffer.back().tracker_box = source.tracker_box;
         m_frame_buffer.back().has_tracker_box = source.tracker_valid;
 
+        // Preserve this frame's observation, then free unread admission with one snapshot.
+        // Request (or skip) before delayed arbitration; do not read later completions again here.
+        YoloResult res{};
+        const bool has_result{m_detector->get_result(res)};
+#ifdef DRONE_TRACKER_DIAGNOSTIC_TESTING
+        HybridTrackerDiagnosticTestAccess::afterSnapshot();
+#endif
+
         // 定期请求 YOLO 检测（ROI 优先）
         if (m_frame_count % m_settings.yolo_interval == 0)
         {
@@ -603,8 +621,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
         }
 
         // 检查 YOLO 检测结果
-        YoloResult res;
-        if (m_detector->get_result(res))
+        if (has_result)
         {
             diagnostics::current_request = res.request_id;
             auto decision{diagnostics::event(diagnostics::Type::Decision)};
@@ -956,7 +973,10 @@ cv::Rect HybridTrackerImp::calculateROI(const cv::Rect2f& box, int img_w, int im
 }
 
 #ifdef DRONE_TRACKER_DIAGNOSTIC_TESTING
-#include "tests/diagnostic_test_access.h"
+thread_local std::function<void()> HybridTrackerDiagnosticTestAccess::snapshot_hook{};
+void HybridTrackerDiagnosticTestAccess::afterSnapshot() {
+    if (snapshot_hook) { snapshot_hook(); }
+}
 void HybridTrackerDiagnosticTestAccess::jump(HybridTracker &tracker, int counter, float position, float size) {
     auto &implementation{dynamic_cast<HybridTrackerImp &>(tracker)};
     implementation.m_jump_counter = counter;

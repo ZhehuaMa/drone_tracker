@@ -137,3 +137,41 @@ keep replay input independent of compute contention. It does not change the
 production policy, CPU governors, model execution, or other tracker threads.
 Artificial contention tests are diagnostic groups; formal references and
 candidates run without that added load.
+
+## Consume completed YOLO output before requesting the next frame
+
+The `consume-yolo-result-before-request` change uses three stages at each normal
+interaction: take one completed result into a local snapshot; attempt the current
+request (or keep the existing Tracking interval skip); then arbitrate the saved
+result. Arbitration includes history lookup, initialization and catch-up, which
+replays cached frames after the detection's source frame. This order lets the
+worker process the new request while catch-up runs. Tracking captures its current
+NanoTrack observation before taking the result snapshot.
+
+A completion arriving after that one read stays in the detector's result slot.
+It can still reject the current request with `UnreadResult`. There is no second
+read in the same update. An accepted pending frame can still be replaced by a
+newer frame; the order does not guarantee inference on fixture frame 389.
+
+For a before/after comparison, bind the reference source to commit
+`7fbb0a2e006f12654a7db0f6d9d152244ec07e0d` and export the actual candidate source.
+Record both source fingerprints and both real executable hashes before the first
+round, and require both pairs to differ. Running two cohorts with one executable
+only measures repeatability. Keep fixtures, model content, algorithm settings,
+tools, board, CPU policy, supplier CPU 4, preparation deadline 3600 seconds,
+cleanup deadline 10 seconds and supply lateness limit 50000 microseconds fixed.
+Use new reference, candidate, baseline and comparison directories. Run only the
+three test-03 intervals, three rounds per side; do not prepare or replay test-02.
+The entry point remains `python3 tests/tracking_regression/run_suite.py CONFIG.yaml`.
+
+Report every round, including zero-valid-box rounds, then each case's median,
+range, candidate-minus-reference difference and relative change. If the reference
+value is zero, relative change is undefined; preserve the raw values instead of
+inventing a percentage. Show valid boxes / total publications alongside update
+and detection time, longest invalid output, publication gaps, initialization,
+catch-up, rejection/replacement counts and memory. For the middle interval, list
+each round's initialization outcome and the request/execution identities around
+fixture frames 388/389. Do not average across recordings. A qualified run proves
+that evidence and cleanup are complete; a faster update or more valid boxes does
+not establish tracking accuracy. Without explicit performance thresholds, retain
+`not_set` as the verdict.
