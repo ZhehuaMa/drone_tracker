@@ -197,3 +197,16 @@ Comparison identity includes observation protocol version, prediction mode,
 rate tau, image QoS and bag topic policy. Missing or changed conditions make
 old/new cohorts incomparable. Old baseline files remain untouched; explanatory
 side-by-side displays do not establish a same-condition performance improvement.
+
+## CPU evidence and measurement cost
+
+The allowed mask says where a thread may run. `cpu-points.csv.cpu` is the CPU returned at the actual
+managed call site. An external snapshot's `last_cpu` is a discrete kernel observation, which may describe
+an earlier scheduling instant. These three fields answer different questions.
+`cpu-placement.json` reports per-writer execution CPU counts, sample count, write-cost distribution and
+unknown thread observations. It never infers a library thread's responsibility from its name or CPU alone.
+The write cost includes local clock queries and record population; it excludes startup mask registration,
+external scans and export. The same bounded observer is required on both experiment sides.
+This is an instrumented comparison, not a claim that observation is free or that memory/NPU contention is isolated.
+Recovery totals must be read with actual step counts and per-step durations; different work amounts cannot
+be attributed to scheduling merely because total duration changed.

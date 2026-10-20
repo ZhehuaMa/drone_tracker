@@ -31,6 +31,19 @@ inline thread_local Producer current_producer{Producer::Node};
 inline thread_local std::uint64_t current_update{0};
 inline thread_local std::uint64_t current_tracker_frame{0};
 inline thread_local std::uint64_t current_request{0};
+// Installed only by a regression entry point before any business threads exist.
+using PositionReceiver = void (*)(Producer, const Event &, std::uint32_t) noexcept;
+inline PositionReceiver position_receiver{};
+inline void positionPoint(std::uint32_t point, std::uint64_t detail = 0) noexcept {
+    if (!position_receiver) { return; }
+    Event sample{};
+    sample.round_id = current_round.load(std::memory_order_relaxed);
+    sample.update_id = current_update;
+    sample.tracker_frame_id = current_tracker_frame;
+    sample.request_id = current_request;
+    sample.values[0] = detail;
+    position_receiver(current_producer, sample, point);
+}
 inline void emit(Event event) noexcept {
 #ifdef DRONE_TRACKER_ENABLE_DIAGNOSTICS
     Recorder *recorder{active.load(std::memory_order_acquire)};
@@ -43,6 +56,11 @@ inline void emit(Event event) noexcept {
         }
         if (event.request_id == 0) {
             event.request_id = current_request;
+        }
+        if (position_receiver) {
+            Event sample{event};
+            sample.round_id = current_round.load(std::memory_order_relaxed);
+            position_receiver(current_producer, sample, static_cast<std::uint32_t>(event.type));
         }
         recorder->submit(current_producer, event);
     }

@@ -1,5 +1,7 @@
 #include "realtime_source.h"
+#include "cpu_observer.h"
 
+#include <array>
 #include <cerrno>
 #include <fstream>
 #include <iostream>
@@ -13,6 +15,7 @@
 #include <unistd.h>
 #include "diagnostics/recorder.h"
 #include "platform/frame_source_ops.h"
+#include "platform/rk3576/host_frame.h"
 #include <rclcpp/time.hpp>
 #include <yaml-cpp/yaml.h>
 
@@ -199,6 +202,100 @@ void slowConsumerAndEof(const std::filesystem::path &root) {
     require(!source.tryFrame(leftover), "stop did not release residual queue");
     noChild();
 }
+void parkedSupplierLifecycle(const std::filesystem::path &root) {
+    const auto fixture{root / "tiny-fixture"};
+    std::filesystem::create_directory(fixture);
+    std::ofstream manifest{fixture / "fixture.json"};
+    manifest << R"({"schema_version":2,"case_id":"parked","width":64,"height":48,"frame_count":3,"start_us":0,"end_us":50000,"duration_us":50000})";
+    manifest.close();
+    std::ofstream frames{fixture / "frames.jsonl"};
+    for (int id{}; id < 3; ++id) {
+        frames << "{\"fixture_frame_id\":" << id << ",\"relative_us\":" << 1000 + id * 15000
+               << ",\"pixel_sha256\":\"e80232b4d18d0bb7e794be263ba937626f383f9917d4b8a737ba893a8f752293\"}\n";
+    }
+    frames.close();
+    std::filesystem::copy_file(root / "fixture/attitude.jsonl", fixture / "attitude.jsonl");
+    const auto clip{(fixture / "clip.mkv").string()};
+    const int child{::fork()};
+    require(child >= 0, "tiny fixture encoder fork failed");
+    if (!child) {
+        ::execl(TRACKING_REGRESSION_FFMPEG, "ffmpeg", "-v", "error", "-f", "lavfi", "-i",
+            "color=c=black:s=64x48:r=60", "-frames:v", "3", "-an", "-threads", "1",
+            "-c:v", "ffv1", "-level", "3", "-pix_fmt", "gray", clip.c_str(), nullptr);
+        ::_exit(127);
+    }
+    int result{};
+    while (::waitpid(child, &result, 0) < 0 && errno == EINTR) {}
+    require(WIFEXITED(result) && !WEXITSTATUS(result), "tiny fixture encode failed");
+    cpu_set_t initial{};
+    require(::sched_getaffinity(0, sizeof(initial), &initial) == 0, "initial mask read failed");
+    std::vector<int> cpus{};
+    for (int cpu{}; cpu < CPU_SETSIZE; ++cpu) { if (CPU_ISSET(cpu, &initial)) { cpus.push_back(cpu); } }
+    require(cpus.size() >= 2, "different-core lifecycle test needs two available CPUs");
+    for (const auto &mode : {"release", "model-failure", "cancel-before-ready", "excluded"}) {
+        auto config{options(root, std::string{"parked-"} + mode)};
+        config.fixture = fixture;
+        config.supplier_cpu = cpus.front();
+        std::size_t callbacks{};
+        RealtimeSource source{config};
+        source.setAttitudeCallback([&](sensor_msgs::msg::Imu::SharedPtr) { ++callbacks; });
+        if (std::string{mode} == "cancel-before-ready") {
+            source.stop();
+            require(!source.readySupplier(), "cancelled source became ready");
+        } else if (std::string{mode} == "excluded") {
+            require(source.prepare(), "tiny prepare failed");
+            bool rejected{};
+            std::thread caller{[&] {
+                cpu_set_t target{}; CPU_ZERO(&target); CPU_SET(cpus.back(), &target);
+                if (::sched_setaffinity(0, sizeof(target), &target)) { return; }
+                rejected = !source.readySupplier();
+            }};
+            caller.join();
+            require(rejected && source.status().state == FrameSourceState::Failed, "excluded supplier CPU was accepted");
+        } else {
+            require(source.readySupplier(), "supplier did not become ready");
+            require(source.readySupplier(), "repeated readiness failed");
+            require(source.status().read == 0 && callbacks == 0
+                && !std::filesystem::exists(config.output / "input-clock.json"), "parked source released early");
+            if (std::string{mode} == "release") {
+                bool started{};
+                std::thread caller{[&] {
+                    cpu_set_t target{}; CPU_ZERO(&target); CPU_SET(cpus.back(), &target);
+                    if (::sched_setaffinity(0, sizeof(target), &target)) { return; }
+                    started = source.start();
+                }};
+                caller.join();
+                require(started, "different-core caller could not release parked supplier");
+                until([&] { return source.status().state != FrameSourceState::Running; }, 2s, "tiny EOF missing");
+                require(source.status().state == FrameSourceState::Eof, "tiny playback did not reach EOF");
+            }
+        }
+        source.stop(); source.stop();
+        if (std::string{mode} != "release") {
+            require(callbacks == 0 && source.status().read == 0
+                && !std::filesystem::exists(config.output / "input-clock.json"), "failed model/cancel started input");
+        }
+    }
+    noChild();
+}
+void boundedCpuObservation(const std::filesystem::path &root) {
+    tracking_regression::CpuObserver observer{2};
+    diagnostics::current_producer = diagnostics::Producer::Node;
+    diagnostics::positionPoint(200);
+    diagnostics::positionPoint(7);
+    diagnostics::positionPoint(8);
+    std::thread second{[] {
+        diagnostics::current_producer = diagnostics::Producer::Yolo;
+        diagnostics::positionPoint(200);
+    }};
+    second.join();
+    observer.exportRecords(root);
+    const auto evidence{YAML::LoadFile((root / "cpu-observation.json").string())};
+    require(evidence["writers"][0]["count"].as<int>() == 2
+        && evidence["writers"][0]["overflow"].as<int>() == 1, "CPU observation overwrote bounded evidence");
+    require(evidence["writers"][0]["tid"].as<long>() != evidence["writers"][2]["tid"].as<long>(),
+        "CPU observation confused independent writers");
+}
 void rejectAndExternalStop(const std::filesystem::path &root) {
     auto config{options(root, "external-stop")};
     config.queue_capacity = 1;
@@ -332,6 +429,99 @@ public:
 private:
     cv::MatAllocator *previous_;
 };
+class CountPixelAllocations final : public cv::MatAllocator {
+public:
+    explicit CountPixelAllocations(cv::MatAllocator &delegate) : delegate_{delegate} {}
+    cv::UMatData *allocate(int dimensions, const int *sizes, int type, void *data,
+                          std::size_t *step, cv::AccessFlag flags, cv::UMatUsageFlags usage) const override {
+        if (!data) { ++allocations_; }
+        return delegate_.allocate(dimensions, sizes, type, data, step, flags, usage);
+    }
+    bool allocate(cv::UMatData *data, cv::AccessFlag flags, cv::UMatUsageFlags usage) const override {
+        ++allocations_;
+        return delegate_.allocate(data, flags, usage);
+    }
+    void deallocate(cv::UMatData *data) const override { delegate_.deallocate(data); }
+    unsigned allocations() const { return allocations_; }
+private:
+    cv::MatAllocator &delegate_;
+    mutable unsigned allocations_{};
+};
+void retainedHostFrameOwnership() {
+    FrameRef retained{};
+    const unsigned char *pixels{};
+    std::size_t stride{};
+    {
+        cv::Mat parent{4, 9, CV_8UC1, cv::Scalar{73}};
+        cv::Mat region{parent(cv::Rect{1, 0, 5, 4})};
+        pixels = region.data;
+        stride = region.step[0];
+        CountPixelAllocations allocator{*cv::Mat::getDefaultAllocator()};
+        ScopedMatAllocator scoped{allocator};
+        retained = rk3576::retainGrayFrame(region, 1234567, {42, 7, 9, 1});
+        require(allocator.allocations() == 0, "retained frame allocated pixel storage");
+        require(!region.empty() && region.data == pixels, "retained frame moved or changed the cache");
+        require(rk3576::isHostGrayFrame(retained), "retained frame lost actual host backend type");
+        auto copied{rk3576::copyGrayFrame(region, 99)};
+        require(allocator.allocations() == 1 && copied->mapRead()->mat().data != pixels,
+            "production deep-copy API stopped owning an independent pixel copy");
+    }
+    auto view{retained->mapRead()};
+    require(retained->timestampUs() == 1234567 && retained->width() == 5 && retained->height() == 4
+        && view->rowStrideBytes() == stride && view->mat().data == pixels,
+        "retained frame changed timestamp, dimensions, stride or storage identity");
+    const auto identity{retained->diagnosticIdentity()};
+    require(identity.capture_id == 42 && identity.round_id == 7 && identity.driver_sequence == 9
+        && identity.flags == 1, "retention changed frame diagnostic identity");
+    retained.reset();
+    for (int row{}; row < view->height(); ++row) {
+        for (int col{}; col < view->width(); ++col) {
+            require(view->mat().at<unsigned char>(row, col) == 73, "read view outlived its pixel storage");
+        }
+    }
+    std::array<unsigned char, 20> borrowed{};
+    bool rejected{};
+    try { rk3576::retainGrayFrame(cv::Mat{4, 5, CV_8UC1, borrowed.data()}); }
+    catch (const std::invalid_argument &) { rejected = true; }
+    require(rejected, "retention accepted unowned external pixels");
+    for (const cv::Mat &invalid : {cv::Mat{}, cv::Mat{4, 5, CV_8UC3}}) {
+        rejected = false;
+        try { rk3576::retainGrayFrame(invalid); }
+        catch (const std::invalid_argument &) { rejected = true; }
+        require(rejected, "retention accepted empty or non-Gray8 pixels");
+    }
+}
+void supplierReusesVerifiedPixels(const std::filesystem::path &root) {
+    auto config{options(root, "retained-supplier")};
+    config.fixture = root / "tiny-fixture";
+    FrameRef survivor{};
+    {
+        RealtimeSource source{config};
+        require(source.prepare(), "retained-supplier preparation failed");
+        CountPixelAllocations allocator{*cv::Mat::getDefaultAllocator()};
+        {
+            ScopedMatAllocator scoped{allocator};
+            require(source.start(), "retained-supplier start failed");
+            require(source.waitFrame(survivor, 1s), "retained-supplier first frame missing");
+            until([&] { return !source.isRunning(); }, 2s, "retained-supplier EOF missing");
+            source.stop();
+        }
+        require(source.status().read == 3 && source.status().dropped == 0,
+            "retention changed supplied count or queue disposition");
+        require(allocator.allocations() == 0, "timed supplier requested a new pixel allocation");
+    }
+    require(survivor && rk3576::isHostGrayFrame(survivor), "source cleanup invalidated retained host frame");
+    const auto view{survivor->mapRead()};
+    require(view->width() == 64 && view->height() == 48, "source cleanup changed retained geometry");
+    for (int row{}; row < view->height(); ++row) {
+        for (int col{}; col < view->width(); ++col) {
+            require(view->mat().at<unsigned char>(row, col) == 0, "source cleanup changed verified pixels");
+        }
+    }
+    const auto clock{YAML::LoadFile((config.output / "input-clock.json").string())};
+    require(survivor->timestampUs() == clock["e0_us"].as<std::uint64_t>() + 1000,
+        "retained-supplier frame lost original epoch mapping");
+}
 void allocationFailure(const std::filesystem::path &root) {
     auto config{options(root, "allocation-failure")};
     RejectCacheAllocation allocator{*cv::Mat::getDefaultAllocator()};
@@ -479,6 +669,10 @@ int main(int argc, char **argv) {
         decodeFailure(temporary.path);
         pixelFailure(temporary.path);
         allocationFailure(temporary.path);
+        parkedSupplierLifecycle(temporary.path);
+        retainedHostFrameOwnership();
+        supplierReusesVerifiedPixels(temporary.path);
+        boundedCpuObservation(temporary.path);
         slowConsumerAndEof(temporary.path);
         rejectAndExternalStop(temporary.path);
         latenessInvalidates(temporary.path);

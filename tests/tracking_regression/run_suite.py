@@ -177,7 +177,7 @@ def execute(record):
                 if item is None:
                     row.update(status='missing_case',reason='missing baseline/candidates',decision='not_evaluated')
                     continue
-                report = compare.compare(item['baseline'],item['candidates'],item.get('thresholds'))
+                report = compare.compare(item['baseline'],item['candidates'],item.get('thresholds'),item.get('affinity_experiment'))
                 if report.get('case_id') != case_id:
                     report['status'] = 'incomparable'
                     report['differences'].append({'field':'case_id','reason':'declared_case_mismatch'})

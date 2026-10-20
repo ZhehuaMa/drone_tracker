@@ -22,6 +22,10 @@
     },
     "metrics": {
       "type": "array"
-    }
+    },
+    "experiment_version": {},
+    "affinity_experiment": {},
+    "original_comparison_groups": {},
+    "allowed_differences": {}
   }
 }

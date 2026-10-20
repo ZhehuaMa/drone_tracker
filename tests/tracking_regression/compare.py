@@ -133,7 +133,7 @@ def _apply_thresholds(rows, thresholds):
             "threshold_sha256": thresholds["sha256"]}
 
 
-def compare(baseline_path, candidate_paths, threshold_path=None):
+def compare(baseline_path, candidate_paths, threshold_path=None, affinity_experiment=None):
     """Return incomparable evidence instead of issuing a performance conclusion."""
     result = {"schema_version": 1, "comparison_version": 1,
               "status": "incomparable", "differences": [], "metrics": [],
@@ -164,6 +164,21 @@ def compare(baseline_path, candidate_paths, threshold_path=None):
         result["differences"].append({"field": "candidate.runs", "reason": "duplicate_run_directory"})
     if len({run["checksums"]["identity.json"] for run in candidates}) != len(candidates):
         result["differences"].append({"field": "candidate.runs", "reason": "duplicate_process_identity"})
+    experiment = None
+    if affinity_experiment:
+        import affinity_experiment as treatment
+        try:
+            experiment = treatment.load_manifest(affinity_experiment)
+            result['experiment_version'] = 1
+            result['affinity_experiment'] = experiment
+            result['original_comparison_groups'] = {'reference':manifest['comparison_group'],
+                                                    'candidate':[run['identity']['comparison_group'] for run in candidates]}
+            result['allowed_differences'] = []
+            result['differences'].extend(treatment.verify_code(experiment['content'], reference, 'reference'))
+            result['differences'].extend(treatment.verify_code(experiment['content'], candidates, 'candidate'))
+        except (ValueError, OSError, KeyError, TypeError) as error:
+            result['differences'].append({'field':'affinity_experiment','reason':'invalid_treatment_manifest','detail':str(error)})
+            return result
     reference_ids = {run["checksums"]["identity.json"] for run in reference}
     for index, run in enumerate(candidates):
         if run["checksums"]["identity.json"] in reference_ids:
@@ -172,8 +187,13 @@ def compare(baseline_path, candidate_paths, threshold_path=None):
         for field in ('schema_version','case_id','duration_us'):
             result['differences'].extend(baseline.field_differences(manifest[field],run['identity'][field],
                                                                   f'candidate.runs[{index}].{field}'))
-        result["differences"].extend(baseline.field_differences(
-            manifest["comparison_group"], run["identity"]["comparison_group"], f"candidate.runs[{index}].comparison_group"))
+        if experiment:
+            errors, accepted = treatment.compare_groups(experiment['content'], manifest['comparison_group'], run['identity']['comparison_group'])
+            result['differences'].extend(errors)
+            result['allowed_differences'].append({'candidate_index':index,'leaves':accepted})
+        else:
+            result["differences"].extend(baseline.field_differences(
+                manifest["comparison_group"], run["identity"]["comparison_group"], f"candidate.runs[{index}].comparison_group"))
         for field in ("source_sha256", "binary_sha256", "project_libraries"):
             if candidates[0]["identity"]["code"].get(field, {}) != run["identity"]["code"].get(field, {}):
                 result["differences"].append({"field": f"candidate.runs[{index}].code.{field}",

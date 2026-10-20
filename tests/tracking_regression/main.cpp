@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include "drone_tracker_node.h"
 #include "diagnostics/measurement.h"
+#include "cpu_observer.h"
 #include "platform/cpu_affinity.h"
 #include "platform/file_identity.h"
 #include <yaml-cpp/yaml.h>
@@ -64,6 +65,7 @@ int main(int argc, char **argv) {
         measurements = std::make_unique<diagnostics::Measurement>();
         diagnostics::measurement = measurements.get();
     }
+    std::unique_ptr<CpuObserver> positions{};
     try {
         const auto request{YAML::LoadFile(argv[1])};
         const std::filesystem::path fixture{request["fixture"].as<std::string>()};
@@ -90,8 +92,12 @@ int main(int argc, char **argv) {
                 throw std::invalid_argument{std::string{"output already exists: "} + name};
             }
         }
-        cpu_affinity::initializeControl();
         const auto config{YAML::LoadFile(config_path)};
+        if (config["cpu_observation"]) {
+            positions = std::make_unique<CpuObserver>(config["cpu_observation"]["capacity_per_writer"].as<std::size_t>());
+        }
+        const bool pinned{config["cpu_affinity"] && config["cpu_affinity"]["mode"].as<std::string>() == "role-pinned"};
+        if (!pinned) { cpu_affinity::initializeControl(); }
         const auto algorithm{YAML::LoadFile((fixture / "algorithm.yaml").string())};
         const auto model_paths{config["model_paths"]};
         if (model_paths) {
@@ -135,6 +141,14 @@ int main(int argc, char **argv) {
             prepared_source->stop();
             throw std::runtime_error{reason};
         }
+        if (pinned && !prepared_source->readySupplier()) {
+            throw std::runtime_error{prepared_source->status().reason};
+        }
+        if (pinned) { cpu_affinity::initializeControl(); }
+        const auto previous_producer{diagnostics::current_producer};
+        diagnostics::current_producer = diagnostics::Producer::Control;
+        diagnostics::positionPoint(200);
+        diagnostics::current_producer = previous_producer;
         RealtimeSource *source{prepared_source.get()};
         auto factory{std::make_unique<RegressionFactory>(std::move(prepared_source))};
         std::vector<rclcpp::Parameter> parameters{};
@@ -160,6 +174,17 @@ int main(int argc, char **argv) {
         source->setAttitudeCallback([pointer = node.get()](sensor_msgs::msg::Imu::SharedPtr message) {
             DroneTrackerNodeTestAccess::attitude(*pointer, std::move(message));
         });
+        // The external observer acknowledges its model-ready snapshot before timed supply starts.
+        std::ofstream ready{output / "model-ready.json"};
+        ready << "{\"mono_ns\":" << diagnostics::monotonicNs() << "}\n";
+        ready.close();
+        if (positions) {
+            const auto until{std::chrono::steady_clock::now() + std::chrono::seconds{5}};
+            while (!std::filesystem::exists(output / "observer-ready.json")) {
+                if (std::chrono::steady_clock::now() >= until) { throw std::runtime_error{"external CPU observer not ready"}; }
+                std::this_thread::sleep_for(std::chrono::milliseconds{2});
+            }
+        }
         node->run();
         rclcpp::executors::SingleThreadedExecutor executor{};
         executor.add_node(node);
@@ -167,12 +192,23 @@ int main(int argc, char **argv) {
             executor.spin_some();
             std::this_thread::sleep_for(std::chrono::milliseconds{2});
         }
+        if (positions) {
+            std::ofstream ended{output / "playback-ended.json"};
+            ended << "{\"mono_ns\":" << diagnostics::monotonicNs() << "}\n";
+            ended.close();
+            const auto until{std::chrono::steady_clock::now() + std::chrono::seconds{5}};
+            while (!std::filesystem::exists(output / "observer-ended.json")) {
+                if (std::chrono::steady_clock::now() >= until) { throw std::runtime_error{"external end snapshot not ready"}; }
+                std::this_thread::sleep_for(std::chrono::milliseconds{2});
+            }
+        }
         node->stop();
         const auto status{source->status()};
         const bool complete{status.state == FrameSourceState::Eof && status.reason.empty()};
         executor.remove_node(node);
         node.reset();
         if (measurement_directory) { diagnostics::exportMeasurement(measurement_directory); }
+        if (positions) { positions->exportRecords(output); }
         diagnostics::measurement = nullptr;
         rclcpp::shutdown();
         return complete ? 0 : 1;

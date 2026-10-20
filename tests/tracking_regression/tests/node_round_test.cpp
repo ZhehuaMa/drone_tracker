@@ -1,4 +1,5 @@
 #include "drone_tracker_node.h"
+#include "../cpu_observer.h"
 
 #include <cerrno>
 #include <csignal>
@@ -250,7 +251,18 @@ int main(int argc, char **argv) {
         if (argc == 4 && std::string{argv[1]} == "--round") {
             int ros_argc{1};
             rclcpp::init(ros_argc, argv);
-            try { round(std::stoi(argv[2]), argv[3]); }
+            auto observation{std::make_unique<tracking_regression::CpuObserver>(32768)};
+            const auto cpu_output{std::filesystem::path{argv[3]}.parent_path() / (std::string{"cpu-"} + argv[2])};
+            std::filesystem::create_directory(cpu_output);
+            try {
+                round(std::stoi(argv[2]), argv[3]);
+                observation->exportRecords(cpu_output);
+                const auto evidence{YAML::LoadFile((cpu_output / "cpu-observation.json").string())};
+                require(evidence["writers"][0]["count"].as<int>() > 0
+                    && evidence["writers"][2]["count"].as<int>() > 0, "round omitted actual update/detection CPU points");
+                require(evidence["writers"][0]["overflow"].as<int>() == 0
+                    && evidence["writers"][2]["overflow"].as<int>() == 0, "round CPU observer overflowed");
+            }
             catch (...) { diagnostics::active.store(nullptr); rclcpp::shutdown(); throw; }
             rclcpp::shutdown();
             return 0;

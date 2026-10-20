@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "suite_id": "affinity-example",
+  "operation": "run",
+  "output_root": "/external/affinity-results",
+  "rounds": 3,
+  "deadlines": {
+    "preparation_seconds": 3600,
+    "cleanup_seconds": 10
+  },
+  "clips": [
+    {
+      "case_id": "wlcb-104206-020-035",
+      "fixture": "/external/fixtures/wlcb-104206-020-035",
+      "source": {
+        "video": "/external/source/test-03.mp4",
+        "frame_logs": [
+          "/external/source/frames.jsonl"
+        ],
+        "attitude_bags": [
+          "/external/source/attitude.db3"
+        ],
+        "session": "/external/source/session.json"
+      },
+      "frame_selection_interval": {
+        "start_seconds": 20,
+        "end_seconds": 35
+      }
+    }
+  ],
+  "run": {
+    "cohort_id": "pinned",
+    "source_repo": "/external/candidate-source",
+    "binary": "/external/candidate-bin/rk3576_tracking_regression",
+    "worker": "/external/tools/rk3576_diagnostic_worker",
+    "settings": {
+      "supplier_cpu": 4,
+      "input_mode": "predecode_all",
+      "max_supply_lateness_us": 50000,
+      "queue_capacity": 32,
+      "clock_jump_tolerance_us": 5000,
+      "ros_domain_id": 83,
+      "cpu_affinity": {
+        "version": 1,
+        "mode": "role-pinned",
+        "allowed_cpus": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "control_cpu": 1,
+        "tracking_cpu": 5,
+        "yolo_cpu": 6,
+        "logger_cpu": 7,
+        "supervision_cpus": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "cpu_observation": {
+        "version": 1,
+        "capacity_per_writer": 262144,
+        "sampling": "all_managed_points"
+      }
+    }
+  }
+}

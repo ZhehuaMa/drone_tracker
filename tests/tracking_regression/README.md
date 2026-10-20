@@ -56,11 +56,11 @@ deadlines:
   cleanup_seconds: 10
 ```
 
-`max_supply_lateness_us` bounds lateness of the independent input supplier. Freeze it before reference runs. `queue_capacity` bounds queued copies, not the full prepared input cache. Optional `workload` and `expected_workload_processes` declare existing workload conditions. Optional `model_paths` maps frozen `tracker.yolo_engine`, `tracker.nano_template_backbone`, `tracker.nano_search_backbone` and `tracker.nano_head` to matching model content at new locations. Unknown names or changed content are rejected. Configuration paths do not override recorded algorithm values.
+`max_supply_lateness_us` bounds lateness of the independent input supplier. Freeze it before reference runs. `queue_capacity` bounds queued frame references, not the full prepared input cache. Optional `workload` and `expected_workload_processes` declare existing workload conditions. Optional `model_paths` maps frozen `tracker.yolo_engine`, `tracker.nano_template_backbone`, `tracker.nano_search_backbone` and `tracker.nano_head` to matching model content at new locations. Unknown names or changed content are rejected. Configuration paths do not override recorded algorithm values.
 
-Each round starts a new node/worker process, diagnostic socket and run directory. The node receives one generated request. It checks the fixture certificate and file hashes, then decodes and verifies all cached pixels before loading any model. Only after models are ready does it establish the playback clock. Original frame intervals and the first-frame offset remain intact. The supplier runs independently of slow tracking; the production tracker still drains queued frames and handles the newest one. Queued frames own pixel copies. Stop wakes waits, joins the supplier, releases caches/models and reaps the isolated process tree before another round starts.
+Each round starts a new node/worker process, diagnostic socket and run directory. The node receives one generated request. It checks the fixture certificate and file hashes, then decodes and verifies all cached pixels before loading any model. Only after models are ready does it establish the playback clock. Original frame intervals and the first-frame offset remain intact. The supplier runs independently of slow tracking; the production tracker still drains queued frames and handles the newest one. Queued frames retain the verified, immutable cached pixels in real RK3576 host frames. No full-image allocation or pixel copy occurs during timed supply. The complete cache remains held until stop; each frame/read view independently retains the pixels it needs after cleanup. Stop wakes waits, joins the supplier, releases caches/models and reaps the isolated process tree before another round starts.
 
-The entire selected clip is cached without a fixed memory ceiling or streaming fallback. Cache bytes equal the actual retained matrices; 1,200 frames at 1920×1200 occupy 2,764,800,000 pixel bytes, plus model/decoder/queue memory. Larger inputs may exhaust board memory. Allocation, decode, pixel, process-kill or cleanup failures retain incomplete evidence and never shorten input automatically. `preparation.json` records verified frames, cache bytes, preparation timing and process/system memory.
+The entire selected clip is cached without a fixed memory ceiling or streaming fallback. Cache bytes equal the actual retained matrices; 1,200 frames at 1920×1200 occupy 2,764,800,000 pixel bytes, plus model/decoder/frame-metadata memory. Larger inputs may exhaust board memory. Allocation, decode, pixel, process-kill or cleanup failures retain incomplete evidence and never shorten input automatically. `preparation.json` records verified frames, cache bytes, preparation timing and process/system memory.
 
 Let P be preparation seconds, D be the resolved playback duration and C be cleanup seconds. The recorded total deadline is **P + ceil(D) + C**. Preparation includes preflight, full-cache decoding and model loading. It must finish within P. Forced cleanup starts by total minus C; process stopping and completion-record finalization are inside the total deadline. With P=90 and C=10, D=20 gives 120 seconds and D=180 gives 280 seconds. A 45-second preparation followed by twenty seconds of playback can succeed. Selecting `[55,75)` does not impose a twenty-second process timeout.
 
@@ -175,3 +175,60 @@ fixture frames 388/389. Do not average across recordings. A qualified run proves
 that evidence and cleanup are complete; a faster update or more valid boxes does
 not establish tracking accuracy. Without explicit performance thresholds, retain
 `not_set` as the verdict.
+
+## Optional regression CPU placement
+
+`configs/affinity-example.yaml` enables a private CPU policy through the same single suite file.
+The supplier uses CPU 4, Tracking uses 5, YOLO uses 6, and the separate diagnostic logger uses 7.
+The node main thread and its single-threaded ROS executor use CPU 1. External supervisors use CPUs 0–3.
+An affinity mask is a thread's permitted CPU set. Each managed entry reads its actual mask back.
+This example assumes these CPUs are online and available in the process's initial mask and effective cgroup.
+A cgroup is an operating-system resource boundary; the test never expands beyond its permitted CPUs.
+The test writes its generated policy only in the new run directory. It leaves the production policy unchanged.
+An explicit policy rejects `DRONE_TRACKER_CPU_CONFIG` from the environment instead of accepting an override.
+
+To retain the old supplier-only behavior, omit `cpu_affinity`. To declare the unbound experimental reference,
+use `cpu_affinity: {version: 1, mode: inherit}` and keep `supplier_cpu: 4`.
+For symmetric work-point evidence, both sides use the identical `cpu_observation` object and observation patch.
+The pinned mode requires observation. Omit both new objects to disable the new policy and observation.
+No realtime priority, governor, NPU assignment, model, topic or tracking parameter is changed.
+
+The pinned startup sequence is explicit:
+
+1. Validate online CPUs, initial process mask and effective cgroup. Preserve this creation mask for the node.
+2. Decode and hash every retained frame. Release the FFmpeg decoder and its preparation threads.
+3. Create and bind the owned supplier, then park it on a condition variable. No frame, attitude or clock is emitted.
+4. Bind the main thread and construct models. YOLO confirms its role at worker entry.
+5. Save the external model-ready thread snapshot and acknowledge it. Confirm supervisor and logger placement.
+6. Create Tracking and read its mask. `start()` reuses the parked supplier, establishes `m0/e0`, then releases input.
+7. At EOF, capture the end snapshot, stop and join all workers, and export bounded CPU arrays.
+
+Preparation failure, model-construction failure and cancellation all stop and join a parked supplier.
+Repeated `stop()` is safe. Without the policy, supplier creation keeps its original `start()` timing.
+
+## Explicit affinity experiments
+
+Ordinary comparisons still require identical CPU policies. An experiment must explicitly provide
+`compare.cases.<case_id>.affinity_experiment`, a frozen JSON manifest (schema 1).
+`configs/affinity-experiment-example.json` shows the structure; replace its illustrative hashes with actual build evidence.
+The manifest fixes both source and binary hashes, project libraries, compiler/options and common observation patch.
+It permits only exact CPU-policy leaves or individually audited `main.cpp`, `realtime_source.cpp`, and
+`realtime_source.h` driver hashes. Wildcards and whole-object exclusions are rejected.
+The report retains both original comparison groups and lists every accepted and rejected difference.
+Models, algorithm, input, budget, queue, dependencies, measurement rules and integrity gates remain exact.
+Each side must still have three independent qualified runs from one build.
+
+The reference is labelled **4871442 algorithm baseline + common observation patch**. Its control, tracking,
+YOLO and logger remain unbound, with the initial CPU 0–7 range; only supplier uses 4.
+The candidate is a distinct build with the pinned policy. A single binary with two settings is insufficient.
+Freeze the treatment manifest before the first timed run. Keep all failed, slow and zero-box planned rounds.
+Use alternating reference/candidate order per clip. This change requires three fresh rounds per side for each
+of test-03's `[20,35)`, `[100,130)`, and `[165,end)` clips. Test-02 remains explicitly skipped by the user.
+A successful placement check does not establish a performance improvement. Without declared thresholds,
+the result is `not_set` (未设置判定规则). No ground-truth annotation means no accuracy conclusion.
+
+The shared source-support fix is required in both affinity-experiment builds. Preserve its exact patch
+separately from the common observation patch. Label the reference “4871442 algorithm baseline + common
+observation patch + common source-support fix”; the reference still has no managed role binding.
+Deep-copy production APIs and callers retain their original behavior. Timing and integrity limits
+remain unchanged, and earlier failed or diagnostic runs never replace the final frozen comparison.

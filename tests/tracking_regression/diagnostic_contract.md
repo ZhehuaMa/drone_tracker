@@ -1,6 +1,6 @@
-# Diagnostic contract for fixed regression, version 1
+# Diagnostic contract for fixed regression, formats 1 and 2
 
-The dependency is `src/diagnostics/event.h` format 1, imported from committed RK3576 source. An event is a fixed 256-byte record. Its exact identity is `(run_id, producer_id, producer_seq)`. `round_id` identifies the ON/OFF round; `update_id` identifies the tracker call. Requests and results use `request_id`, `source_update_id`, and `source_tracker_frame_id`. Times are integer `mono_ns` (monotonic nanoseconds), `frame_time_us` and `prediction_us` (system microseconds). The fixture supplies an exact `E0 + relative_us` mapping to `fixture_frame_id`. Camera driver identities remain unknown for the synthetic source; original driver sequences are provenance only.
+The current dependency is `src/diagnostics/event.h` format 2. The collector also supports historical format-1 records. An event is a fixed 256-byte record. Its exact identity is `(run_id, producer_id, producer_seq)`. `round_id` identifies the ON/OFF round; `update_id` identifies the tracker call. Requests and results use `request_id`, `source_update_id`, and `source_tracker_frame_id`. Times are integer `mono_ns` (monotonic nanoseconds), `frame_time_us` and `prediction_us` (system microseconds). The fixture supplies an exact `E0 + relative_us` mapping to `fixture_frame_id`. Camera driver identities remain unknown for the synthetic source; original driver sequences are provenance only.
 
 The collector reads binary storage directly and preserves every Event field, including frame round identity, all arrays and enum numbers. The existing inspector's presentation export is insufficient as an interchange contract: it lacks `frame.round_id`, the raw type/reason numbers and byte length. The regression collector preserves those fields from the raw binary instead of guessing or changing the production protocol.
 
@@ -15,9 +15,9 @@ The collector reads binary storage directly and preserves every Event field, inc
 | Clearing/recovery | `Decision`, before/after states `values[0..1]`, actual reason, `counts` | Count actual clear transition, not repeated unconfirmed detections; next valid publication ends recovery |
 | Initialization | `InitializeStart` / outer `InitializeEnd`, run/round/update/request; detail failure stage/error flags | Detail `InitializeEnd` does not consume the outer pair; unknown underlying code stays unknown |
 | Catch-up tracking | `CatchupStep`, `CatchupEnd`, source IDs, duration, summary `counts[0..2]` | Attempts/success/failure remain distinct; nested durations are not added to update duration |
-| Output boxes | `Output.box`, `other_box`, `BoxValid`, `OtherBoxValid`, `values[1]` tracking | Real-time publication uses prediction `other_box`; finite coordinates and positive dimensions required |
-| Actual publication | `PublishStart` / `PublishEnd`, run/round/update, `Complete`, reason | Join the corresponding Output exactly; normal return proves call completion, not subscriber receipt |
-| Frame age/prediction lag | Publish end `mono_ns`, exact source frame and prediction timestamp; run M0/E0 | Reject ambiguous identity or clock jumps; do not match closest timestamps |
+| Integer display boxes | `Output.box`, `other_box`, `BoxValid`, `OtherBoxValid`, `values[1]` tracking | Format 1 uses prediction `other_box` for publication evidence. Format 2 records exact publication values separately below |
+| Actual publication | `PublishStart` / `PublishEnd`, run/round/update, `Complete`, reason | Format 1 joins the corresponding Output. Format 2 also joins the observation sequence and independent LOS call below. Normal return proves call completion, not subscriber receipt |
+| Frame age/prediction lag | Publication boundary `mono_ns`, exact source frame and reference timestamp; run M0/E0 | Format 1 uses prediction time; format 2 preserves the selected observation reference. Reject ambiguous identity or clock jumps; do not match closest timestamps |
 | Frame destinations | input log plus `FrameSelect`, `FrameSkip`, source EOF residuals | Every fixture frame has exactly one terminal destination; separate rejected/skipped/residual |
 | Stage timing | `Timing.values[0]`, `Observed`, `Complete`, counts | Optional detail metrics are not applicable in fixed basic mode |
 
@@ -29,8 +29,8 @@ A missing dependency, unsupported inference-observation field, missing actual pu
 
 ## Source-context interpretation 2
 
-The binary record encoding remains version 1 and 256 bytes. Existing event and reason
-numbers are unchanged. `RunStart.values[6] = 2` advertises the append-only interpretation.
+Source-context interpretation 2 was introduced with binary format 1 and remains valid
+in format 2. Both formats use 256-byte events and preserve existing event and reason numbers. `RunStart.values[6] = 2` advertises the append-only interpretation.
 An absent marker means new availability/disposition counts are unavailable, even when
 an old `HistoryLookup/HistoryMiss` remains a valid image-history miss.
 
@@ -97,3 +97,58 @@ have zero update/frame identities and carry the control flag on all six records.
 Missing a whole topic call or payload makes the evidence incomplete; it never
 becomes a zero-valued invalid LOS sample. Partial publication failures retain
 their separate outcomes and also prevent a complete-run verdict.
+
+## Separate CPU evidence (schema 1)
+
+`cpu-observation.json` uses schema 1 for both diagnostic formats. It describes one
+preallocated, single-writer array per diagnostic producer: four for format 1 and
+five for format 2, which appends Dispatcher as slot 4. The event format determines
+the required complete slot set; duplicate, missing and unknown slots are rejected. `cpu-points.csv` stores the
+producer/writer, PID, Linux TID, monotonic nanoseconds, round, update, request, tracker frame,
+source frame time, event/point ID, detail, duration, sampled CPU and measured write cost.
+The node owns these arrays; only the regression entry installs the optional receiver.
+The arrays are allocated and touched before preparation; work-point writes allocate no storage, write no files,
+scan no threads and read no masks. Each writer reads its mask once at entry. Managed tracking, YOLO and control roles
+(slots 0, 2 and 3) must register before `m0`, the playback clock origin. Camera and
+Dispatcher slots may be unused; populated slots must retain complete point counts
+and valid thread identities. Dispatcher remains outside the managed affinity roles.
+A full array increments overflow and never overwrites earlier evidence. Any overflow disqualifies placement.
+
+Existing diagnostic event IDs are also point IDs and retain their existing 256-byte binary layout.
+Additional YOLO points are 100/101 (preparation begin/end), 102/103 (model call begin/end),
+and 104/105 (postprocessing begin/end); `detail` identifies the stage index. Point 200 registers a role.
+All diagnostic submission, CRC, sequence, pairing and normal-end checks remain enabled.
+The CPU receiver does not change detector-result snapshot, request/skip or arbitration ordering.
+
+For example, round 1/update 42 can emit twenty CatchupStep (point 23) records. Each has its own
+source frame timestamp and duration. Join these with the same round/update/request and exact frame time
+in `events.jsonl`, then check their TID against the Node writer registration and sampled CPU against 5.
+The count must be exactly twenty. A policy file containing `tracking_cpu: 5` does not prove any step ran there.
+
+`thread-snapshots.jsonl` is sampled externally at most once per second, plus explicit model-ready and
+playback-ended boundaries. The node waits for the boundary acknowledgments outside timed playback.
+Snapshots preserve thread name, PID/TID, mask, scheduling policy, priority and last CPU from `/proc`.
+Threads that exit while being read remain marked as exit races. Threads without managed registration remain
+`unknown_library_or_middleware`; no fixed count or inferred RKNN/OpenCV role is assigned.
+Preparation decoder threads are distinguished by the snapshot phase and are released before model-ready.
+
+The regression source retains the verified, immutable decoded pixels in real RK3576 host frames.
+It keeps the complete cache until `stop()` and each frame/read view retains its own storage lifetime.
+Timed supply creates frame metadata without another image allocation or pixel copy; production
+`copyGrayFrame`/`copyHostFrame` still deep-copy. Both experiment builds must contain the same support
+patch, separately audited from the observation patch. Historical experiments label
+the reference “4871442 algorithm baseline + common observation patch + common source-support fix”.
+Those archived results do not validate a rebased observation implementation. A new
+experiment requires newly audited build identities and matching observation semantics.
+
+The historical `supply-timing.csv` column names `copy_begin_ns`, `copy_end_ns`, and `copy_cpu_ns`
+now measure the source's frame-construction call (`retainGrayFrame`); they remain for file compatibility.
+The frozen source/driver identity distinguishes these records from older deep-copy runs. The original
+50 ms supply qualification, input pixels, timestamps, queue capacity, and preparation budgets are unchanged.
+
+Thread snapshots record `observed_mono_ns` before reading each thread. Compare its allowed mask with
+the managed role only when that read started at or after the role's registration time. Earlier
+snapshots preserve the legal preparation range. A scan that crosses registration uses each thread's
+start time rather than the scan's later completion time. Wrong masks at or after registration still
+fail, as do invalid sample times. Older snapshots without the field use their existing snapshot time;
+historical failed records remain unchanged.

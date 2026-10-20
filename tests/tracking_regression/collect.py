@@ -319,6 +319,8 @@ def collect(directory, extra_reasons=()):
             for row in (directory/'sampling-status.txt').read_text().splitlines():
                 if int(row.split('=')[1]):reasons.append('observation measurement overflow: '+row)
     else: reasons.append('observation measurement missing')
+    import cpu_evidence
+    reasons.extend(cpu_evidence.collect(directory, config, clock, events))
     windows = identity.get('input',{}).get('analysis_windows')
     computed=metrics.compute(events,inputs,clock,complete=not reasons,windows=windows)
     if not computed.get('record_complete') or computed.get('issues'):

@@ -964,6 +964,7 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
 
 void DroneTrackerNode::worker() {
     diagnostics::current_producer = diagnostics::Producer::Node;
+    diagnostics::positionPoint(200);
     auto round{diagnostics::event(diagnostics::Type::RoundStart)};
     round.prediction_us = now().nanoseconds() / 1000; round.flags |= diagnostics::PredictionKnown;
     diagnostics::emit(round); round.type = diagnostics::Type::ClockRelation; diagnostics::emit(round);

@@ -18,8 +18,11 @@ private:
 };
 class HostFrame final : public Frame {
 public:
+    struct RetainPixels {};
     HostFrame(const cv::Mat &gray, std::uint64_t timestamp, diagnostics::FrameIdentity identity = {})
         : image_{gray.clone()}, timestamp_{timestamp}, identity_{identity} {}
+    HostFrame(RetainPixels, const cv::Mat &gray, std::uint64_t timestamp, diagnostics::FrameIdentity identity)
+        : image_{gray}, timestamp_{timestamp}, identity_{identity} {}
     int width() const noexcept override { return image_.cols; }
     int height() const noexcept override { return image_.rows; }
     FramePixelFormat pixelFormat() const noexcept override { return image_.channels() == 1 ? FramePixelFormat::Gray8 : FramePixelFormat::Bgr8; }
@@ -48,5 +51,11 @@ FrameRef copyGrayFrame(const cv::Mat &gray, std::uint64_t timestamp_us, diagnost
         throw std::invalid_argument("copyGrayFrame requires nonempty Gray8");
     }
     return std::make_shared<HostFrame>(gray, timestamp_us, identity);
+}
+FrameRef retainGrayFrame(const cv::Mat &gray, std::uint64_t timestamp_us, diagnostics::FrameIdentity identity) {
+    if (gray.empty() || gray.type() != CV_8UC1 || !gray.u || (gray.u->flags & cv::UMatData::USER_ALLOCATED)) {
+        throw std::invalid_argument("retainGrayFrame requires reference-counted Gray8 storage");
+    }
+    return std::make_shared<HostFrame>(HostFrame::RetainPixels{}, gray, timestamp_us, identity);
 }
 } // namespace rk3576

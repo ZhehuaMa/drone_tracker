@@ -10,5 +10,12 @@ FrameRef copyHostFrame(const cv::Mat &image, std::uint64_t timestamp_us = 0, dia
 bool isHostGrayFrame(const FrameRef &frame) noexcept;
 /** @brief 复制 Gray8 图像创建自有只读帧；彩色转换必须由工具调用方显式完成。 */
 FrameRef copyGrayFrame(const cv::Mat &gray, std::uint64_t timestamp_us = 0, diagnostics::FrameIdentity identity = {});
+/**
+ * @brief Retain reference-counted Gray8 storage without copying its pixels.
+ * The caller must keep every alias immutable while a frame or read view survives.
+ * Borrowed external buffers are rejected because their lifetime cannot be retained.
+ */
+FrameRef retainGrayFrame(const cv::Mat &gray, std::uint64_t timestamp_us = 0,
+                         diagnostics::FrameIdentity identity = {});
 } // namespace rk3576
 #endif // RK3576_HOST_FRAME_H

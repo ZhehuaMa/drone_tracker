@@ -62,6 +62,13 @@ target_link_libraries(tracking_regression_round_tests PRIVATE drone_tracker_ros 
 add_test(NAME tracking_regression_round_tests COMMAND tracking_regression_round_tests)
 set_tests_properties(tracking_regression_round_tests PROPERTIES TIMEOUT 30
     ENVIRONMENT "ROS_DOMAIN_ID=188;ROS_LOCALHOST_ONLY=1")
+add_executable(tracking_regression_cpu_observer_fixture tests/cpu_observer_fixture.cpp)
+target_link_libraries(tracking_regression_cpu_observer_fixture PRIVATE drone_diagnostics pthread)
+drone_target_test_program(tracking_regression_cpu_observer_fixture cpu_observer_fixture_program)
+add_test(NAME tracking_regression_cpu_observer_integration
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/cpu_observer_integration.py"
+        "${cpu_observer_fixture_program}")
+set_tests_properties(tracking_regression_cpu_observer_integration PROPERTIES TIMEOUT 30)
 add_test(NAME tracking_regression_preflight
     COMMAND ${CMAKE_COMMAND} -DREGRESSION_PROGRAM=$<TARGET_FILE:rk3576_tracking_regression>
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/preflight_test.cmake)

@@ -34,6 +34,8 @@ public:
     ~RealtimeSource() override;
     /** @brief Decode and verify every cached frame before models or playback clocks start. */
     bool prepare();
+    /** @brief Bind and park the owned supplier without a clock or any supplied frames. */
+    bool readySupplier();
     bool start() override;
     bool stop() override;
     bool isRunning() const override;

@@ -134,14 +134,10 @@ bool RealtimeSource::prepare() {
     exportPreparation();
     return prepared_;
 }
-bool RealtimeSource::start() {
-    if (started_ || stopping_) { return false; }
-    started_ = true;
+bool RealtimeSource::readySupplier() {
+    if (stopping_) { return false; }
+    if (supplier_.joinable()) { return supplier_ready_; }
     if (!prepare()) { return false; }
-    {
-        std::lock_guard<std::mutex> lock{mutex_};
-        status_.state = FrameSourceState::Running;
-    }
     supplier_ = std::thread{[this] {
         try {
             configureSupplier();
@@ -158,6 +154,16 @@ bool RealtimeSource::start() {
         std::unique_lock<std::mutex> lock{mutex_};
         wake_.wait(lock, [&] { return stopping_.load() || supplier_ready_; });
         if (stopping_) { return false; }
+    }
+    return true;
+}
+bool RealtimeSource::start() {
+    if (started_ || stopping_) { return false; }
+    started_ = true;
+    if (!readySupplier()) { return false; }
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        status_.state = FrameSourceState::Running;
     }
     // Source and prediction clock origins are established only after model construction and complete verified preparation.
     m0_ns_ = diagnostics::monotonicNs(); e0_us_ = systemUs();
@@ -371,7 +377,9 @@ void RealtimeSource::supply() {
         struct timespec cpu_before{}, cpu_after{};
         ::clock_gettime(CLOCK_THREAD_CPUTIME_ID, &cpu_before);
         record.copy_begin_ns = diagnostics::monotonicNs();
-        auto frame{rk3576::copyGrayFrame(pixels, record.frame_time_us)};
+        // Verified cache pixels remain immutable and owned until stop(); frames retain
+        // their own reference so queue, tracker and views can outlive source cleanup.
+        auto frame{rk3576::retainGrayFrame(pixels, record.frame_time_us)};
         record.copy_end_ns = diagnostics::monotonicNs();
         record.copy_cpu = ::sched_getcpu();
         ::clock_gettime(CLOCK_THREAD_CPUTIME_ID, &cpu_after);

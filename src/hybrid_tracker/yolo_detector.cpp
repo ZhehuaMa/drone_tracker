@@ -244,6 +244,7 @@ std::pair<int, int> YoloV8Detector::getInputSize() const
 void YoloV8Detector::workerThreadLoop()
 {
     diagnostics::current_producer = diagnostics::Producer::Yolo;
+    diagnostics::positionPoint(200);
     std::cout << "YOLO worker thread started." << std::endl;
     
     while (true)
@@ -373,7 +374,9 @@ void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &re
         diagnostics::emit(m_stage);
     }};
     std::unique_ptr<void, decltype(finish_stage)> stage_guard{this, finish_stage};
+    diagnostics::positionPoint(100, m_stage.values[1]);
     auto prepared{session.prepare(region)};
+    diagnostics::positionPoint(101, m_stage.values[1]);
     if (!prepared || !prepared.value.input) {
         m_stage.reason = diagnostics::Reason::ImagePrepareFailed;
         std::cerr << "YOLO preprocessing failed: " << prepared.message << std::endl;
@@ -382,7 +385,9 @@ void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &re
     try {
         // Observed marks an actual inference attempt, including a thrown model call.
         m_stage.flags |= diagnostics::Observed;
+        diagnostics::positionPoint(102, m_stage.values[1]);
         const auto output{model_->infer(prepared.value.input)};
+        diagnostics::positionPoint(103, m_stage.values[1]);
         if (!output) {
             m_stage.reason = diagnostics::Reason::InferenceException;
             std::cerr << model::describe(output.error) << std::endl;
@@ -401,8 +406,10 @@ void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &re
         m_stage.box = {static_cast<float>(resolved.value.x), static_cast<float>(resolved.value.y),
             static_cast<float>(resolved.value.width), static_cast<float>(resolved.value.height)};
         m_stage.flags |= diagnostics::BoxValid;
+        diagnostics::positionPoint(104, m_stage.values[1]);
         postprocess(view.data(), dims, prepared.value.transform,
                     resolved.value.size(), cv::Point2f(resolved.value.x, resolved.value.y), results);
+        diagnostics::positionPoint(105, m_stage.values[1]);
     } catch (const std::exception &error) {
         m_stage.reason = diagnostics::Reason::InferenceException;
         std::cerr << "YOLO inference failed: " << error.what() << std::endl;

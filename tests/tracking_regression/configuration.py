@@ -206,6 +206,8 @@ def load_config(path):
         settings_schema['properties'] = {name: value for name, value in settings_schema['properties'].items()
                                          if name not in runtime_fields}
         common.validate(settings, settings_schema, '$.run.settings')
+        from affinity import validate_settings
+        validate_settings(settings, '$.run.settings')
         if 'model_paths' in settings:
             from identity import MODEL_KEYS
             fields(settings['model_paths'], set(MODEL_KEYS), set(), '$.run.settings.model_paths')
@@ -227,12 +229,15 @@ def load_config(path):
         for case, item in section['cases'].items():
             identifier(case, '$.' + operation + '.cases')
             at = '$.' + operation + '.cases.' + case
-            allowed = {'runs'} if operation == 'freeze' else {'baseline', 'candidates', 'thresholds'}
+            allowed = {'runs'} if operation == 'freeze' else {'baseline', 'candidates', 'thresholds', 'affinity_experiment'}
             fields(item, allowed, {'runs'} if operation == 'freeze' else {'baseline', 'candidates'}, at)
             resolved = {key: path_list(value, base, at + '.' + key) if key in ('runs', 'candidates')
                         else path_value(value, base, at + '.' + key) for key, value in item.items()}
             if operation == 'freeze' and len(resolved['runs']) < 3:
                 raise ValueError(at + '.runs: at least three runs required')
+            if 'affinity_experiment' in resolved:
+                from affinity_experiment import load_manifest
+                load_manifest(resolved['affinity_experiment'])
             parsed[operation]['cases'][case] = resolved
     target = operation_directory(parsed)
     protected = [Path(location), *(Path(item) for item in source_paths)]

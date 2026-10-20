@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 import common
+import affinity
 import identity as run_identity
 from collect import collect
 from verify_fixture import verify
@@ -87,6 +88,14 @@ def production_identity(fixture,config,repo,binary,worker):
     if cpu_path:
         cpu={'file_sha256':common.sha256(cpu_path),'text':Path(cpu_path).read_text(),
              'allowed':sorted(os.sched_getaffinity(0))}
+    if 'cpu_affinity' in config:
+        p = config['cpu_affinity']
+        cpu['regression'] = p
+        generated = {'version':1, 'mode':p['mode'], 'allowed_cpus':p.get('allowed_cpus', cpu['allowed'])}
+        if p['mode']=='role-pinned':
+            generated['roles'] = {'control':p['control_cpu'], 'tracking':p['tracking_cpu'], 'yolo':p['yolo_cpu'],
+                                  'display':p['control_cpu'], 'capture':config['supplier_cpu'], 'recording':p['logger_cpu']}
+        cpu['private_policy_sha256'] = hashlib.sha256((json.dumps(generated,ensure_ascii=False,indent=2,allow_nan=False)+'\n').encode()).hexdigest()
     cpu['supplier'] = run_identity.supplier_cpu_condition(config, cpu['allowed'])
     isolated = Path('/sys/devices/system/cpu/isolated')
     cpu['isolated_cpus'] = isolated.read_text().strip() if isolated.exists() else ''
@@ -139,7 +148,7 @@ def production_identity(fixture,config,repo,binary,worker):
            'system_library':{'path':'/usr/lib/librknnrt.so','sha256':SYSTEM_LIBRARY_SHA},
            'dependencies':dependencies,'cpu_policy':cpu,'workload':workload_group,
            'observation':{'mode':'basic','inference_observed_contract':1,'osd':False,'images':False,'recording':False,'submission_measurement':True,
-                          'worker_sha256':common.sha256(worker)},
+                          'worker_sha256':common.sha256(worker), **({'cpu_observation':config['cpu_observation']} if 'cpu_observation' in config else {})},
            'test_driver':{'sources':drivers,'configuration':semantic_config,
                'decoder':{'threads':8,'codec':'ffv1','pixels':'gray','input_mode':'predecode_all',
                           'pixel_verification':'SHA-256 actual retained Gray8 frames before model loading',
@@ -210,6 +219,8 @@ def worker_round(request):
     output=Path(request['output']);fixture=Path(request['fixture']);repo=Path(request['repo'])
     config=request['configuration'] if 'configuration' in request else common.load(Path(request['config']))
     common.validate_record(config,'run_config')
+    affinity.validate_settings(config)
+    affinity.preflight(config)
     verified=verify(fixture,verify_pixels=False)
     common.write(output/'preflight-fixture.json',{'schema_version':1,'files_verified':True,'pixels_verified':False,'pixel_verification':'native cached frames before model loading',
                  'fixture_sha256':common.sha256(fixture/'fixture.json'),'files':verified['files']})
@@ -221,12 +232,16 @@ def worker_round(request):
         raise ValueError('diagnostic socket: absolute output path exceeds Unix socket limit')
     env=dict(os.environ,ROS_DOMAIN_ID=str(config['ros_domain_id']),ROS_LOCALHOST_ONLY='1',
              DRONE_TRACKER_ACCEPTANCE_DIRECTORY=str(output))
+    node_env, affinity_proof = affinity.private_policy(config, output, env)
+    policy = config.get('cpu_affinity', {})
+    pinned = policy.get('mode') == 'role-pinned'
     worker_log=(output/'worker.log').open('xb')
     node_log=(output/'node.log').open('xb')
     common.write(output/'node-request.json', {'schema_version':1, 'fixture':str(fixture),
         'config':str(output/'run-config.json'), 'output':str(output), 'diagnostic_socket':socket})
     worker=subprocess.Popen([request['worker'],'--socket',socket,'--directory',str(output/'raw'),
-                             '--minimum-free-bytes','0'],stdout=worker_log,stderr=subprocess.STDOUT,env=env,start_new_session=True)
+                             '--minimum-free-bytes','0'],stdout=worker_log,stderr=subprocess.STDOUT,env=env,start_new_session=True,
+                             preexec_fn=(lambda: affinity.restrict_self([policy['logger_cpu']])) if pinned else None)
     try:
         until=time.monotonic()+2
         while not Path(socket).is_socket() and time.monotonic()<until and worker.poll() is None:
@@ -234,8 +249,33 @@ def worker_round(request):
         if not Path(socket).is_socket():
             raise ValueError('diagnostic worker socket not ready')
         node=subprocess.Popen([request['binary'],str(output/'node-request.json')],
-                              stdout=node_log,stderr=subprocess.STDOUT,env=env,start_new_session=True)
-        node_code=node.wait()
+                              stdout=node_log,stderr=subprocess.STDOUT,env=node_env,start_new_session=True)
+        if pinned:
+            affinity.restrict_self(policy['supervision_cpus'])
+        if 'cpu_observation' in config:
+            common.write(output/'supervision-scheduling.json', {'pid':os.getpid(), 'tid':os.getpid(),
+                         'allowed_cpus':sorted(os.sched_getaffinity(0)), 'mono_ns':time.monotonic_ns()})
+            last = 0
+            boundaries = set()
+            with (output/'thread-snapshots.jsonl').open('x') as snapshots:
+                while node.poll() is None:
+                    phase = None
+                    for name, ack in (('model-ready','observer-ready'), ('playback-ended','observer-ended')):
+                        if name not in boundaries and (output/(name+'.json')).exists():
+                            phase = name
+                            break
+                    now = time.monotonic()
+                    if phase or now-last >= 1:
+                        snapshots.write(json.dumps(affinity.snapshot({'node':node.pid, 'logger':worker.pid}, phase or 'periodic'))+'\n')
+                        snapshots.flush()
+                        last = now
+                        if phase:
+                            boundaries.add(phase)
+                            common.write(output/(ack+'.json'), {'mono_ns':time.monotonic_ns()})
+                    time.sleep(.01)
+            node_code = node.returncode
+        else:
+            node_code=node.wait()
         worker.send_signal(signal.SIGINT)
         worker_code=worker.wait(timeout=3)
         common.write(output/'process-exit.json',{'node':node_code,'worker':worker_code})
@@ -270,6 +310,9 @@ def bounded_attempt(request):
     log=(output/'controller.log').open('xb')
     process=subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'--internal',str(output/'attempt.json')],
                              stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+    policy = request.get('configuration', {}).get('cpu_affinity', {})
+    if policy.get('mode') == 'role-pinned':
+        affinity.restrict_self(policy['supervision_cpus'])
     timeout=False
     preparation_timeout = False
     while process.poll() is None and time.monotonic()<begin+plan['stop_after_seconds']:
@@ -308,6 +351,7 @@ def bounded_attempt(request):
     return common.load(output/'completion.json')['qualified'] and recovered and not timeout and elapsed<=total
 
 
+@affinity.restore_mask_after
 def supervise(request, total_seconds=None):
     """An outer process bounds the controller itself, including evidence finalization."""
     enable_subreaper()
@@ -321,6 +365,9 @@ def supervise(request, total_seconds=None):
     log=(output/'supervisor.log').open('xb')
     controller=subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'--controller',
         str(output/'supervised-request.json')],stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+    policy = request.get('configuration', {}).get('cpu_affinity', {})
+    if policy.get('mode') == 'role-pinned':
+        affinity.restrict_self(policy['supervision_cpus'])
     preparation_timeout = False
     while controller.poll() is None and time.monotonic()<start+total_seconds-min(.5,total_seconds/10):
         if not (output/'input-clock.json').exists() and time.monotonic() >= start+plan['preparation_seconds']:

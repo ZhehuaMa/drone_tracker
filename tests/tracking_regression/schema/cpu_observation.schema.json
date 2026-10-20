@@ -1,0 +1,86 @@
+{
+  "type": "object",
+  "required": [
+    "schema_version",
+    "sampling",
+    "capacity_per_writer",
+    "writers"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "sampling": {
+      "const": "all_managed_points"
+    },
+    "capacity_per_writer": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "writers": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "writer",
+          "pid",
+          "tid",
+          "registered_ns",
+          "policy",
+          "priority",
+          "valid",
+          "count",
+          "overflow",
+          "allowed_cpus"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "writer": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pid": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tid": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "registered_ns": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "overflow": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "policy": {
+            "type": "integer",
+            "minimum": -1
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": -1
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "allowed_cpus": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

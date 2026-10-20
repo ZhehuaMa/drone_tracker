@@ -105,3 +105,22 @@ and resumes Detecting on the next frame without adding TargetLost. Detecting has
 watchdog. Faster updates shorten this timeout in seconds. Repeated uncomparable results
 can prevent timeout. There is no age cutoff and no freshness guarantee. The fixed footage
 has no target annotations, so output continuity cannot establish tracking accuracy.
+
+## Affinity experiment acceptance
+
+Before timed playback, freeze each build identity, common observation patch, compiler/options, dependencies,
+input/model hashes, planned run order and exact treatment manifest. Only CPU assignment is the treatment.
+Audit each differing driver source against the preserved source patch. Extra tool, metric, budget, queue,
+algorithm or input differences make the experiment incomparable. Every side retains its strict three-run check.
+
+For each test-03 clip, report every planned round, qualified/failed status and actual CPU evidence.
+Report medians, ranges, candidate-minus-reference differences and percentages without dropping slow or zero-box rounds.
+Report update/publication intervals, YOLO and queue timing, recovery count/steps/per-step costs,
+valid outputs/clears, supplier/queue conservation, process/system memory and observed temperatures/frequencies.
+Keep unknown library threads explicitly unknown. Without a frozen performance threshold, state
+“未设置判定规则”; without labelled targets, make no accuracy claim.
+
+The independent restoration guard must be armed before stopping the authorized production service.
+Final evidence must verify the original active/running/enabled service state, release link, production config,
+models, system Runtime and governors, and absence of test processes. Hardware acceptance uses only
+`adb -s 5ceb49407502303d`; host/QEMU checks establish software behavior, not board timing.

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "experiment_id": "illustrative-replace-with-frozen-identities",
+  "reference": {
+    "algorithm_commit": "4871442dda37d3d64087fda0b7756692c8f7e473",
+    "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "binary_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "project_libraries": {
+      "node": {
+        "libhybrid_tracker.so": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "worker": {}
+    },
+    "source_patch_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "candidate": {
+    "algorithm_commit": "4871442dda37d3d64087fda0b7756692c8f7e473",
+    "source_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "binary_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "project_libraries": {
+      "node": {
+        "libhybrid_tracker.so": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "worker": {}
+    },
+    "source_patch_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "build": {
+    "compiler": "GCC 11.4.0",
+    "options": [
+      "Release",
+      "DRONE_TRACKER_BUILD_TESTS=ON"
+    ]
+  },
+  "observation_patch_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "cpu_observation": {
+    "version": 1,
+    "capacity_per_writer": 262144,
+    "sampling": "all_managed_points"
+  },
+  "allowed_differences": [
+    {
+      "field": "comparison_group.cpu_policy.regression.mode",
+      "baseline": "inherit",
+      "candidate": "role-pinned",
+      "audit": "Private regression policy only; preserve the audited source patch."
+    }
+  ]
+}
