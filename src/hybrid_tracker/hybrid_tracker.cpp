@@ -838,6 +838,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
     {
         if (kf_needs_reset)
         {
+            out.reset_los = true;
             // 跟踪器刚被 YOLO 拉回：重置 KF 以清空错误的旧速度
             const float rx = m_display_box.x, ry = m_display_box.y;
             const float rw = m_display_box.width, rh = m_display_box.height;
@@ -859,6 +860,13 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
         cv::Vec4d realtime;
         if (m_kf->predictOnly(ctx.now_us, ctx.R_cam_now, realtime))
         {
+            if (std::isfinite(realtime[0]) && std::isfinite(realtime[1])
+                && std::isfinite(realtime[2]) && std::isfinite(realtime[3])
+                && realtime[2] > 0 && realtime[3] > 0) {
+                out.observation_box = cv::Rect2d{realtime[0] - realtime[2] / 2.0,
+                    realtime[1] - realtime[3] / 2.0, realtime[2], realtime[3]}
+                    & cv::Rect2d{0.0, 0.0, static_cast<double>(frame_w), static_cast<double>(frame_h)};
+            }
             cv::Rect2f rt_box(realtime[0] - realtime[2] / 2.0,
                               realtime[1] - realtime[3] / 2.0,
                               realtime[2], realtime[3]);

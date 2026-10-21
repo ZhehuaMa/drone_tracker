@@ -23,6 +23,8 @@ TYPE_NAMES = (
     "Decision", "InitializeStart", "InitializeEnd", "CatchupStep", "CatchupEnd",
     "Output", "PublishStart", "PublishEnd", "PublishSkipped", "Timing", "Gap",
     "AbnormalEnd", "ClockRelation", "Health", "JumpComparison", "SourceContext",
+    "ObservationBbox", "ObservationLos", "LosPublishStart", "LosPublishEnd", "ObservationSuppressed",
+    "ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd",
 )
 TYPE_ZH = (
     "运行开始", "运行结束", "轮次开始", "轮次结束", "采集", "节点跳过",
@@ -31,6 +33,8 @@ TYPE_ZH = (
     "结果覆盖", "请求取消", "仲裁决策", "初始化开始", "初始化结束", "补跟踪步骤",
     "补跟踪汇总", "输出", "发布开始", "发布结束", "跳过发布", "阶段耗时",
     "诊断缺口", "异常结束", "时钟对应", "健康", "跳变比较", "SourceContext",
+    "ObservationBbox", "ObservationLos", "LosPublishStart", "LosPublishEnd", "ObservationSuppressed",
+    "ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd",
 )
 REASON_NAMES = (
     "None", "Unknown", "InvalidInput", "RepeatedTime", "Stopped", "Cleaning",
@@ -163,12 +167,70 @@ def _is_clear(event):
             and bool(event.get("flags", 0) & 1024))
 
 
+def observation_issues(events):
+    """Require both payloads and both topic calls for each format-2 observation.
+
+    A missing topic is missing evidence, not a known invalid LOS sample. Legacy
+    records do not contain this protocol and retain their established checks.
+    """
+    groups = defaultdict(lambda: defaultdict(list))
+    payload_types = {"ObservationBbox", "ObservationLos"}
+    frame_calls = {"PublishStart", "PublishEnd", "LosPublishStart", "LosPublishEnd"}
+    control_calls = {"ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd"}
+    issues = []
+    for event in events:
+        kind = event_type(event)
+        if event.get("version", 1) < 2 or kind not in payload_types | frame_calls | control_calls:
+            continue
+        key = (event.get("run_id", 0), event.get("round_id", 0), _array(event, "values", 0))
+        if type(key[-1]) is not int or key[-1] <= 0:
+            issues.append({"reason": "observation_identity_missing", "event": evidence(event)})
+        groups[key][kind].append(event)
+    for key, kinds in groups.items():
+        control = bool(control_calls & kinds.keys()) or any(
+            event.get("flags", 0) & 32768 for rows in kinds.values() for event in rows)
+        expected = payload_types | (control_calls if control else frame_calls)
+        if set(kinds) != expected or any(len(rows) != 1 for rows in kinds.values()):
+            issues.append({"reason": "observation_evidence_incomplete", "identity": key,
+                           "counts": {kind: len(kinds.get(kind, [])) for kind in sorted(expected | kinds.keys())}})
+            continue
+        rows = [kinds[kind][0] for kind in sorted(expected)]
+        bbox, los = kinds["ObservationBbox"][0], kinds["ObservationLos"][0]
+        stamp = bbox.get("stamp_ns", _array(bbox, "values", 1))
+        if (type(stamp) is not int or stamp <= 0 or any(
+                event.get("stamp_ns", _array(event, "values", 1)) != stamp for event in rows)):
+            issues.append({"reason": "observation_timestamp_mismatch", "identity": key})
+        updates = {event.get("update_id", 0) for event in rows}
+        if ((control and updates != {0}) or (not control and (len(updates) != 1 or 0 in updates))
+                or any(bool(event.get("flags", 0) & 32768) != control for event in rows)):
+            issues.append({"reason": "observation_context_mismatch", "identity": key})
+        if control and any(event.get(field, 0) for event in rows
+                           for field in ("capture_id", "tracker_frame_id", "request_id")):
+            issues.append({"reason": "control_observation_has_frame_identity", "identity": key})
+        for payload in (bbox, los):
+            values = payload.get("observation_values")
+            if (not isinstance(values, list) or len(values) != 4
+                    or not all(type(value) in (int, float) and math.isfinite(value) for value in values)):
+                issues.append({"reason": "observation_payload_missing", "identity": key,
+                               "type": event_type(payload)})
+            if control and payload.get("flags", 0) & 16:
+                issues.append({"reason": "control_observation_valid", "identity": key})
+        for prefix in (("ControlBbox", "ControlLos") if control else ("Publish", "LosPublish")):
+            if kinds[prefix + "End"][0]["mono_ns"] < kinds[prefix + "Start"][0]["mono_ns"]:
+                issues.append({"reason": "observation_call_time_backwards", "identity": key, "type": prefix})
+    return issues
+
+
 def _publication(event, outputs):
     if event["_reason"] != "None" or not event.get("flags", 0) & 128:
         return None
     result = dict(event)
     output = outputs.get(identity(event))
-    if "tracking" in event:
+    if event.get("version", 1) >= 2:
+        tracking = event.get("observation_valid", False)
+        box = event.get("observation_values")
+        known = isinstance(box, list) and len(box) == 4
+    elif "tracking" in event:
         tracking = event["tracking"]
         box = event.get("box")
         known = isinstance(tracking, bool) and isinstance(box, list) and len(box) == 4
@@ -228,6 +290,7 @@ def compute(events, inputs, clock, complete=True, windows=None):
             sequences.add(key)
         normalized.append(event)
     normalized.sort(key=lambda item: item["mono_ns"])
+    issues.extend(observation_issues(normalized))
     updates = _pair(normalized, "UpdateStart", "UpdateEnd", "update_id", issues)
     detects = _pair(normalized, "DetectStart", "DetectEnd", "request_id", issues)
     initializations = _pair(normalized, "InitializeStart", "InitializeEnd", "update_id", issues, _initialization_detail)
@@ -239,6 +302,29 @@ def compute(events, inputs, clock, complete=True, windows=None):
             if key in outputs:
                 issues.append({"reason": "ambiguous_output", "event": evidence(event)})
             outputs[key] = event
+    observation_v2 = any(e.get("version", 1) >= 2 for e in normalized)
+    payloads = {}
+    for event in normalized:
+        if event["_type"] in ("ObservationBbox", "ObservationLos"):
+            key = (event.get("run_id", 0), event.get("round_id", 0), _array(event, "values", 0), event["_type"])
+            if key in payloads:
+                issues.append({"reason": "duplicate_observation_payload", "event": evidence(event)})
+            payloads[key] = event
+    for event in normalized:
+        if event["_type"] in ("PublishEnd", "LosPublishEnd") and event.get("version", 1) >= 2:
+            kind = "ObservationBbox" if event["_type"] == "PublishEnd" else "ObservationLos"
+            payload = payloads.get((event.get("run_id", 0), event.get("round_id", 0),
+                                    _array(event, "values", 0), kind))
+            if payload:
+                event["observation_values"] = payload.get("observation_values")
+                event["observation_valid"] = bool(payload.get("flags", 0) & 16)
+                event["stamp_ns"] = payload.get("stamp_ns", _array(payload, "values", 1))
+    _pair(normalized, "LosPublishStart", "LosPublishEnd", "update_id", issues)
+    for event in normalized:
+        if event["_type"] in ("LosPublishEnd", "ControlBboxEnd", "ControlLosEnd") and (
+                event["_reason"] != "None" or not event.get("flags", 0) & 128):
+            issues.append({"reason": "los_publication_error" if event["_type"] == "LosPublishEnd"
+                           else "control_publication_error", "event": evidence(event)})
     pubs = []
     for event in normalized:
         if event["_type"] == "PublishEnd":
@@ -403,6 +489,25 @@ def compute(events, inputs, clock, complete=True, windows=None):
                 chosen = [e for e in chosen if identity(e, "request_id") in successful_requests]
             ids = sorted({identity(e, "request_id") for e in chosen})
             count(label, len(ids), identities=ids)
+        for label, kind in (("los_publication_count", "LosPublishEnd"),
+                            ("observation_suppressed_count", "ObservationSuppressed"),
+                            ("off_notification_count", "ControlBboxEnd")):
+            chosen = [e for e in normalized if e["_type"] == kind and inside(e)]
+            descriptor = _descriptor(window, "count", len(chosen), record_complete,
+                                     value=len(chosen), samples=[evidence(e) for e in chosen])
+            descriptor["metric_version"] = 3
+            if not observation_v2:
+                descriptor.update(availability="unavailable", reason="historical_field_absent", value=None)
+            metrics[label] = descriptor
+        los_pubs = [e for e in normalized if e["_type"] == "LosPublishEnd" and inside(e)]
+        metrics["los_valid_count"] = _descriptor(window, "count", len(los_pubs), record_complete,
+            value=sum(bool(e.get("observation_valid")) for e in los_pubs))
+        if not observation_v2:
+            metrics["los_valid_count"].update(availability="unavailable", reason="historical_field_absent", value=None)
+        metrics["published_float_box"] = _descriptor(window, "pixels", len(window_pubs), record_complete,
+            samples=[dict(evidence(e), box=e.get("observation_values"), stamp_ns=e.get("stamp_ns")) for e in window_pubs])
+        if not observation_v2:
+            metrics["published_float_box"].update(availability="unavailable", reason="historical_field_absent")
         # Extensions retain v1 formulas above; a capability marker distinguishes old logs from a real zero.
         capability = any(e["_type"] == "RunStart" and _array(e, "values", 6) >= 2 for e in normalized)
         for label, predicate in (

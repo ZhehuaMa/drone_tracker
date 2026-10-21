@@ -18,7 +18,8 @@ struct Measurement {
         std::int64_t frame_time_us{};
         bool consumed{};
     };
-    std::array<std::array<Submission, 65536>, PRODUCERS> submissions{};
+    // Keep total diagnostic memory below 8 MiB with the separate dispatcher producer.
+    std::array<std::array<Submission, 49152>, PRODUCERS> submissions{};
     std::array<std::size_t, PRODUCERS> sizes{}, overflow{};
     std::array<Call, 8192> calls{};
     std::size_t call_size{}, call_overflow{};

@@ -67,7 +67,7 @@ class CollectorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/'events.dtd';path.write_bytes(raw)
             self.assertIn('CRC',collect.scan(path)[1][0])
-            raw=bytearray(record(1,packed_event()));raw[4]=2;path.write_bytes(raw)
+            raw=bytearray(record(1,packed_event()));raw[4]=99;path.write_bytes(raw)
             self.assertIn('unsupported header',collect.scan(path)[1][0])
 
 class PreparationQualificationTests(unittest.TestCase):

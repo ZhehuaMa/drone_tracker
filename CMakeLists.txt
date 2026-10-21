@@ -41,6 +41,7 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
@@ -101,6 +102,7 @@ set(DRONE_TRACKER_ROS_DEPENDENCIES
     ament_index_cpp
     rclcpp
     sensor_msgs
+    geometry_msgs
     nav_msgs
     vision_msgs
     cv_bridge
@@ -156,10 +158,14 @@ if(DRONE_TRACKER_BUILD_TESTS AND DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
     add_test(NAME deployment_diagnostics_tests COMMAND ${Python3_EXECUTABLE} -B -m unittest discover
         -s ${CMAKE_CURRENT_SOURCE_DIR}/deployment/tests -p test_diagnostics.py)
     set_tests_properties(deployment_diagnostics_tests PROPERTIES TIMEOUT 120)
+    add_executable(target_observation_tests src/tests/target_observation_test.cpp)
+    target_link_libraries(target_observation_tests drone_tracker_ros)
+    add_test(NAME target_observation_tests COMMAND target_observation_tests)
     add_executable(ros_video_tests src/tests/ros_video_test.cpp)
     target_link_libraries(ros_video_tests drone_tracker_ros rk3576_video)
     set(ROS_VIDEO_FIXTURES "${CMAKE_CURRENT_BINARY_DIR}/ros-video-fixtures")
-    target_compile_definitions(ros_video_tests PRIVATE ROS_VIDEO_FIXTURES="${ROS_VIDEO_FIXTURES}")
+    target_compile_definitions(ros_video_tests PRIVATE ROS_VIDEO_FIXTURES="${ROS_VIDEO_FIXTURES}"
+        OBSERVATION_REPO_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
     add_executable(ros_video_fixture_generator src/platform/rk3576/tests/video_fixture_generator.cpp)
     target_link_libraries(ros_video_fixture_generator rk3576_video)
     add_test(NAME ros_video_generate_fixtures COMMAND ros_video_fixture_generator "${ROS_VIDEO_FIXTURES}")

@@ -58,9 +58,9 @@ for program in drone_tracker_node rk3576_recording_worker rk3576_recording_inspe
     fi
 done
 python3 -c 'import importlib.machinery; m=importlib.machinery.SourceFileLoader("diagnostic_launch", "diagnostic-launch.py").load_module(); m.parse("config/diagnostics.yaml")' || fail '诊断配置无效'
-[[ $("$bundle/payload/lib/drone_tracker/drone_tracker_node" --diagnostic-protocol-version) == 1 ]] || fail '主业务诊断协议不兼容'
+[[ $("$bundle/payload/lib/drone_tracker/drone_tracker_node" --diagnostic-protocol-version) == 2 ]] || fail '主业务诊断协议不兼容'
 for program in rk3576_diagnostic_worker rk3576_diagnostic_inspect; do
-    [[ $("$bundle/payload/lib/drone_tracker/$program" --protocol-version) == 1 ]] || fail '诊断协议不兼容'
+    [[ $("$bundle/payload/lib/drone_tracker/$program" --protocol-version) == 2 ]] || fail '诊断协议不兼容'
 done
 # verify 检查 ExecStart；新板未安装该路径时改用已有 /usr/bin/true 进行语法检查。
 verify_dir=$(mktemp -d)

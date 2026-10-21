@@ -14,7 +14,9 @@ const char *typeName(Type type) {
                                          "未投递",     "请求决策", "检测开始", "检测阶段",   "检测结束",   "结果读取",
                                          "结果覆盖",   "请求取消", "仲裁决策", "初始化开始", "初始化结束", "补跟踪步骤",
                                          "补跟踪汇总", "输出",     "发布开始", "发布结束",   "跳过发布",   "阶段耗时",
-                                         "诊断缺口",   "异常结束", "时钟对应", "健康", "跳变比较", "SourceContext"};
+                                         "诊断缺口",   "异常结束", "时钟对应", "健康", "跳变比较", "SourceContext",
+        "ObservationBbox", "ObservationLos", "LosPublishStart", "LosPublishEnd", "ObservationSuppressed",
+        "ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd"};
     const auto index{static_cast<std::size_t>(type)};
     return index < std::size(names) ? names[index] : "未知事件";
 }
@@ -30,6 +32,7 @@ const char *reasonName(Reason reason) {
     return index < std::size(names) ? names[index] : "未知理由";
 }
 void json(std::ostream &output, const Event &event) {
+    output << std::setprecision(17);
     output << "{\"version\":" << event.format_version << ",\"run_id\":" << event.run_id
            << ",\"round_id\":" << event.round_id << ",\"producer_id\":" << event.producer_id
            << ",\"producer_seq\":" << event.producer_seq << ",\"type\":\"" << typeName(event.type) << "\",\"reason\":\""
@@ -75,6 +78,17 @@ void json(std::ostream &output, const Event &event) {
     if (error_known) { output << event.values[1]; } else { output << "null"; }
     output << ",\"error_code\":";
     if (error_known) { output << event.values[2]; } else { output << "null"; }
+    if (event.format_version >= 2 && (event.type == Type::ObservationBbox || event.type == Type::ObservationLos)) {
+        const auto payload{observationValues(event)};
+        output << ",\"observation_id\":" << event.values[0] << ",\"stamp_ns\":" << event.values[1]
+            << ",\"valid\":" << ((event.flags & BoxValid) ? "true" : "false")
+            << ",\"observation_values\":[";
+        for (std::size_t index{}; index < payload.size(); ++index) {
+            if (index) { output << ','; }
+            output << payload[index];
+        }
+        output << ']';
+    }
     output << "}\n";
 }
 } // namespace diagnostics

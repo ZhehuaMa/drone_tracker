@@ -112,7 +112,11 @@ def semantic_inputs(fixture, config):
     group = {'identity_version': IDENTITY_VERSION,
              'fixture': digest(semantic_fixture), 'attitude': manifest['files']['attitude.jsonl'],
              'models': {key: algorithm['models'][key]['sha256'] for key in MODEL_KEYS},
-             'algorithm': digest(semantic_algorithm)}
+             'algorithm': digest(semantic_algorithm),
+             'observations': {'protocol_version': 2,
+                 'publish_prediction': semantic_algorithm['parameters'].get('publish_prediction', False),
+                 'rate_filter_tau': semantic_algorithm['parameters'].get('los.rate_filter_tau', 0.12),
+                 'image_qos': 'best_effort/depth1', 'bag_topics': 'gimbal/odom/bbox/los/mavros_imu'}}
     provenance = {'fixture_manifest_sha256': common.sha256(fixture / 'fixture.json'),
                   'algorithm_file_sha256': common.sha256(fixture / 'algorithm.yaml'),
                   'fixture_directory': str(fixture.resolve()), 'models': locations,

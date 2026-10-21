@@ -26,11 +26,15 @@ class RotationHistory
 public:
     explicit RotationHistory(size_t max_len = 100) : max_len_(max_len) {}
 
-    /** @brief 追加样本；丢弃乱序/回退时间戳 */
-    void push(int64_t ts_us, const cv::Matx33d& R)
+    /** @brief Ignore repeats; RK3576 explicitly opts into resetting on clock rollback. */
+    void push(int64_t ts_us, const cv::Matx33d& R, bool reset_on_rollback = false)
     {
-        if (!samples_.empty() && ts_us <= samples_.back().ts_us)
-            return;
+        if (!samples_.empty() && ts_us == samples_.back().ts_us) { return; }
+        if (!samples_.empty() && ts_us < samples_.back().ts_us) {
+            if (!reset_on_rollback) { return; }
+            samples_.clear();
+            ++generation_;
+        }
         samples_.push_back({ts_us, R});
         while (samples_.size() > max_len_)
             samples_.pop_front();
@@ -64,10 +68,35 @@ public:
         return true;
     }
 
+    bool latest(RotationSample &out) const {
+        if (samples_.empty()) { return false; }
+        out = samples_.back();
+        return true;
+    }
+
+    /** @brief Select a reference without relabeling an old pose as node-now. */
+    bool reference(int64_t frame_us, int64_t now_us, bool predict,
+                   int64_t &reference_us, cv::Matx33d &rotation, bool &pose_selected) const {
+        reference_us = frame_us;
+        pose_selected = false;
+        if (predict && !samples_.empty()) {
+            const auto &pose{samples_.back()};
+            if (pose.ts_us >= frame_us && pose.ts_us <= now_us && now_us - pose.ts_us <= 300000) {
+                reference_us = pose.ts_us;
+                rotation = pose.R;
+                pose_selected = true;
+                return true;
+            }
+        }
+        return nearest(frame_us, rotation);
+    }
+
+    std::uint64_t generation() const { return generation_; }
     bool empty() const { return samples_.empty(); }
     size_t size() const { return samples_.size(); }
 
 private:
+    std::uint64_t generation_{};
     size_t max_len_;
     std::deque<RotationSample> samples_;
 };

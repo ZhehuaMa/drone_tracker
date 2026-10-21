@@ -18,6 +18,16 @@ struct DroneTrackerNodeTestAccess {
     static std::uint64_t replacements(DroneTrackerNode &node) {
         std::lock_guard<std::mutex> lock{node.control_mutex_}; return node.tracking_replaced_;
     }
+    static rclcpp::QoS endpointQos(const DroneTrackerNode &node, const std::string &topic) {
+        if (topic == "/fpv/target_bbox") { return node.detection_pub_->get_actual_qos(); }
+        if (topic == "/fpv/target_los") { return node.los_pub_->get_actual_qos(); }
+        if (topic == "/fpv/tracker_image") { return node.image_pub_->get_actual_qos(); }
+        if (topic == "/fpv/gimbal") { return node.gimbal_sub_->get_actual_qos(); }
+        return node.mavros_imu_sub_->get_actual_qos();
+    }
+    static void cameraPose(DroneTrackerNode &node, const sensor_msgs::msg::Imu::SharedPtr &message) {
+        node.imu_callback(message);
+    }
     static CameraIntrinsics intrinsics(const DroneTrackerNode &node) { return node.cam_intrinsics_; }
     static BagSession::Status bagStatus(DroneTrackerNode &node) {
         std::lock_guard<std::mutex> lock{node.bag_status_mutex_};
@@ -48,7 +58,7 @@ struct SourceTrace {
     std::atomic<int> starts{}, stops{}, delivered{};
     std::atomic_bool active{}, eof{}, fail_start{}, fail_input{}, tail_race{}, long_gap{};
     std::atomic<int> limit{10000};
-    std::atomic<std::uint64_t> fixed_timestamp{};
+    std::atomic<std::uint64_t> fixed_timestamp{}, fixed_timestamp_step{};
     std::atomic_bool warming_up{};
     std::atomic_bool recording_failed{};
     std::atomic<int> legacy_recording_requests{}, session_starts{}, session_stops{};
@@ -111,7 +121,8 @@ private:
     bool next(FrameRef &frame) {
         const auto generated_timestamp{std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() - 20000};
-        const auto timestamp{trace_->fixed_timestamp.load() ? trace_->fixed_timestamp.load() : static_cast<std::uint64_t>(generated_timestamp)};
+        const auto timestamp{trace_->fixed_timestamp.load() ? trace_->fixed_timestamp.load()
+            + trace_->fixed_timestamp_step.load() * trace_->delivered.load() : static_cast<std::uint64_t>(generated_timestamp)};
         frame = std::make_shared<TestFrame<1>>(cv::Mat{80, 100, CV_8UC1, cv::Scalar{42}}, timestamp);
         ++trace_->delivered;
         std::lock_guard<std::mutex> lock{trace_->mutex};
@@ -181,6 +192,8 @@ struct Harness {
     rclcpp::executors::SingleThreadedExecutor executor{};
     std::vector<vision_msgs::msg::Detection2D> detections{};
     std::vector<sensor_msgs::msg::Image> images{};
+    std::vector<geometry_msgs::msg::TwistStamped> observations{};
+    rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr los{};
     std::vector<int> states{};
     rclcpp::Subscription<vision_msgs::msg::Detection2D>::SharedPtr detection{};
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image{};
@@ -196,7 +209,9 @@ struct Harness {
         node->startService();
         detection = observer->create_subscription<vision_msgs::msg::Detection2D>("/fpv/target_bbox", 100,
             [this](vision_msgs::msg::Detection2D::SharedPtr msg) { detections.push_back(*msg); });
-        image = observer->create_subscription<sensor_msgs::msg::Image>("/fpv/tracker_image", 100,
+        los = observer->create_subscription<geometry_msgs::msg::TwistStamped>("/fpv/target_los", 100,
+            [this](geometry_msgs::msg::TwistStamped::SharedPtr msg) { observations.push_back(*msg); });
+        image = observer->create_subscription<sensor_msgs::msg::Image>("/fpv/tracker_image", rclcpp::QoS{100}.best_effort(),
             [this](sensor_msgs::msg::Image::SharedPtr msg) { images.push_back(*msg); });
         state = observer->create_subscription<std_msgs::msg::Int8>("/fpv/tracker_state", 100,
             [this](std_msgs::msg::Int8::SharedPtr msg) { states.push_back(msg->data); });
@@ -322,7 +337,8 @@ void configuration() {
         {"camera.cy", std::numeric_limits<double>::quiet_NaN()}, {"use_sim_time", true},
         {"use_history_timestamp", true}, {"osd.width", 0}, {"osd.frame_stale_ms", 0},
         {"osd.render_path", "invalid"}, {"osd.battery_cells", -1}, {"osd.refresh_hz", std::numeric_limits<double>::infinity()},
-        {"osd.connector", ""}}) {
+        {"osd.connector", ""}, {"los.rate_filter_tau", -1.0},
+        {"los.rate_filter_tau", std::numeric_limits<double>::infinity()}}) {
         auto source{std::make_shared<SourceTrace>()};
         bool rejected{false};
         try {
@@ -332,6 +348,12 @@ void configuration() {
         require(rejected && source->starts == 0 && !source->active, "invalid configuration started source");
     }
     Harness h{};
+    for (const auto &parameter : std::vector<rclcpp::Parameter>{{"publish_prediction", true}, {"los.rate_filter_tau", 0.0}}) {
+        const auto result{h.node->set_parameter(parameter)};
+        require(!result.successful, "observation startup parameter changed at runtime");
+        require(result.reason.find("restart") != std::string::npos,
+            "observation startup parameter rejection did not explain restart");
+    }
     const auto intrinsics{DroneTrackerNodeTestAccess::intrinsics(*h.node)};
     require(intrinsics.fx == 100.0 && intrinsics.fy == 110.0 && intrinsics.px == 50.0
         && intrinsics.py == 40.0, "video intrinsics scaled");
@@ -379,7 +401,7 @@ void messagesAndRestart() {
             require(cv::countNonZero(view->mat() != 42) == 0, "drawing modified shared frame");
         }
         require(rclcpp::Time(h.detections.front().header.stamp).nanoseconds() / 1000
-            > static_cast<std::int64_t>(h.source->timestamps.front()), "prediction used frame time");
+            == static_cast<std::int64_t>(h.source->timestamps.front()), "default did not use capture time");
     }
     h.trace->target = false;
     h.source->limit = 1;
@@ -567,7 +589,8 @@ void cameraContracts() {
                 "Warmup published observations");
         h.node->stop();
         h.pump(30ms);
-        require(h.detections.empty() && h.images.empty(), "Warmup OFF published frames");
+        require(h.detections.size() == 1 && h.detections.front().header.frame_id.empty()
+            && h.images.empty(), "Warmup OFF missing single invalid notification");
         h.node->run();
         h.source->fail_input = true;
         h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "Warmup failure did not clean up");
@@ -693,6 +716,141 @@ void independentCameraRecording() {
         }
     }
 }
+void observationEndpoints() {
+    Harness h{};
+    auto check{[&](const char *topic, bool publisher, rmw_qos_reliability_policy_t reliability, std::size_t depth) {
+        const auto endpoints{publisher ? h.observer->get_publishers_info_by_topic(topic)
+            : h.observer->get_subscriptions_info_by_topic(topic)};
+        const auto it{std::find_if(endpoints.begin(), endpoints.end(), [](const auto &endpoint) {
+            return endpoint.node_name() == "drone_tracker_node";
+        })};
+        require(it != endpoints.end(), "observation endpoint missing");
+        const auto qos{DroneTrackerNodeTestAccess::endpointQos(*h.node, topic).get_rmw_qos_profile()};
+        require(qos.reliability == reliability && qos.depth == depth, "observation endpoint QoS mismatch");
+    }};
+    check("/fpv/target_bbox", true, RMW_QOS_POLICY_RELIABILITY_RELIABLE, 10);
+    check("/fpv/target_los", true, RMW_QOS_POLICY_RELIABILITY_RELIABLE, 10);
+    check("/fpv/tracker_image", true, RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT, 1);
+    check("/fpv/gimbal", false, RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT, 10);
+    check("/mavros/imu/data", false, RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT, 100);
+    h.node->stop(); h.pump(30ms);
+    require(h.detections.empty() && h.observations.empty() && h.images.empty(), "OFF before ON published");
+    auto imu{h.observer->create_publisher<sensor_msgs::msg::Imu>("/mavros/imu/data", rclcpp::QoS{100}.best_effort())};
+    h.trace->target = true;
+    h.node->run();
+    for (int index{}; index < 20; ++index) {
+        sensor_msgs::msg::Imu message{};
+        message.header.stamp = h.observer->now(); message.orientation.w = 1;
+        imu->publish(message); h.pump(10ms);
+    }
+    h.until([&] { return h.detections.size() > 4 && h.observations.size() == h.detections.size(); }, "paired endpoints");
+    require(std::any_of(h.detections.begin(), h.detections.end(), [](const auto &message) {
+        return !message.header.frame_id.empty();
+    }), "no valid bbox for MAVROS-only test");
+    require(std::all_of(h.observations.begin(), h.observations.end(), [](const auto &message) {
+        return message.header.frame_id.empty();
+    }), "MAVROS-only input became camera pose");
+    h.node->stop(); h.pump(50ms);
+    require(h.observations.size() == h.detections.size(), "paired topic counts");
+    require(h.detections.back().header.frame_id.empty() && h.observations.back().header.frame_id.empty(), "OFF valid");
+    for (std::size_t index{}; index < h.detections.size(); ++index) {
+        require(h.detections[index].header.stamp == h.observations[index].header.stamp, "paired time mismatch");
+    }
+    const auto count{h.detections.size()}, images{h.images.size()};
+    h.node->stop(); h.pump(50ms);
+    require(h.detections.size() == count && h.observations.size() == count && h.images.size() == images,
+        "duplicate OFF or ROS preview after OFF");
+}
+
+void repeatedObservationKeepsImageAndState() {
+    Harness h{options({{"publish_prediction", true}})};
+    const auto now_us{h.observer->now().nanoseconds() / 1000};
+    h.source->fixed_timestamp = now_us - 100000;
+    h.source->fixed_timestamp_step = 1000;
+    h.source->limit = 8;
+    auto pose{std::make_shared<sensor_msgs::msg::Imu>()};
+    pose->header.stamp = rclcpp::Time{(now_us - 10000) * 1000}; pose->orientation.w = 1;
+    DroneTrackerNodeTestAccess::cameraPose(*h.node, pose);
+    h.node->run();
+    h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "repeated pose round did not end");
+    h.pump(50ms);
+    require(h.detections.size() == 1 && h.observations.size() == 1, "repeated reference was published");
+    require(h.images.size() == 8 && !h.states.empty(), "observation suppression also suppressed images or state");
+}
+
+void observationTemplates() {
+    for (const char *name : {"rk3576_video_params.yaml", "rk3576_ar0234_camera_params.yaml",
+                           "rk3576_sc233hgs_production_params.yaml"}) {
+        auto config{options({{"osd.enabled", false}, {"need_save", false}, {"recording.enabled", false}})};
+        config.arguments({"--ros-args", "--params-file", std::string{OBSERVATION_REPO_ROOT} + "/parameters/" + name});
+        Harness h{config};
+        require(!h.node->get_parameter("publish_prediction").as_bool()
+            && h.node->get_parameter("los.rate_filter_tau").as_double() == .12,
+            "observation template defaults differ");
+        const auto camera{DroneTrackerNodeTestAccess::intrinsics(*h.node)};
+        require(camera.fx == 100 && camera.fy == 110, "template implicitly rescaled explicit intrinsics");
+    }
+}
+
+void pairedBagAdmission() {
+    const auto root{std::filesystem::temp_directory_path()
+        / ("bag-pair-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))};
+    std::filesystem::create_directories(root);
+    for (int scenario{}; scenario < 4; ++scenario) {
+        std::mutex mutex{};
+        std::condition_variable changed{};
+        bool entered{}, release{};
+        int writes{};
+        BagSession::Status status{};
+        BagSession session{(root / std::to_string(scenario)).string(), [&](const char *operation) {
+            if (std::string{operation} == "open") {
+                std::unique_lock<std::mutex> lock{mutex};
+                entered = true; changed.notify_all(); changed.wait(lock, [&] { return release; });
+            }
+            if (std::string{operation} == "write" && scenario == 3 && ++writes == 2) {
+                throw std::runtime_error("second half write failure");
+            }
+        }, [&](const BagSession::Status &result) { status = result; }};
+        {
+            std::unique_lock<std::mutex> lock{mutex};
+            require(changed.wait_for(lock, 2s, [&] { return entered; }), "pair admission gate");
+        }
+        auto bbox{std::make_shared<vision_msgs::msg::Detection2D>()};
+        auto los{std::make_shared<geometry_msgs::msg::TwistStamped>()};
+        auto imu{std::make_shared<sensor_msgs::msg::Imu>()};
+        bool accepted{};
+        if (scenario == 0) {
+            for (std::size_t index{}; index < BagSession::max_messages - 1; ++index) {
+                require(session.submit(imu, "/fpv/gimbal", rclcpp::Time{1}), "fill pair queue");
+            }
+            accepted = session.submitPair(bbox, los, rclcpp::Time{1});
+        } else if (scenario == 1) {
+            accepted = session.submitPair(bbox, los, rclcpp::Time{1}, BagSession::max_bytes - 1, 2);
+        } else if (scenario == 2) {
+            session.seal();
+            accepted = session.submitPair(bbox, los, rclcpp::Time{1});
+        } else { accepted = session.submitPair(bbox, los, rclcpp::Time{1}); }
+        require(accepted == (scenario == 3), "half pair admitted at capacity or seal");
+        const auto snapshot{session.snapshot()};
+        if (scenario < 2) {
+            require(snapshot.topics.at("/fpv/target_bbox").attempted == 1
+                && snapshot.topics.at("/fpv/target_bbox").dropped == 1
+                && snapshot.topics.at("/fpv/target_los").dropped == 1, "pair drop counts differ");
+        }
+        {
+            std::lock_guard<std::mutex> lock{mutex}; release = true;
+        }
+        changed.notify_all(); session.stop();
+        require(status.phase == (scenario == 3 ? "failed" : scenario == 2 ? "complete" : "incomplete"),
+            "pair incomplete state lost");
+        if (scenario == 3) {
+            require(status.topics.at("/fpv/target_bbox").written == 1
+                && status.topics.at("/fpv/target_los").written == 0, "partial disk write not reported");
+        }
+    }
+    std::filesystem::remove_all(root);
+}
+
 void bagQueueLimits() {
     const auto root{std::filesystem::temp_directory_path()
         / ("bag-queue-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))};
@@ -701,7 +859,7 @@ void bagQueueLimits() {
     std::condition_variable changed{};
     bool entered{}, release{};
     BagSession::Status result{};
-    BagSession session{(root / "round").string(), false,
+    BagSession session{(root / "round").string(),
         [&](const char *operation) {
             if (std::string{operation} != "open") { return; }
             std::unique_lock<std::mutex> lock{gate};
@@ -749,7 +907,7 @@ void bagQueueLimits() {
         entered = false;
         release = false;
     }
-    BagSession byte_session{(root / "bytes").string(), false,
+    BagSession byte_session{(root / "bytes").string(),
         [&](const char *operation) {
             if (std::string{operation} != "open") { return; }
             std::unique_lock<std::mutex> lock{gate};
@@ -802,6 +960,9 @@ void bagWithoutImagesAndDualRecording() {
         const auto metadata{reader.get_all_topics_and_types()};
         require(std::none_of(metadata.begin(), metadata.end(), [](const auto &topic) {
             return topic.name == "/fpv/tracker_image";
+        }), "image metadata persisted");
+        require(std::none_of(metadata.begin(), metadata.end(), [](const auto &topic) {
+            return topic.name == "/fpv/tracker_image";
         }), "disabled image topic appeared in bag metadata");
         std::uint64_t boxes{};
         while (reader.has_next()) {
@@ -845,6 +1006,7 @@ void recording() {
     std::filesystem::create_directories(root);
     Harness h{options({{"need_save", true}, {"save_path", root.string()}})};
     auto imu{h.observer->create_publisher<sensor_msgs::msg::Imu>("/fpv/gimbal", rclcpp::QoS{1}.best_effort())};
+    auto mavros{h.observer->create_publisher<sensor_msgs::msg::Imu>("/mavros/imu/data", rclcpp::QoS{100}.best_effort())};
     auto odom{h.observer->create_publisher<nav_msgs::msg::Odometry>("/fpv/odom", rclcpp::QoS{10}.best_effort())};
     h.pump(200ms);
     std::vector<BagSession::Status> statuses{};
@@ -859,6 +1021,7 @@ void recording() {
                 message.orientation.w = std::sqrt(0.5);
                 message.orientation.z = std::sqrt(0.5);
                 imu->publish(message);
+                mavros->publish(message);
                 nav_msgs::msg::Odometry position{};
                 position.header.stamp = message.header.stamp;
                 odom->publish(position);
@@ -903,6 +1066,13 @@ void recording() {
                 const auto message{decodeBag<vision_msgs::msg::Detection2D>(*item)};
                 require(rclcpp::Time{message.header.stamp}.nanoseconds() == item->time_stamp
                     && std::isfinite(message.bbox.size_x), "bag detection payload or timestamp changed");
+            } else if (item->topic_name == "/fpv/target_los") {
+                const auto message{decodeBag<geometry_msgs::msg::TwistStamped>(*item)};
+                require(rclcpp::Time{message.header.stamp}.nanoseconds() == item->time_stamp, "LOS bag timestamp");
+            } else if (item->topic_name == "/mavros/imu/data") {
+                const auto message{decodeBag<sensor_msgs::msg::Imu>(*item)};
+                require(rclcpp::Time{message.header.stamp}.nanoseconds() == item->time_stamp
+                    && message.orientation.w == std::sqrt(0.5), "raw MAVROS bag payload");
             } else if (item->topic_name == "/fpv/tracker_image") {
                 const auto message{decodeBag<sensor_msgs::msg::Image>(*item)};
                 require(rclcpp::Time{message.header.stamp}.nanoseconds() == item->time_stamp
@@ -910,7 +1080,10 @@ void recording() {
             }
         }
         const auto metadata{reader.get_all_topics_and_types()};
-        for (const auto *topic : {"/fpv/gimbal", "/fpv/odom", "/fpv/target_bbox", "/fpv/tracker_image"}) {
+        require(std::none_of(metadata.begin(), metadata.end(), [](const auto &topic) {
+            return topic.name == "/fpv/tracker_image";
+        }), "image metadata persisted");
+        for (const auto *topic : {"/fpv/gimbal", "/fpv/odom", "/fpv/target_bbox", "/fpv/target_los", "/mavros/imu/data"}) {
             require(std::find(topics.begin(), topics.end(), topic) != topics.end(), "closed bag missing topic");
             require(std::any_of(metadata.begin(), metadata.end(), [topic](const auto &value) {
                 return value.name == topic && !value.type.empty();
@@ -1086,7 +1259,7 @@ void continuousDiagnosticBoundaries() {
         }
         require(starts[1] == 1 && starts[2] == 1 && ends[1] == 1 && ends[2] == 1
             && publications[1] > 0 && publications[2] > 0, "Continuous diagnostic round boundaries changed");
-        const auto &control_ring{region->producers[static_cast<std::size_t>(diagnostics::Producer::Control)].normal};
+        const auto &control_ring{region->producers[static_cast<std::size_t>(diagnostics::Producer::Dispatcher)].normal};
         bool selected{}, replaced{};
         for (std::uint64_t index{}; index < control_ring.write.load(std::memory_order_acquire); ++index) {
             const auto &value{control_ring.events[index % diagnostics::NORMAL_CAPACITY]};
@@ -1244,6 +1417,10 @@ int main(int argc, char **argv) {
             return 0;
         }
         configuration();
+        observationEndpoints();
+        repeatedObservationKeepsImageAndState();
+        observationTemplates();
+        pairedBagAdmission();
         osdCompatibility();
         messagesAndRestart();
         cleanupAndFailures();

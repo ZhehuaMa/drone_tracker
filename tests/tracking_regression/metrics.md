@@ -175,3 +175,25 @@ records still prevent formal comparison. Reports retain each descriptor's metric
 Use `run_suite.py CONFIG.yaml` with one explicit `prepare`, `run`, `freeze` or `compare` operation. The complete sections and sequence are documented in [README.md](README.md) and [configs/example.yaml](configs/example.yaml). Every case has an independent fixture, at least three qualified reference runs, frozen baseline, at least three independent candidate runs and comparison output. References/candidates match by `case_id` and content, never list position. The specified four-case template requires twelve rounds per cohort and twenty-four total; no cross-case sample pooling or percentage averaging is permitted.
 
 New metrics containers use `schema_version: 2`; unchanged metric formulas retain their original `metric_version` (including existing version-2 diagnostic extensions). Old containers retain fixed full/core validation. Unknown versions, mixed old/new runs, changed numeric selection/windows or changed preparation/cleanup budgets cannot enter one formal group. File/config paths and unrelated case lists remain provenance. Comparison output distinguishes completed operation, comparable evidence and explicit threshold performance decision. Missing cases and unset thresholds cannot yield a suite pass.
+
+## Floating observation metrics (extension version 3)
+
+For diagnostic format 2, the published box is taken from `ObservationBbox` joined
+by run, round and observation sequence. Integer `Output.other_box` never supplies
+new floating publication evidence. `published_float_box` preserves double pixel
+values and nanosecond reference times. Legacy logs report this field and LOS
+extensions as `unavailable`, which means the source never recorded the field;
+it is not a zero measurement.
+
+`los_publication_count`, `los_valid_count` and `observation_suppressed_count` are
+independent of bbox publication counts. OFF attempts use `off_notification_count`
+and are excluded from frame validity, throughput and publication-interval
+metrics. A bbox can be valid while LOS is invalid. Two independent topic calls
+must not double bbox FPS. Capture time, selected reference time and each actual
+call's monotonic time remain separate; frame age and reference lag use the actual
+publication boundary. No call-return metric establishes subscriber receipt.
+
+Comparison identity includes observation protocol version, prediction mode,
+rate tau, image QoS and bag topic policy. Missing or changed conditions make
+old/new cohorts incomparable. Old baseline files remain untouched; explanatory
+side-by-side displays do not establish a same-condition performance improvement.

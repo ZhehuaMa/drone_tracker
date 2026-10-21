@@ -50,6 +50,16 @@
         "identity_version": {
           "type": "integer",
           "const": 2
+        },
+        "observations": {
+          "type": "object",
+          "required": [
+            "protocol_version",
+            "publish_prediction",
+            "rate_filter_tau",
+            "image_qos",
+            "bag_topics"
+          ]
         }
       }
     },

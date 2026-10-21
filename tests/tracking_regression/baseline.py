@@ -106,6 +106,10 @@ ARBITRATION_METRICS = frozenset({
 })
 
 
+OBSERVATION_METRICS = frozenset({"los_publication_count", "observation_suppressed_count", "off_notification_count"})
+OBSERVATION_FIELDS = OBSERVATION_METRICS | {"los_valid_count", "published_float_box"}
+
+
 def load_run(path):
     """Validate integrity before reading any value into a formal set."""
     run = Path(path).resolve(strict=True)
@@ -180,7 +184,7 @@ def load_run(path):
             fields = {"metric_version", "unit", "window", "sample_count", "availability", "reason"}
             if not isinstance(descriptor, dict) or fields - descriptor.keys():
                 raise ValueError(f"{run}/metrics.json:{window_name}.{name}: incomplete descriptor")
-            extension = name in ARBITRATION_METRICS and descriptor["metric_version"] == 2
+            extension = (name in ARBITRATION_METRICS and descriptor["metric_version"] == 2) or name in OBSERVATION_FIELDS
             historical_absence = (extension and descriptor["availability"] == "unavailable"
                                   and descriptor["reason"] == "historical_field_absent")
             unknown_source_time = (extension and name == "source_capture_to_consumption_ms"
@@ -195,7 +199,7 @@ def load_run(path):
             window = descriptor.get("window", {})
             if (window.get("start_us"), window.get("end_us")) != expected_bounds:
                 raise ValueError(f"{run}/metrics.json:{window_name}.{name}.window: expected {expected_bounds}")
-            expected_version = 2 if name in ARBITRATION_METRICS else 1
+            expected_version = 3 if name in OBSERVATION_METRICS else 2 if name in ARBITRATION_METRICS else 1
             if descriptor["metric_version"] != expected_version:
                 raise ValueError(f"{run}/metrics.json:{window_name}.{name}.metric_version: expected {expected_version}")
             if (not isinstance(descriptor["sample_count"], int) or isinstance(descriptor["sample_count"], bool)

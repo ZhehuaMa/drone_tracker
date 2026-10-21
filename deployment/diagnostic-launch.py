@@ -8,7 +8,7 @@ import yaml
 
 def parse(path):
     value = yaml.safe_load(Path(path).read_text(encoding='utf-8'))
-    if not isinstance(value, dict) or value.get('version') != 1 or value.get('protocol_version') != 1:
+    if not isinstance(value, dict) or value.get('version') != 1 or value.get('protocol_version') != 2:
         raise ValueError('诊断配置或协议版本不兼容')
     if value.get('sync_ms') not in (100, 200):
         raise ValueError('sync_ms 必须为 100 或 200')

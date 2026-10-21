@@ -27,7 +27,7 @@ class DiagnosticsTest(unittest.TestCase):
         self.assertIn('rk3576_diagnostic_inspect', package_core.PROGRAMS)
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / 'config.yaml'
-            for bad in ('version: 2', 'version: 1\nprotocol_version: 2'):
+            for bad in ('version: 2', 'version: 1\nprotocol_version: 1'):
                 path.write_text(bad)
                 with self.assertRaises(ValueError):
                     LAUNCH.parse(path)

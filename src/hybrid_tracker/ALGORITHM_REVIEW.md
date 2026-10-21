@@ -167,3 +167,21 @@ roi_h = box.height * roi_scale_factor;
 // 限制在图像边界内
 ```
 这对于在 Jetson 等嵌入式设备上保持实时性能至关重要。
+
+### Floating target observations and camera-relative LOS
+
+`TrackerOutput.observation_box` retains the KF prediction as double-precision pixel
+coordinates and clips it to the actual input frame. The integer `display_box` and
+`realtime_box` remain visualization outputs. A successful YOLO reanchor sets
+`reset_los`; ordinary confirmation does not reset LOS velocity.
+
+LOS is the line of sight from the camera to the box center. In camera FLU
+(forward, left, up), the ray is `(1, -(u-cx)/fx, -(v-cy)/fy)`. Pitch is positive
+downward; yaw is positive leftward. Angles use radians and rates use radians per
+second. The estimator rotates the previous ray and filtered velocity into the
+current camera frame before differencing, so camera motion alone produces zero
+world-target angular velocity. The smoothing coefficient is `1-exp(-dt/tau)`;
+`tau=0` disables smoothing. The first sample and gaps longer than 300 ms start
+with zero rate. Invalid input, lost targets, missing camera rotation and successful
+reanchors reset rate history. Simulated intrinsics establish interface behavior,
+not calibrated physical angular accuracy.

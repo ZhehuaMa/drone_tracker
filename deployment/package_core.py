@@ -142,9 +142,9 @@ def make_bundle(bundle, source_info):
         if not source.is_file():
             raise RuntimeError(f'缺少安装程序: {source}')
         aarch64(source)
-        if name == 'drone_tracker_node' and run(str(source), '--diagnostic-protocol-version', env=protocol_env).strip() != '1':
+        if name == 'drone_tracker_node' and run(str(source), '--diagnostic-protocol-version', env=protocol_env).strip() != '2':
             raise RuntimeError('主业务诊断协议不兼容')
-        if name.startswith('rk3576_diagnostic_') and run(str(source), '--protocol-version', env=protocol_env).strip() != '1':
+        if name.startswith('rk3576_diagnostic_') and run(str(source), '--protocol-version', env=protocol_env).strip() != '2':
             raise RuntimeError(f'诊断协议版本不兼容: {name}')
         program_records[name] = copy(source, program_dir / name,
                                      f"{source_info['install_source']}/lib/drone_tracker/{name}")
@@ -244,7 +244,7 @@ def make_bundle(bundle, source_info):
     provenance = {
         'camera_config': camera_record,
         'diagnostic_config': diagnostic_record,
-        'diagnostic_protocol_version': 1,
+        'diagnostic_protocol_version': 2,
         'cpu_policy': policy_record,
         'install_root': source_info['install_source'],
         'programs': program_records,

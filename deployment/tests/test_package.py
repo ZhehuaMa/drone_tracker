@@ -1,6 +1,7 @@
 """本机打包入口、模型路径和失败时归档清理测试。"""
 
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -63,7 +64,12 @@ class EntryTest(unittest.TestCase):
                         FAKE_DOCKER_LOG=str(self.log))
 
     def invoke(self, *arguments):
-        return subprocess.run([str(DEPLOYMENT / 'package.sh'), *arguments],
+        fixture = self.root / 'repo'
+        if not fixture.exists():
+            shutil.copytree(DEPLOYMENT, fixture / 'deployment')
+            shutil.copytree(DEPLOYMENT.parent / 'parameters', fixture / 'parameters')
+            (fixture / '.docker-artifacts/install/drone_tracker').mkdir(parents=True)
+        return subprocess.run([str(fixture / 'deployment/package.sh'), *arguments],
                               env=self.env, text=True, capture_output=True)
 
     def test_defaults_and_explicit_overrides(self):

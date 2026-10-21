@@ -251,7 +251,7 @@ Scan scan(const std::filesystem::path &path) {
             result.damaged = true;
             break;
         }
-        if (header.version != FORMAT_VERSION) {
+        if (!supportedVersion(header.version)) {
             result.unknown_version = true;
             break;
         }
@@ -270,7 +270,7 @@ Scan scan(const std::filesystem::path &path) {
             std::memcpy(result.events.data() + start, payload.data(), header.length);
             bool valid_events{true};
             for (std::size_t index{start}; index < result.events.size(); ++index) {
-                if (result.events[index].format_version != FORMAT_VERSION ||
+                if (!supportedVersion(result.events[index].format_version) ||
                     result.events[index].byte_length != sizeof(Event) ||
                     result.events[index].producer_id >= PRODUCERS) {
                     valid_events = false;
@@ -282,9 +282,17 @@ Scan scan(const std::filesystem::path &path) {
                 result.damaged = true;
                 break;
             }
-        } else if (header.kind == RecordKind::Commit && header.length == sizeof(Commit)) {
+        } else if (header.kind == RecordKind::Commit
+                   && header.length == (header.version == 1 ? 80U : sizeof(Commit))) {
             Commit commit{};
-            std::memcpy(&commit, payload.data(), sizeof(commit));
+            if (header.version == 1) {
+                std::array<std::uint64_t, 10> legacy{};
+                std::memcpy(legacy.data(), payload.data(), sizeof(legacy));
+                commit.data_end = legacy[0];
+                commit.mono_ns = legacy[1];
+                std::copy_n(legacy.begin() + 2, 4, commit.written.begin());
+                std::copy_n(legacy.begin() + 6, 4, commit.dropped.begin());
+            } else { std::memcpy(&commit, payload.data(), sizeof(commit)); }
             if (commit.data_end != result.valid_bytes) {
                 result.damaged = true;
                 break;

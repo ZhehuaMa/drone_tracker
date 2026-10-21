@@ -12,6 +12,8 @@ drone_tracker_node:
     save_path: "/tmp/drone-recordings"
     # 调试图像输出；生产保持 false，bag 中也不注册 /fpv/tracker_image。
     visualized_result: false
+    publish_prediction: false
+    los.rate_filter_tau: 0.12
     # SC233HGS 独立 H.264/TS 录像；与 need_save/ROS bag、ROS 图像及 HDMI 开关独立。
     # 生产启用示例：复核本地 ext4 挂载及目录权限，使用 SC233HGS 连续模式后设 enabled: true。
     recording:

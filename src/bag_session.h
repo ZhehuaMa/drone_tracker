@@ -4,7 +4,8 @@
 #include <rosbag2_cpp/writer.hpp>
 #include <rmw/rmw.h>
 #include <rclcpp/time.hpp>
-#include <sensor_msgs/msg/image.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
+#include <vision_msgs/msg/detection2_d.hpp>
 
 #include <algorithm>
 #include <condition_variable>
@@ -35,8 +36,8 @@ public:
     using Hook = std::function<void(const char *)>;
     using Report = std::function<void(const Status &)>;
 
-    BagSession(std::string path, bool images, Hook hook, Report report)
-        : path_{std::move(path)}, images_{images}, hook_{std::move(hook)}, report_{std::move(report)} {
+    BagSession(std::string path, Hook hook, Report report)
+        : path_{std::move(path)}, hook_{std::move(hook)}, report_{std::move(report)} {
         thread_ = std::thread{[this] { work(); }};
     }
     BagSession(const BagSession &) = delete;
@@ -60,6 +61,41 @@ public:
         }});
         queued_bytes_ += bytes;
         ++counts.accepted;
+        status_.peak_bytes = std::max(status_.peak_bytes, queued_bytes_);
+        changed_.notify_one();
+        return true;
+    }
+
+    /** @brief Admit both observations or neither; each consumes one message slot. */
+    bool submitPair(std::shared_ptr<vision_msgs::msg::Detection2D> bbox,
+                    std::shared_ptr<geometry_msgs::msg::TwistStamped> los,
+                    const rclcpp::Time &stamp,
+                    std::size_t bbox_bytes = sizeof(vision_msgs::msg::Detection2D),
+                    std::size_t los_bytes = sizeof(geometry_msgs::msg::TwistStamped)) {
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (!accepting_) { return false; }
+        auto &first{status_.topics["/fpv/target_bbox"]};
+        auto &second{status_.topics["/fpv/target_los"]};
+        ++first.attempted;
+        ++second.attempted;
+        if (queue_.size() > max_messages - 2 || bbox_bytes > max_bytes - queued_bytes_
+            || los_bytes > max_bytes - queued_bytes_ - bbox_bytes) {
+            ++first.dropped;
+            ++second.dropped;
+            incomplete_ = true;
+            return false;
+        }
+        queue_.push_back({"/fpv/target_bbox", bbox_bytes,
+            [bbox = std::move(bbox), stamp](rosbag2_cpp::Writer &writer) {
+                writer.write(*bbox, "/fpv/target_bbox", stamp);
+            }});
+        queue_.push_back({"/fpv/target_los", los_bytes,
+            [los = std::move(los), stamp](rosbag2_cpp::Writer &writer) {
+                writer.write(*los, "/fpv/target_los", stamp);
+            }});
+        queued_bytes_ += bbox_bytes + los_bytes;
+        ++first.accepted;
+        ++second.accepted;
         status_.peak_bytes = std::max(status_.peak_bytes, queued_bytes_);
         changed_.notify_one();
         return true;
@@ -120,11 +156,10 @@ private:
             writer->open(path_);
             for (const auto &topic : std::map<std::string, std::string>{
                      {"/fpv/gimbal", "sensor_msgs/msg/Imu"}, {"/fpv/odom", "nav_msgs/msg/Odometry"},
-                     {"/fpv/target_bbox", "vision_msgs/msg/Detection2D"}}) {
+                     {"/fpv/target_bbox", "vision_msgs/msg/Detection2D"},
+                     {"/fpv/target_los", "geometry_msgs/msg/TwistStamped"},
+                     {"/mavros/imu/data", "sensor_msgs/msg/Imu"}}) {
                 writer->create_topic({topic.first, topic.second, rmw_get_serialization_format(), ""});
-            }
-            if (images_) {
-                writer->create_topic({"/fpv/tracker_image", "sensor_msgs/msg/Image", rmw_get_serialization_format(), ""});
             }
             {
                 std::lock_guard<std::mutex> lock{mutex_};
@@ -180,7 +215,6 @@ private:
     }
 
     std::string path_;
-    bool images_{};
     Hook hook_{};
     Report report_{};
     mutable std::mutex mutex_{};

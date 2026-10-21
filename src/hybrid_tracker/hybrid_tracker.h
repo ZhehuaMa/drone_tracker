@@ -79,6 +79,8 @@ struct TrackerOutput
     bool tracking = false;
     BBoxRect display_box{};     // 整数显示框（跟踪器结果，用于可视化）
     BBoxRect realtime_box{};    // KF predict_only(now) 实时预测框（发布这个）
+    cv::Rect2d observation_box{}; // Floating prediction clipped to actual input pixels.
+    bool reset_los{false};       // Successful reanchor also clears LOS velocity.
     TrackerState state = TrackerState::Detecting;
     std::string info;           // 状态文本（可视化/StatusText）
     uint32_t color = 0;         // 显示颜色 RGB 打包

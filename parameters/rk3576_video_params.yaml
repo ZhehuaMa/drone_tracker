@@ -7,6 +7,8 @@ drone_tracker_node:
     need_save: false
     save_path: "/tmp/drone-recordings"
     visualized_result: true
+    publish_prediction: false
+    los.rate_filter_tau: 0.12
     # HDMI 显示独立于 ROS 调试图像；全部 osd 参数只在启动时生效。
     osd:
       render_path: cached-overlay # 回退示例：render_path: legacy（修改后重启节点）。

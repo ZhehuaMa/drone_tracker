@@ -134,12 +134,14 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
                 result.reason = "mv_camera.sensor_model cannot change at runtime; restart the node to apply it";
                 break;
             }
-            if (name == "use_sim_time" || name == "use_history_timestamp" || name == "video_source"
+            if (name == "publish_prediction" || name == "los.rate_filter_tau"
+                || name == "use_sim_time" || name == "use_history_timestamp" || name == "video_source"
                 || name == "need_save" || name == "save_path" || name == "visualized_result"
                 || name.rfind("tracker.", 0) == 0 || name.rfind("camera.", 0) == 0
                 || name.rfind("mv_camera.", 0) == 0) {
                 result.successful = false;
-                result.reason = "RK3576 startup configuration is fixed; system clock only: " + name;
+                result.reason = "RK3576 startup configuration is fixed; restart the node to apply it; system clock only: "
+                    + name;
                 break;
             }
 #endif
@@ -188,6 +190,12 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
     try {
         tracker_->finishRound();
         tracker_->reset();
+#ifdef DRONE_TRACKER_RK3576
+        observation_builder_->reset();
+        observation_sequence_ = 0;
+        observation_active_ = true;
+        off_notified_ = false;
+#endif
         last_tracker_state = -1;
         consumed_frames_ = 0;
         last_acquisition_report_ = std::chrono::steady_clock::now();
@@ -236,6 +244,9 @@ void DroneTrackerNode::stop() {
         display_version_ = osd_presenter_->controlTracking(osd_round_, osd::TrackingPhase::Idle);
         osd_presenter_->showTrigger(osd_round_, false);
         if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false); }
+#ifdef DRONE_TRACKER_RK3576
+        notifyObservationOff();
+#endif
         sealRecording();
         control_changed_.notify_all();
         RCLCPP_INFO(get_logger(), "Tracking OFF accepted stream=%lu round=%lu accept_us=%ld video=running",
@@ -250,7 +261,12 @@ void DroneTrackerNode::stop() {
     }
     running = false;
     wait_cv_.notify_all();
+#ifdef DRONE_TRACKER_RK3576
+    notifyObservationOff();
+#endif
     sealRecording();
+    // A worker can be waiting at the publication boundary when OFF arrives.
+    control.unlock();
     if (worker_thread_.joinable()) { worker_thread_.join(); }
     if (camera_input_) {
         RCLCPP_INFO(get_logger(), "Node OFF total_us=%ld", static_cast<long>(
@@ -332,8 +348,8 @@ void DroneTrackerNode::shutdown() noexcept {
     if (osd_presenter_) { osd_presenter_->shutdown(); osd_presenter_->reportTiming(); }
 }
 void DroneTrackerNode::dispatchFrames() noexcept {
-    // The dispatcher owns Control while live; client run boundaries use it only before/after service threads.
-    diagnostics::current_producer = diagnostics::Producer::Control;
+    // Dispatcher has its own ring; OFF notifications use the control producer concurrently.
+    diagnostics::current_producer = diagnostics::Producer::Dispatcher;
     try {
         while (service_running_) {
             FrameRef frame{};
@@ -454,6 +470,12 @@ void DroneTrackerNode::continuousWorker() noexcept {
             {
                 std::lock_guard<std::mutex> lock{control_mutex_};
                 if (running && desired_on_) {
+#ifdef DRONE_TRACKER_RK3576
+                    observation_builder_->reset();
+                    observation_sequence_ = 0;
+                    observation_active_ = true;
+                    off_notified_ = false;
+#endif
                     openRecording(stamp);
                     if (auto recording = mv_camera_->recordingControl()) {
                         recording->requestRecording(osd_round_, true);
@@ -513,7 +535,7 @@ void DroneTrackerNode::openRecording(const builtin_interfaces::msg::Time &stamp)
     if (!enabled) { return; }
     const auto path{std::filesystem::path{directory} / ("drone_rosbag_" + prefix)};
 #ifdef DRONE_TRACKER_RK3576
-    bag_session_ = std::make_unique<BagSession>(path.string(), enable_image_output_, recording_hook_,
+    bag_session_ = std::make_unique<BagSession>(path.string(), recording_hook_,
         [this](const BagSession::Status &status) {
             {
                 std::lock_guard<std::mutex> lock{bag_status_mutex_};
@@ -666,6 +688,11 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
     }
 #endif
 
+#ifdef DRONE_TRACKER_RK3576
+    publish_prediction_ = get_parameter("publish_prediction").as_bool();
+    observation_builder_ = std::make_unique<TargetObservationBuilder>(cam_intrinsics_.fx, cam_intrinsics_.fy,
+        cv::Point2d{cam_intrinsics_.px, cam_intrinsics_.py}, get_parameter("los.rate_filter_tau").as_double());
+#endif
     int width_px, height_px, output_width_px, output_height_px, fps;
     float pixel_size_um, focal_length_mm;
     bool flip, mirror;
@@ -887,7 +914,12 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
     }
 
     gimbal_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-        TOPIC_GIMBAL, rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
+        TOPIC_GIMBAL,
+#ifdef DRONE_TRACKER_RK3576
+        rclcpp::QoS(rclcpp::KeepLast(10)).best_effort(),
+#else
+        rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
+#endif
         std::bind(&DroneTrackerNode::imu_callback, this, std::placeholders::_1)
     );
 
@@ -898,8 +930,16 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
 
     detection_pub_ = this->create_publisher<vision_msgs::msg::Detection2D>(
         TOPIC_TARGET_BBOX, 10);
-    image_pub_ = this->create_publisher<sensor_msgs::msg::Image>(
-        TOPIC_TRACKER_IMAGE, 10);
+#ifdef DRONE_TRACKER_RK3576
+    los_pub_ = create_publisher<geometry_msgs::msg::TwistStamped>("/fpv/target_los", rclcpp::QoS{10}.reliable());
+    mavros_imu_sub_ = create_subscription<sensor_msgs::msg::Imu>("/mavros/imu/data",
+        rclcpp::QoS{100}.best_effort(), [this](sensor_msgs::msg::Imu::SharedPtr msg) {
+            record(msg, "/mavros/imu/data", rclcpp::Time{msg->header.stamp});
+        });
+    image_pub_ = create_publisher<sensor_msgs::msg::Image>(TOPIC_TRACKER_IMAGE, rclcpp::QoS{1}.best_effort());
+#else
+    image_pub_ = create_publisher<sensor_msgs::msg::Image>(TOPIC_TRACKER_IMAGE, 10);
+#endif
     tracker_state_pub_ = this->create_publisher<std_msgs::msg::Int8>(
         TOPIC_TRACKER_STATE, 10);
 
@@ -1130,13 +1170,21 @@ void DroneTrackerNode::processFrames() {
         ctx.frame = frame_buffer;
         const int64_t frame_timestamp_us = static_cast<int64_t>(frame_buffer->timestampUs());
         ctx.now_us = this->now().nanoseconds() / 1000;
+#ifdef DRONE_TRACKER_RK3576
+        bool observation_rotation_valid{}, pose_selected{};
+        std::uint64_t pose_generation{};
+#endif
         {
             std::lock_guard<std::mutex> lock(gimbal_mtx_);
             cv::Matx33d R;
-            if (gimbal_history_.nearest(frame_timestamp_us, R))
-                ctx.R_cam_at_frame = R;
-            if (gimbal_history_.latest(R))
-                ctx.R_cam_now = R;
+            if (gimbal_history_.nearest(frame_timestamp_us, R)) { ctx.R_cam_at_frame = R; }
+#ifdef DRONE_TRACKER_RK3576
+            observation_rotation_valid = gimbal_history_.reference(frame_timestamp_us, ctx.now_us,
+                publish_prediction_, ctx.now_us, ctx.R_cam_now, pose_selected);
+            pose_generation = gimbal_history_.generation();
+#else
+            if (gimbal_history_.latest(R)) { ctx.R_cam_now = R; }
+#endif
         }
 
         const auto sample_begin{diagnostics::measurement ? diagnostics::monotonicNs() : 0};
@@ -1165,10 +1213,15 @@ void DroneTrackerNode::processFrames() {
         if (out.consumed)
         {
             std::unique_lock<std::mutex> publication{control_mutex_, std::defer_lock};
+#ifdef DRONE_TRACKER_RK3576
+            publication.lock();
+            if (!running || (continuous_preview_ && (!desired_on_ || display_version != display_version_))) { continue; }
+#else
             if (continuous_preview_) {
                 publication.lock();
                 if (!running || !desired_on_ || display_version != display_version_) { continue; }
             }
+#endif
             ++consumed_frames_;
             if (osd_presenter_) {
                 osd::PresentationPacket packet{frame_buffer, osd_round_, ++osd_sequence_,
@@ -1188,7 +1241,7 @@ void DroneTrackerNode::processFrames() {
                         packet.boxes.push_back({left, top, right - left, bottom - top, {}});
                     }
                 }
-                if (continuous_preview_) { publication.unlock(); }
+                if (publication.owns_lock()) { publication.unlock(); }
                 const auto submit_start{osd::SteadyClock::now()};
                 if (osd_presenter_->submit(std::move(packet)) && continuous_preview_) { ++paired_submitted_; }
                 const auto elapsed{static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -1197,11 +1250,30 @@ void DroneTrackerNode::processFrames() {
                 osd_submit_ns_.fetch_add(elapsed);
                 if (elapsed > osd_submit_max_ns_.load()) { osd_submit_max_ns_.store(elapsed); }
                 osd_submit_calls_.fetch_add(1);
+#ifdef DRONE_TRACKER_RK3576
+                publication.lock();
+                if (!running || (continuous_preview_ && (!desired_on_ || display_version != display_version_))) { continue; }
+#else
                 if (continuous_preview_) {
                     publication.lock();
                     if (!running || !desired_on_ || display_version != display_version_) { continue; }
                 }
+#endif
             }
+#ifdef DRONE_TRACKER_RK3576
+            auto observation_event{diagnostics::event(diagnostics::Type::ObservationBbox)};
+            observation_event.frame = frame_buffer->diagnosticIdentity();
+            observation_event.frame_time_us = frame_timestamp_us;
+            observation_event.prediction_us = ctx.now_us;
+            observation_event.counts[0] = pose_selected ? 1 : (publish_prediction_ ? 2 : 0);
+            observation_event.flags |= diagnostics::FrameTimeKnown | diagnostics::PredictionKnown;
+            if (observation_generation_ != pose_generation) {
+                observation_builder_->resetRates();
+                observation_generation_ = pose_generation;
+            }
+            publishObservations(out.tracking ? &out.observation_box : nullptr, ctx.now_us * 1000,
+                observation_rotation_valid ? &ctx.R_cam_now : nullptr, out.reset_los, observation_event, false);
+#else
             // 发布实时预测框（KF predict_only(now) 外推），空 frame_id 表示无效检测。
             // 时间戳用外推时刻（与外推框同 epoch，避免下游对已外推的测量二次外推）
             auto detection_msg = std::make_shared<vision_msgs::msg::Detection2D>();
@@ -1218,6 +1290,7 @@ void DroneTrackerNode::processFrames() {
             publication_event.values[0] = this->now().nanoseconds();
             publication_event.flags |= diagnostics::PredictionKnown | diagnostics::FrameTimeKnown;
             diagnostics::observePublication(publication_event, [&] { detection_pub_->publish(*detection_msg); });
+#endif
 
             // 状态仅变化时发布
             int8_t tracker_state_int = static_cast<int8_t>(out.state);
@@ -1301,12 +1374,19 @@ void DroneTrackerNode::processFrames() {
                 auto img_msg = std::make_shared<sensor_msgs::msg::Image>();
                 cv_img.toImageMsg(*img_msg);
                 std::unique_lock<std::mutex> publication{control_mutex_, std::defer_lock};
+#ifdef DRONE_TRACKER_RK3576
+                publication.lock();
+                if (!running || (continuous_preview_ && (!desired_on_ || display_version != display_version_))) { continue; }
+#else
                 if (continuous_preview_) {
                     publication.lock();
                     if (!running || !desired_on_ || display_version != display_version_) { continue; }
                 }
+#endif
+#ifndef DRONE_TRACKER_RK3576
                 record(img_msg, TOPIC_TRACKER_IMAGE, rclcpp::Time(frame_ts*1000),
                     sizeof(sensor_msgs::msg::Image) + img_msg->data.size());
+#endif
                 image_pub_->publish(*img_msg);
             }
 
@@ -1330,6 +1410,81 @@ void DroneTrackerNode::processFrames() {
     if (!running && !recording_failed_) { RCLCPP_INFO(get_logger(), "Round ended: stop requested"); }
 }
 
+#ifdef DRONE_TRACKER_RK3576
+void DroneTrackerNode::publishObservations(const cv::Rect2d *box, std::int64_t stamp_ns,
+    const cv::Matx33d *rotation, bool reset_los, diagnostics::Event value, bool control) {
+    auto bbox{std::make_shared<vision_msgs::msg::Detection2D>()};
+    auto los{std::make_shared<geometry_msgs::msg::TwistStamped>()};
+    auto emit{[control](diagnostics::Event event) {
+        if (control) {
+            if (auto *recorder = diagnostics::active.load(std::memory_order_acquire)) {
+                recorder->submit(diagnostics::Producer::Control, event);
+            }
+        } else { diagnostics::emit(event); }
+    }};
+    if (!observation_builder_->build(box, stamp_ns, rotation, reset_los, *bbox, *los)) {
+        value.type = diagnostics::Type::ObservationSuppressed;
+        value.reason = diagnostics::Reason::RepeatedTime;
+        emit(value);
+        return;
+    }
+    const auto sequence{++observation_sequence_};
+    value.values[0] = sequence;
+    value.values[1] = static_cast<std::uint64_t>(stamp_ns);
+    value.type = diagnostics::Type::ObservationBbox;
+    if (!bbox->header.frame_id.empty()) { value.flags |= diagnostics::BoxValid; }
+    diagnostics::setObservationValues(value, {bbox->bbox.center.position.x, bbox->bbox.center.position.y,
+        bbox->bbox.size_x, bbox->bbox.size_y});
+    emit(value);
+    value.type = diagnostics::Type::ObservationLos;
+    value.flags &= ~diagnostics::BoxValid;
+    if (!los->header.frame_id.empty()) { value.flags |= diagnostics::BoxValid; }
+    diagnostics::setObservationValues(value, {los->twist.linear.y, los->twist.linear.z,
+        los->twist.angular.y, los->twist.angular.z});
+    emit(value);
+    {
+        std::lock_guard<std::mutex> lock{bag_mutex_};
+        if (bag_session_) { bag_session_->submitPair(bbox, los, rclcpp::Time{bbox->header.stamp}); }
+    }
+    // Each call has its own outcome. One failure must not erase the other call's evidence.
+    auto publish{[&](bool is_los) {
+        value.type = control ? (is_los ? diagnostics::Type::ControlLosStart : diagnostics::Type::ControlBboxStart)
+            : (is_los ? diagnostics::Type::LosPublishStart : diagnostics::Type::PublishStart);
+        value.flags &= ~(diagnostics::Complete | diagnostics::Critical);
+        value.reason = diagnostics::Reason::None;
+        value.values[6] = now().nanoseconds();
+        emit(value);
+        const auto start{diagnostics::monotonicNs()};
+        try {
+            if (is_los) { los_pub_->publish(*los); } else { detection_pub_->publish(*bbox); }
+            value.flags |= diagnostics::Complete;
+        } catch (const std::exception &error) {
+            value.reason = diagnostics::Reason::PublishException;
+            value.flags |= diagnostics::Critical;
+            RCLCPP_ERROR(get_logger(), "Observation publication failed: %s", error.what());
+        }
+        value.type = control ? (is_los ? diagnostics::Type::ControlLosEnd : diagnostics::Type::ControlBboxEnd)
+            : (is_los ? diagnostics::Type::LosPublishEnd : diagnostics::Type::PublishEnd);
+        value.duration_ns = diagnostics::monotonicNs() - start;
+        value.values[6] = now().nanoseconds();
+        emit(value);
+    }};
+    publish(false);
+    publish(true);
+}
+
+void DroneTrackerNode::notifyObservationOff() {
+    if (!observation_active_ || off_notified_) { return; }
+    off_notified_ = true;
+    observation_active_ = false;
+    const auto stamp_us{std::max(now().nanoseconds() / 1000, observation_builder_->lastStamp() / 1000 + 1)};
+    auto event{diagnostics::event(diagnostics::Type::ControlBboxStart)};
+    event.flags |= diagnostics::ControlObservation;
+    event.prediction_us = stamp_us;
+    publishObservations(nullptr, stamp_us * 1000, nullptr, true, event, true);
+}
+#endif
+
 void DroneTrackerNode::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
     record(msg, TOPIC_ODOM, rclcpp::Time(msg->header.stamp));
@@ -1340,14 +1495,22 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     // /fpv/gimbal 携带相机到世界的姿态（FLU 约定，由 apm_bridge 发布）。
     // 跟踪器 KF 只使用相对旋转 R_new^T * R_old，世界系约定无关紧要。
     // 无论是否 running 都持续积累，保证触发 ON 时历史已就绪。
+#ifdef DRONE_TRACKER_RK3576
+    record(msg, TOPIC_GIMBAL, rclcpp::Time(msg->header.stamp));
+#endif
     const auto& q = msg->orientation;
-    if (q.w == 0.0 && q.x == 0.0 && q.y == 0.0 && q.z == 0.0)
-        return; // 无姿态数据
+#ifdef DRONE_TRACKER_RK3576
+    if (!std::isfinite(q.w) || !std::isfinite(q.x) || !std::isfinite(q.y) || !std::isfinite(q.z)) { return; }
+#endif
+    if (q.w == 0.0 && q.x == 0.0 && q.y == 0.0 && q.z == 0.0) { return; }
 
     const int64_t ts_us = rclcpp::Time(msg->header.stamp).nanoseconds() / 1000;
 
     // 四元数 -> 旋转矩阵（与 Eigen toRotationMatrix 同式），归一化后按行列展开
     const double norm = std::sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
+#ifdef DRONE_TRACKER_RK3576
+    if (!std::isfinite(norm) || norm <= 0) { return; }
+#endif
     const double w = q.w / norm, x = q.x / norm, y = q.y / norm, z = q.z / norm;
     const cv::Matx33d R(
         1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y - w * z), 2.0 * (x * z + w * y),
@@ -1356,10 +1519,15 @@ void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
 
     {
         std::lock_guard<std::mutex> lock(gimbal_mtx_);
+#ifdef DRONE_TRACKER_RK3576
+        gimbal_history_.push(ts_us, R, true);
+#else
         gimbal_history_.push(ts_us, R);
+#endif
     }
-
+#ifndef DRONE_TRACKER_RK3576
     record(msg, TOPIC_GIMBAL, rclcpp::Time(msg->header.stamp));
+#endif
 }
 
 StatusPublisher::StatusPublisher(rclcpp::Node &node, int hz)

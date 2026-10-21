@@ -774,3 +774,69 @@ stream. Tracking exceptions end only that round and show error preview; after
 safe cleanup, another ON can retry. Recording/bag and display failures retain
 isolated error reports. Display failure makes HDMI unavailable without stopping
 healthy tracking or automatically reconnecting the display.
+
+## RK3576 paired target observations
+
+RK3576 publishes a floating `vision_msgs/msg/Detection2D` on `/fpv/target_bbox`
+and `geometry_msgs/msg/TwistStamped` on `/fpv/target_los`. The pair has the same
+nanosecond timestamp. Valid frame IDs are `camera_frame` and `camera_flu`.
+An empty frame ID means invalid data. A valid box can coexist with invalid LOS
+when `/fpv/gimbal` has no valid camera orientation. `/mavros/imu/data` is recorded
+as received and never substitutes for camera orientation.
+
+`TwistStamped.linear.y` is downward-positive pitch and `linear.z` is left-positive
+yaw, both in radians. `angular.y/z` are the respective rotation-compensated rates
+in radians per second. The remaining components are zero. These fields are angles,
+not linear velocity. Independent ROS topics do not guarantee atomic network
+reception. Pair received messages by their identical header timestamp.
+
+Set these startup values in the selected RK3576 `params_file`:
+
+```yaml
+publish_prediction: false
+los.rate_filter_tau: 0.12
+camera.fx: 1333.3
+camera.fy: 1300.0
+camera.cx: 960.0
+camera.cy: 600.0
+```
+
+`publish_prediction=false` describes capture time. When true, prediction uses the
+latest camera pose only if `frame <= pose <= node_now` and its age is at most
+300000 microseconds. Otherwise it falls back to capture time and the existing
+nearest capture pose. For capture 10.000 s, pose 10.030 s and node-now 10.050 s,
+the default pair is stamped 10.000 s; prediction mode stamps it 10.030 s.
+Actual publication happens later and is measured separately. Images always keep
+capture time. The 300 ms rule does not impose a new freshness guarantee on the
+nearest capture pose. Intrinsics are explicit pixels in the actual input image;
+HDMI resizing does not rescale them. Unequal `fx` and `fy` are supported.
+
+Tau must be finite and nonnegative. Zero disables rate smoothing. Both new
+parameters are fixed at startup. A runtime change is rejected with a restart
+instruction. Duplicate or backward observation times suppress the whole pair;
+state changes and debug images still follow their own rules. Camera pose clock
+rollback resets pose/rate history but preserves the active round's message time
+guard. After system clock correction, send OFF and then ON once old work has
+finished to establish a new time base. No synthetic capture times are generated.
+OFF attempts one invalid pair before sealing the bag; repeated OFF is deduplicated.
+
+The image topic is best-effort/depth 1. For example:
+
+```bash
+ros2 topic echo /fpv/tracker_image --qos-reliability best_effort
+```
+
+BBox and LOS use reliable/depth 10. Gimbal uses best-effort/depth 10; MAVROS IMU
+uses best-effort/depth 100. ROS debug images require `visualized_result=true` and
+an active tracking round. HDMI preview continues through OFF using the existing
+single frame consumer. There is no additional preview switch.
+
+`need_save` controls the asynchronous ROS bag. Its topic table is always gimbal,
+odom, bbox, LOS and MAVROS IMU. Debug images and their topic metadata are removed
+from bags even when `visualized_result=true`. Use live best-effort subscriptions
+for debug images, or `recording.enabled` for the independent original camera
+video. Each observation pair consumes two of the 256 message slots and checks
+the combined byte cost against 64 MiB. Queue rejection drops both messages and
+marks the bag incomplete. A disk error during writing can leave half a pair;
+that bag is failed, not a complete transaction. Recording failure does not stop
+healthy tracking, HDMI or independent camera video.

@@ -15,6 +15,7 @@ import metrics
 HEADER = struct.Struct('<IHHIII')
 EVENT = struct.Struct('<HHHHIIQQQQQQIIQQQQQQQQ4f4f4f7Q4I')
 COMMIT = struct.Struct('<10Q')
+COMMIT_V2 = struct.Struct('<12Q')
 assert HEADER.size == 20 and EVENT.size == 256 and COMMIT.size == 80
 FIELDS = ['version','byte_length','type_id','reason_id','flags','producer_id','run_id','round_id',
           'producer_seq','mono_ns','capture_id','frame_round_id','driver_sequence','frame_flags',
@@ -25,13 +26,17 @@ FIELDS = ['version','byte_length','type_id','reason_id','flags','producer_id','r
 def decode_event(data):
     values = EVENT.unpack(data)
     row = dict(zip(FIELDS, values[:22]))
-    if row['version'] != 1 or row['byte_length'] != 256 or row['producer_id'] >= 4:
+    if row['version'] not in (1, 2) or row['byte_length'] != 256 or row['producer_id'] >= (4 if row['version'] == 1 else 5):
         raise ValueError('event: unsupported version, byte_length or producer_id')
     if row['type_id'] >= len(metrics.TYPE_NAMES) or row['reason_id'] >= len(metrics.REASON_NAMES):
         raise ValueError('event: unknown type_id or reason_id')
     row.update(type=metrics.TYPE_NAMES[row['type_id']], reason=metrics.REASON_NAMES[row['reason_id']],
                box=list(values[22:26]), other_box=list(values[26:30]), score=values[30], iou=values[31],
                threshold=values[32], highest_score=values[33], values=list(values[34:41]), counts=list(values[41:45]))
+    if row['version'] >= 2 and row['type'] in ('ObservationBbox', 'ObservationLos'):
+        row.update(observation_id=row['values'][0], stamp_ns=row['values'][1],
+                   valid=bool(row['flags'] & 16),
+                   observation_values=list(struct.unpack('<4d', struct.pack('<4Q', *row['values'][2:6]))))
     row['error_code_known'] = row['type'] == 'InitializeEnd' and bool(row['flags'] & 4096)
     row['error_domain'] = row['values'][1] if row['error_code_known'] else None
     row['error_code'] = row['values'][2] if row['error_code_known'] else None
@@ -50,7 +55,7 @@ def scan(file):
                 errors.append(f'{file}: partial record header at {offset}')
                 break
             magic, version, kind, length, crc, endian = HEADER.unpack(raw)
-            if magic != 0x44544731 or version != 1 or endian != 0x01020304 or length > 1048576:
+            if magic != 0x44544731 or version not in (1, 2) or endian != 0x01020304 or length > 1048576:
                 errors.append(f'{file}: unsupported header at {offset}')
                 break
             data = stream.read(length)
@@ -64,13 +69,13 @@ def scan(file):
                 except ValueError as error:
                     errors.append(f'{file}:{offset}: {error}')
                     break
-            elif kind == 2 and length == 80:
-                commit = COMMIT.unpack(data)
+            elif kind == 2 and length == (80 if version == 1 else 96):
+                commit = (COMMIT if version == 1 else COMMIT_V2).unpack(data)
                 if commit[0] != offset:
                     errors.append(f'{file}: invalid commit boundary at {offset}')
                     break
                 commits.append(commit)
-                if any(commit[6:]):
+                if any(commit[6 if version == 1 else 7:]):
                     errors.append(f'{file}: committed producer drops {list(commit[6:])}')
             elif kind == 3 and length == 4:
                 flag, = struct.unpack('<I',data)
@@ -158,7 +163,7 @@ def qualify(events, inputs, clock, source, config, preparation=None, manifest=No
             reasons.append(f'{event["type"]}: {key}')
         if event['type']=='Health' and (event['values'][3] or event['values'][6] or event['values'][4]>500000000):
             reasons.append(f'health drops/error {key}')
-        if event['type']=='PublishEnd' and (event['reason_id']!=0 or not event['flags']&128):
+        if event['type'] in ('PublishEnd','LosPublishEnd','ControlBboxEnd','ControlLosEnd') and (event['reason_id']!=0 or not event['flags']&128):
             reasons.append(f'publication failed {key}')
         if event['type']=='DetectStage' and event['reason_id']!=22 and not event['flags']&2048:
             reasons.append(f'inference observation capability missing {key}')
@@ -175,6 +180,23 @@ def qualify(events, inputs, clock, source, config, preparation=None, manifest=No
     for start,end in [('RunStart','RunEnd'),('RoundStart','RoundEnd')]:
         if sum(e['type']==start for e in events)!=1 or sum(e['type']==end for e in events)!=1:
             reasons.append(f'{start}/{end}: exactly one normal lifecycle required')
+    reasons.extend(f'observation integrity: {issue}' for issue in metrics.observation_issues(events))
+    for start, end in [('LosPublishStart','LosPublishEnd'), ('ControlBboxStart','ControlBboxEnd'),
+                       ('ControlLosStart','ControlLosEnd')]:
+        selected = [dict(e, observation_id=e['values'][0]) for e in events if e['type'] in (start, end)]
+        reasons.extend(pairs(selected, start, end, 'observation_id'))
+    payloads = defaultdict(dict)
+    for event in events:
+        if event['type'] in ('ObservationBbox', 'ObservationLos'):
+            key = (event['run_id'], event['round_id'], event['values'][0])
+            if event['type'] in payloads[key]:
+                reasons.append(f'duplicate observation payload {key}')
+            payloads[key][event['type']] = event
+    for key, pair in payloads.items():
+        if set(pair) != {'ObservationBbox', 'ObservationLos'}:
+            reasons.append(f'incomplete observation payload {key}')
+        elif pair['ObservationBbox']['stamp_ns'] != pair['ObservationLos']['stamp_ns']:
+            reasons.append(f'observation timestamp mismatch {key}')
     accepted={(e['run_id'],e['request_id']) for e in events if e['type']=='RequestDecision' and e['flags']&128}
     terminal={(e['run_id'],e['request_id']) for e in events if e['type'] in ('DetectEnd','RequestCancel')}
     for identity in accepted-terminal:
@@ -276,8 +298,12 @@ def collect(directory, extra_reasons=()):
         output=outputs.get((event['run_id'],event['round_id'],event['update_id']))
         if output is None:
             reasons.append(f'publication: output missing for update {event["update_id"]}')
-        messages.append({**event,'published_box':output['other_box'] if output else None,
-                         'tracking':output['values'][1] if output else None,
+        payload = next((item for item in events if item['type'] == 'ObservationBbox'
+                        and (item['run_id'],item['round_id'],item['values'][0])
+                        == (event['run_id'],event['round_id'],event['values'][0])), None) if event['version'] >= 2 else None
+        messages.append({**event,'published_box':payload['observation_values'] if payload else None,
+                         'tracking':payload['valid'] if payload else None,
+                         'published_box_availability':'available' if payload else 'unavailable',
                          'subscriber_received':None})
     csv_file(directory/'messages.csv',messages,['run_id','round_id','update_id','fixture_frame_id','mono_ns',
              'frame_time_us','prediction_us','reason','flags','published_box','tracking','subscriber_received'])

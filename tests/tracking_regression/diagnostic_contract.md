@@ -60,3 +60,40 @@ accepted-request and `DetectStart` monotonic timestamps. Detection execution use
 `DetectStart` and `DetectEnd`. Exact request identities join these stages. Only a known
 fixture epoch mapping permits conversion between capture time and monotonic time.
 No age threshold or guarantee is introduced.
+
+## Observation protocol version 2
+
+Version 2 retains 256-byte events, old event numbers, and the meaning of
+`Output.box/other_box` as integer display/prediction evidence. New appended
+`ObservationBbox` and `ObservationLos` events preserve exact double values.
+`values[0]` is the round-local observation sequence, `values[1]` is the original
+nanosecond header time, and `values[2..5]` contain four double bit patterns copied
+with `memcpy`. BBox values are center-x, center-y, width and height; LOS values are
+pitch, yaw, pitch-rate and yaw-rate. `BoxValid` applies to the individual payload.
+`counts[0]` selects capture=0, qualified-pose=1, prediction-fallback=2.
+
+Frame bbox calls retain `PublishStart/End`; LOS calls use `LosPublishStart/End`.
+Their round/update and observation sequence identify the independent calls.
+Each call keeps its own success/failure outcome; normal return proves only call
+completion. `values[6]` on call records is the actual node-clock send boundary.
+`ObservationSuppressed/RepeatedTime` identifies duplicate/backward reference
+suppression and is not an unconsumed frame or a diagnostic gap.
+
+OFF payloads carry `ControlObservation` and have no input frame or update.
+`ControlBboxStart/End` and `ControlLosStart/End` identify their independent calls.
+The Control producer owns these notifications; the preview dispatcher now owns
+an appended Dispatcher producer. Node, Camera and Yolo producer IDs are unchanged.
+Version 2 commit records therefore contain five written and five dropped counters
+(96 bytes). Version 1 commits have four of each (80 bytes). Readers support both
+versions explicitly and reject unknown versions. Live worker handshakes require
+matching version and shared-region size; mismatch degrades diagnostics while
+healthy tracking continues.
+
+For each format-2 observation identity (run, round, observation sequence), the
+collector and metric calculator require exactly one bbox payload, one LOS
+payload, and one start/end pair for each topic call. All six records must share
+the message timestamp and frame update identity. Control observations instead
+have zero update/frame identities and carry the control flag on all six records.
+Missing a whole topic call or payload makes the evidence incomplete; it never
+becomes a zero-valued invalid LOS sample. Partial publication failures retain
+their separate outcomes and also prevent a complete-run verdict.

@@ -20,6 +20,7 @@
 #include <limits>
 #ifdef DRONE_TRACKER_RK3576
 #include "bag_session.h"
+#include "target_observation.h"
 #include "diagnostics/client.h"
 #else
 #include <rosbag2_cpp/writer.hpp>
@@ -101,6 +102,8 @@ private:
         declare_parameter<int>("osd.battery_cells", 0);
 
 #ifdef DRONE_TRACKER_RK3576
+        declare_parameter<bool>("publish_prediction", false);
+        declare_parameter<double>("los.rate_filter_tau", 0.12);
         this->declare_parameter<std::string>("tracker.yolo_engine", "");
         this->declare_parameter<std::string>("tracker.nano_backbone", "");
         this->declare_parameter<std::string>("tracker.nano_head", "");
@@ -250,6 +253,15 @@ private:
     rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr tracker_state_pub_;
 
 #ifdef DRONE_TRACKER_RK3576
+    // Accessed only under control_mutex_; pose history has its own copy boundary.
+    std::unique_ptr<TargetObservationBuilder> observation_builder_{};
+    bool publish_prediction_{}, observation_active_{}, off_notified_{};
+    std::uint64_t observation_sequence_{}, observation_generation_{};
+    void publishObservations(const cv::Rect2d *box, std::int64_t stamp_ns,
+        const cv::Matx33d *rotation, bool reset_los, diagnostics::Event event, bool control);
+    void notifyObservationOff();
+    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr los_pub_{};
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr mavros_imu_sub_{};
     std::unique_ptr<BagSession> bag_session_{};
     std::unique_ptr<diagnostics::Client> diagnostic_client_{};
     rclcpp::TimerBase::SharedPtr diagnostic_timer_{};

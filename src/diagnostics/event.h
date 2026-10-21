@@ -3,12 +3,13 @@
 
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <type_traits>
 
 namespace diagnostics {
-inline constexpr std::uint16_t FORMAT_VERSION{1};
+inline constexpr std::uint16_t FORMAT_VERSION{2};
 enum class Mode : std::uint8_t { Off, Basic, Detail };
-enum class Producer : std::uint32_t { Node, Camera, Yolo, Control, Count };
+enum class Producer : std::uint32_t { Node, Camera, Yolo, Control, Dispatcher, Count };
 enum class Type : std::uint16_t {
     RunStart,
     RunEnd,
@@ -45,7 +46,16 @@ enum class Type : std::uint16_t {
     ClockRelation,
     Health,
     JumpComparison,
-    SourceContext
+    SourceContext,
+    ObservationBbox,
+    ObservationLos,
+    LosPublishStart,
+    LosPublishEnd,
+    ObservationSuppressed,
+    ControlBboxStart,
+    ControlBboxEnd,
+    ControlLosStart,
+    ControlLosEnd
 };
 enum class Reason : std::uint16_t {
     None,
@@ -100,7 +110,8 @@ enum Flag : std::uint32_t {
     Observed = 2048U,
     ErrorCodeKnown = 4096U,
     DecisionDetails = 8192U,
-    NanoCounter = 16384U
+    NanoCounter = 16384U,
+    ControlObservation = 32768U
 };
 /** @brief 数值身份随原帧传递；零标志表示未知，不持有像素或帧引用。 */
 struct FrameIdentity {
@@ -139,6 +150,16 @@ struct alignas(64) Event {
     std::array<std::uint64_t, 7> values{};
     std::array<std::uint32_t, 4> counts{};
 };
+/** @brief Version 2 payload: values[0]=observation id, [1]=stamp ns, [2..5]=four doubles. */
+inline void setObservationValues(Event &event, const std::array<double, 4> &values) noexcept {
+    std::memcpy(event.values.data() + 2, values.data(), sizeof(values));
+}
+inline std::array<double, 4> observationValues(const Event &event) noexcept {
+    std::array<double, 4> values{};
+    std::memcpy(values.data(), event.values.data() + 2, sizeof(values));
+    return values;
+}
+inline bool supportedVersion(std::uint16_t version) noexcept { return version == 1 || version == FORMAT_VERSION; }
 static_assert(sizeof(Event) == 256 && alignof(Event) == 64);
 static_assert(std::is_trivially_copyable<Event>::value && std::is_standard_layout<Event>::value);
 } // namespace diagnostics
