@@ -53,18 +53,34 @@ void generateFixture(const std::filesystem::path &fixture) {
             "\"linear_acceleration_covariance\":[0,0,0,0,0,0,0,0,0]}\n";
     }
     require(static_cast<bool>(attitude), "fixture attitude write failed");
-    const std::string clip{(fixture / "clip.mkv").string()};
+    // Every fixture frame has the same verified pixels. Encode one independent FFV1 frame,
+    // then copy its compressed packet instead of encoding 1,200 identical full-size images.
+    // The source still decodes, checksums and caches all 1,200 frames independently; playback
+    // deadlines come from frames.jsonl rather than the container's packet timestamps.
+    const std::string seed{(fixture / "seed.mkv").string()};
     const int pid{::fork()};
     require(pid >= 0, "fixture encoder fork failed");
     if (pid == 0) {
         ::execl(TRACKING_REGRESSION_FFMPEG, "ffmpeg", "-v", "error", "-f", "lavfi", "-i",
-            "color=c=black:s=1920x1200:r=60", "-frames:v", "1200", "-an", "-threads", "1",
-            "-c:v", "ffv1", "-level", "3", "-pix_fmt", "gray", clip.c_str(), nullptr);
+            "color=c=black:s=1920x1200:r=60", "-frames:v", "1", "-an", "-threads", "1",
+            "-c:v", "ffv1", "-level", "3", "-pix_fmt", "gray", seed.c_str(), nullptr);
         ::_exit(127);
     }
     int result{};
     while (::waitpid(pid, &result, 0) < 0 && errno == EINTR) {}
     require(WIFEXITED(result) && WEXITSTATUS(result) == 0, "FFmpeg fixture generation failed");
+    const std::string clip{(fixture / "clip.mkv").string()};
+    const int remuxer{::fork()};
+    require(remuxer >= 0, "fixture packet copier fork failed");
+    if (remuxer == 0) {
+        ::execl(TRACKING_REGRESSION_FFMPEG, "ffmpeg", "-v", "error", "-stream_loop", "1199", "-i",
+            seed.c_str(), "-map", "0:v:0", "-frames:v", "1200", "-c:v", "copy", clip.c_str(), nullptr);
+        ::_exit(127);
+    }
+    result = 0;
+    while (::waitpid(remuxer, &result, 0) < 0 && errno == EINTR) {}
+    require(WIFEXITED(result) && WEXITSTATUS(result) == 0, "FFmpeg fixture packet copy failed");
+    std::filesystem::remove(seed);
 }
 SourceOptions options(const std::filesystem::path &root, const std::string &name) {
     SourceOptions value{};

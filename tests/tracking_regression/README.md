@@ -112,6 +112,14 @@ bash tests/tracking_regression/run_sdk_tests.sh --regression-only
 
 The default x86_64 image cross-compiles ARM64 targets and runs portable process/configuration/fixture tests natively. The SDK coordinator executes every discovered Python ID exactly once, with the real ARM middleware case on target Python, within the original 30-second aggregate deadline. Source tests retain the original 90-second deadline and native OS memory-limit check. No backend is selected automatically after failure. `--backend arm64` explicitly selects the preserved ARM64-image fallback; prepare its private FFmpeg tools first with `prepare_test_tools.sh --backend arm64`. Source/Git mounts are read-only and ordinary containers are offline. See [the image/build guide](../../dockerfiles/README.amd64.md) for separate caches and artifact packaging. QEMU and host results do not establish NPU, camera, HDMI or production timing acceptance.
 
+The source test's synthetic full-size clip contains 1,200 identical black Gray8 frames. Its setup encodes one
+independent FFV1 frame, then copies that compressed packet 1,200 times into a new clip without re-encoding.
+Each source instance still decodes and verifies every frame separately and retains 2,764,800,000 pixel bytes.
+The original frame identities, pixel hashes, attitude records and 20-second playback schedule remain unchanged.
+Playback uses the timestamps in `frames.jsonl`, independently of the generated container's packet timestamps.
+This setup optimization preserves the full-cache, slow-consumer, queue-rejection, stop, lateness and allocation
+failure checks, including the separate real operating-system address-space limit check.
+
 See [metrics.md](metrics.md) for formulas, [diagnostic_contract.md](diagnostic_contract.md) for event integrity, and the active OpenSpec change for implementation/acceptance evidence.
 
 The optional `run.settings.supplier_cpu` selects one online CPU for the test's
