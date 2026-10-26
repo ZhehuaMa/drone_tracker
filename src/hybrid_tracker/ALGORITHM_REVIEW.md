@@ -1,187 +1,174 @@
-# 混合跟踪器算法综述 (Hybrid Tracker Algorithm Review)
+# 混合跟踪器算法综述（Hybrid Tracker Algorithm Review）
 
-## 1. 简介
-`HybridTracker` 是一个专为无人机应用设计的鲁棒目标跟踪系统。它结合了三种不同算法的优势，以实现高性能跟踪：
-1.  **YOLOv8**: 基于深度学习的目标检测器，用于目标初始化和重识别。
-2.  **NanoTrack**: 轻量级、高速的相关滤波跟踪器，用于帧间跟踪。
-3.  **卡尔曼滤波器 (Kalman Filter)**: 状态估计器，用于平滑轨迹并在遮挡或跟踪器失效期间预测目标位置。
+## 1. 范围与组成
 
-这种混合方法确保系统能够自主发现目标，高效跟踪，并从跟踪失败中恢复。
+本文说明当前 `rk3576` 分支的代码行为。算法入口是 `HybridTracker::update()`；平台装配、ROS 参数覆盖和消息发布分别由平台工厂及 ROS 节点负责。下文默认值来自 C++ 结构体，不代表每份 YAML 或 launch 的最终运行配置。
 
-## 2. 算法组件
+管线由四部分组成：
 
-### 2.1. YOLOv8 检测器 (`YoloV8Detector`)
-*   **角色**: 负责初始目标检测和周期性重新验证。
-*   **特性**:
-    *   使用 TensorRT 进行加速推理。
-    *   支持“切片 (Tiling)”策略，通过将图像分割成重叠的切片来检测高分辨率图像中的小目标。
-    *   支持 ROI (感兴趣区域) 推理，以减少计算负载并专注于跟踪区域。
-    *   **召回率放宽 (Recall Relaxation)**: 在特定 ROI 内搜索时（跟踪期间），置信度阈值会降低（乘以 `0.75`），以提高重新检测到被跟踪目标的可能性。
+1. `YoloV8Detector`：异步检测指定类别，负责首次发现目标和跟踪期间的再次确认。
+2. `NanoTracker`：使用 NanoTrackV3 神经网络逐帧估计目标框。它不是相关滤波器。
+3. `NanoDcfTracker`：融合 NanoTrack 尺寸与平滑后的中心。可选的 DCF（判别相关滤波器）使用灰度图定位中心；关闭 DCF 时改用独立的中心卡尔曼滤波器。
+4. `RotationKalmanFilter`：估计中心、尺寸和中心速度，补偿相机旋转，并支持按测量时刻回溯校正。
 
-### 2.2. NanoTrack (`NanoTracker`)
-*   **角色**: 主要的帧间跟踪器。
-*   **特性**:
-    *   轻量级神经网络跟踪器（骨干网络 + 头部网络）。
-    *   提供跟踪结果的置信度分数。
-    *   比每帧运行全图检测更快。
+公共算法通过 `TrackerComponents` 接收模型后端、预处理器和帧兼容性检查对象，不直接加载平台 SDK。Jetson 后端使用 TensorRT/VPI，RK3576 后端使用 RKNN Runtime。逻辑模型包括 YOLO、NanoTrackV3 Backbone 和 Head；RK3576 的 Backbone 分别提供模板和搜索模型文件。
 
-### 2.3. 简单卡尔曼滤波器 (`SimpleKalmanFilter`)
-*   **角色**: 状态估计和平滑。
-*   **特性**:
-    *   基于先前的运动模型预测目标位置。
-    *   融合 NanoTrack（或 YOLO）的观测结果来更新状态。
-    *   当视觉跟踪器暂时失效时提供预测。
+## 2. 异步 YOLO 检测
 
-## 3. 工作流描述
+### 2.1. 请求、结果与轮次
 
-跟踪器作为一个状态机运行，主要有两个状态：**检测中 (Detecting)**（未初始化）和 **跟踪中 (Tracking)**（已初始化）。
+检测器只有一个工作线程。它最多保存一个尚未开始的请求；新请求可以替换这个等待项，但不会修改正在执行的输入。存在未读结果、正在清理轮次或已经停止时，请求会被拒绝。结果槽只保存最新结果。
 
-### 3.1. 初始化阶段
-*   系统加载 YOLO 和 NanoTrack 的 TensorRT 引擎。
-*   通过 `TrackerSettings` 配置参数。
+每次正常进入检测或跟踪分支时，主线程只读取一次结果快照，释放未读结果对提交的限制。随后提交或跳过当前帧请求，再处理刚才取得的结果。同一次更新不会再次读取后来完成的检测。
 
-### 3.2. 检测状态 (未初始化)
-当跟踪器未初始化时（启动时或目标丢失后）：
-1.  **全帧检测**: 系统在完整图像上运行 YOLOv8。
-2.  **切片 (可选)**: 如果启用且未找到目标，则将图像分割成切片以查找更小的目标。
-3.  **目标选择**: 如果找到检测结果，则选择置信度最高（或符合特定标准）的目标。
-4.  **转换**: 系统使用检测到的框初始化 NanoTrack 和卡尔曼滤波器，并转换到 **跟踪状态**。
+请求携带源帧编号、轮次编号，以及源帧的跟踪框和预测框等比较信息。比较信息不持有图像。执行项、等待请求和补帧缓存分别管理所需的共享帧引用。
 
-### 3.3. 跟踪状态 (已初始化)
-在此状态下，系统处理每一帧以更新目标位置：
+`finishRound()` 应在停止调用 `update()` 后执行。它取消等待请求，等待正在执行的检测不再访问帧，并清除未读结果。`reset()` 重置算法状态并递增轮次编号；旧轮次结果不会参与当前轮次的初始化或目标仲裁。
 
-1.  **预测**: 卡尔曼滤波器基于前一状态预测当前位置。这作为先验估计。
-2.  **视觉跟踪**: NanoTrack 在预测位置附近搜索目标。
-    *   如果跟踪分数高于 `tracking_conf_threshold`，则认为结果有效。
-3.  **校正**:
-    *   如果 NanoTrack 成功，其结果用于 **校正** 卡尔曼滤波器状态。
-    *   显示框更新为校正后的卡尔曼状态。
-4.  **周期性重新验证 (YOLO 检查)**:
-    *   每 `yolo_interval` 帧，系统在当前目标周围的裁剪 **ROI** 上运行 YOLOv8。
-    *   **ROI 计算**: ROI 是当前框按 `roi_scale_factor` 缩放得到的。
-    *   **召回率放宽**: 降低检测阈值以确保在目标存在时能找到它。
-5.  **校准与恢复**:
-    *   系统将 YOLO 检测结果与当前跟踪器位置进行比较。
-    *   **跳变检测**: 如果 YOLO 框显著不同（距离 > `max_position_jump_ratio` * 图像平均尺寸 或尺寸比率 > `max_size_jump_ratio`），则假设跟踪器已漂移或切换了目标。系统使用 YOLO 框 **重新初始化** 跟踪器。
-    *   **校准**: 如果 YOLO 框重叠良好（IoU > `iou_calibrate_threshold`），则用于 **校正** 卡尔曼滤波器，防止长期漂移。
-6.  **丢失处理**:
-    *   如果周期性 YOLO 检查连续多次（`lost_max_count` 次）未能找到目标，系统宣布目标丢失并恢复到 **检测状态**。
+### 2.2. 检测级联与后处理
 
-## 4. 工作流图
+每个请求按下列顺序执行：
 
-```mermaid
-graph TD
-    Start[开始] --> Init[初始化引擎]
-    Init --> Detecting
-    
-    subgraph 检测状态
-        Detecting[等待检测]
-        RunYOLO["运行 YOLO (全图/切片)"]
-        Detecting --> RunYOLO
-        RunYOLO -- 无目标 --> Detecting
-        RunYOLO -- 发现目标 --> Initialize["初始化跟踪器 & 卡尔曼"]
-    end
-    
-    Initialize --> Tracking
-    
-    subgraph 跟踪状态
-        Tracking[跟踪循环]
-        Predict[卡尔曼预测]
-        NanoUpdate[NanoTrack 更新]
-        
-        Tracking --> Predict --> NanoUpdate
-        
-        NanoUpdate -- 分数 > 阈值 --> Correct["卡尔曼校正 (跟踪器)"]
-        NanoUpdate -- 分数 < 阈值 --> SkipCorrect[跳过校正]
-        
-        Correct --> CheckInterval{"帧数 % 间隔 == 0?"}
-        SkipCorrect --> CheckInterval
-        
-        CheckInterval -- 否 --> Output[更新显示]
-        CheckInterval -- 是 --> RunROI["在 ROI 上运行 YOLO"]
-        
-        RunROI -- 未检测到 --> IncLost[丢失计数 ++]
-        IncLost -- > 最大丢失数 --> Reset[重置为检测状态]
-        IncLost -- < 最大丢失数 --> Output
-        
-        RunROI -- 发现检测 --> Match[寻找最佳匹配]
-        Match --> CheckJump{"是否跳变?"}
-        
-        CheckJump -- 是 --> ReInit[重新初始化跟踪器]
-        CheckJump -- 否 --> CheckIoU{"IoU > 校准阈值?"}
-        
-        CheckIoU -- 是 --> Calibrate["卡尔曼校正 (YOLO)"]
-        CheckIoU -- 否 --> Output
-        
-        ReInit --> Output
-        Calibrate --> Output
-    end
-    
-    Reset --> Detecting
-    Output --> Tracking
-```
+1. 请求包含有效 ROI 时先检测 ROI。ROI 是感兴趣区域，即优先检查的局部图像。此阶段阈值为 `yolo_conf_threshold * yolo_recall_relax_ratio`。
+2. ROI 没有找到目标类别时，检测全图。
+3. 全图仍未找到时，执行自适应重叠切片。短边分为两份，长边按图像比例决定份数；重叠比例为 `0.2`。找到目标的第一个切片结束搜索。
 
-## 5. 参数说明
+级联采用第一个找到目标的阶段，并返回该阶段置信度最高的单框。不会对全部阶段、全部切片的候选统一排序。当前没有单独的切片开关。
 
-`HybridTracker` 的行为由 `TrackerSettings` 结构体控制。
+后处理只读取 `target_class_id` 对应的类别分数。它还原 letterbox 坐标、执行尺寸过滤和 NMS。letterbox 是保持宽高比缩放并补边的预处理；NMS 用于抑制高度重叠的候选框。`max_box_area_ratio` 分别限制候选框宽、高占当前检测区域宽、高的比例，不是面积比例。
 
-| 参数 | 类型 | 默认值 | 描述 |
-| :--- | :--- | :--- | :--- |
-| `yolo_engine_path` | string | "drone_int8.engine" | YOLOv8 的 TensorRT 引擎文件路径。 |
-| `nanotrack_backbone_path` | string | "nanotrackv3_backbone_int8.engine" | NanoTrack 骨干网络引擎路径。 |
-| `nanotrack_head_path` | string | "nanotrack_head_int8.engine" | NanoTrack 头部网络引擎路径。 |
-| `target_class_id` | int | 0 | YOLO 应查找的类别 ID。 |
-| `tracking_conf_threshold` | float | 0.8 | NanoTrack 结果被认为对卡尔曼校正有效的最低分数。 |
-| `yolo_conf_threshold` | float | 0.45 | 全帧搜索期间 YOLO 检测的置信度阈值。 |
-| `yolo_nms_threshold` | float | 0.45 | YOLO 合并重叠框的非极大值抑制 (NMS) 阈值。 |
-| `yolo_interval` | int | 3 | 周期性 YOLO 检查的频率（每 N 帧）。越低越鲁棒但越慢。 |
-| `yolo_recall_relax_ratio` | float | 0.75 | 运行 ROI 检测时 `yolo_conf_threshold` 的乘数。实际上将阈值降低以提高召回率。 |
-| `iou_calibrate_threshold` | float | 0.6 | 触发使用 YOLO 框进行卡尔曼校正所需的跟踪器框与 YOLO 框之间的最小 IoU。 |
-| `max_position_jump_ratio` | float | 0.25 | 当前框与 YOLO 框之间允许的最大位置跳变比率（相对于图像平均尺寸）。超过此值触发“跳变”（重新初始化）。 |
-| `max_size_jump_ratio` | float | 2.0 | 允许的最大尺寸变化比率。超过此值触发“跳变”。 |
-| `lost_max_count` | int | 50 | 目标被认为丢失前，连续 YOLO 检查失败的最大次数。 |
-| `roi_scale_factor` | float | 2.0 | 周期性 YOLO 检查中使用的感兴趣区域 (ROI) 的缩放因子。ROI 宽度 = `box.width * 2.0`。 |
+## 3. NanoTrack 与中心融合
 
-## 6. 关键逻辑细节
+`NanoTracker` 使用 `127×127` 模板和 `255×255` 搜索输入。分类输出形状为 `[1,2,15,15]`，位置输出为 `[1,4,15,15]`。后处理结合尺度与长宽比惩罚、汉宁窗及尺寸插值选择结果。
 
-### 框跳变检测 (Box Jump Detection)
-用于检测跟踪器是否漂移到背景，或者检测器是否在远处发现了更好的目标。
-```cpp
-bool pos_jump = distance > max_position_jump_ratio * (img_w + img_h) / 2;
-bool size_jump = (size_ratio > max_size_ratio || size_ratio < 1.0/max_size_ratio);
-if (pos_jump || size_jump) -> 重新初始化 (Re-initialize)
-```
+当前没有 `tracking_conf_threshold` 参数，也不会用固定的 `0.8` 分数门槛决定是否更新主管线。搜索预处理、推理或输出契约检查失败时返回负分，融合跟踪器将本帧视为失败。原始分数由诊断接口保留。
 
-### 校准策略 (Calibration Strategy)
-如果跟踪器工作良好（与检测器的 IoU 高），我们稍微更信任检测器来校正任何缓慢的漂移。
-```cpp
-if (iou > iou_calibrate_threshold) -> 使用 YOLO 框进行卡尔曼校正
-```
-这使跟踪器保持“锚定”在检测器看到的真实物体外观上。
+`NanoDcfTracker` 保留 NanoTrack 的宽、高，按以下规则选择中心：
 
-### ROI 计算 (ROI Calculation)
-为了加速检测并减少背景误报，YOLO 在裁剪图像上运行：
-```cpp
-roi_w = box.width * roi_scale_factor;
-roi_h = box.height * roi_scale_factor;
-// 限制在图像边界内
-```
-这对于在 Jetson 等嵌入式设备上保持实时性能至关重要。
+- `enable_dcf=true`：使用灰度 DCF 中心。PSR（峰值相对背景响应的强度）低于门槛，或 DCF 中心偏离 NanoTrack 太远时，采用 NanoTrack 中心并重新训练 DCF 模板。无法读取帧时退回 NanoTrack 中心。
+- `enable_dcf=false`：使用 `CenterKalmanFilter` 平滑 NanoTrack 中心。预测中心与 NanoTrack 的偏差超过门槛时，采用 NanoTrack 中心并重置中心滤波器。
 
-### Floating target observations and camera-relative LOS
+两条路径的中心偏差门槛均为 `dcf_max_div_factor * (width + height) / 2`。中心滤波器与主管线的 `RotationKalmanFilter` 相互独立；关闭 DCF 不等于直接输出原始 NanoTrack 框。
 
-`TrackerOutput.observation_box` retains the KF prediction as double-precision pixel
-coordinates and clips it to the actual input frame. The integer `display_box` and
-`realtime_box` remain visualization outputs. A successful YOLO reanchor sets
-`reset_los`; ordinary confirmation does not reset LOS velocity.
+## 4. 每帧处理与状态
 
-LOS is the line of sight from the camera to the box center. In camera FLU
-(forward, left, up), the ray is `(1, -(u-cx)/fx, -(v-cy)/fy)`. Pitch is positive
-downward; yaw is positive leftward. Angles use radians and rates use radians per
-second. The estimator rotates the previous ray and filtered velocity into the
-current camera frame before differencing, so camera motion alone produces zero
-world-target angular velocity. The smoothing coefficient is `1-exp(-dt/tau)`;
-`tau=0` disables smoothing. The first sample and gaps longer than 300 ms start
-with zero rate. Invalid input, lost targets, missing camera rotation and successful
-reanchors reset rate history. Simulated intrinsics establish interface behavior,
-not calibrated physical angular accuracy.
+### 4.1. 输入检查与缓存
+
+1. 检查帧、组件和平台兼容性。帧时间戳必须严格递增；重复或倒退时间戳返回 `consumed=false`，调用方跳过本帧发布。
+2. 在采集时刻调用 `predictOnly()`，取得主管线卡尔曼预测。
+3. 把当前帧加入补帧缓存，最多保存 `frame_buffer_size` 帧。缓存用于在检测结果晚到时恢复对应图像。
+4. 根据是否已初始化跟踪器，进入检测或跟踪分支。
+
+当前代码有一个需要保留理解的坐标细节：`predictOnly()` 返回 `(cx, cy, w, h)` 中心格式，但用于 ROI 与跳变比较的 `kf_pred_box` 直接把前两项写入 `cv::Rect2f` 的左上角字段。这是当前行为，不能把它描述为已完成中心到左上角转换。最终输出框另行执行正确转换。
+
+### 4.2. 未初始化：发现目标并补帧
+
+未初始化时，每个有效更新都尝试提交 YOLO 请求。有卡尔曼预测时，ROI 放大系数为 `roi_scale_factor * 1.5`；没有预测时从全图开始。
+
+读到当前轮次的正检测结果后，必须在缓存中找到源图像。随后在源图像上用检测框初始化 `NanoDcfTracker`，并按时间顺序跟踪缓存中的后续图像。这称为补帧追赶，用来把晚到的检测推进到当前帧。
+
+例如：第 100 帧的检测在第 104 帧更新时被读到。如果缓存仍含第 100 帧，就先在该帧初始化，再处理第 101–104 帧。源图像已淘汰时，不会拿第 104 帧替代它初始化。
+
+初始化成功后进入 `TargetFound`，并重置主管线卡尔曼滤波器。补帧中的单步失败不会使整个 `catchupTracker()` 返回失败；显示框保留最近成功的结果。检测初始化连续失败 10 次时，清空卡尔曼状态，使后续请求不再依赖旧预测 ROI。
+
+### 4.3. 已初始化：跟踪与跳变检查
+
+每帧先执行 `NanoDcfTracker::update()`。跟踪框必须同时偏离卡尔曼预测和上一显示框，才算一次跳变。跳变条件是中心距离超过 `max_position_jump` 像素，或任一边长比例超出 `[1/max_size_jump_ratio, max_size_jump_ratio]`。
+
+偶发跳变保留旧显示框，不用该测量校正主管线滤波器。连续跳变达到 `jump_tolerance` 后，清除跟踪初始化和框，并提前返回 `consumed=false`。该路径不会额外设置 `TargetLost`。
+
+正常测量更新显示框及上一框，并保留浮点跟踪结果用于卡尔曼校正。跟踪更新失败时不输入测量，状态仍可为 `Tracking`，输出可继续使用已有预测。
+
+每 `yolo_interval` 个有效更新尝试提交一次 YOLO 再检测请求。ROI 优先采用卡尔曼预测，否则采用显示框。ROI 宽、高按 `roi_scale_factor` 放大，并分别至少为 YOLO 输入宽、高的一半，再限制到图像范围。
+
+### 4.4. 延迟检测仲裁
+
+仲裁比较 YOLO 框与请求保存的同一源帧跟踪框和预测框。比较前把框裁剪到源图像范围，只比较目标的可见部分。IoU 是两个框的交集面积除以并集面积，用于衡量重叠程度。
+
+按代码顺序执行以下规则：
+
+| 条件 | 行为 |
+| --- | --- |
+| 结果属于旧轮次 | 不进行目标仲裁。 |
+| 正检测缺少有效的源帧跟踪框 | 不确认，也不重锚定；不把旧显示框当作有效观测。 |
+| 同时偏离源帧预测框与跟踪框，且 IoU 小于 `iou_calibrate_threshold` | 累计 YOLO 跳变。达到 `jump_tolerance` 后尝试补帧重锚定；未达到时累计未确认次数。 |
+| 当前跟踪更新失败，或 IoU 小于 `iou_reset_threshold` | 尝试补帧重锚定，并累计未确认次数。 |
+| IoU 大于 `iou_calibrate_threshold` | 视为确认，清空未确认及 YOLO 跳变计数。不覆盖当前框，不额外用 YOLO 框校正卡尔曼滤波器。 |
+| 其余重叠中间带 | 清空未确认及 YOLO 跳变计数，保留当前跟踪结果。 |
+| 检测完成但没有目标 | 清空 YOLO 跳变计数，累计未确认次数。 |
+
+重锚定是用检测源图像重新初始化并追赶到当前帧。比较信息即使在源图像淘汰后仍可用于确认，但重锚定必须具有源图像。跳变达到接受门槛且源图像仍在时，现有代码会清空未确认计数，即使该次初始化失败；源图像不在时则累计未确认次数。低 IoU 或当前跟踪失败分支无论恢复是否成功，都会累计未确认次数。
+
+### 4.5. 丢失、超时与状态数值
+
+未确认次数达到 `lost_max_count` 时，清除跟踪初始化和框，并设置 `TargetLost`。未确认包括无目标、低 IoU 重初始化及尚未接受的跳变，不只是没有检测框。
+
+已初始化时，连续未读取到检测结果的更新次数若严格大于 `lost_max_count * yolo_interval * 3`，也会清除初始化和框。默认乘积为 `60`，因此第 61 次无结果更新触发超时。任何读取到的结果都会清零此计数，包括无目标、缺少比较信息及旧轮次结果。此超时没有结果年龄门槛，也不会额外设置 `TargetLost`。
+
+| 状态 | 数值 | 典型触发 |
+| --- | --- | --- |
+| `Detecting` | 0 | 未初始化的检测分支。 |
+| `TargetFound` | 1 | 检测源图像初始化成功并完成补帧。 |
+| `Tracking` | 2 | 已初始化分支，含预测和短暂跟踪失败。 |
+| `TargetLost` | 3 | YOLO 未确认次数达到上限。 |
+
+状态数值不能单独代替框有效性判断。持续跳变和无结果超时可能先清除内部初始化，下一次更新才进入 `Detecting`。
+
+## 5. 卡尔曼输出与视线观测
+
+`RotationKalmanFilter` 的状态为 `[cx, cy, w, h, vx, vy]`，测量为 `[cx, cy, w, h]`。它使用相机旋转补偿和历史状态回溯。`predictOnly()` 只查询指定时刻的预测，不修改内部状态或历史。
+
+成功初始化或重锚定时，用追赶后的显示框在当前帧时刻重新初始化滤波器，并设置 `reset_los=true`。普通跟踪测量使用原始浮点框校正；只有 YOLO 确认时，不额外校正。最后按 `ctx.now_us` 与 `ctx.R_cam_now` 查询输出预测。
+
+`display_box` 是整数显示框，`realtime_box` 是整数预测框。`observation_box` 保留双精度预测并裁剪到实际输入图像。内部滤波状态不按画面边界裁剪。ROS 节点根据时间模式选择观测时刻；`publish_prediction` 默认 `false`，不能据此认为所有消息都外推到墙钟当前时间。
+
+LOS（视线）表示从相机指向目标框中心的方向。`TargetObservationBuilder` 在节点侧成对构建目标框和视线消息；这不属于 YOLO 后处理。对像素中心 `(u,v)`，相机 FLU 坐标系的射线为 `(1, -(u-cx)/fx, -(v-cy)/fy)`。FLU 的三个轴依次向前、向左、向上。
+
+俯仰角向下为正，偏航角向左为正。角度单位是 rad，角速度单位是 rad/s。估计器先把上一射线及滤波速度旋转到当前相机系，再计算方向差，从而补偿相机自身旋转。平滑系数为 `1-exp(-dt/tau)`，`los.rate_filter_tau` 默认 `0.12` 秒；设为 `0` 时不平滑。
+
+首个样本或超过 `0.3` 秒的间隔从零角速度开始。无效框、缺失或无效旋转及成功重锚定会清除速度历史。使用模拟内参只能验证接口行为，不能证明物理角度精度。
+
+## 6. C++ 默认参数
+
+以下值来自 `TrackerSettings`。ROS 节点、YAML 和 launch 可以覆盖它们；模型路径由平台装配层解释。
+
+| 参数 | 默认值 | 当前含义 |
+| --- | --- | --- |
+| `yolo_engine_path` | `drone_int8.engine` | 保留的 YOLO 模型路径字段。RK3576 使用其模型路径配置选择 `.rknn` 文件。 |
+| `nanotrack_backbone_path` | `nanotrackv3_backbone_int8.engine` | 保留的 Backbone 模型路径字段。 |
+| `nanotrack_head_path` | `nanotrack_head_int8.engine` | 保留的 Head 模型路径字段。 |
+| `target_class_id` | `0` | 只检测这个精确类别。 |
+| `yolo_conf_threshold` | `0.4` | 全图和切片的置信度门槛。 |
+| `yolo_nms_threshold` | `0.4` | NMS 的重叠门槛。 |
+| `yolo_recall_relax_ratio` | `1.0` | ROI 阈值乘数；默认不放宽。 |
+| `yolo_interval` | `4` | 跟踪分支的请求间隔，单位为有效更新次数。 |
+| `iou_reset_threshold` | `0.4` | 低于此值时尝试重锚定。 |
+| `iou_calibrate_threshold` | `0.8` | 高于此值为 YOLO 确认，不表示覆盖跟踪框。 |
+| `max_position_jump` | `150.0` | 中心跳变距离门槛，单位为像素。 |
+| `max_size_jump_ratio` | `2.0` | 宽、高分别使用的跳变比例门槛。 |
+| `max_box_area_ratio` | `0.8` | 框的宽、高分别占检测区域的最大比例。 |
+| `lost_max_count` | `5` | 连续未确认次数上限。 |
+| `roi_scale_factor` | `2.0` | 跟踪阶段 ROI 放大系数。 |
+| `frame_buffer_size` | `30` | 补帧图像缓存上限，单位为帧。 |
+| `jump_tolerance` | `3` | 跟踪跳变重置及 YOLO 跳变接受的计数门槛。 |
+| `enable_dcf` | `true` | 启用灰度 DCF 中心；关闭后改用中心滤波器。 |
+| `dcf_max_div_factor` | `0.5` | 中心偏差门槛相对目标平均边长的倍数。 |
+| `kf_fx`, `kf_fy`, `kf_cx0`, `kf_cy0` | 均为 `0.0` | 焦距与主点，单位为输入图像像素；运行时需配置有效内参。 |
+| `kf_r_pos`, `kf_r_size` | 均为 `4.0` | 位置和尺寸测量噪声方差。 |
+| `kf_q_a` | `5e4` | 中心运动的加速度过程噪声参数。 |
+| `kf_q_size` | `1e3` | 尺寸过程噪声参数。 |
+| `kf_history_len` | `60` | 主管线卡尔曼历史长度。 |
+
+`dcf` 子结构来自 `GrayscaleDCF::Params`：`model_sz=96`、`pad=1.0`、`sigma_factor=0.1`、`learning_rate=0.01`、`psr_thresh=5.0`、`lambda_reg=1e-4`、`fixed_template=true`、`eps=1e-5`。模板默认在初始化或重新锚定时学习；仅关闭固定模板时才在跟踪期间按学习率更新。
+
+NanoTrack 固定常量来自 `nano_tracker.h`：`score_size=15`、`min_wh=5`、`template_size=127`、`instance_size=255`、`window_influence=0.455`、`track_lr=0.348`、`track_penalty_k=0.138`、`stride=16`。这些不是 `TrackerSettings` 的可调参数。
+
+## 7. 源码与验证入口
+
+- [hybrid_tracker.cpp](hybrid_tracker.cpp)：分支流程、补帧、跳变、仲裁与输出。
+- [yolo_detector.cpp](yolo_detector.cpp)：请求替换、结果快照、级联检测与后处理。
+- [nano_tracker.cpp](nano_tracker.cpp)、[dcf_tracker.cpp](dcf_tracker.cpp)：神经网络跟踪及中心融合。
+- [rotation_kf.cpp](rotation_kf.cpp)、[target_los.h](target_los.h)：旋转补偿滤波与视线估计。
+- [target_observation.h](../target_observation.h)、[drone_tracker_node.cpp](../drone_tracker_node.cpp)：成对消息构造、时间模式与发布。
+
+算法测试位于 `tests/` 子目录，覆盖模型与预处理契约、恢复、诊断仲裁和视线行为。构建及硬件验证边界见仓库根目录 `AGENTS.md`；本文描述代码，不代表已完成真实模型、相机、HDMI、长时间负载或实飞验收。

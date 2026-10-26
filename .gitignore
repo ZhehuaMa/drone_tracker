@@ -3,7 +3,8 @@
 .github/
 .vscode/
 build/
-__pycache__/
+**/__pycache__/
+*.pyc
 *.engine
 AGENTS.local.md
 
