@@ -1,0 +1,19 @@
+Start testing: Oct 22 08:51 UTC
+----------------------------------------------------------
+1/1 Testing: tracking_regression_native_resource_limit
+1/1 Test: tracking_regression_native_resource_limit
+Command: "/work/ros2_ws/build/native-resource-limit/tracking_regression_native_resource_limit" "--resource-limit-only"
+Directory: /work/ros2_ws/build/native-resource-limit
+"tracking_regression_native_resource_limit" start time: Oct 22 08:51 UTC
+Output:
+----------------------------------------------------------
+Native OS address-space allocation rejection passed
+<end of output>
+Test time =   0.28 sec
+----------------------------------------------------------
+Test Passed.
+"tracking_regression_native_resource_limit" end time: Oct 22 08:51 UTC
+"tracking_regression_native_resource_limit" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 22 08:51 UTC

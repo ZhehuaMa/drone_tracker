@@ -1,0 +1,29 @@
+{
+  "injected_rssi_only": true,
+  "board": "HZ-RK3576_WuKong Board (hzhy)",
+  "ros_domain": "119",
+  "captures": [
+    {
+      "phase": "preview-85",
+      "yellow_pixels_at_bar_midline": 125
+    },
+    {
+      "phase": "preview-expired",
+      "yellow_pixels_at_bar_midline": 0
+    },
+    {
+      "phase": "preview-recovered-9",
+      "yellow_pixels_at_bar_midline": 13
+    },
+    {
+      "phase": "preview-after-off-85",
+      "yellow_pixels_at_bar_midline": 125
+    }
+  ],
+  "tracker_states": [
+    0,
+    1,
+    2
+  ],
+  "candidate_exit": 0
+}

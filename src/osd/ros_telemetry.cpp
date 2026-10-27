@@ -72,6 +72,11 @@ void TelemetryStore::receive(const mavros_msgs::msg::ExtendedState &message) {
     }
     assign(data_.landed, landed, now_());
 }
+void TelemetryStore::receive(const mavros_msgs::msg::RCIn &message) {
+    std::lock_guard<std::mutex> lock{mutex_};
+    // apm_bridge publishes a percentage directly, rather than a MAVLink 0-254 value.
+    assign(data_.rssi_percent, message.rssi <= 100 ? std::optional<int>{message.rssi} : std::nullopt, now_());
+}
 void TelemetryStore::receive(const sensor_msgs::msg::BatteryState &message) {
     Battery battery{};
     if (message.present) {
@@ -156,6 +161,7 @@ TelemetrySnapshot TelemetryStore::snapshot() const {
     expire(result.attitude); expire(result.flight); expire(result.position); expire(result.battery);
     expire(result.gps); expire(result.landed); expire(result.failsafe); expire(result.pressure_pa);
     expire(result.temperature_c); expire(result.radar_state); expire(result.battery_warning);
+    expire(result.rssi_percent);
     if (result.flight.value && result.flight.value->connected && result.flight.value->armed) {
         result.armed_seconds = std::chrono::duration<double>(now - armed_at_).count();
         if (home_ && result.position.value) {
@@ -203,6 +209,7 @@ OsdTelemetryAdapter::OsdTelemetryAdapter(rclcpp::Node &node, std::function<void(
     subscribe(sensor_msgs::msg::Imu{}, "/mavros/imu/data", true);
     subscribe(mavros_msgs::msg::State{}, "/mavros/state", false);
     subscribe(mavros_msgs::msg::ExtendedState{}, "/mavros/extended_state", false);
+    subscribe(mavros_msgs::msg::RCIn{}, "/mavros/rc/in", true);
     subscribe(sensor_msgs::msg::BatteryState{}, "/mavros/battery", false);
     subscribe(mavros_msgs::msg::GPSRAW{}, "/mavros/gpsstatus/gpsraw", true);
     subscribe(sensor_msgs::msg::NavSatFix{}, "/mavros/global_position/global", true);

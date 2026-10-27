@@ -273,8 +273,7 @@ Elements scene(const PresentationState &state, const VideoGeometry &geometry, in
             : std::nullopt, "HDG %03d", "HDG --"), WHITE);
     addText(elements, "satellites", 22, 232, satelliteText(gps),
         gps.fix_type && *gps.fix_type >= 2 ? WHITE : AMBER);
-    addText(elements, "temperature", 22, 270,
-        optionalInt(telemetry.temperature_c.value, "TMP %+03dC", "TMP --C"), WHITE, true);
+    addText(elements, "rssi-label", 22, 278, "RSSI", WHITE);
     addText(elements, "home-distance", 312, 86,
         telemetry.home_distance_m && telemetry.home_relative_deg
             ? optionalInt(telemetry.home_distance_m, "%3dM", " --") : " --", AMBER);
@@ -312,15 +311,17 @@ Elements scene(const PresentationState &state, const VideoGeometry &geometry, in
                 }
             });
     }
-    if (battery.percentage && *battery.percentage >= 0 && *battery.percentage <= 1) {
-        const double remaining{*battery.percentage};
-        addGraphic(elements, "battery-bar", std::to_string(remaining), {16, 310, 260, 54},
-            [remaining](cv::Mat &image, cv::Point origin) {
+    {
+        const std::optional<int> rssi{telemetry.rssi_percent.value && *telemetry.rssi_percent.value >= 0
+            && *telemetry.rssi_percent.value <= 100 ? telemetry.rssi_percent.value : std::nullopt};
+        addGraphic(elements, "rssi-bar", rssi ? std::to_string(*rssi) : "unknown", {16, 310, 260, 54},
+            [rssi](cv::Mat &image, cv::Point origin) {
                 fill(image, {20 - origin.x, 330 - origin.y, 150, 12}, BLACK);
-                fill(image, {21 - origin.x, 331 - origin.y,
-                    static_cast<int>(148 * remaining), 10}, remaining < 0.25 ? RED : AMBER);
-                char value[16]{};
-                std::snprintf(value, sizeof(value), "%3d%%", static_cast<int>(remaining * 100));
+                if (rssi) {
+                    fill(image, {21 - origin.x, 331 - origin.y, 148 * *rssi / 100, 10}, AMBER);
+                }
+                char value[16]{" --%"};
+                if (rssi) { std::snprintf(value, sizeof(value), "%3d%%", *rssi); }
                 bitmapText(image, 178 - origin.x, 318 - origin.y, value, WHITE);
             });
     }

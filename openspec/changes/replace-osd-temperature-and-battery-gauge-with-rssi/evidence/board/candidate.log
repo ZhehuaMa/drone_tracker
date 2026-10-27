@@ -1,0 +1,210 @@
+OSD exclusive DRM ownership verified: device=/dev/dri/card0 pid=23550 owner_tid=23562 master=y clients=1 evidence=/sys/kernel/debug/dri/0/clients
+rga_api version 1.10.5_[9]
+OSD HDMI HDMI-A-1 720x480 refresh_hz=60
+[INFO] [1792659392.212845841] [drone_tracker_node]: Opening camera device: /dev/video22
+[INFO] [1792659392.214359024] [drone_tracker_node]: Camera Intrinsics: fx=1333.30, fy=1333.30, px=960.00, py=600.00
+[INFO] [1792659392.214528534] [drone_tracker_node]: Camera FOV: horizontal=71.51 deg, vertical=48.46 deg
+Package share directory: /opt/drone_tracker/current/share/drone_tracker
+yolo
+model=/opt/drone_tracker/models/balloon_best_zoo6_int8_fp16_cls.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 images [1,640,640,3,] rank=4 type=INT8 format=NHWC quant=AFFINE zp=-128 scale=0.00392157 elems=1228800 bytes=1228800 w_stride=640 h_stride=0 size_with_stride=1228800 pass_through=0 fl=0
+output #0 /model.22/cv2.0/cv2.0.2/Conv_output_0 [1,64,80,80,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=47 scale=0.197289 elems=409600 bytes=409600 w_stride=0 h_stride=0 size_with_stride=409600 pass_through=0 fl=0
+output #1 /model.22/cv3.0/cv3.0.2/Conv_output_0 [1,1,80,80,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6400 bytes=12800 w_stride=0 h_stride=0 size_with_stride=102400 pass_through=0 fl=0
+output #2 /model.22/cv2.1/cv2.1.2/Conv_output_0 [1,64,40,40,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=46 scale=0.3846 elems=102400 bytes=102400 w_stride=0 h_stride=0 size_with_stride=122880 pass_through=0 fl=0
+output #3 /model.22/cv3.1/cv3.1.2/Conv_output_0 [1,1,40,40,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=1600 bytes=3200 w_stride=0 h_stride=0 size_with_stride=25600 pass_through=0 fl=0
+output #4 /model.22/cv2.2/cv2.2.2/Conv_output_0 [1,64,20,20,] rank=4 type=INT8 format=NCHW quant=AFFINE zp=44 scale=0.274857 elems=25600 bytes=25600 w_stride=0 h_stride=0 size_with_stride=40960 pass_through=0 fl=0
+output #5 /model.22/cv3.2/cv3.2.2/Conv_output_0 [1,1,20,20,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=400 bytes=800 w_stride=0 h_stride=0 size_with_stride=7680 pass_through=0 fl=0
+C=1
+submission: UINT8 NHWC [1,640,640,3], 1228800 bytes, pass_through=0; Runtime performs input conversion
+compatibility requires mean=0/std=255 (not verified by attribute query)
+template Backbone
+model=/opt/drone_tracker/models/fp16/template_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,127,127,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=48387 bytes=96774 w_stride=128 h_stride=0 size_with_stride=97536 pass_through=0 fl=0
+output #0 output [1,96,8,8,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=0 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+search Backbone
+model=/opt/drone_tracker/models/fp16/search_backbone.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input [1,255,255,3,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=195075 bytes=390150 w_stride=256 h_stride=0 size_with_stride=391680 pass_through=0 fl=0
+output #0 output [1,96,16,16,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=0 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+Head
+model=/opt/drone_tracker/models/fp16/head.rknn runtime=2.3.2 (429f97ae6b@2025-04-09T09:09:27) driver=0.9.8
+input #0 input1 [1,8,8,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=6144 bytes=12288 w_stride=8 h_stride=0 size_with_stride=12288 pass_through=0 fl=0
+input #1 input2 [1,16,16,96,] rank=4 type=FP16 format=NHWC quant=AFFINE zp=0 scale=1 elems=24576 bytes=49152 w_stride=16 h_stride=0 size_with_stride=49152 pass_through=0 fl=0
+output #0 output1 [1,2,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=450 bytes=900 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+output #1 output2 [1,4,15,15,] rank=4 type=FP16 format=NCHW quant=AFFINE zp=0 scale=1 elems=900 bytes=1800 w_stride=0 h_stride=0 size_with_stride=3840 pass_through=0 fl=0
+roles: template_input=0 search_input=1 classification_output=0 location_output=1
+submission: Float32, pass_through=0, native logical layout; outputs: want_float=1
+YOLO worker thread started.
+[INFO] [1792659392.317554553] [drone_tracker_node]: OSD control event=tracking round=0 phase=0 version=2
+[INFO] [1792659392.331187643] [drone_tracker_node]: OSD display round=0 sequence=0 status=WaitingInput hud="TRK OFF" target_label="" boxes=0 has_video=0 new_video=0 mission=0 stream=1 source_sequence=0 kind=tracking control_version=2 control_to_display_us=13597
+[INFO] [1792659392.334359406] [drone_tracker_node]: Camera service started stream=1 dispatcher_role=Capture tracking=OFF recording=OFF
+[INFO] [1792659392.336265590] [drone_tracker_node]: OSD submitted=0 replaced=0 displayed=0 commits=3 rejected=0
+[INFO] [1792659392.650053666] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=315940 consumed=0 hdmi_displayed=0 hdmi_replaced=0 hdmi_rejected=0
+[INFO] [1792659392.650291033] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=1 dispatched=1 tracking_replaced=0 preview_submitted=1 paired_submitted=0 window_read=1 window_dequeued=11 window_dispatched=1 window_replaced=0
+[INFO] [1792659392.650341407] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=1 enqueued=1 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-1 clock_offset_delta_us=-1 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659392.650410454] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=11 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659392.697041358] [drone_tracker_node]: OSD display round=0 sequence=1 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=1 mission=0 stream=1 source_sequence=1 kind=preview control_version=2 control_to_display_us=379480
+[INFO] [1792659393.413031141] [drone_tracker_node]: OSD submitted=46 replaced=1 displayed=44 commits=49 rejected=0
+[INFO] [1792659393.663836385] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=1329744 consumed=0 hdmi_displayed=59 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659393.664036817] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=62 dispatched=62 tracking_replaced=0 preview_submitted=62 paired_submitted=0 window_read=62 window_dequeued=72 window_dispatched=62 window_replaced=0
+[INFO] [1792659393.664123858] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=62 enqueued=62 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-62 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659393.664197937] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=72 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659394.413084025] [drone_tracker_node]: OSD submitted=106 replaced=1 displayed=104 commits=109 rejected=0
+[INFO] [1792659394.680296309] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=2346202 consumed=0 hdmi_displayed=120 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659394.680515442] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=123 dispatched=123 tracking_replaced=0 preview_submitted=123 paired_submitted=0 window_read=123 window_dequeued=133 window_dispatched=123 window_replaced=0
+[INFO] [1792659394.680570642] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=123 enqueued=123 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-123 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659394.680767619] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=133 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659395.513061992] [drone_tracker_node]: OSD submitted=172 replaced=1 displayed=170 commits=175 rejected=0
+[INFO] [1792659395.696631782] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=3362539 consumed=0 hdmi_displayed=181 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659395.696826641] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=184 dispatched=184 tracking_replaced=0 preview_submitted=184 paired_submitted=0 window_read=184 window_dequeued=194 window_dispatched=184 window_replaced=0
+[INFO] [1792659395.696913697] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=184 enqueued=184 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-184 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659395.696972813] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=194 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659396.513119078] [drone_tracker_node]: OSD submitted=233 replaced=1 displayed=230 commits=235 rejected=0
+[INFO] [1792659396.712967876] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=4378871 consumed=0 hdmi_displayed=242 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659396.713234508] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=245 dispatched=245 tracking_replaced=0 preview_submitted=245 paired_submitted=0 window_read=245 window_dequeued=255 window_dispatched=245 window_replaced=0
+[INFO] [1792659396.713319883] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=245 enqueued=245 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-245 clock_offset_delta_us=-1 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659396.713395840] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=255 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659397.613084258] [drone_tracker_node]: OSD submitted=299 replaced=1 displayed=296 commits=301 rejected=0
+[INFO] [1792659397.729389192] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=5395298 consumed=0 hdmi_displayed=303 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659397.729587248] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=306 dispatched=306 tracking_replaced=0 preview_submitted=306 paired_submitted=0 window_read=306 window_dequeued=316 window_dispatched=306 window_replaced=0
+[INFO] [1792659397.729642268] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=306 enqueued=306 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-306 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659397.729737012] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=316 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659398.613123224] [drone_tracker_node]: OSD submitted=359 replaced=1 displayed=356 commits=361 rejected=0
+[INFO] [1792659398.745630773] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=6411539 consumed=0 hdmi_displayed=364 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659398.745893299] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=367 dispatched=367 tracking_replaced=0 preview_submitted=367 paired_submitted=0 window_read=367 window_dequeued=377 window_dispatched=367 window_replaced=0
+[INFO] [1792659398.745942273] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=367 enqueued=367 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-367 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659398.746007285] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=377 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659399.613125807] [drone_tracker_node]: OSD submitted=419 replaced=1 displayed=416 commits=421 rejected=0
+[INFO] [1792659399.761950751] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=7427859 consumed=0 hdmi_displayed=425 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659399.762157524] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=428 dispatched=428 tracking_replaced=0 preview_submitted=428 paired_submitted=0 window_read=428 window_dequeued=438 window_dispatched=428 window_replaced=0
+[INFO] [1792659399.762209597] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=428 enqueued=428 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-428 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659399.762275865] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=438 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659400.613136194] [drone_tracker_node]: OSD submitted=479 replaced=1 displayed=476 commits=481 rejected=0
+[INFO] [1792659400.778323754] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=8444231 consumed=0 hdmi_displayed=486 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659400.778515438] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=489 dispatched=489 tracking_replaced=0 preview_submitted=489 paired_submitted=0 window_read=489 window_dequeued=499 window_dispatched=489 window_replaced=0
+[INFO] [1792659400.778588181] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=489 enqueued=489 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-489 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659400.778716999] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=499 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659401.613191415] [drone_tracker_node]: OSD submitted=539 replaced=1 displayed=537 commits=542 rejected=0
+[INFO] [1792659401.794862256] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=9460767 consumed=0 hdmi_displayed=547 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659401.795102138] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=550 dispatched=550 tracking_replaced=0 preview_submitted=550 paired_submitted=0 window_read=550 window_dequeued=560 window_dispatched=550 window_replaced=0
+[INFO] [1792659401.795190286] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=550 enqueued=550 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-550 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659401.795316238] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=560 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659402.713191418] [drone_tracker_node]: OSD submitted=605 replaced=1 displayed=603 commits=608 rejected=0
+[INFO] [1792659402.811161180] [drone_tracker_node]: Round performance round=0 elapsed_mono_us=10477069 consumed=0 hdmi_displayed=609 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659402.811354606] [drone_tracker_node]: Stream counters stream=1 round=0 source_sequence=611 dispatched=611 tracking_replaced=0 preview_submitted=611 paired_submitted=0 window_read=611 window_dequeued=621 window_dispatched=611 window_replaced=0
+[INFO] [1792659402.811407493] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=611 enqueued=611 queue_dropped=0 sequence_gaps=0 consumed=0 time=driver_monotonic unattributed_command_frame_difference=-611 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659402.811474130] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=621 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659403.268992568] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=0
+[INFO] [1792659403.269560590] [drone_tracker_node]: OSD control event=tracking round=1 phase=1 version=3
+[INFO] [1792659403.277765418] [drone_tracker_node]: OSD control event=tracking round=1 phase=2 version=4
+[INFO] [1792659403.281948264] [drone_tracker_node]: Tracker state published round=1 value=0
+[INFO] [1792659403.316929858] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=1
+[INFO] [1792659403.326263213] [drone_tracker_node]: OSD display round=1 sequence=640 status=Live hud="TRK SCANNING" target_label="" boxes=0 has_video=1 new_video=1 mission=0 stream=1 source_sequence=640 kind=tracking control_version=4 control_to_display_us=48500
+[INFO] [1792659403.368579274] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=1
+[INFO] [1792659403.421198517] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=1
+[INFO] [1792659403.473625978] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=1
+[INFO] [1792659403.527457492] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=1
+[INFO] [1792659403.580570636] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=1
+[INFO] [1792659403.633604370] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=1
+[INFO] [1792659403.686327473] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=1
+[INFO] [1792659403.713210933] [drone_tracker_node]: OSD submitted=665 replaced=2 displayed=661 commits=666 rejected=0
+[INFO] [1792659403.713371045] [drone_tracker_node]: OSD submit_calls=27 submit_mean_us=3.964 submit_max_us=6.542
+[INFO] [1792659403.738924877] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=1
+[INFO] [1792659403.812324014] [drone_tracker_node]: Round performance round=1 elapsed_mono_us=542306 consumed=33 hdmi_displayed=31 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659403.812574415] [drone_tracker_node]: Stream counters stream=1 round=1 source_sequence=671 dispatched=671 tracking_replaced=0 preview_submitted=638 paired_submitted=33 window_read=33 window_dequeued=33 window_dispatched=33 window_replaced=0
+[INFO] [1792659403.812634733] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=671 enqueued=671 queue_dropped=0 sequence_gaps=0 consumed=33 time=driver_monotonic unattributed_command_frame_difference=-671 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659403.812757136] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=681 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+Tracker initialized at [1141.3, 225.782, 113.266, 114.783] and caught up 6 frames
+[INFO] [1792659403.997860498] [drone_tracker_node]: Tracker state published round=1 value=1
+[INFO] [1792659404.015937759] [drone_tracker_node]: Tracker state published round=1 value=2
+[INFO] [1792659404.024867474] [drone_tracker_node]: OSD display round=1 sequence=675 status=Live hud="TRK FOUND" target_label="" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=675 kind=tracking control_version=4 control_to_display_us=747104
+[INFO] [1792659404.041489144] [drone_tracker_node]: OSD display round=1 sequence=682 status=Live hud="TRK TRACKING" target_label="" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=682 kind=tracking control_version=4 control_to_display_us=763726
+[INFO] [1792659404.713270067] [drone_tracker_node]: OSD submitted=713 replaced=2 displayed=710 commits=716 rejected=0
+[INFO] [1792659404.713489929] [drone_tracker_node]: OSD submit_calls=75 submit_mean_us=6.046 submit_max_us=26.633
+[INFO] [1792659404.817536051] [drone_tracker_node]: Round performance round=1 elapsed_mono_us=1547528 consumed=81 hdmi_displayed=80 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659404.817728628] [drone_tracker_node]: Stream counters stream=1 round=1 source_sequence=731 dispatched=731 tracking_replaced=11 preview_submitted=638 paired_submitted=81 window_read=93 window_dequeued=93 window_dispatched=93 window_replaced=11
+[INFO] [1792659404.817806555] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=731 enqueued=731 queue_dropped=0 sequence_gaps=0 consumed=81 time=driver_monotonic unattributed_command_frame_difference=-731 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659404.817876089] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=741 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659405.713307690] [drone_tracker_node]: OSD submitted=766 replaced=2 displayed=763 commits=769 rejected=0
+[INFO] [1792659405.713549587] [drone_tracker_node]: OSD submit_calls=128 submit_mean_us=7.720 submit_max_us=26.633
+[INFO] [1792659405.819056591] [drone_tracker_node]: Round performance round=1 elapsed_mono_us=2549042 consumed=134 hdmi_displayed=132 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659405.819256383] [drone_tracker_node]: Stream counters stream=1 round=1 source_sequence=791 dispatched=791 tracking_replaced=18 preview_submitted=638 paired_submitted=134 window_read=153 window_dequeued=153 window_dispatched=153 window_replaced=18
+[INFO] [1792659405.819311534] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=791 enqueued=791 queue_dropped=0 sequence_gaps=0 consumed=134 time=driver_monotonic unattributed_command_frame_difference=-791 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659405.819385840] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=801 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659406.813253173] [drone_tracker_node]: OSD submitted=824 replaced=2 displayed=821 commits=827 rejected=0
+[INFO] [1792659406.813446276] [drone_tracker_node]: OSD submit_calls=186 submit_mean_us=8.553 submit_max_us=26.633
+[INFO] [1792659406.826570594] [drone_tracker_node]: Round performance round=1 elapsed_mono_us=3556558 consumed=187 hdmi_displayed=186 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659406.826818883] [drone_tracker_node]: Stream counters stream=1 round=1 source_sequence=852 dispatched=852 tracking_replaced=25 preview_submitted=638 paired_submitted=187 window_read=214 window_dequeued=214 window_dispatched=214 window_replaced=25
+[INFO] [1792659406.827004018] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=852 enqueued=852 queue_dropped=0 sequence_gaps=0 consumed=187 time=driver_monotonic unattributed_command_frame_difference=-852 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659406.827215266] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=862 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659407.813300787] [drone_tracker_node]: OSD submitted=877 replaced=2 displayed=874 commits=880 rejected=0
+[INFO] [1792659407.813515675] [drone_tracker_node]: OSD submit_calls=239 submit_mean_us=8.763 submit_max_us=26.633
+[INFO] [1792659407.827145488] [drone_tracker_node]: Round performance round=1 elapsed_mono_us=4557130 consumed=240 hdmi_displayed=239 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659407.827438459] [drone_tracker_node]: Stream counters stream=1 round=1 source_sequence=912 dispatched=912 tracking_replaced=32 preview_submitted=638 paired_submitted=240 window_read=274 window_dequeued=274 window_dispatched=274 window_replaced=32
+[INFO] [1792659407.827529593] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=912 enqueued=912 queue_dropped=0 sequence_gaps=0 consumed=240 time=driver_monotonic unattributed_command_frame_difference=-912 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659407.827604379] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=922 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659408.807149419] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1792659408.807380751] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=5
+Average tracking time per frame: 17.65 ms
+[INFO] [1792659408.807480370] [drone_tracker_node]: Round ended: stop requested
+[INFO] [1792659408.807505520] [drone_tracker_node]: Tracking OFF accepted stream=1 round=1 accept_us=151 video=running
+[INFO] [1792659408.809643158] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=6
+[INFO] [1792659408.832153992] [drone_tracker_node]: OSD display round=1 sequence=971 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=1 mission=0 stream=1 source_sequence=971 kind=preview control_version=6 control_to_display_us=22513
+[INFO] [1792659408.842907653] [drone_tracker_node]: Round performance round=1 elapsed_mono_us=5572896 consumed=293 hdmi_displayed=293 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659408.843127118] [drone_tracker_node]: Stream counters stream=1 round=1 source_sequence=973 dispatched=973 tracking_replaced=38 preview_submitted=641 paired_submitted=293 window_read=332 window_dequeued=332 window_dispatched=332 window_replaced=38
+[INFO] [1792659408.843191775] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=973 enqueued=973 queue_dropped=0 sequence_gaps=0 consumed=293 time=driver_monotonic unattributed_command_frame_difference=-973 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659408.843258773] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=983 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659408.860638236] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1792659408.860882330] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=7
+[INFO] [1792659408.860945261] [drone_tracker_node]: Tracking OFF accepted stream=1 round=1 accept_us=76 video=running
+[INFO] [1792659408.882036549] [drone_tracker_node]: OSD display round=1 sequence=973 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=973 kind=preview control_version=7 control_to_display_us=21154
+[INFO] [1792659408.913023476] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1792659408.913217910] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=8
+[INFO] [1792659408.913290436] [drone_tracker_node]: Tracking OFF accepted stream=1 round=1 accept_us=84 video=running
+[INFO] [1792659408.913538130] [drone_tracker_node]: OSD submitted=938 replaced=2 displayed=932 commits=939 rejected=0
+[INFO] [1792659408.913719286] [drone_tracker_node]: OSD submit_calls=293 submit_mean_us=8.807 submit_max_us=28.701
+[INFO] [1792659408.931935515] [drone_tracker_node]: OSD display round=1 sequence=976 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=976 kind=preview control_version=8 control_to_display_us=18702
+[INFO] [1792659408.965936130] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1792659408.966136175] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=9
+[INFO] [1792659408.966204458] [drone_tracker_node]: Tracking OFF accepted stream=1 round=1 accept_us=81 video=running
+[INFO] [1792659408.981819534] [drone_tracker_node]: OSD display round=1 sequence=979 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=979 kind=preview control_version=9 control_to_display_us=15681
+[INFO] [1792659409.019302729] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1792659409.019578212] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=10
+[INFO] [1792659409.019630833] [drone_tracker_node]: Tracking OFF accepted stream=1 round=1 accept_us=67 video=running
+[INFO] [1792659409.024439723] [drone_tracker_node]: Round performance round=1 elapsed_mono_us=5754423 consumed=293 hdmi_displayed=301 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659409.024704360] [drone_tracker_node]: Stream counters stream=1 round=1 source_sequence=983 dispatched=983 tracking_replaced=38 preview_submitted=651 paired_submitted=293 window_read=332 window_dequeued=332 window_dispatched=332 window_replaced=38
+[INFO] [1792659409.024839529] [drone_tracker_node]: Camera final mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=983 enqueued=983 queue_dropped=0 sequence_gaps=0 consumed=293 time=driver_monotonic unattributed_command_frame_difference=-983 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659409.024924394] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=993 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659409.024973766] [drone_tracker_node]: Tracking cleanup complete stream=1 round=1 model_bag_wait_us=217427
+[INFO] [1792659409.031710858] [drone_tracker_node]: OSD display round=1 sequence=982 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=982 kind=preview control_version=10 control_to_display_us=12132
+[INFO] [1792659409.072772864] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1792659409.073011363] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=11
+[INFO] [1792659409.073107479] [drone_tracker_node]: Tracking OFF accepted stream=1 round=1 accept_us=109 video=running
+[INFO] [1792659409.098256703] [drone_tracker_node]: OSD display round=1 sequence=987 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=1 mission=0 stream=1 source_sequence=987 kind=preview control_version=11 control_to_display_us=25244
+[INFO] [1792659409.126423182] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1792659409.126609285] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=12
+[INFO] [1792659409.126682829] [drone_tracker_node]: Tracking OFF accepted stream=1 round=1 accept_us=86 video=running
+[INFO] [1792659409.148169325] [drone_tracker_node]: OSD display round=1 sequence=989 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=989 kind=preview control_version=12 control_to_display_us=21558
+[INFO] [1792659409.178485813] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1792659409.178665588] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=13
+[INFO] [1792659409.178813258] [drone_tracker_node]: Tracking OFF accepted stream=1 round=1 accept_us=160 video=running
+[INFO] [1792659409.198055431] [drone_tracker_node]: OSD display round=1 sequence=992 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=992 kind=preview control_version=13 control_to_display_us=19388
+[INFO] [1792659409.230674350] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1792659409.230854130] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=14
+[INFO] [1792659409.230926740] [drone_tracker_node]: Tracking OFF accepted stream=1 round=1 accept_us=85 video=running
+[INFO] [1792659409.247963375] [drone_tracker_node]: OSD display round=1 sequence=995 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=995 kind=preview control_version=14 control_to_display_us=17107
+[INFO] [1792659409.283237605] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1792659409.283431053] [drone_tracker_node]: OSD control event=tracking round=1 phase=0 version=15
+[INFO] [1792659409.283500183] [drone_tracker_node]: Tracking OFF accepted stream=1 round=1 accept_us=82 video=running
+[INFO] [1792659409.297861125] [drone_tracker_node]: OSD display round=1 sequence=998 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=998 kind=preview control_version=15 control_to_display_us=14429
+[INFO] [1792659410.013302049] [drone_tracker_node]: OSD submitted=1004 replaced=2 displayed=992 commits=1006 rejected=0
+[INFO] [1792659410.013551576] [drone_tracker_node]: OSD submit_calls=293 submit_mean_us=8.807 submit_max_us=28.701
+[INFO] [1792659410.025547824] [drone_tracker_node]: Round performance round=1 elapsed_mono_us=6755536 consumed=293 hdmi_displayed=356 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659410.025738557] [drone_tracker_node]: Stream counters stream=1 round=1 source_sequence=1044 dispatched=1044 tracking_replaced=38 preview_submitted=712 paired_submitted=293 window_read=332 window_dequeued=332 window_dispatched=332 window_replaced=38
+[INFO] [1792659410.025793314] [drone_tracker_node]: Camera running mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=1044 enqueued=1044 queue_dropped=0 sequence_gaps=0 consumed=293 time=driver_monotonic unattributed_command_frame_difference=-1044 clock_offset_delta_us=0 stop_us=0 restored=0 state=2 reason=
+[INFO] [1792659410.025885734] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=1054 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=0 reason=
+[INFO] [1792659410.694969039] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [1792659410.711756735] [drone_tracker_node]: OSD display round=1 sequence=1083 status=Stopped hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=1083 kind=preview control_version=16 control_to_display_us=1428323
+[INFO] [1792659410.712353988] [drone_tracker_node]: Round performance round=1 elapsed_mono_us=7442348 consumed=293 hdmi_displayed=397 hdmi_replaced=1 hdmi_rejected=0
+[INFO] [1792659410.712449694] [drone_tracker_node]: Stream counters stream=1 round=1 source_sequence=1084 dispatched=1084 tracking_replaced=38 preview_submitted=752 paired_submitted=293 window_read=332 window_dequeued=332 window_dispatched=332 window_replaced=38
+[INFO] [1792659410.712471008] [drone_tracker_node]: Camera final mode=continuous requested_hz=0.000 actual_hz=0.000 commands=0 command_errors=0 skipped=0 read=1084 enqueued=1084 queue_dropped=0 sequence_gaps=0 consumed=293 time=driver_monotonic unattributed_command_frame_difference=-1084 clock_offset_delta_us=0 stop_us=5806 restored=1 state=3 reason=Stopped by caller
+[INFO] [1792659410.712506474] [drone_tracker_node]: Camera warmup phase=streaming limits=2000000us/120frames/8consecutive elapsed_us=316140 dequeued_total=1094 examined=11 discarded=10 repeats=2 streak=8 terminal_discarded=0 first=10:1792659384577390 latency_us=316140 reclaimed=1 reason=

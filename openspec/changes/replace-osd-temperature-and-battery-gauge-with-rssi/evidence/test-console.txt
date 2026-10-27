@@ -1,0 +1,130 @@
+Internal ctest changing into directory: /work/ros2_ws/build/drone_tracker
+Test project /work/ros2_ws/build/drone_tracker
+      Start  1: sc233hgs_camera_tests
+ 1/62 Test  #1: sc233hgs_camera_tests ..........................   Passed    0.15 sec
+      Start  2: cpu_affinity_tests
+ 2/62 Test  #2: cpu_affinity_tests .............................   Passed    0.04 sec
+      Start  3: deployment_cpu_policy_tests
+ 3/62 Test  #3: deployment_cpu_policy_tests ....................   Passed    0.28 sec
+      Start  4: deployment_package_tests
+ 4/62 Test  #4: deployment_package_tests .......................   Passed    0.16 sec
+      Start  5: deployment_diagnostics_tests
+ 5/62 Test  #5: deployment_diagnostics_tests ...................   Passed    5.50 sec
+      Start  6: target_observation_tests
+ 6/62 Test  #6: target_observation_tests .......................   Passed    0.02 sec
+      Start  7: ros_video_generate_fixtures
+ 7/62 Test  #7: ros_video_generate_fixtures ....................   Passed    0.26 sec
+      Start  8: ros_video_tests
+ 8/62 Test  #8: ros_video_tests ................................   Passed   22.57 sec
+      Start  9: ros_continuous_camera_tests
+ 9/62 Test  #9: ros_continuous_camera_tests ....................   Passed    8.96 sec
+      Start 10: ros_initialization_tests
+10/62 Test #10: ros_initialization_tests .......................   Passed    1.71 sec
+      Start 11: jetson_config_tests
+11/62 Test #11: jetson_config_tests ............................   Passed    0.60 sec
+      Start 12: diagnostic_tests
+12/62 Test #12: diagnostic_tests ...............................   Passed    6.67 sec
+      Start 13: observation_output_tests
+13/62 Test #13: observation_output_tests .......................   Passed    0.08 sec
+      Start 14: target_los_tests
+14/62 Test #14: target_los_tests ...............................   Passed    0.02 sec
+      Start 15: yolo_output_adapter_tests
+15/62 Test #15: yolo_output_adapter_tests ......................   Passed    8.14 sec
+      Start 16: model_contract_tests
+16/62 Test #16: model_contract_tests ...........................   Passed    0.03 sec
+      Start 17: preprocess_common_tests
+17/62 Test #17: preprocess_common_tests ........................   Passed    0.02 sec
+      Start 18: preprocess_contract_tests
+18/62 Test #18: preprocess_contract_tests ......................   Passed    0.22 sec
+      Start 19: hybrid_tracker_tests
+19/62 Test #19: hybrid_tracker_tests ...........................   Passed    0.10 sec
+      Start 20: platform_contract_tests
+20/62 Test #20: platform_contract_tests ........................   Passed    0.10 sec
+      Start 21: diagnostic_tracker_tests
+21/62 Test #21: diagnostic_tracker_tests .......................   Passed    4.95 sec
+      Start 22: rknn_preprocess_tests
+22/62 Test #22: rknn_preprocess_tests ..........................   Passed    0.13 sec
+      Start 23: recovery_regression_tests
+23/62 Test #23: recovery_regression_tests ......................   Passed    0.09 sec
+      Start 24: platform_selection_tests
+24/62 Test #24: platform_selection_tests .......................   Passed    0.18 sec
+      Start 25: osd_yaml_tests
+25/62 Test #25: osd_yaml_tests .................................   Passed    0.04 sec
+      Start 26: osd_pipeline_state_tests
+26/62 Test #26: osd_pipeline_state_tests .......................   Passed    0.02 sec
+      Start 27: osd_config_tests
+27/62 Test #27: osd_config_tests ...............................   Passed    0.02 sec
+      Start 28: osd_timing_tests
+28/62 Test #28: osd_timing_tests ...............................   Passed    0.02 sec
+      Start 29: osd_presenter_tests
+29/62 Test #29: osd_presenter_tests ............................   Passed    0.86 sec
+      Start 30: osd_geometry_tests
+30/62 Test #30: osd_geometry_tests .............................   Passed    0.02 sec
+      Start 31: osd_layout_tests
+31/62 Test #31: osd_layout_tests ...............................   Passed    8.43 sec
+      Start 32: osd_short_text_tests
+32/62 Test #32: osd_short_text_tests ...........................   Passed    0.03 sec
+      Start 33: osd_hud_style_tests
+33/62 Test #33: osd_hud_style_tests ............................   Passed    1.31 sec
+      Start 34: osd_rssi_tests
+34/62 Test #34: osd_rssi_tests .................................   Passed    1.24 sec
+      Start 35: osd_telemetry_tests
+35/62 Test #35: osd_telemetry_tests ............................   Passed    0.03 sec
+      Start 36: ros_osd_telemetry_tests
+36/62 Test #36: ros_osd_telemetry_tests ........................   Passed    1.08 sec
+      Start 37: nanotrack_baseline_tests
+37/62 Test #37: nanotrack_baseline_tests .......................   Passed    0.08 sec
+      Start 38: nanotrack_baseline_help
+38/62 Test #38: nanotrack_baseline_help ........................   Passed    0.06 sec
+      Start 39: baseline_rknn_session_tests
+39/62 Test #39: baseline_rknn_session_tests ....................   Passed    0.03 sec
+      Start 40: baseline_rknn_nanotrack_backend_tests
+40/62 Test #40: baseline_rknn_nanotrack_backend_tests ..........   Passed    0.13 sec
+      Start 41: baseline_nanotrack_preprocess_tests
+41/62 Test #41: baseline_nanotrack_preprocess_tests ............   Passed    0.74 sec
+      Start 42: baseline_video_fixtures
+42/62 Test #42: baseline_video_fixtures ........................   Passed    0.26 sec
+      Start 43: baseline_video_observation
+43/62 Test #43: baseline_video_observation .....................   Passed    0.15 sec
+      Start 44: baseline_runner_tests
+44/62 Test #44: baseline_runner_tests ..........................   Passed    1.53 sec
+      Start 45: baseline_code_identity_tests
+45/62 Test #45: baseline_code_identity_tests ...................   Passed    2.73 sec
+      Start 46: search_direct_direct_backend_tests
+46/62 Test #46: search_direct_direct_backend_tests .............   Passed    0.15 sec
+      Start 47: search_direct_direct_failure_tests
+47/62 Test #47: search_direct_direct_failure_tests .............   Passed    0.10 sec
+      Start 48: search_direct_help
+48/62 Test #48: search_direct_help .............................   Passed    0.06 sec
+      Start 49: search_direct_probe_help
+49/62 Test #49: search_direct_probe_help .......................   Passed    0.03 sec
+      Start 50: search_direct_probe_missing_models
+50/62 Test #50: search_direct_probe_missing_models .............   Passed    0.03 sec
+      Start 51: search_direct_missing_config
+51/62 Test #51: search_direct_missing_config ...................   Passed    0.06 sec
+      Start 52: search_direct_video_fixtures
+52/62 Test #52: search_direct_video_fixtures ...................   Passed    0.25 sec
+      Start 53: search_direct_runner_tests
+53/62 Test #53: search_direct_runner_tests .....................   Passed    1.32 sec
+      Start 54: nanotrack_window_tests
+54/62 Test #54: nanotrack_window_tests .........................   Passed    2.71 sec
+      Start 55: nanotrack_window_help
+55/62 Test #55: nanotrack_window_help ..........................   Passed    0.12 sec
+      Start 56: nanotrack_window_performance_tests
+56/62 Test #56: nanotrack_window_performance_tests .............   Passed    0.02 sec
+      Start 57: nanotrack_window_performance_exit_tests
+57/62 Test #57: nanotrack_window_performance_exit_tests ........   Passed    0.17 sec
+      Start 58: tracking_regression_python
+58/62 Test #58: tracking_regression_python .....................   Passed   10.91 sec
+      Start 59: tracking_regression_source_tests
+59/62 Test #59: tracking_regression_source_tests ...............   Passed   67.40 sec
+      Start 60: tracking_regression_round_tests
+60/62 Test #60: tracking_regression_round_tests ................   Passed    2.72 sec
+      Start 61: tracking_regression_cpu_observer_integration
+61/62 Test #61: tracking_regression_cpu_observer_integration ...   Passed    0.16 sec
+      Start 62: tracking_regression_preflight
+62/62 Test #62: tracking_regression_preflight ..................   Passed    1.19 sec
+
+100% tests passed, 0 tests failed out of 62
+
+Total Test time (real) = 167.20 sec

@@ -41,7 +41,8 @@ int main(int argc, char **argv) {
         presenter.endRound(round, osd::DisplayStatus::Stopped);
         rclcpp::NodeOptions options{};
         options.arguments({"--ros-args", "-r", "/mavros/battery:=/osd_test/battery",
-                            "-r", "/fpv/temperature_baro:=/osd_test/temperature"});
+                            "-r", "/fpv/temperature_baro:=/osd_test/temperature",
+                            "-r", "/mavros/rc/in:=/osd_test/rc"});
         auto node{std::make_shared<rclcpp::Node>("osd_test_subscriber", options)};
         osd::OsdTelemetryAdapter adapter{*node,
             [&](osd::TelemetrySnapshot snapshot) { presenter.updateTelemetry(std::move(snapshot)); },
@@ -51,6 +52,8 @@ int main(int argc, char **argv) {
         auto temperature{source->create_publisher<sensor_msgs::msg::Temperature>(
             "/osd_test/temperature", rclcpp::QoS{10}.best_effort())};
         auto radar{source->create_publisher<std_msgs::msg::Int8>("/fpv/radar_state", 10)};
+        auto rc{source->create_publisher<mavros_msgs::msg::RCIn>(
+            "/osd_test/rc", rclcpp::QoS{10}.best_effort())};
 #ifdef OSD_TEST_LOW_LEVEL_FEEDBACK
         auto feedback{source->create_publisher<quadrotor_msgs::msg::LowLevelFeedback>("/fpv/low_level_feedback", 10)};
 #endif
@@ -60,10 +63,12 @@ int main(int argc, char **argv) {
         sensor_msgs::msg::BatteryState value{};
         value.present = true; value.voltage = 24; value.capacity = 13; value.charge = 10;
         sensor_msgs::msg::Temperature temp{}; temp.temperature = 28;
-        bool received{false}, expired{false};
+        bool received{false}, expired{false}, recovered{false};
+        mavros_msgs::msg::RCIn signal{}; signal.rssi = 85;
         const auto deadline{osd::SteadyClock::now() + std::chrono::seconds{5}};
         while (osd::SteadyClock::now() < deadline) {
             if (!received) { battery->publish(value); }
+            if (!received || expired) { signal.rssi = expired ? 9 : 85; rc->publish(signal); }
             temperature->publish(temp);
             std_msgs::msg::Int8 radar_message{}; radar_message.data = 2; radar->publish(radar_message);
 #ifdef OSD_TEST_LOW_LEVEL_FEEDBACK
@@ -80,6 +85,7 @@ int main(int argc, char **argv) {
                 }
                 if (state.telemetry.battery.value && state.telemetry.battery.value->consumed_mah == 3000
                     && state.telemetry.temperature_c.value == 28 && state.telemetry.radar_state.value == 2
+                    && state.telemetry.rssi_percent.value == 85
 #ifdef OSD_TEST_LOW_LEVEL_FEEDBACK
                     && state.telemetry.battery_warning.value == 3
 #endif
@@ -87,14 +93,19 @@ int main(int argc, char **argv) {
                     if (state.tracker_state != 0) { throw std::runtime_error("radar overwrote local tracker state"); }
                     received = true;
                 }
-                if (received && !state.telemetry.battery.value && state.telemetry.temperature_c.value == 28) {
+                if (received && !state.telemetry.battery.value && !state.telemetry.rssi_percent.value
+                    && state.telemetry.temperature_c.value == 28) {
                     expired = true;
+                }
+                if (expired && state.telemetry.rssi_percent.value == 9) {
+                    recovered = true;
                     break;
                 }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds{10});
         }
-        if (!received || !expired || battery->get_subscription_count() == 0
+        if (!received || !expired || !recovered || battery->get_subscription_count() == 0
+            || rc->get_subscription_count() == 0
             || temperature->get_subscription_count() == 0) {
             throw std::runtime_error("ROS remap, QoS or independent expiry failed");
         }

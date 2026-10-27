@@ -1,0 +1,16 @@
+Internal ctest changing into directory: /work/ros2_ws/build/drone_tracker
+Test project /work/ros2_ws/build/drone_tracker
+    Start 31: osd_layout_tests
+1/5 Test #31: osd_layout_tests .................   Passed    8.34 sec
+    Start 33: osd_hud_style_tests
+2/5 Test #33: osd_hud_style_tests ..............   Passed    1.33 sec
+    Start 34: osd_rssi_tests
+3/5 Test #34: osd_rssi_tests ...................   Passed    1.23 sec
+    Start 35: osd_telemetry_tests
+4/5 Test #35: osd_telemetry_tests ..............   Passed    0.02 sec
+    Start 36: ros_osd_telemetry_tests
+5/5 Test #36: ros_osd_telemetry_tests ..........   Passed    1.08 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =  12.00 sec

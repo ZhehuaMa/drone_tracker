@@ -72,14 +72,14 @@ ctest --test-dir /tmp/drone-osd-tests --output-on-failure
 
 ## 遥测与显示行为
 
-标准遥测订阅 IMU、飞行状态、电池、GPS、气压、温度、失效保护和独立雷达状态。完整话题与消息类型见本变更 `specs/osd-ros-telemetry/spec.md`。IMU、GPS、气压、温度采用 best-effort（允许丢弃旧消息以优先新数据）；其他输入采用 reliable（可靠传递），深度均为 10。可用 ROS remap 替换话题名。
+标准遥测订阅 IMU、飞行状态、遥控链路、电池、GPS、气压、温度、失效保护和独立雷达状态。完整话题与消息类型见本变更 `specs/osd-ros-telemetry/spec.md`。IMU、GPS、气压、温度和 RSSI 采用 best-effort（允许丢弃旧消息以优先新数据）；其他输入采用 reliable（可靠传递），深度均为 10。可用 ROS remap 替换话题名。
 
-例如，把温度输入改为设备实际话题：
+For example, remap the RSSI input to an isolated telemetry topic:
 
 ```sh
 ros2 run drone_tracker drone_tracker_node --ros-args \
   --params-file /path/to/rk3576_video_params.yaml \
-  -p osd.enabled:=true -r /fpv/temperature_baro:=/my_baro/temperature
+  -p osd.enabled:=true -r /mavros/rc/in:=/my_bridge/rc_in
 ```
 
 必须先填写参数文件中的既有模型和输入配置。此示例不新增模型默认值，也不代表相机已标定。
@@ -88,16 +88,46 @@ ros2 run drone_tracker drone_tracker_node --ros-args \
 
 ON 开始新轮；重复 ON 不新增轮次。ON/OFF 短提示只在当前轮保留约两秒，使用不受校时影响的单调时钟计时。OFF、EOF 和输入故障保留最后实际显示的纯视频底图，清框并显示对应中文提示，遥测继续更新。新轮首包之前旧底图保持冻结标记。左下 `F` 后面的数字是本轮已消费帧的真实序号；它不是采集时间。左下时钟使用运行设备的本地系统日历时间，显示到十分之一秒；设备时区改变会影响该读数。
 
+### RSSI signal strength
+
+RSSI here means the flight controller's remote-control receive link quality.
+The input is `/mavros/rc/in` (`mavros_msgs/msg/RCIn`), delivered with best-effort
+QoS and depth 10. The source contract is `apm_bridge` branch `rk3576`, commit
+`390668d2d822731e95651cd3b88547e5912e66a1`: `PayloadMedium.rssi_pct` is copied
+directly into `RCIn.rssi` as an integer percentage from 0 through 100.
+The older service installed on the production board is not the authority for
+this source contract. Do not divide the value by 254. Other publishers must
+convert their values to this percentage contract before publishing.
+This value may represent receiver RSSI or CRSF link quality. It is not video
+signal strength or received power in dBm.
+
+The former temperature row is removed. The main-font `RSSI` label starts at
+logical (22,278). The former battery gauge now displays only RSSI: its track
+starts at (20,330), and its 148-pixel interior fills yellow according to
+`floor(148 * percentage / 100)`. The percentage starts at (178,318), once only.
+For example, RSSI 85 with battery charge 96% displays 125 yellow pixels and
+`85%`. Even weak valid signals stay yellow. Battery voltage, cell voltage,
+current, consumed mAh, and existing battery warnings retain their own sources
+and display rules. Battery charge no longer drives this gauge.
+
+A valid zero displays `0%` and an empty track. Missing input, values above 100
+(including 255), and expired input display `--%` with no yellow fill. RSSI has
+its own monotonic receipt timestamp and uses `osd.telemetry_timeout_ms`
+(default 2000 ms). It is valid at exactly 2000 ms and unknown after that.
+Battery, temperature, and video updates cannot keep old RSSI alive. Updates
+continue during preview and frozen video. Temperature reception remains
+available internally but does not draw a temperature label, value, or placeholder.
+
 ### 参考 HUD 的位置与数据
 
 视觉基准固定为 `rk_hdmi_osd` 提交 `3e605a26c7c135b468ef2a3638ffd47144594603` 的 720×480 默认布局。主字为 16×32，小字为 8×16。画布缩放时，机名、四角角标、左右信息列和图形一起缩放；目标框仍用视频几何结果定位。元素坐标、颜色和参考快照的完整对照见 [HUD 对齐验证记录](../openspec/changes/archive/2026-09-27-align-hud-with-rk-hdmi-osd/validation.md)。
 
 | 区域 | 显示内容 | 缺失或过期时 |
 |---|---|---|
-| 左上与左列 | 机名、副标题、高度、地速、航向、卫星定位等级、温度 | 未知数值显示 `--`；地速从 m/s 换算为 km/h，定位等级取 `GPSRAW.fix_type`。 |
+| 左上与左列 | 机名、副标题、高度、地速、航向、卫星定位等级、RSSI 标签 | 未知数值显示 `--`；地速从 m/s 换算为 km/h，定位等级取 `GPSRAW.fix_type`。 |
 | 上中与中心 | 琥珀色返航箭头和距离、红色圆环准星、白色俯仰梯 | 返航所需信息或姿态过期时隐藏相应图形。红色准星不表示已锁定目标。 |
 | 右列 | 飞行模式、跟踪状态、解锁计时、电池整包电压、单节电压、电流、已耗 mAh | 单节电压与已耗电量没有可信输入时显示 `--`；不按电压猜电芯节数。 |
-| 左下与底部 | 可信剩余比例电量条、本地时钟、帧序号、实时消息、ON/OFF 短提示和独立告警 | 剩余比例未知时隐藏电量条；冻结与故障时中文提示占用消息区，告警保留在右侧。 |
+| 左下与底部 | RSSI 黄色条与百分数、本地时钟、帧序号、实时消息、ON/OFF 短提示和独立告警 | RSSI 未知时清除填充并显示 `--%`；冻结与故障时中文提示占用消息区，告警保留在右侧。 |
 | 视频中的单目标 | 状态色角框；Tracking 另有外角框、中心菱形与标签底板 | 无有效框、等待或冻结时全部清除。算法未提供置信度或编号，画面不会造出百分比、`T01` 或第二目标。 |
 
 `/fpv/tracker_trigger` 的 `frame_id="MISSION"` 表示开始执行拦截任务。收到该值后，右列状态栏由 `TRK TRACKING` 改为 `ON MISSION`，直到本节点向 `/fpv/tracker_state` 发布下一条跟踪状态。普通 `ON`、`OFF` 仍只影响启停和约两秒的短提示。任务文字不改变目标框配色或跟踪状态含义；`TrackerState=3` 仍表示 `TargetLost`（目标丢失），下一条状态为 `3` 时状态栏显示 `TARGET LOST`。

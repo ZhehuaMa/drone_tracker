@@ -9,6 +9,7 @@
 #include <mavros_msgs/msg/state.hpp>
 #include <mavros_msgs/msg/extended_state.hpp>
 #include <mavros_msgs/msg/gpsraw.hpp>
+#include <mavros_msgs/msg/rc_in.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
@@ -27,6 +28,7 @@ public:
     void receive(const sensor_msgs::msg::Imu &message);
     void receive(const mavros_msgs::msg::State &message);
     void receive(const mavros_msgs::msg::ExtendedState &message);
+    void receive(const mavros_msgs::msg::RCIn &message);
     void receive(const sensor_msgs::msg::BatteryState &message);
     void receive(const mavros_msgs::msg::GPSRAW &message);
     void receive(const sensor_msgs::msg::NavSatFix &message);

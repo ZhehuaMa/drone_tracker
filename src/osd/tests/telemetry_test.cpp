@@ -91,6 +91,31 @@ int main() {
         require(!expired.altitude_m && !expired.home_distance_m, "expired derived state retained");
         temperature.temperature = std::numeric_limits<double>::infinity(); store.receive(temperature);
         require(!store.snapshot().temperature_c.value, "infinite temperature accepted");
+        int rssi_time{};
+        osd::TelemetryStore link{std::chrono::milliseconds{2000}, 0,
+            [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{rssi_time}}; }};
+        require(!link.snapshot().rssi_percent.value, "startup RSSI invented");
+        mavros_msgs::msg::RCIn rc{};
+        for (int percent : {0, 85, 100}) {
+            rc.rssi = static_cast<std::uint8_t>(percent); link.receive(rc);
+            require(link.snapshot().rssi_percent.value == percent, "RSSI percentage rescaled or lost");
+        }
+        for (int invalid : {101, 254, 255}) {
+            rc.rssi = 85; link.receive(rc);
+            rc.rssi = static_cast<std::uint8_t>(invalid); link.receive(rc);
+            require(!link.snapshot().rssi_percent.value, "invalid RSSI retained old percentage");
+        }
+        rc.rssi = 85; link.receive(rc);
+        rssi_time = 2000;
+        require(link.snapshot().rssi_percent.value == 85, "RSSI expired at inclusive boundary");
+        rssi_time = 2001;
+        battery.present = true; battery.voltage = 22.2; link.receive(battery);
+        temperature.temperature = 31; link.receive(temperature);
+        const auto link_expired{link.snapshot()};
+        require(!link_expired.rssi_percent.value && link_expired.battery.value
+            && link_expired.temperature_c.value == 31, "unrelated telemetry refreshed RSSI");
+        rc.rssi = 9; link.receive(rc);
+        require(link.snapshot().rssi_percent.value == 9, "RSSI did not recover");
         int position_time{};
         osd::TelemetryStore coordinates{std::chrono::milliseconds{2000}, 0,
             [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{position_time}}; }};

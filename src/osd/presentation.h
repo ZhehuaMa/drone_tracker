@@ -52,6 +52,8 @@ struct TelemetrySnapshot {
     Measurement<bool> landed{}, failsafe{};
     Measurement<double> pressure_pa{}, temperature_c{};
     Measurement<int> radar_state{}, battery_warning{};
+    /** @brief apm_bridge RCIn link quality percentage; absent means unknown. */
+    Measurement<int> rssi_percent{};
     std::optional<double> armed_seconds{}, home_distance_m{}, home_relative_deg{}, altitude_m{};
     std::string warning{};
 };

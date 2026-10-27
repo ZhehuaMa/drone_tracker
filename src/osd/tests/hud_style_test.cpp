@@ -75,6 +75,7 @@ int main(int argc, char **argv) {
         telemetry.position.value = osd::Position{31.2304, 121.4737};
         telemetry.altitude_m = 102;
         telemetry.temperature_c.value = 31;
+        telemetry.rssi_percent.value = 85;
         telemetry.home_distance_m = 240;
         telemetry.home_relative_deg = 266;
         osd::OsdLayout legacy{"FPV"};
@@ -85,7 +86,7 @@ int main(int argc, char **argv) {
         require(opaque(normal.hud, {0, 0, 50, 50}) > 40, "corner bracket missing");
         require(opaque(normal.hud, {330, 210, 60, 60}) > 50, "ring reticle missing");
         require(opaque(normal.hud, {320, 32, 80, 55}) > 20, "home arrow missing");
-        require(opaque(normal.hud, {16, 320, 230, 45}) > 50, "battery bar missing");
+        require(opaque(normal.hud, {16, 320, 230, 45}) > 50, "RSSI bar missing");
         require(opaque(normal.target, {445, 240, 170, 140}) > 60, "tracking corners missing");
         const cv::Vec4b tracking{normal.target.at<cv::Vec4b>(269, 459)};
         require(tracking[0] == 90 && tracking[1] == 230 && tracking[2] == 90,
@@ -173,7 +174,9 @@ int main(int argc, char **argv) {
         equivalent(legacy, cached, state, geometry, 720, 480, time);
         const auto missing{legacy.draw(state, geometry, 720, 480, time)};
         require(opaque(missing.hud, {320, 32, 80, 55}) == 0, "expired home arrow remains");
-        require(opaque(missing.hud, {16, 320, 230, 45}) == 0, "unknown battery bar remains");
+        require(cv::norm(normal.hud(cv::Rect{16, 310, 260, 54}),
+            missing.hud(cv::Rect{16, 310, 260, 54}), cv::NORM_INF) == 0,
+            "missing battery percentage changed RSSI bar");
         require(opaque(normal.hud, {232, 140, 72, 200}) > opaque(missing.hud, {232, 140, 72, 200}),
             "expired pitch ladder remains");
         state.telemetry.warning = "FAILSAFE";
