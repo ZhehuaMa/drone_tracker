@@ -179,3 +179,30 @@ release, its matching configuration and launch entry using the backup procedure
 above. Restore the previous enabled/active service state and restart if it was
 running. `osd.render_path=legacy` only selects the legacy renderer and cannot
 restore the old lifecycle.
+
+## Mission-banner startup and validation
+
+Start the tracker before the interceptor's mission-start event when mission display
+is required. The banner uses the existing `/fpv/mission_state` start/end events and
+fresh connected, armed `/mavros/state` with `guided=true`. A `MISSION` trigger or
+OFFBOARD alone does not authorize it. Mission events do not expire; periodic flight
+status uses `osd.telemetry_timeout_ms` (default 2000 ms) and its original monotonic
+receipt time. Tracking-state changes do not control banner lifetime.
+
+A restart can miss the volatile start event and leave the banner hidden during a
+real mission. Cancellation or flight-authorization loss also requires a later
+received mission `false` followed by `true` before another attempt is eligible.
+Do not repeatedly publish `true` to bypass this boundary. Interceptor death without
+an end event cannot be detected while fresh armed OFFBOARD reports continue. These
+limitations follow from the existing external messages; this change adds no heartbeat.
+
+Validate both `cached-overlay` and `legacy` on the identified production board with
+the configured camera and models. Use an isolated ROS domain for synthetic display
+status so test messages cannot reach production consumers. Record actual HDMI
+captures and monotonic receipt-to-display times: terminating events must clear
+within 500 ms on a healthy display; flight expiry must clear within timeout plus
+500 ms of the last report. Preview and paired target styling must retain their
+existing behavior. Temporary validation binaries do not constitute a release.
+Keep the current release and configuration unchanged until a separate deployment
+is authorized. If services are stopped for validation, record their initial active
+states and restore those states when the work finishes.

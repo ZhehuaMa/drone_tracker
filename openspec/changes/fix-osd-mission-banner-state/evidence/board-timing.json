@@ -1,0 +1,110 @@
+[
+  {
+    "path": "cached-overlay",
+    "event": "mission_false",
+    "revision": 5,
+    "publish_to_display_ms": 22.341,
+    "transition_to_display_ms": 21.824,
+    "budget_ms": 500,
+    "display_line": "[INFO] [1793169630.368957185] [drone_tracker_node]: OSD display round=1 sequence=946 status=Live hud=\"TRK TRACKING\" target_label=\"\" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=946 kind=tracking overlay_revision=5 attempt=2 monotonic_us=572523102 control_version=4 control_to_display_us=1739083"
+  },
+  {
+    "path": "cached-overlay",
+    "event": "disarmed",
+    "revision": 8,
+    "publish_to_display_ms": 18.788,
+    "transition_to_display_ms": 18.203,
+    "budget_ms": 500,
+    "display_line": "[INFO] [1793169630.868009321] [drone_tracker_node]: OSD display round=1 sequence=976 status=Live hud=\"TRK TRACKING\" target_label=\"\" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=976 kind=tracking overlay_revision=8 attempt=3 monotonic_us=573022147 control_version=4 control_to_display_us=2238129"
+  },
+  {
+    "path": "cached-overlay",
+    "event": "dismiss",
+    "revision": 12,
+    "publish_to_display_ms": 24.681,
+    "transition_to_display_ms": 24.008,
+    "budget_ms": 500,
+    "display_line": "[INFO] [1793169631.516680104] [drone_tracker_node]: OSD display round=1 sequence=1015 status=Live hud=\"TRK TRACKING\" target_label=\"\" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=1015 kind=tracking overlay_revision=12 attempt=4 monotonic_us=573670827 control_version=4 control_to_display_us=2886808"
+  },
+  {
+    "path": "cached-overlay",
+    "event": "offboard_lost",
+    "revision": 16,
+    "publish_to_display_ms": 16.781,
+    "transition_to_display_ms": 16.1,
+    "budget_ms": 500,
+    "display_line": "[INFO] [1793169632.098902553] [drone_tracker_node]: OSD display round=1 sequence=1050 status=Live hud=\"TRK TRACKING\" target_label=\"\" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=1050 kind=tracking overlay_revision=16 attempt=5 monotonic_us=574253044 control_version=4 control_to_display_us=3469025"
+  },
+  {
+    "path": "cached-overlay",
+    "event": "off",
+    "revision": 20,
+    "publish_to_display_ms": 16.819,
+    "transition_to_display_ms": 16.051,
+    "budget_ms": 500,
+    "display_line": "[INFO] [1793169632.730964978] [drone_tracker_node]: OSD display round=1 sequence=1087 status=Live hud=\"TRK OFF\" target_label=\"\" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=1087 kind=tracking overlay_revision=20 attempt=6 monotonic_us=574885108 control_version=6 control_to_display_us=9570"
+  },
+  {
+    "path": "cached-overlay",
+    "event": "flight_for_expiry",
+    "revision": 24,
+    "publish_to_display_ms": 2025.756,
+    "transition_to_display_ms": 13.38,
+    "budget_ms": 2500,
+    "display_line": "[INFO] [1793169635.059668966] [drone_tracker_node]: OSD display round=1 sequence=1229 status=Live hud=\"TRK OFF\" target_label=\"\" boxes=0 has_video=1 new_video=1 mission=0 stream=1 source_sequence=1229 kind=preview overlay_revision=24 attempt=7 monotonic_us=577213817 control_version=6 control_to_display_us=2338278"
+  },
+  {
+    "path": "legacy",
+    "event": "mission_false",
+    "revision": 5,
+    "publish_to_display_ms": 34.216,
+    "transition_to_display_ms": 33.723,
+    "budget_ms": 500,
+    "display_line": "[INFO] [1793169557.180665834] [drone_tracker_node]: OSD display round=1 sequence=675 status=Live hud=\"TRK TRACKING\" target_label=\"\" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=675 kind=tracking overlay_revision=5 attempt=2 monotonic_us=499334816 control_version=4 control_to_display_us=1798094"
+  },
+  {
+    "path": "legacy",
+    "event": "disarmed",
+    "revision": 8,
+    "publish_to_display_ms": 18.528,
+    "transition_to_display_ms": 17.764,
+    "budget_ms": 500,
+    "display_line": "[INFO] [1793169557.663017519] [drone_tracker_node]: OSD display round=1 sequence=704 status=Live hud=\"TRK TRACKING\" target_label=\"\" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=704 kind=tracking overlay_revision=8 attempt=3 monotonic_us=499817167 control_version=4 control_to_display_us=2280445"
+  },
+  {
+    "path": "legacy",
+    "event": "dismiss",
+    "revision": 12,
+    "publish_to_display_ms": 30.937,
+    "transition_to_display_ms": 29.942,
+    "budget_ms": 500,
+    "display_line": "[INFO] [1793169558.328391815] [drone_tracker_node]: OSD display round=1 sequence=744 status=Live hud=\"TRK TRACKING\" target_label=\"\" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=744 kind=tracking overlay_revision=12 attempt=4 monotonic_us=500482538 control_version=4 control_to_display_us=2945816"
+  },
+  {
+    "path": "legacy",
+    "event": "offboard_lost",
+    "revision": 16,
+    "publish_to_display_ms": 37.975,
+    "transition_to_display_ms": 37.278,
+    "budget_ms": 500,
+    "display_line": "[INFO] [1793169558.893924733] [drone_tracker_node]: OSD display round=1 sequence=778 status=Live hud=\"TRK TRACKING\" target_label=\"\" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=778 kind=tracking overlay_revision=16 attempt=5 monotonic_us=501048075 control_version=4 control_to_display_us=3511353"
+  },
+  {
+    "path": "legacy",
+    "event": "off",
+    "revision": 20,
+    "publish_to_display_ms": 49.186,
+    "transition_to_display_ms": 48.348,
+    "budget_ms": 500,
+    "display_line": "[INFO] [1793169559.559275847] [drone_tracker_node]: OSD display round=1 sequence=818 status=Live hud=\"TRK OFF\" target_label=\"\" boxes=0 has_video=1 new_video=1 mission=0 stream=1 source_sequence=818 kind=preview overlay_revision=20 attempt=6 monotonic_us=501713426 control_version=6 control_to_display_us=48011"
+  },
+  {
+    "path": "legacy",
+    "event": "flight_for_expiry",
+    "revision": 24,
+    "publish_to_display_ms": 2045.015,
+    "transition_to_display_ms": 33.284,
+    "budget_ms": 2500,
+    "display_line": "[INFO] [1793169561.921273792] [drone_tracker_node]: OSD display round=1 sequence=960 status=Live hud=\"TRK OFF\" target_label=\"\" boxes=0 has_video=1 new_video=1 mission=0 stream=1 source_sequence=960 kind=preview overlay_revision=24 attempt=7 monotonic_us=504075420 control_version=6 control_to_display_us=2410005"
+  }
+]

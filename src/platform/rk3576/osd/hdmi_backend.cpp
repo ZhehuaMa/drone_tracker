@@ -545,7 +545,7 @@ bool HdmiBackend::presentCached(const osd::PresentationState &state, const std::
     auto update{request()};
     add(update.get(), primary_, "FB_ID", primary_buffers_[pair.primary].framebuffer);
     add(update.get(), overlay_, "FB_ID", overlay_buffers_[pair.overlay].framebuffer);
-    if (interrupted_ || !authorize()) { planes_.discard(); prepared_ = false; return false; }
+    if (interrupted_ || !authorize()) { planes_.discard(); return false; }
     flip_done_ = false; flip_event_ = {this, pair.generation};
     try {
         check(drmModeAtomicCommit(fd_, update.get(), DRM_MODE_ATOMIC_NONBLOCK | DRM_MODE_PAGE_FLIP_EVENT,

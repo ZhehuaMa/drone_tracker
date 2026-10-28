@@ -1,3 +1,4 @@
+#include "osd/mission_state.h"
 #include "osd/layout.h"
 
 #include <iostream>
@@ -154,7 +155,11 @@ int main(int argc, char **argv) {
         }
         state.status = osd::DisplayStatus::Live;
         state.has_tracking_result = false;
-        state.mission_active = true;
+        state.telemetry.flight.value = osd::FlightState{true, true, "OFFBOARD|ANGLE", true};
+        osd::MissionState policy{};
+        const auto receipt{osd::SteadyClock::now()};
+        policy.flight(true, true, true, receipt, receipt); policy.mission(true, receipt);
+        state.mission_active = policy.active();
         state.telemetry.warning = "FAILSAFE";
         for (auto phase : {osd::TrackingPhase::Idle, osd::TrackingPhase::Starting, osd::TrackingPhase::Failed}) {
             state.tracking_phase = phase;
@@ -165,6 +170,13 @@ int main(int argc, char **argv) {
             require(cv::countNonZero(preview.hud(cv::Rect{250, 360, 200, 25}).reshape(1)) > 0,
                 "independent tracking phase hint missing");
         }
+        policy.mission(false, receipt); state.mission_active = policy.active();
+        compare(720, 480);
+        require(osd::statusBarText(state) != "ON MISSION", "mission end left visible text");
+        policy.mission(true, receipt); policy.flight(true, false, true, receipt, receipt);
+        state.mission_active = policy.active(); state.telemetry.flight.value->armed = false;
+        compare(720, 480);
+        require(osd::statusBarText(state) != "ON MISSION", "disarm left visible text");
         state.has_tracking_result = true;
         state.mission_active = false;
         state.status = osd::DisplayStatus::Stopped;
@@ -182,7 +194,7 @@ int main(int argc, char **argv) {
         // Keep the arm status independent of timing, tracking controls, and frozen video.
         const cv::Rect arm_area{250, 430, 220, 36};
         state = {}; state.round = 100; state.has_video = true;
-        state.telemetry.flight.value = osd::FlightState{true, true, "OFFBOARD"};
+        state.telemetry.flight.value = osd::FlightState{true, true, "OFFBOARD", true};
         state.telemetry.position.value = osd::Position{-90, -180};
         const cv::Mat armed{layout.draw(state, geometry, 720, 480, wall).hud(arm_area).clone()};
         require(cv::countNonZero(armed.reshape(1)) > 0, "persistent armed text missing");
@@ -200,7 +212,7 @@ int main(int argc, char **argv) {
                          osd::DisplayStatus::Stopped}) {
                     state.status = status;
                     for (const std::string trigger : {"", "TRIG ON", "TRIG OFF"}) {
-                        state.trigger = trigger; state.mission_active = !trigger.empty();
+                        state.trigger = trigger; state.mission_active = false;
                         require(cv::norm(armed, layout.draw(state, geometry, 720, 480, wall + delay).hud(arm_area),
                             cv::NORM_INF) == 0, "arm text changed with time, status, or trigger");
                     }
@@ -210,7 +222,7 @@ int main(int argc, char **argv) {
         for (const cv::Size size : {cv::Size{720, 480}, cv::Size{1280, 720}}) {
             state.status = osd::DisplayStatus::Stopped;
             state.has_tracking_result = false; state.tracking_phase = osd::TrackingPhase::Starting;
-            state.mission_active = true; state.trigger = "TRIG OFF"; state.telemetry.warning = "FAILSAFE";
+            state.mission_active = false; state.trigger = "TRIG OFF"; state.telemetry.warning = "FAILSAFE";
             for (int transition{0}; transition < 6; ++transition) {
                 state.telemetry.flight.value = osd::FlightState{true, transition % 2 != 0, "OFFBOARD"};
                 state.telemetry.position.value = osd::Position{-90, -180};
@@ -229,7 +241,7 @@ int main(int argc, char **argv) {
         require(cv::norm(unknown, layout.draw(state, geometry, 720, 480, wall).hud(arm_area), cv::NORM_INF) > 0,
             "connection recovery did not restore disarmed text");
         state = {}; state.round = 200; state.status = osd::DisplayStatus::Live; state.has_video = true;
-        state.telemetry.flight.value = osd::FlightState{true, true, "OFFBOARD"};
+        state.telemetry.flight.value = osd::FlightState{true, true, "OFFBOARD", true};
         state.telemetry.position.value = osd::Position{31.2304, 121.4737};
         cached.draw(state, geometry, 720, 480, wall);
         const auto before_blink{cached.work()};

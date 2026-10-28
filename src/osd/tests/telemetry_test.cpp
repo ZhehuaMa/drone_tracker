@@ -1,4 +1,5 @@
 #include "osd/ros_telemetry.h"
+#include "osd/mission_state.h"
 
 #include <cmath>
 #include <iostream>
@@ -159,6 +160,36 @@ int main() {
         flight.connected = true; flight.armed = false; coordinates.receive(flight);
         require(coordinates.snapshot().flight.value->connected && !coordinates.snapshot().flight.value->armed,
             "flight state did not recover");
+        int mission_time{};
+        const auto mission_now{[&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{mission_time}}; }};
+        osd::TelemetryStore mission_store{std::chrono::milliseconds{2000}, 0, mission_now};
+        osd::MissionState mission{};
+        flight.connected = true; flight.armed = true; flight.guided = true; flight.mode = "OFFBOARD|ANGLE";
+        const auto original{mission_store.receive(flight)};
+        require(original.value->guided && original.value->mode == "OFFBOARD|ANGLE", "guided conversion lost");
+        mission.flight(true, true, original.value->guided, original.received, mission_now());
+        mission.mission(true, mission_now());
+        const auto calendar_before{std::chrono::system_clock::now()};
+        const auto corrected_calendar{calendar_before + std::chrono::hours{24}};
+        (void)corrected_calendar; // Calendar values never enter the elapsed-time API.
+        mission_time = 100;
+        require(mission_store.snapshot().flight.received == original.received, "snapshot renewed receipt");
+        mission.expire(mission_now());
+        require(mission.active(), "calendar correction altered expiry");
+        mission_time = 2001;
+        for (int count{0}; count < 10; ++count) {
+            require(mission_store.snapshot().flight.received == original.received, "summary changed original receipt");
+        }
+        mission.expire(mission_now());
+        require(!mission.active() && !mission_store.snapshot().flight.value, "summaries kept flight alive");
+        mission.mission(false, mission_now());
+        for (mission_time = 2001; mission_time < 65000; mission_time += 1000) {
+            const auto report{mission_store.receive(flight)};
+            mission.flight(true, true, report.value->guided, report.received, mission_now());
+            if (mission_time == 2001) { mission.mission(true, mission_now()); }
+            mission.expire(mission_now());
+            require(mission.active(), "event silence expired healthy long mission");
+        }
         std::cout << "OSD telemetry contracts passed\n";
         return 0;
     } catch (const std::exception &error) {

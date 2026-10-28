@@ -1,0 +1,154 @@
+{
+  "records": [
+    {
+      "name": "flight_without_start",
+      "monotonic_us": 570492720
+    },
+    {
+      "name": "capture_startup-hidden",
+      "monotonic_us": 570781457
+    },
+    {
+      "name": "tracking_on",
+      "monotonic_us": 570781519
+    },
+    {
+      "name": "entry_acro",
+      "monotonic_us": 571846395
+    },
+    {
+      "name": "mission_pending",
+      "monotonic_us": 571913909
+    },
+    {
+      "name": "capture_pending",
+      "monotonic_us": 572035399
+    },
+    {
+      "name": "entry_failed",
+      "monotonic_us": 572035450
+    },
+    {
+      "name": "capture_entry-failed",
+      "monotonic_us": 572157571
+    },
+    {
+      "name": "pending_again",
+      "monotonic_us": 572157611
+    },
+    {
+      "name": "offboard_confirmed",
+      "monotonic_us": 572223729
+    },
+    {
+      "name": "capture_active",
+      "monotonic_us": 572500717
+    },
+    {
+      "name": "mission_false",
+      "monotonic_us": 572500761
+    },
+    {
+      "name": "capture_ended",
+      "monotonic_us": 572783774
+    },
+    {
+      "name": "mission_true",
+      "monotonic_us": 572783817
+    },
+    {
+      "name": "disarmed",
+      "monotonic_us": 573003359
+    },
+    {
+      "name": "capture_disarmed",
+      "monotonic_us": 573286766
+    },
+    {
+      "name": "rearm_boundary",
+      "monotonic_us": 573286825
+    },
+    {
+      "name": "flight_recovered",
+      "monotonic_us": 573356260
+    },
+    {
+      "name": "new_start",
+      "monotonic_us": 573424207
+    },
+    {
+      "name": "dismiss",
+      "monotonic_us": 573646146
+    },
+    {
+      "name": "capture_dismissed",
+      "monotonic_us": 573943366
+    },
+    {
+      "name": "rearm_boundary",
+      "monotonic_us": 573943401
+    },
+    {
+      "name": "new_start",
+      "monotonic_us": 574013292
+    },
+    {
+      "name": "offboard_lost",
+      "monotonic_us": 574236263
+    },
+    {
+      "name": "offboard_recovered",
+      "monotonic_us": 574303558
+    },
+    {
+      "name": "capture_offboard-loss",
+      "monotonic_us": 574585291
+    },
+    {
+      "name": "rearm_boundary",
+      "monotonic_us": 574585336
+    },
+    {
+      "name": "new_start",
+      "monotonic_us": 574645676
+    },
+    {
+      "name": "off",
+      "monotonic_us": 574868289
+    },
+    {
+      "name": "capture_off",
+      "monotonic_us": 575123059
+    },
+    {
+      "name": "rearm_boundary",
+      "monotonic_us": 575123116
+    },
+    {
+      "name": "flight_for_expiry",
+      "monotonic_us": 575188061
+    },
+    {
+      "name": "new_start",
+      "monotonic_us": 575254497
+    },
+    {
+      "name": "capture_expired",
+      "monotonic_us": 577874108
+    }
+  ],
+  "tracking": [
+    [
+      570787552594,
+      0
+    ],
+    [
+      570943206918,
+      1
+    ],
+    [
+      570953180843,
+      2
+    ]
+  ]
+}

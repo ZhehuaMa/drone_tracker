@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "osd/presentation.h"
+#include "osd/mission_state.h"
 
 namespace osd {
 struct PresentationCounters {
@@ -20,7 +21,8 @@ public:
                           std::function<SteadyClock::time_point()> now = SteadyClock::now,
                           std::function<void(const TimingWindow &)> timing_sink = {},
                           std::function<void()> before_work = {},
-                          std::function<void(const std::string &)> diagnostic_sink = {});
+                          std::function<void(const std::string &)> diagnostic_sink = {},
+                          std::chrono::milliseconds flight_timeout = std::chrono::milliseconds{2000});
     ~OsdPresenter();
     OsdPresenter(const OsdPresenter &) = delete;
     OsdPresenter &operator=(const OsdPresenter &) = delete;
@@ -43,9 +45,10 @@ public:
     void endRound(std::uint64_t round, DisplayStatus reason);
     /** @brief 只接收当前轮的触发事件，使用单调时钟维持两秒。 */
     void showTrigger(std::uint64_t round, bool on);
-    /** @brief 任务文字保持到下一次本地跟踪状态发布。 */
-    void showMission();
-    void trackerStatePublished();
+    /** @brief Direct received events; snapshots never authorize or refresh mission state. */
+    void missionReceived(bool active, SteadyClock::time_point received);
+    void flightReceived(Measurement<FlightState> flight);
+    void cancelMission(bool dismiss = false);
     /** @brief 仅交接所有权，不映射或复制像素，也不等待设备。 */
     bool submit(PresentationPacket packet);
     void updateTelemetry(TelemetrySnapshot snapshot);
@@ -56,6 +59,7 @@ public:
 
 private:
     void render() noexcept;
+    std::vector<std::string> recordMissionUpdate(const MissionUpdate &update);
     void emitDiagnostic(const std::string &message) const noexcept;
     TimingWindow &timingWindow(std::uint64_t round);
     const std::function<void(const TimingWindow &)> timing_sink_;
@@ -78,7 +82,8 @@ private:
     TelemetrySnapshot telemetry_{};
     std::string trigger_{};
     SteadyClock::time_point trigger_until_{};
-    bool mission_active_{};
+    MissionState mission_;
+    std::uint64_t overlay_revision_{};
     PresentationCounters counters_{};
     std::uint64_t round_{}, version_{}, last_sequence_{};
     std::uint64_t stream_{}, cutoff_{};

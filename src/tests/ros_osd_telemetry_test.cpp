@@ -9,6 +9,14 @@
 #endif
 
 namespace {
+class EventFrame final : public Frame {
+public:
+    int width() const noexcept override { return 2; }
+    int height() const noexcept override { return 2; }
+    FramePixelFormat pixelFormat() const noexcept override { return FramePixelFormat::Gray8; }
+    std::uint64_t timestampUs() const noexcept override { return 1; }
+    std::unique_ptr<FrameReadView> mapRead() const override { return {}; }
+};
 struct Output {
     std::mutex mutex{};
     osd::PresentationState state{};
@@ -42,12 +50,34 @@ int main(int argc, char **argv) {
         rclcpp::NodeOptions options{};
         options.arguments({"--ros-args", "-r", "/mavros/battery:=/osd_test/battery",
                             "-r", "/fpv/temperature_baro:=/osd_test/temperature",
-                            "-r", "/mavros/rc/in:=/osd_test/rc"});
+                            "-r", "/mavros/rc/in:=/osd_test/rc",
+                            "-r", "/mavros/state:=/osd_test/flight",
+                            "-r", "/fpv/mission_state:=/osd_test/mission"});
         auto node{std::make_shared<rclcpp::Node>("osd_test_subscriber", options)};
+        std::vector<bool> mission_events{};
+        std::vector<osd::SteadyClock::time_point> mission_times{};
+        std::vector<bool> flight_events{};
+        osd::TelemetryStore *observed_store{};
         osd::OsdTelemetryAdapter adapter{*node,
             [&](osd::TelemetrySnapshot snapshot) { presenter.updateTelemetry(std::move(snapshot)); },
-            std::chrono::milliseconds{300}, 0};
+            std::chrono::milliseconds{300}, 0,
+            [&](bool active, osd::SteadyClock::time_point received) {
+                mission_events.push_back(active); mission_times.push_back(received);
+                presenter.missionReceived(active, received);
+            },
+            [&](osd::Measurement<osd::FlightState> report) {
+                // snapshot takes the store lock: this would deadlock if the sink ran under it.
+                const auto snapshot{observed_store->snapshot()};
+                if (snapshot.flight.received != report.received) {
+                    throw std::runtime_error("flight sink lost original receipt time");
+                }
+                flight_events.push_back(report.value->guided);
+                presenter.flightReceived(std::move(report));
+            }};
+        observed_store = &adapter.store();
         auto source{std::make_shared<rclcpp::Node>("osd_test_publisher")};
+        auto mission{source->create_publisher<std_msgs::msg::Bool>("/osd_test/mission", 10)};
+        auto flight{source->create_publisher<mavros_msgs::msg::State>("/osd_test/flight", 10)};
         auto battery{source->create_publisher<sensor_msgs::msg::BatteryState>("/osd_test/battery", 10)};
         auto temperature{source->create_publisher<sensor_msgs::msg::Temperature>(
             "/osd_test/temperature", rclcpp::QoS{10}.best_effort())};
@@ -109,6 +139,65 @@ int main(int argc, char **argv) {
             || temperature->get_subscription_count() == 0) {
             throw std::runtime_error("ROS remap, QoS or independent expiry failed");
         }
+        const auto spinUntil{[&](const auto &condition) {
+            const auto limit{osd::SteadyClock::now() + std::chrono::seconds{3}};
+            while (!condition()) {
+                if (osd::SteadyClock::now() >= limit) { throw std::runtime_error("mission ROS delivery timeout"); }
+                executor.spin_some();
+                std::this_thread::sleep_for(std::chrono::milliseconds{1});
+            }
+        }};
+        spinUntil([&] { return mission->get_subscription_count() > 0 && flight->get_subscription_count() > 0; });
+        const auto active{[&] {
+            std::lock_guard<std::mutex> lock{output.mutex}; return output.state.mission_active;
+        }};
+        mavros_msgs::msg::State authorization{};
+        authorization.connected = true; authorization.armed = true; authorization.guided = true;
+        authorization.mode = "OFFBOARD|ANGLE";
+        const auto sendFlight{[&](bool guided) {
+            authorization.guided = guided; authorization.mode = guided ? "OFFBOARD|ANGLE" : "ACRO";
+            const auto count{flight_events.size()}; flight->publish(authorization);
+            spinUntil([&] { return flight_events.size() == count + 1; });
+        }};
+        const auto sendMission{[&](bool value) {
+            std_msgs::msg::Bool event{}; event.data = value;
+            const auto count{mission_events.size()}; mission->publish(event);
+            spinUntil([&] { return mission_events.size() == count + 1; });
+        }};
+        sendFlight(true);
+        if (active()) { throw std::runtime_error("OFFBOARD inferred missed mission start"); }
+        const auto tracking_round{presenter.beginRound()};
+        if (!presenter.submit({std::make_shared<EventFrame>(), tracking_round, 1, 1, 2, {{0, 0, 1, 1, ""}}})) {
+            throw std::runtime_error("tracking fixture rejected");
+        }
+        sendMission(true); spinUntil(active);
+        sendMission(false); spinUntil([&] { return !active(); });
+        {
+            std::lock_guard<std::mutex> lock{output.mutex};
+            if (output.state.tracker_state != 2 || output.state.boxes.empty()) {
+                throw std::runtime_error("mission end altered unchanged Tracking=2");
+            }
+        }
+        sendFlight(true);
+        const auto rapid_start{mission_events.size()};
+        for (bool value : {true, false, true}) {
+            std_msgs::msg::Bool event{}; event.data = value; mission->publish(event);
+        }
+        spinUntil([&] { return mission_events.size() == rapid_start + 3; });
+        if (!mission_events[rapid_start] || mission_events[rapid_start + 1] || !mission_events[rapid_start + 2]
+            || mission_times.back() - mission_times[rapid_start] >= std::chrono::milliseconds{100}) {
+            throw std::runtime_error("rapid mission transitions coalesced or exceeded summary interval");
+        }
+        spinUntil(active);
+        const auto before_exit{flight_events.size()};
+        authorization.guided = false; flight->publish(authorization);
+        authorization.guided = true; flight->publish(authorization);
+        spinUntil([&] { return flight_events.size() == before_exit + 2; });
+        spinUntil([&] { return !active(); });
+        sendMission(true);
+        if (active()) { throw std::runtime_error("brief received OFFBOARD loss resurrected attempt"); }
+        sendMission(false); sendMission(true); spinUntil(active);
+        sendMission(false); spinUntil([&] { return !active(); });
         presenter.shutdown();
         rclcpp::shutdown();
         std::cout << "ROS OSD telemetry integration passed\n";

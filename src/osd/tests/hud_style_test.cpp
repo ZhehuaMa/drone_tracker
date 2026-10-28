@@ -1,3 +1,4 @@
+#include "osd/mission_state.h"
 #include "osd/layout.h"
 
 #include <iostream>
@@ -66,7 +67,7 @@ int main(int argc, char **argv) {
         state.status = osd::DisplayStatus::Live; state.tracker_state = 2;
         state.boxes = {{1224, 680, 330, 248, "TRACKING"}};
         auto &telemetry{state.telemetry};
-        telemetry.flight.value = osd::FlightState{true, true, "OFFBOARD"};
+        telemetry.flight.value = osd::FlightState{true, true, "OFFBOARD", true};
         telemetry.attitude.value = osd::Attitude{-2, 3, 214};
         telemetry.gps.value = osd::GpsStatus{12, 3, 8.3, 210};
         telemetry.battery.value = osd::Battery{22.2, 4.3, 1.0 - 410.0 / 13000.0, 410, 3.7};
@@ -101,7 +102,10 @@ int main(int argc, char **argv) {
         if (argc > 2) {
             compareBaseline(normal, argv[2], "hud-normal.png", "target-normal.png", {459, 229, 140, 38});
         }
-        state.mission_active = true;
+        osd::MissionState policy{};
+        const auto receipt{osd::SteadyClock::now()};
+        policy.flight(true, true, true, receipt, receipt); policy.mission(true, receipt);
+        state.mission_active = policy.active();
         equivalent(legacy, cached, state, geometry, 720, 480, time);
         const auto mission{legacy.draw(state, geometry, 720, 480, time)};
         require(osd::statusBarText(state) == "ON MISSION", "mission banner text changed");
@@ -110,6 +114,30 @@ int main(int argc, char **argv) {
             "mission banner did not replace tracking text");
         require(cv::norm(mission.target, normal.target, cv::NORM_INF) == 0,
             "mission changed paired target styling");
+        auto lost_mission{state};
+        lost_mission.tracker_state = 3;
+        equivalent(legacy, cached, lost_mission, geometry, 720, 480, time);
+        const auto lost_layer{legacy.draw(lost_mission, geometry, 720, 480, time)};
+        require(osd::statusBarText(lost_mission) == "ON MISSION",
+            "TargetLost replaced the independently confirmed mission banner");
+        require(lost_layer.target.at<cv::Vec4b>(269, 459) == cv::Vec4b{70, 70, 255, 255},
+            "confirmed mission changed TargetLost red corner styling");
+        for (bool disarm : {false, true}) {
+            auto ended{state};
+            if (disarm) {
+                policy.flight(true, false, true, receipt, receipt);
+                ended.telemetry.flight.value->armed = false;
+            } else { policy.mission(false, receipt); }
+            ended.mission_active = policy.active();
+            equivalent(legacy, cached, ended, geometry, 720, 480, time);
+            const auto cleared{legacy.draw(ended, geometry, 720, 480, time)};
+            auto expected{ended}; expected.mission_active = false;
+            const auto clean{osd::OsdLayout{"FPV"}.draw(expected, geometry, 720, 480, time)};
+            require(cv::norm(cleared.hud, clean.hud, cv::NORM_INF) == 0, "mission text residue after end/disarm");
+            require(cv::norm(cleared.target, normal.target, cv::NORM_INF) == 0, "mission clear changed target");
+            policy.mission(false, receipt); policy.flight(true, true, true, receipt, receipt);
+            policy.mission(true, receipt);
+        }
         state.mission_active = false;
         for (const auto [tracker, expected] : {
                  std::pair<std::int8_t, cv::Vec4b>{0, {235, 235, 235, 255}},
@@ -213,7 +241,8 @@ int main(int argc, char **argv) {
             for (const cv::Size size : {cv::Size{720, 480}, cv::Size{1280, 720}}) {
                 const auto geom{osd::fitVideo(1920, 1200, size.width, size.height)};
                 for (const std::string variant : {"armed", "disarmed", "unknown", "trigger"}) {
-                    example.telemetry.flight.value = osd::FlightState{true, variant != "disarmed", "OFFBOARD"};
+                    example.telemetry.flight.value = osd::FlightState{true, variant != "disarmed", "OFFBOARD", true};
+                    example.mission_active = variant == "armed";
                     example.telemetry.position.value = osd::Position{-90, -180};
                     example.trigger = variant == "trigger" ? "TRIG OFF" : "";
                     if (variant == "unknown") {

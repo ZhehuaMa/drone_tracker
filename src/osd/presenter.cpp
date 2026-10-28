@@ -23,10 +23,11 @@ const char *statusName(DisplayStatus status) {
 OsdPresenter::OsdPresenter(std::unique_ptr<DisplayBackend> backend, std::chrono::milliseconds stale,
                            std::function<SteadyClock::time_point()> now,
                            std::function<void(const TimingWindow &)> timing_sink, std::function<void()> before_work,
-                           std::function<void(const std::string &)> diagnostic_sink)
+                           std::function<void(const std::string &)> diagnostic_sink,
+                           std::chrono::milliseconds flight_timeout)
     : timing_sink_{std::move(timing_sink)}, before_work_{std::move(before_work)},
       diagnostic_sink_{std::move(diagnostic_sink)},
-      backend_{std::move(backend)}, stale_{stale}, now_{std::move(now)} {
+      backend_{std::move(backend)}, stale_{stale}, now_{std::move(now)}, mission_{flight_timeout} {
     if (!backend_ || !now_ || stale_.count() <= 0) {
         throw std::invalid_argument("OSD requires backend and positive frame timeout");
     }
@@ -163,39 +164,49 @@ void OsdPresenter::showTrigger(std::uint64_t round, bool on) {
     if (!continuous_) { ++version_; }
     wake_.notify_all();
 }
-void OsdPresenter::showMission() {
-    std::uint64_t round{};
-    bool accepted{};
-    {
-        std::lock_guard<std::mutex> lock{mutex_};
-        round = round_;
-        accepted = !stopping_ && failure_.empty();
-        if (accepted) {
-            mission_active_ = true;
-            if (!continuous_) { ++version_; }
-            wake_.notify_all();
-        }
+std::vector<std::string> OsdPresenter::recordMissionUpdate(const MissionUpdate &update) {
+    std::vector<std::string> diagnostics{};
+    for (std::size_t i{0}; i < update.count; ++i) {
+        const auto &transition{update.transitions[i]};
+        ++overlay_revision_;
+        std::ostringstream message{};
+        message << "OSD mission phase=" << missionPhaseName(transition.phase)
+                << " reason=" << transition.reason << " overlay_revision=" << overlay_revision_
+                << " attempt=" << transition.attempt << " monotonic_us="
+                << std::chrono::duration_cast<std::chrono::microseconds>(transition.time.time_since_epoch()).count();
+        diagnostics.push_back(message.str());
     }
-    emitDiagnostic("OSD control event=mission round=" + std::to_string(round)
-        + " accepted=" + (accepted ? "1" : "0"));
+    if (update.count) { wake_.notify_all(); }
+    return diagnostics;
 }
-void OsdPresenter::trackerStatePublished() {
-    std::uint64_t round{};
-    bool cleared{};
+void OsdPresenter::missionReceived(bool active, SteadyClock::time_point received) {
+    std::vector<std::string> diagnostics{};
     {
         std::lock_guard<std::mutex> lock{mutex_};
-        round = round_;
-        cleared = mission_active_;
-        if (cleared) {
-            mission_active_ = false;
-            if (!continuous_) { ++version_; }
-            wake_.notify_all();
-        }
+        if (stopping_ || !failure_.empty()) { return; }
+        diagnostics = recordMissionUpdate(mission_.mission(active, received));
     }
-    if (cleared) {
-        emitDiagnostic("OSD control event=mission_cleared round=" + std::to_string(round)
-            + " reason=tracker_state_published");
+    for (const auto &message : diagnostics) { emitDiagnostic(message); }
+}
+void OsdPresenter::flightReceived(Measurement<FlightState> flight) {
+    if (!flight.value) { return; }
+    std::vector<std::string> diagnostics{};
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (stopping_ || !failure_.empty()) { return; }
+        diagnostics = recordMissionUpdate(mission_.flight(flight.value->connected, flight.value->armed,
+            flight.value->guided, flight.received, now_()));
     }
+    for (const auto &message : diagnostics) { emitDiagnostic(message); }
+}
+void OsdPresenter::cancelMission(bool dismiss) {
+    std::vector<std::string> diagnostics{};
+    {
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (stopping_ || !failure_.empty()) { return; }
+        diagnostics = recordMissionUpdate(mission_.cancel(dismiss, now_()));
+    }
+    for (const auto &message : diagnostics) { emitDiagnostic(message); }
 }
 void OsdPresenter::endRound(std::uint64_t round, DisplayStatus reason) {
     std::lock_guard<std::mutex> round_lock{round_mutex_};
@@ -311,22 +322,25 @@ void OsdPresenter::render() noexcept {
         }
         wake_.notify_all();
         PresentationState last{};
-        std::uint64_t rendered_version{~std::uint64_t{0}};
+        std::uint64_t rendered_version{~std::uint64_t{0}}, rendered_overlay{~std::uint64_t{0}};
         while (true) {
             std::optional<PresentationPacket> packet{};
             PresentationState next{last};
-            std::uint64_t version{}, timing_round{}, generation{};
+            std::uint64_t version{}, overlay_revision{}, timing_round{}, generation{};
+            std::vector<std::string> mission_diagnostics{};
             SteadyClock::time_point render_start{}, accepted{}, control_received{};
             TimingSample sample{};
             bool first_video{}, continuous{};
             {
                 std::unique_lock<std::mutex> lock{mutex_};
                 wake_.wait_for(lock, std::chrono::milliseconds{100}, [&] {
-                    return stopping_ || pending_ || rendered_version != version_;
+                    return stopping_ || pending_ || rendered_version != version_ || rendered_overlay != overlay_revision_;
                 });
                 if (stopping_) {
                     break;
                 }
+                mission_diagnostics = recordMissionUpdate(mission_.expire(now_()));
+                overlay_revision = overlay_revision_;
                 version = version_;
                 continuous = continuous_;
                 packet.swap(pending_);
@@ -351,7 +365,9 @@ void OsdPresenter::render() noexcept {
                     next.has_tracking_result = false;
                 }
                 next.trigger = !trigger_.empty() && now_() < trigger_until_ ? trigger_ : "";
-                next.mission_active = mission_active_;
+                next.mission_active = mission_.active();
+                next.overlay_revision = overlay_revision;
+                next.mission_attempt = mission_.attempt();
                 next.status = status_;
                 if (active_ && status_ == DisplayStatus::Live && now_() - last_received_ > stale_) {
                     next.status = DisplayStatus::Stale;
@@ -360,6 +376,7 @@ void OsdPresenter::render() noexcept {
                 }
                 generation = interval_generation_;
             }
+            for (const auto &message : mission_diagnostics) { emitDiagnostic(message); }
             next.new_video = packet.has_value();
             const bool new_video{next.new_video};
             const auto finish_timing{[&](TimingResult result) {
@@ -414,10 +431,22 @@ void OsdPresenter::render() noexcept {
                 } else if (next.status != DisplayStatus::Live) {
                     next.boxes.clear();
                 }
-                const bool displayed{backend_->present(next, [this, version] {
+                const auto authorize{[this, version, &overlay_revision] {
                     std::lock_guard<std::mutex> lock{mutex_};
-                    return !stopping_ && version == version_;
-                })};
+                    return !stopping_ && version == version_ && overlay_revision == overlay_revision_;
+                }};
+                bool displayed{};
+                while (!(displayed = backend_->present(next, authorize))) {
+                    std::lock_guard<std::mutex> lock{mutex_};
+                    if (stopping_ || version != version_ || overlay_revision == overlay_revision_) { break; }
+                    // Only the overlay became obsolete. Keep the already copied, paired video
+                    // and redraw its overlay without touching packet admission or source ownership.
+                    overlay_revision = overlay_revision_;
+                    next.mission_active = mission_.active();
+                    next.overlay_revision = overlay_revision;
+                    next.mission_attempt = mission_.attempt();
+                    next.telemetry = telemetry_;
+                }
                 if (!displayed) {
                     backend_->discardPrepared();
                     finish_timing(TimingResult::Rejected);
@@ -441,6 +470,9 @@ void OsdPresenter::render() noexcept {
                                     << " new_video=" << next.new_video << " mission=" << next.mission_active
                                     << " stream=" << next.stream << " source_sequence=" << next.source_sequence
                                     << " kind=" << (next.kind == PacketKind::Preview ? "preview" : "tracking")
+                                    << " overlay_revision=" << next.overlay_revision
+                                    << " attempt=" << next.mission_attempt << " monotonic_us="
+                                    << std::chrono::duration_cast<std::chrono::microseconds>(now_().time_since_epoch()).count()
                                     << " control_version=" << next.control_version << " control_to_display_us="
                                     << std::chrono::duration_cast<std::chrono::microseconds>(now_() - control_received).count();
                             emitDiagnostic(message.str());
@@ -460,6 +492,7 @@ void OsdPresenter::render() noexcept {
                         }
                     }
                     rendered_version = version;
+                    rendered_overlay = overlay_revision;
                 }
             } catch (...) {
                 finish_timing(TimingResult::Failure);

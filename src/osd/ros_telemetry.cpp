@@ -48,7 +48,7 @@ void TelemetryStore::receive(const sensor_msgs::msg::Imu &message) {
     std::lock_guard<std::mutex> lock{mutex_};
     assign(data_.attitude, result, now_());
 }
-void TelemetryStore::receive(const mavros_msgs::msg::State &message) {
+Measurement<FlightState> TelemetryStore::receive(const mavros_msgs::msg::State &message) {
     std::lock_guard<std::mutex> lock{mutex_};
     const auto now{now_()};
     if (message.armed && !armed_) {
@@ -62,7 +62,8 @@ void TelemetryStore::receive(const mavros_msgs::msg::State &message) {
         home_.reset();
     }
     armed_ = message.armed;
-    data_.flight = {FlightState{message.connected, message.armed, message.mode}, now};
+    data_.flight = {FlightState{message.connected, message.armed, message.mode, message.guided}, now};
+    return data_.flight;
 }
 void TelemetryStore::receive(const mavros_msgs::msg::ExtendedState &message) {
     std::lock_guard<std::mutex> lock{mutex_};
@@ -196,7 +197,9 @@ TelemetrySnapshot TelemetryStore::snapshot() const {
     return result;
 }
 OsdTelemetryAdapter::OsdTelemetryAdapter(rclcpp::Node &node, std::function<void(TelemetrySnapshot)> sink,
-                                         std::chrono::milliseconds timeout, int battery_cells)
+                                         std::chrono::milliseconds timeout, int battery_cells,
+                                         std::function<void(bool, SteadyClock::time_point)> mission_sink,
+                                         std::function<void(Measurement<FlightState>)> flight_sink)
     : store_{std::make_shared<TelemetryStore>(timeout, battery_cells)} {
     const auto subscribe{[&](auto message, const char *topic, bool best_effort) {
         using Message = decltype(message);
@@ -207,7 +210,19 @@ OsdTelemetryAdapter::OsdTelemetryAdapter(rclcpp::Node &node, std::function<void(
             [store](typename Message::ConstSharedPtr input) { store->receive(*input); }));
     }};
     subscribe(sensor_msgs::msg::Imu{}, "/mavros/imu/data", true);
-    subscribe(mavros_msgs::msg::State{}, "/mavros/state", false);
+    const auto flight_store{store_};
+    subscriptions_.push_back(node.create_subscription<mavros_msgs::msg::State>("/mavros/state", rclcpp::QoS{10},
+        [flight_store, flight_sink = std::move(flight_sink)](mavros_msgs::msg::State::ConstSharedPtr input) {
+            const auto received{flight_store->receive(*input)};
+            // receive releases the telemetry lock before any external callback executes.
+            if (flight_sink) { flight_sink(received); }
+        }));
+    subscriptions_.push_back(node.create_subscription<std_msgs::msg::Bool>(
+        "/fpv/mission_state", rclcpp::QoS{10}.reliable().durability_volatile(),
+        [mission_sink = std::move(mission_sink)](std_msgs::msg::Bool::ConstSharedPtr input) {
+            const auto received{SteadyClock::now()};
+            if (mission_sink) { mission_sink(input->data, received); }
+        }));
     subscribe(mavros_msgs::msg::ExtendedState{}, "/mavros/extended_state", false);
     subscribe(mavros_msgs::msg::RCIn{}, "/mavros/rc/in", true);
     subscribe(sensor_msgs::msg::BatteryState{}, "/mavros/battery", false);

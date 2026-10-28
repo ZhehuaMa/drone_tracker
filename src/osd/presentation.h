@@ -28,6 +28,7 @@ struct FlightState {
     bool connected{};
     bool armed{};
     std::string mode{};
+    bool guided{};
 };
 struct Position {
     double latitude_deg{};
@@ -86,6 +87,7 @@ struct PresentationState {
     std::uint64_t round{}, sequence{}, frame_time_us{};
     std::int8_t tracker_state{};
     bool mission_active{};
+    std::uint64_t overlay_revision{}, mission_attempt{};
     std::vector<DisplayBox> boxes{};
     DisplayStatus status{DisplayStatus::WaitingInput};
     bool has_video{};
@@ -102,6 +104,7 @@ struct PresentationState {
  * @brief 可注入显示后端。除 interrupt 外，所有调用只来自渲染线程且不持有提交锁。
  * prepareVideo 只能在 mapRead 视图存活期间读取源像素，返回前完成复制且不得保存源帧。
  * present 必须在实际交给设备前调用 authorize；被拒绝时不能切换底图。
+ * Rejected authorization preserves prepared video until retry or discardPrepared().
  * authorize 成功是提交交接点，此后发生停止按硬件在途提交处理。
  * present 返回 true 表示显示已完成；新底图此时才成为冻结底图。
  * 在途硬件使用完成之前不得复用或释放缓冲区；失败路径同样必须安全收尾。

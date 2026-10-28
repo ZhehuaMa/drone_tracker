@@ -1342,6 +1342,28 @@ void continuousBlockedNanoAndTelemetry() {
     require(DroneTrackerNodeTestAccess::replacements(*h.node) > 0, "Slow tracking did not replace bounded slot");
     const auto sequence{displayedSequence(display)};
     h.trigger("MISSION");
+    {
+        std::lock_guard<std::mutex> lock{display->mutex};
+        require(!display->states.back().mission_active, "MISSION request authorized banner");
+    }
+    auto mission{h.observer->create_publisher<std_msgs::msg::Bool>("/fpv/mission_state", 10)};
+    auto flight{h.observer->create_publisher<mavros_msgs::msg::State>("/mavros/state", 10)};
+    h.until([&] { return mission->get_subscription_count() > 0 && flight->get_subscription_count() > 0; },
+        "mission inputs did not match");
+    mavros_msgs::msg::State authority{};
+    authority.connected = true; authority.armed = true; authority.guided = true; authority.mode = "OFFBOARD|ANGLE";
+    flight->publish(authority);
+    std_msgs::msg::Bool event{}; event.data = true; mission->publish(event);
+    h.until([&] { std::lock_guard<std::mutex> lock{display->mutex}; return display->states.back().mission_active; },
+        "blocked inference prevented mission confirmation");
+    h.trigger("DISMISS");
+    h.until([&] { std::lock_guard<std::mutex> lock{display->mutex}; return !display->states.back().mission_active; },
+        "DISMISS did not clear while inference blocked");
+    require(!DroneTrackerNodeTestAccess::idle(*h.node), "DISMISS stopped target tracking");
+    event.data = false; mission->publish(event); h.pump(10ms);
+    event.data = true; mission->publish(event);
+    h.until([&] { std::lock_guard<std::mutex> lock{display->mutex}; return display->states.back().mission_active; },
+        "new mission did not reauthorize");
     const auto stop_begin{std::chrono::steady_clock::now()};
     h.trigger("OFF");
     require(std::chrono::steady_clock::now() - stop_begin < 500ms, "OFF callback blocked on NanoTrack");
@@ -1359,8 +1381,8 @@ void continuousBlockedNanoAndTelemetry() {
     }, "Telemetry or preview stopped while NanoTrack still blocked");
     {
         std::lock_guard<std::mutex> lock{display->mutex};
-        require(display->states.back().mission_active && display->states.back().boxes.empty(),
-            "OFF changed MISSION or left target decorations");
+        require(!display->states.back().mission_active && display->states.back().boxes.empty(),
+            "OFF retained mission or target decorations");
     }
     h.pump(100ms);
     const auto output_count{h.detections.size()};

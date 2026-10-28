@@ -405,69 +405,119 @@ void missionLifetime(bool cached) {
     DiagnosticCapture diagnostics{};
     std::atomic<int> time_ms{0};
     Resources resources{};
-    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 1000ms,
-        [&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{time_ms.load()}}; }, {}, {},
-        [&](const std::string &line) { diagnostics.record(line); }};
+    const auto now{[&] { return osd::SteadyClock::time_point{std::chrono::milliseconds{time_ms.load()}}; }};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached), 10000ms,
+        now, {}, {}, [&](const std::string &line) { diagnostics.record(line); }};
     presenter.start();
-    const auto round{presenter.beginRound()};
-    auto first{packet(round, 1, resources)};
-    first.boxes.front().label.clear();
-    const auto initial_deadline{osd::SteadyClock::now() + 2s};
-    require(presenter.submit(std::move(first)), "mission initial packet rejected");
-    waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().new_video; });
-    while (presenter.counters().displayed < 1 && osd::SteadyClock::now() < initial_deadline) {
-        std::this_thread::yield();
-    }
-    require(presenter.counters().displayed == 1, "initial mission frame not committed");
-    require(diagnostics.waitFor("hud=\"TRK TRACKING\" target_label=\"\""),
-        "initial display did not report empty target label");
-    presenter.showMission();
+    presenter.beginStream(9);
+    const auto version{presenter.controlTracking(1, osd::TrackingPhase::Running)};
+    const auto send{[&](int sequence, std::int8_t tracker_state = 2) {
+        auto frame{packet(1, sequence, resources)};
+        frame.stream = 9; frame.source_sequence = sequence; frame.control_version = version;
+        frame.tracker_state = tracker_state;
+        frame.boxes.front().label.clear();
+        return presenter.submit(std::move(frame));
+    }};
+    const auto flight{[&](bool guided = true, bool armed = true) {
+        presenter.flightReceived({osd::FlightState{true, armed, guided ? "OFFBOARD|ANGLE" : "ACRO", guided}, now()});
+    }};
+    require(send(1), "initial mission packet rejected");
+    waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().sequence == 1; });
+    presenter.missionReceived(true, now());
+    flight(false);
+    require(diagnostics.contains("phase=pending reason=mission_true"), "pending diagnostic missing");
+    { std::lock_guard<std::mutex> lock{state.mutex}; require(!state.outputs.back().mission_active, "pending visible"); }
+    flight();
     waitFor(state, [&] { return state.outputs.back().mission_active; });
-    require(diagnostics.contains("event=mission round="), "mission receipt missing from diagnostics");
-    require(diagnostics.waitFor("hud=\"ON MISSION\" target_label=\"\""),
-        "mission display missing from diagnostics");
-    const std::size_t display_logs_before_following{diagnostics.countDisplay()};
-    // Keep video alive while advancing the mission clock. An instantaneous three-second
-    // gap legitimately emits a stale transition before the following submit can run.
-    int following_sequence{1};
-    for (const int next_time : {750, 1500, 2250, 3000}) {
-        time_ms = next_time;
-        auto following{packet(round, ++following_sequence, resources)};
-        following.boxes.front().label.clear();
-        const auto completed_deadline{osd::SteadyClock::now() + 200ms};
-        require(presenter.submit(std::move(following)), "mission following packet rejected");
-        waitFor(state, [&] { return state.outputs.back().new_video
-            && state.outputs.back().sequence == static_cast<std::uint64_t>(following_sequence); });
-        while (presenter.counters().displayed < static_cast<std::uint64_t>(following_sequence)
-               && osd::SteadyClock::now() < completed_deadline) {
-            std::this_thread::yield();
-        }
-        require(presenter.counters().displayed == static_cast<std::uint64_t>(following_sequence),
-            "following frame not committed");
-    }
-    require(diagnostics.countDisplay() == display_logs_before_following,
-        "unchanged video frame produced diagnostic log");
+    require(diagnostics.waitFor("hud=\"ON MISSION\" target_label=\"\""), "confirmed display diagnostic missing");
+    require(send(2, 3), "TargetLost mission packet rejected");
+    waitFor(state, [&] { return state.outputs.back().sequence == 2; });
     {
         std::lock_guard<std::mutex> lock{state.mutex};
-        require(state.outputs.back().mission_active, "mission expired without tracker state publication");
-        require(state.outputs.back().tracker_state == 2, "mission changed paired tracker state");
+        require(state.outputs.back().tracker_state == 3 && state.outputs.back().mission_active,
+            "TargetLost ended an independently confirmed mission");
     }
-    presenter.trackerStatePublished();
+    require(send(3), "restored Tracking mission packet rejected");
+    waitFor(state, [&] { return state.outputs.back().sequence == 3; });
+    const auto logs{diagnostics.countDisplay()};
+    for (int time : {750, 1500, 2250, 3000}) {
+        time_ms = time; flight(); presenter.missionReceived(true, now());
+    }
+    require(diagnostics.countDisplay() == logs, "unchanged reports spam display diagnostics");
+    const auto ended{osd::SteadyClock::now()};
+    presenter.missionReceived(false, now());
     waitFor(state, [&] { return !state.outputs.back().mission_active; });
-    require(diagnostics.contains("event=mission_cleared round="), "mission clear missing from diagnostics");
-    presenter.showTrigger(round, true);
-    waitFor(state, [&] { return state.outputs.back().trigger == "TRIG ON"; });
-    {
-        std::lock_guard<std::mutex> lock{state.mutex};
-        require(!state.outputs.back().mission_active, "ON started mission overlay");
+    require(osd::SteadyClock::now() - ended < 500ms, "end exceeded display budget");
+    { std::lock_guard<std::mutex> lock{state.mutex};
+      require(state.outputs.back().tracker_state == 2 && !state.outputs.back().boxes.empty(),
+          "mission end changed tracking result"); }
+    require(send(4), "overlay update changed video authorization");
+    waitFor(state, [&] { return state.outputs.back().sequence == 4; });
+    // No inference result or new video is required for event clearing or expiry.
+    for (int reason : {0, 1, 2, 3}) {
+        flight(); presenter.missionReceived(true, now());
+        waitFor(state, [&] { return state.outputs.back().mission_active; });
+        const auto start{osd::SteadyClock::now()};
+        if (reason == 0) { presenter.cancelMission(false); }
+        if (reason == 1) { presenter.cancelMission(true); }
+        if (reason == 2) { flight(false); }
+        if (reason == 3) { time_ms += 2001; }
+        waitFor(state, [&] { return !state.outputs.back().mission_active; });
+        require(osd::SteadyClock::now() - start < 500ms, "no-frame clearing exceeded budget");
+        flight(); presenter.missionReceived(true, now());
+        { std::lock_guard<std::mutex> lock{state.mutex}; require(!state.outputs.back().mission_active,
+            "recovery resurrected invalidated mission"); }
+        presenter.missionReceived(false, now());
     }
-    presenter.endRound(round, osd::DisplayStatus::Stopped);
-    waitFor(state, [&] { return state.outputs.back().status == osd::DisplayStatus::Stopped; });
-    require(diagnostics.contains("event=end_round round="), "stop event missing from diagnostics");
-    require(diagnostics.waitFor("status=Stopped hud=\"TRK TRACKING\" target_label=\"\" boxes=0 has_video=1 new_video=0"),
-        "frozen display missing from diagnostics");
+    flight(); presenter.missionReceived(true, now());
+    waitFor(state, [&] { return state.outputs.back().mission_active; });
+    flight(true, false);
+    waitFor(state, [&] { return !state.outputs.back().mission_active; });
+    require(diagnostics.contains("reason=disarmed") && diagnostics.contains("reason=flight_status_stale")
+        && diagnostics.contains("reason=trigger_off") && diagnostics.contains("reason=trigger_dismiss")
+        && diagnostics.contains("reason=offboard_lost") && diagnostics.contains("overlay_revision=")
+        && diagnostics.contains("attempt=") && diagnostics.contains("monotonic_us="), "transition diagnostics missing");
     presenter.shutdown();
     require(resources.frames == 0 && resources.views == 0, "mission test leaked frames");
+}
+void missionHandoffRace(bool cached) {
+    Resources resources{};
+    BackendState state{};
+    osd::OsdPresenter presenter{std::make_unique<FakeBackend>(state, cached)};
+    presenter.start();
+    const auto round{presenter.beginRound()};
+    presenter.flightReceived({osd::FlightState{true, true, "OFFBOARD", true}, osd::SteadyClock::now()});
+    presenter.missionReceived(true, osd::SteadyClock::now());
+    waitFor(state, [&] { return !state.outputs.empty() && state.outputs.back().mission_active; });
+    {
+        std::lock_guard<std::mutex> lock{state.mutex}; state.block_prepare = true;
+    }
+    require(presenter.submit(packet(round, 1, resources)), "race packet rejected");
+    waitFor(state, [&] { return state.preparing; });
+    presenter.cancelMission(true);
+    {
+        std::lock_guard<std::mutex> lock{state.mutex};
+        state.block_prepare = false; state.changed.notify_all();
+    }
+    waitFor(state, [&] { return state.outputs.back().sequence == 1; });
+    {
+        std::lock_guard<std::mutex> lock{state.mutex};
+        require(!state.outputs.back().mission_active && state.pixels.back() == 1,
+            "obsolete overlay submitted or valid video lost");
+        state.preparing = false; state.presenting = false; state.block_present = true;
+    }
+    presenter.missionReceived(false, osd::SteadyClock::now());
+    presenter.missionReceived(true, osd::SteadyClock::now());
+    require(presenter.submit(packet(round, 2, resources)), "inflight packet rejected");
+    waitFor(state, [&] { return state.presenting; });
+    presenter.cancelMission();
+    {
+        std::lock_guard<std::mutex> lock{state.mutex};
+        state.block_present = false; state.changed.notify_all();
+    }
+    waitFor(state, [&] { return state.outputs.back().sequence == 2 && !state.outputs.back().mission_active; });
+    presenter.shutdown();
+    require(resources.frames == 0 && resources.views == 0, "mission race frame leak");
 }
 void labelChangesDoNotLog(bool cached) {
     BackendState state{};
@@ -532,16 +582,18 @@ void continuousPreview(bool cached) {
     require(!send(102, 1, osd::PacketKind::Preview, version), "Running accepted preview");
     require(send(103, 1, osd::PacketKind::Tracking, version), "paired frame rejected");
     waitFor(state, [&] { return state.outputs.back().sequence == 103 && !state.outputs.back().boxes.empty(); });
-    presenter.showMission();
+    presenter.flightReceived({osd::FlightState{true, true, "OFFBOARD", true}, osd::SteadyClock::now()});
+    presenter.missionReceived(true, osd::SteadyClock::now());
     const auto stopped{osd::SteadyClock::now()};
     const auto old_version{version};
+    presenter.cancelMission();
     version = presenter.controlTracking(1, osd::TrackingPhase::Idle);
     require(!send(104, 1, osd::PacketKind::Tracking, old_version), "late tracking restored boxes");
     const auto completion_deadline{osd::SteadyClock::now() + 2s};
     require(send(105, 1, osd::PacketKind::Preview, version), "OFF closed video stream");
     waitFor(state, [&] { return state.outputs.back().sequence == 105 && state.outputs.back().boxes.empty(); });
     require(osd::SteadyClock::now() - stopped < 500ms, "preview clear exceeded deadline");
-    require(state.outputs.back().mission_active, "OFF cleared MISSION");
+    require(!state.outputs.back().mission_active, "OFF retained MISSION");
     require(state.outputs.back().status == osd::DisplayStatus::Live, "OFF froze preview");
     while (presenter.counters().displayed < 4 && osd::SteadyClock::now() < completion_deadline) {
         std::this_thread::yield();
@@ -672,6 +724,7 @@ int main() {
             failureAndExit(cached);
             triggerLifetime(cached);
             missionLifetime(cached);
+            missionHandoffRace(cached);
             labelChangesDoNotLog(cached);
         }
         std::cout << "OSD pairing, lifetime, stop and restart tests passed\n";

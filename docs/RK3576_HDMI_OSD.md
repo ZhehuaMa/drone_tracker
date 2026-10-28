@@ -130,9 +130,62 @@ available internally but does not draw a temperature label, value, or placeholde
 | 左下与底部 | RSSI 黄色条与百分数、本地时钟、帧序号、实时消息、ON/OFF 短提示和独立告警 | RSSI 未知时清除填充并显示 `--%`；冻结与故障时中文提示占用消息区，告警保留在右侧。 |
 | 视频中的单目标 | 状态色角框；Tracking 另有外角框、中心菱形与标签底板 | 无有效框、等待或冻结时全部清除。算法未提供置信度或编号，画面不会造出百分比、`T01` 或第二目标。 |
 
-`/fpv/tracker_trigger` 的 `frame_id="MISSION"` 表示开始执行拦截任务。收到该值后，右列状态栏由 `TRK TRACKING` 改为 `ON MISSION`，直到本节点向 `/fpv/tracker_state` 发布下一条跟踪状态。普通 `ON`、`OFF` 仍只影响启停和约两秒的短提示。任务文字不改变目标框配色或跟踪状态含义；`TrackerState=3` 仍表示 `TargetLost`（目标丢失），下一条状态为 `3` 时状态栏显示 `TARGET LOST`。
+### Confirmed mission display
 
-调试状态切换时，使用 `journalctl -u drone-tracker.service -f | grep -E 'Tracker trigger received|Tracker state published|OSD control|OSD display'`。`OSD control` 记录任务置位、状态发布解除任务及停轮请求；`OSD display` 只在成功提交且状态栏文字、跟踪框标签或显示状态变化时输出。`hud` 是右上角文字，`target_label` 是当前单目标框标签，空字符串表示没有框标签。收到 `OFF` 后，预期看到 `event=end_round status=Stopped`，随后看到 `OSD display status=Stopped has_video=1 new_video=0 boxes=0 target_label=""`；`has_video=1` 表示保留最后的视频底图，并非仍在采集。当前实现仍可能保留上一帧的 `hud="TRK TRACKING"`，应以停止事件和显示状态判断是否停止。
+`ON MISSION` requires a received `/fpv/mission_state=true` event plus fresh
+`/mavros/state` with `connected=true`, `armed=true`, and `guided=true`. The bridge
+sets `guided` from the flight controller's OFFBOARD flag. Mode text such as
+`OFFBOARD|ANGLE` is accepted without exact string matching. A `MISSION` trigger
+alone does not authorize the banner. Tracking-state publications do not end it.
+Target colors, RSSI, arming text, and preview remain governed by their existing rules.
+
+Mission status is an event: its publisher sends starts and ends without a heartbeat.
+A received `true` remains remembered while flight reports stay valid. Flight status
+is periodic and expires using its original monotonic receipt time and
+`osd.telemetry_timeout_ms` (default 2000 ms). A monotonic clock measures elapsed
+time independently of calendar corrections. Repeated 10 Hz telemetry snapshots do
+not renew that time. Each received mission and flight transition reaches the policy
+directly, so a short `false` or OFFBOARD exit cannot disappear between summaries.
+
+A start waits hidden for OFFBOARD confirmation. Fresh armed ACRO during entry
+keeps it pending. After confirmation, mission `false`, OFFBOARD exit, disarm,
+disconnection, or flight expiry clears the banner. `OFF` and `DISMISS` cancel it
+before tracking cleanup; `DISMISS` leaves tracking running. An invalidated attempt
+cannot resume on repeated `true` or flight recovery. Another received `false`
+followed by a later `true` is required. Cancellation after an already received
+`false` preserves that end boundary.
+
+For example, a target can remain `Tracking=2` while mission `false` arrives. The
+screen restores `TRK TRACKING` within 500 ms on a healthy display, without a new
+frame or tracker-state publication. Flight expiry must clear the banner by the
+last flight receipt plus timeout plus 500 ms (2500 ms with defaults). This also
+applies when inference or recording cleanup is blocked. Prepared obsolete overlays
+are rejected before hardware handoff. Video admission uses a separate version;
+valid prepared video is retained for a redraw with the current overlay.
+Already-authorized hardware work completes safely before the following redraw.
+
+After a tracker restart, OFFBOARD reports cannot reconstruct a missed mission start.
+The banner remains hidden until a start is actually received. If the interceptor dies
+without an end event while valid armed OFFBOARD reports continue, these topics cannot
+prove mission termination. The banner can remain visible. Fixing that gap requires a
+different external status contract and is outside this change.
+
+Use `journalctl -u drone-tracker.service -f` and filter for `Tracker trigger received`,
+`Tracker state published`, `OSD mission`, and `OSD display`. `OSD mission` records
+policy transitions with `phase`, `reason`, `overlay_revision`, `attempt`, and
+`monotonic_us`. The attempt is a local diagnostic counter, not an interceptor mission
+identifier. Reasons distinguish `mission_true`, `offboard_confirmed`, `mission_false`,
+`offboard_lost`, `disarmed`, `disconnected`, `flight_status_stale`, `trigger_off`, and
+`trigger_dismiss`. Unchanged reports do not generate transition logs.
+
+`OSD display` reports successful HDMI submission separately from receipt and policy
+decisions. Correlate its `overlay_revision`, `attempt`, and `monotonic_us` with the
+transition and inspect `mission`, `hud`, `stream`, `round`, `source_sequence`, and
+`kind`. Visible target labels remain removed, so `target_label=""`. `has_video=1`
+means a retained video base exists; increasing source sequences establish continuing
+preview. For the continuous camera, `OFF` clears target decorations and shows the
+tracking-off hint while new preview continues. Other input modes keep their existing
+freeze behavior. Logs alone do not establish physical-screen timing acceptance.
 
 电流取自 `/mavros/battery`。HUD 对有效电流显示绝对值，例如输入 `-3.0 A` 显示 `CUR 03.0A`；未知或非有限值显示 `CUR --A`。该显示转换不修改原始 ROS 消息。
 

@@ -26,7 +26,7 @@ public:
                             int battery_cells = 0,
                             std::function<SteadyClock::time_point()> now = SteadyClock::now);
     void receive(const sensor_msgs::msg::Imu &message);
-    void receive(const mavros_msgs::msg::State &message);
+    Measurement<FlightState> receive(const mavros_msgs::msg::State &message);
     void receive(const mavros_msgs::msg::ExtendedState &message);
     void receive(const mavros_msgs::msg::RCIn &message);
     void receive(const sensor_msgs::msg::BatteryState &message);
@@ -57,7 +57,9 @@ private:
 class OsdTelemetryAdapter {
 public:
     OsdTelemetryAdapter(rclcpp::Node &node, std::function<void(TelemetrySnapshot)> sink,
-                        std::chrono::milliseconds timeout, int battery_cells);
+                        std::chrono::milliseconds timeout, int battery_cells,
+                        std::function<void(bool, SteadyClock::time_point)> mission_sink = {},
+                        std::function<void(Measurement<FlightState>)> flight_sink = {});
     TelemetryStore &store() { return *store_; }
 private:
     std::shared_ptr<TelemetryStore> store_;
