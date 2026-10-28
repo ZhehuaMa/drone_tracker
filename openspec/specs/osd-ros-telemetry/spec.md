@@ -15,11 +15,12 @@
 | `/mavros/imu/data` | `sensor_msgs/msg/Imu` | 航向、俯仰、横滚 |
 | `/mavros/state` | `mavros_msgs/msg/State` | 连接、模式、解锁与计时 |
 | `/mavros/extended_state` | `mavros_msgs/msg/ExtendedState` | 落地状态 |
+| `/mavros/rc/in` | `mavros_msgs/msg/RCIn` | 生产遥控接收链路质量百分比 |
 | `/mavros/battery` | `sensor_msgs/msg/BatteryState` | 电压、电流、电量 |
 | `/mavros/gpsstatus/gpsraw` | `mavros_msgs/msg/GPSRAW` | 卫星、地速、航迹 |
 | `/mavros/global_position/global` | `sensor_msgs/msg/NavSatFix` | 定位与返航计算 |
 | `/fpv/static_pressure` | `sensor_msgs/msg/FluidPressure` | 气压高度 |
-| `/fpv/temperature_baro` | `sensor_msgs/msg/Temperature` | 温度 |
+| `/fpv/temperature_baro` | `sensor_msgs/msg/Temperature` | 温度接收保留，不再绘制温度行 |
 | `/fpv/failsafe` | `std_msgs/msg/Bool` | 失效保护告警 |
 | `/fpv/radar_state` | `std_msgs/msg/Int8` | 独立雷达状态 |
 | `/fpv/low_level_feedback` | `quadrotor_msgs/msg/LowLevelFeedback` | 可选电池告警等级 |
@@ -37,6 +38,11 @@
 #### Scenario: 收到任务触发
 - **WHEN** `/fpv/tracker_trigger` 的 `frame_id` 为 `MISSION`
 - **THEN** HUD 状态栏显示 `ON MISSION`，不创建新的 ROS 话题或消息类型
+
+
+#### Scenario: 生产遥控输入允许丢包并支持重映射
+- **WHEN** `/mavros/rc/in` 被重映射到隔离测试话题，该话题以 best-effort 发布 `mavros_msgs/msg/RCIn`
+- **THEN** OSD 接收 RSSI，不改变本地跟踪状态或帧框配对
 
 ### Requirement: 未知和过期数据不能显示为有效零值
 
@@ -173,3 +179,31 @@ OSD（视频上的屏幕信息叠加）SHALL 使用 `/mavros/global_position/glo
 #### Scenario: 连接状态恢复
 - **WHEN** 当前显示 `ARM --`，随后收到新鲜 `connected=true, armed=false` 消息
 - **THEN** 下一次显示更新改为白色 `DISARMED`
+
+### Requirement: RSSI 使用生产桥接的百分比契约
+
+RSSI 在此表示飞控提供的遥控接收链路质量，不是视频链路强度或 dBm 功率。系统 SHALL 使用 `/mavros/rc/in` 的 `mavros_msgs/msg/RCIn.rssi`。最新 `apm_bridge` 的 `rk3576` 源码将此字段定义为 0–100 百分数。系统 SHALL 原样采用此范围内的整数，包括 0。系统 MUST NOT 按 254 重新缩放或用电池比例代替。大于 100 的输入 SHALL 立即成为未知值。
+
+#### Scenario: 正常百分比和边界
+- **WHEN** 输入 `rssi` 依次为 0、85 和 100
+- **THEN** 显示侧依次取得有效百分比 0、85 和 100，不将 85 转换为约 33
+
+#### Scenario: 非法值清除旧读数
+- **WHEN** 已收到 85，随后分别收到 101、254 或 255
+- **THEN** 对每个非法输入，下一快照中的 RSSI 都为未知，不截断为 100，也不保留 85
+
+### Requirement: RSSI 有效期与电池及图像更新独立
+
+系统 SHALL 为 RSSI 单独记录有效接收时刻。有效期 SHALL 使用单调时钟和既有 `osd.telemetry_timeout_ms`，默认 2000 毫秒。尚未接收或距最后有效输入超过该期限时，RSSI SHALL 为未知。电池、温度或视频更新 MUST NOT 刷新 RSSI 有效期。既有 10 Hz 遥测快照 SHALL 在实时视频、无框预览及冻结底图上继续传递 RSSI。
+
+#### Scenario: 刚好到期与超过到期
+- **WHEN** 有效 RSSI 85 的接收时间为 0，且超时为 2000 毫秒
+- **THEN** 2000 毫秒时仍有效，2001 毫秒时未知
+
+#### Scenario: 电池更新不能保持旧 RSSI
+- **WHEN** RSSI 停止更新超过超时，电池与温度仍持续到达
+- **THEN** RSSI 为未知，电池与温度的新鲜数据仍可用
+
+#### Scenario: 停止后接收和恢复
+- **WHEN** 跟踪停止或底图冻结后，隔离重映射话题继续发布 RSSI，并经历有效、过期及恢复
+- **THEN** 显示侧快照仍反映这些变化，不恢复旧框或改变停止状态
