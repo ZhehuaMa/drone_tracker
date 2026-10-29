@@ -1,0 +1,101 @@
+{
+  "cpu3_passed_pairs": 2,
+  "cpu7_passed_pairs": 3,
+  "pairs": [
+    {
+      "name": "pair1",
+      "cpu3_passed": true,
+      "cpu7_passed": false,
+      "cpu3_delta_ms": -44.667103,
+      "cpu7_delta_ms": -48.734589,
+      "cpu3_fps_decline_percent": -1.808722794245221,
+      "cpu7_fps_decline_percent": 5.385434666559929
+    },
+    {
+      "name": "pair2",
+      "cpu3_passed": false,
+      "cpu7_passed": false,
+      "cpu3_delta_ms": 57.297607,
+      "cpu7_delta_ms": 5.575089999999989,
+      "cpu3_fps_decline_percent": 9.84935174950865,
+      "cpu7_fps_decline_percent": 0.16050110110854554
+    },
+    {
+      "name": "pair3",
+      "cpu3_passed": false,
+      "cpu7_passed": true,
+      "cpu3_delta_ms": 18.762115999999992,
+      "cpu7_delta_ms": -12.59929600000001,
+      "cpu3_fps_decline_percent": 0.47059198355829945,
+      "cpu7_fps_decline_percent": -0.4436193577220138
+    },
+    {
+      "name": "pair4",
+      "cpu3_passed": false,
+      "cpu7_passed": true,
+      "cpu3_delta_ms": 49.903768000000014,
+      "cpu7_delta_ms": -48.699737999999996,
+      "cpu3_fps_decline_percent": 0.09304794560578422,
+      "cpu7_fps_decline_percent": -0.19082804136738574
+    },
+    {
+      "name": "pair5",
+      "cpu3_passed": false,
+      "cpu7_passed": false,
+      "cpu3_delta_ms": 14.51094599999999,
+      "cpu7_delta_ms": 49.063844999999986,
+      "cpu3_fps_decline_percent": 2.105334760805766,
+      "cpu7_fps_decline_percent": 2.1450659796139915
+    },
+    {
+      "name": "pair6",
+      "cpu3_passed": false,
+      "cpu7_passed": false,
+      "cpu3_delta_ms": 49.849031999999994,
+      "cpu7_delta_ms": 24.975096000000008,
+      "cpu3_fps_decline_percent": 1.4026581224415247,
+      "cpu7_fps_decline_percent": 5.411620608446754
+    },
+    {
+      "name": "pair7",
+      "cpu3_passed": true,
+      "cpu7_passed": true,
+      "cpu3_delta_ms": -13.553495999999996,
+      "cpu7_delta_ms": -26.28108899999998,
+      "cpu3_fps_decline_percent": -0.9197523292060694,
+      "cpu7_fps_decline_percent": -5.921031566433288
+    },
+    {
+      "name": "pair8",
+      "cpu3_passed": false,
+      "cpu7_passed": false,
+      "cpu3_delta_ms": 15.510188999999997,
+      "cpu7_delta_ms": -2.5406069999999943,
+      "cpu3_fps_decline_percent": -5.099089073377816,
+      "cpu7_fps_decline_percent": 2.7506093208426563
+    },
+    {
+      "name": "pair9",
+      "cpu3_passed": false,
+      "cpu7_passed": false,
+      "cpu3_delta_ms": 0.7841589999999883,
+      "cpu7_delta_ms": 48.49661400000002,
+      "cpu3_fps_decline_percent": 0.8923286745898262,
+      "cpu7_fps_decline_percent": 1.8102742288971463
+    },
+    {
+      "name": "pair10",
+      "cpu3_passed": false,
+      "cpu7_passed": false,
+      "cpu3_delta_ms": 4.216782999999992,
+      "cpu7_delta_ms": 11.531952000000018,
+      "cpu3_fps_decline_percent": 2.0278948176994938,
+      "cpu7_fps_decline_percent": 3.9480138019507116
+    }
+  ],
+  "limitations": [
+    "Sequential batches, not randomized cross-core conditions.",
+    "Asynchronous detector timing can change actual tracking/recovery workload.",
+    "CPU7 is shared with capture; collector pinning does not reserve the core exclusively."
+  ]
+}

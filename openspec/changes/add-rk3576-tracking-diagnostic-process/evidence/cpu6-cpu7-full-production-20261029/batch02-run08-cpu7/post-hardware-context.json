@@ -1,0 +1,184 @@
+{
+  "protected": {
+    "machine_id": "1fe0a397f2ae4343896c7cf9d253a608",
+    "boot_id": "1a0efa8a-41e6-4a05-a088-7ce650cdb07a",
+    "current": "/opt/drone_tracker/releases/bundle-20260927T070059Z-2281",
+    "files": {
+      "/usr/lib/librknnrt.so": "d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8",
+      "/opt/drone_tracker/config/camera.yaml": "f909ec82c2c3c45a82b1c85fb616e2f1f7a97b2da4159c7755af195f2e05298c",
+      "/opt/drone_tracker/config/camera.yaml.before-balloon-20260924": "4ff697fbed84b8a5885a5490c0e4b70c3c1641f1a4bb054cc08764330ebcddbb",
+      "/opt/drone_tracker/config/camera.yaml.before-need-save-20260927T1451": "f2bce1721f722c13da08677682827378a625e9d31bd99b5ae828e8ae156cedbf",
+      "/opt/drone_tracker/config/cpu-affinity.yaml": "4f46293201355131c1e72c8a72cdfaafa2c3121eaa48fe0b5ad69ac442e4f01b",
+      "/opt/drone_tracker/models/balloon_best_zoo6_int8_fp16_cls.rknn": "002b1b0a5e7476a5cc62f495997f05d2550e44697fb89c8d48913fb1ee5e06f7",
+      "/opt/drone_tracker/models/fp16/head.rknn": "2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889",
+      "/opt/drone_tracker/models/fp16/search_backbone.rknn": "9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44",
+      "/opt/drone_tracker/models/fp16/template_backbone.rknn": "622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2",
+      "/opt/drone_tracker/models/int8/head.rknn": "f4fc6259eaeb83860515773df49391c860a3be31507f613b2c15fcde6430e736",
+      "/opt/drone_tracker/models/int8/search_backbone.rknn": "ecabaefdeadba721b466d942f76195bb9a5184e8e0a7d2a8262cc2d86e38ccdd",
+      "/opt/drone_tracker/models/int8/template_backbone.rknn": "848ec40a659b5a3484c0d76ba6ded353250f524c7f384fec95a0f85cf2682bdf",
+      "/opt/drone_tracker/models/yolo.rknn": "4d8a22bc8da9fbbc43f190b7ea90c27d9980f77e3e27064ec32cf6566c2680f3"
+    },
+    "services": {
+      "drone-tracker.service": {
+        "MainPID": "0",
+        "Id": "drone-tracker.service",
+        "LoadState": "loaded",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "UnitFileState": "enabled"
+      },
+      "drone-tracker-diagnostics.service": {
+        "MainPID": "0",
+        "Id": "drone-tracker-diagnostics.service",
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "UnitFileState": ""
+      }
+    },
+    "background_processes": {
+      "1515": {
+        "start_ticks": "567",
+        "cmdline": "/opt/drone_interceptor-binary/releases/20260924-76ba8776d245-ros-preinstalled/bin/interceptor_node_relative_imm_ukf --ros-args -r __node:=interceptor_node_relative_imm_ukf --params-file /etc/drone_interceptor/relative_imm_ukf_params.yaml -p use_simulation:=false -p radar.enable:=false -p radar.reintercept_enable:=false --log-level INFO "
+      },
+      "1584": {
+        "start_ticks": "584",
+        "cmdline": "/opt/apm_bridge-binary/releases/20260927-d3e6eecf11e3-a9c5d756-ros-preinstalled-cpu0-3-performance/bin/custom_link_bridge_node --ros-args -r __node:=custom_link_bridge --params-file /etc/apm_bridge/parameters.yaml -p link.transport:=serial -p link.serial_port:=/dev/ttyS8 -p link.baudrate:=921600 -p gimbal_port:=\"/dev/ttyS10\" -p gimbal.model:=C20S -r ~/low_level_feedback:=/fpv/low_level_feedback -r ~/control_command:=/fpv/control_command -r ~/control_command_raw:=/fpv/control_command_raw -r ~/arm:=/fpv/arm "
+      }
+    }
+  },
+  "kernel": "6.1.141-rt36",
+  "batch02_units": [
+    {
+      "run_id": "batch02-run01-cpu6",
+      "unit": "drone-full-placement-v2-batch02-run01-cpu6.service",
+      "state": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "remaining_cgroup_pids": [],
+      "remaining_root_pids": [],
+      "released": true
+    },
+    {
+      "run_id": "batch02-run02-cpu7",
+      "unit": "drone-full-placement-v2-batch02-run02-cpu7.service",
+      "state": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "remaining_cgroup_pids": [],
+      "remaining_root_pids": [],
+      "released": true
+    },
+    {
+      "run_id": "batch02-run03-cpu7",
+      "unit": "drone-full-placement-v2-batch02-run03-cpu7.service",
+      "state": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "remaining_cgroup_pids": [],
+      "remaining_root_pids": [],
+      "released": true
+    },
+    {
+      "run_id": "batch02-run04-cpu6",
+      "unit": "drone-full-placement-v2-batch02-run04-cpu6.service",
+      "state": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "remaining_cgroup_pids": [],
+      "remaining_root_pids": [],
+      "released": true
+    },
+    {
+      "run_id": "batch02-run05-cpu7",
+      "unit": "drone-full-placement-v2-batch02-run05-cpu7.service",
+      "state": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "remaining_cgroup_pids": [],
+      "remaining_root_pids": [],
+      "released": true
+    },
+    {
+      "run_id": "batch02-run06-cpu6",
+      "unit": "drone-full-placement-v2-batch02-run06-cpu6.service",
+      "state": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "remaining_cgroup_pids": [],
+      "remaining_root_pids": [],
+      "released": true
+    },
+    {
+      "run_id": "batch02-run07-cpu6",
+      "unit": "drone-full-placement-v2-batch02-run07-cpu6.service",
+      "state": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "remaining_cgroup_pids": [],
+      "remaining_root_pids": [],
+      "released": true
+    },
+    {
+      "run_id": "batch02-run08-cpu7",
+      "unit": "drone-full-placement-v2-batch02-run08-cpu7.service",
+      "state": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "remaining_cgroup_pids": [],
+      "remaining_root_pids": [],
+      "released": true
+    }
+  ],
+  "all_batch02_units_released": true,
+  "device_owners": {
+    "returncode": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  "controls": {
+    "returncode": 0,
+    "stdout": "ioctl: VIDIOC_SUBDEV_G_FRAME_INTERVAL (pad=0)\n\tFrames per second: 60.000 (600000/10000)\n\nUser Controls\n\n                       exposure 0x00980911 (int)    : min=1 max=1272 step=1 default=1024 value=520\n                horizontal_flip 0x00980914 (bool)   : default=0 value=0\n                  vertical_flip 0x00980915 (bool)   : default=0 value=0\n              sync_trigger_mode 0x00981b00 (menu)   : min=0 max=4 default=0 value=0 (No Sync (Free Run))\n           external_trigger_pad 0x00981b01 (menu)   : min=0 max=1 default=1 value=1 (FSYNC)\n\nImage Source Controls\n\n              vertical_blanking 0x009e0901 (int)    : min=78 max=31312 step=1 default=78 value=78\n            horizontal_blanking 0x009e0902 (int)    : min=192 max=192 step=1 default=192 value=192 flags=read-only\n                  analogue_gain 0x009e0903 (int)    : min=64 max=15744 step=1 default=64 value=64\n\nImage Processing Controls\n\n                 link_frequency 0x009f0901 (intmenu): min=0 max=3 default=0 value=2 (405000000 0x1823cf40)\n                     pixel_rate 0x009f0902 (int64)  : min=0 max=288000000 step=1 default=162000000 value=162000000 flags=read-only\n                   test_pattern 0x009f0903 (menu)   : min=0 max=1 default=0 value=0 (Disabled)\n",
+    "stderr": ""
+  }
+}

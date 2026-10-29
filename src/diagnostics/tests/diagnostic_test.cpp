@@ -26,6 +26,28 @@ void check(bool value, const char *message) {
         throw std::runtime_error{message};
     }
 }
+void crcTest() {
+    constexpr char known[]{"123456789"};
+    check(crc32(nullptr, 0) == 0 && crc32(known, 9) == 0xcbf43926U, "IEEE CRC-32 vectors");
+    std::array<unsigned char, 4104> bytes{};
+    for (std::size_t index{}; index < bytes.size(); ++index) {
+        bytes[index] = static_cast<unsigned char>((index * 73 + index / 256) & 0xffU);
+    }
+    // Compare against the original bitwise implementation across unaligned
+    // input, every byte value, short records and larger event batches.
+    for (std::size_t offset{}; offset < 8; ++offset) {
+        std::uint32_t reference{0xffffffffU};
+        for (std::size_t length{}; length <= 4096; ++length) {
+            if (length <= 512 || length == 4096) {
+                check(crc32(bytes.data() + offset, length) == ~reference, "CRC-32 compatibility");
+            }
+            reference ^= bytes[offset + length];
+            for (unsigned bit{}; bit < 8; ++bit) {
+                reference = (reference >> 1) ^ (0xedb88320U & (0U - (reference & 1U)));
+            }
+        }
+    }
+}
 std::filesystem::path temporary() {
     auto path{std::filesystem::temp_directory_path() / ("diagnostic-tests-" + std::to_string(::getpid()))};
     std::filesystem::remove_all(path);
@@ -469,6 +491,7 @@ int main(int argc, char **argv) {
     try {
         check(argc == 3, "program args");
         auto path{temporary()};
+        crcTest();
         ringTest();
         visibilityTest();
         storageTest(path);

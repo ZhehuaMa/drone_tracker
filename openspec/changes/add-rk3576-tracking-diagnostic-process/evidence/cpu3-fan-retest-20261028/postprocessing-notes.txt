@@ -1,0 +1,4 @@
+All ten measurements were preserved. No experiment was rerun or relabeled.
+The first context-collection invocation preceded creation of final-state.json and returned FileNotFoundError. It was rerun after both analyzers and final integrity checks completed.
+The first thermal-summary invocation omitted its required root argument and returned IndexError. It was rerun with the explicit batch root.
+Both errors occurred after all measurement windows. They did not alter the raw CSV, diagnostic records, performance criteria, or measured timings.

@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-28",
+  "agent": "/root/cpu3_cooled_retest",
+  "board_access": "ssh firefly-production only",
+  "rebuilt": false,
+  "production_upgrade": false,
+  "mutable_worktree_used_for_build": false,
+  "shared_head_at_preparation": "fd99bdfdfae23dc5be330d3447863f24082f1cf1",
+  "candidate": "hash-verified original2026-10-12 ten-pair acceptance binaries",
+  "board_root": "/home/hzhy/drone-diagnostic-cpu3-fan-20261028-batch01",
+  "local_raw_root": "/home/mzh/nickluo/drone_tracker/.docker-artifacts/diagnostic-cpu3-fan-20261028/raw-complete",
+  "archives": {
+    "fan-complete.tar.gz": {
+      "bytes": 29403317,
+      "sha256": "a910e36609a5578aed4a2c771f3da0a9c32d3b31c0800baa8cb21603af931766"
+    },
+    "previous-interrupted-batch.tar.gz": {
+      "bytes": 24939943,
+      "sha256": "e7eb9b0234dd153b188485a31ec14f969d3255bfe6e951ac61e922148c254fee"
+    }
+  },
+  "old_interruption_recovery": {
+    "eight_complete_pair_windows": true,
+    "pair9_shutdown_signal_recorded": true,
+    "pair9_window_record": false,
+    "pair10_record": false,
+    "historical_cleanup_completion_unknown": true
+  },
+  "fan_and_reboot_changed_together": true,
+  "clock_or_governor_modified": false
+}

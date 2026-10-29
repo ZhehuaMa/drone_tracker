@@ -1,0 +1,174 @@
+{
+  "measurement_start_ns": 21029819025774,
+  "measurement_end_ns": 21113321617558,
+  "telemetry_samples": 86,
+  "processes": {
+    "probe": {
+      "samples": 83,
+      "task_masks": {
+        "(4,)": 83
+      },
+      "task_schedulers": {
+        "0": 83
+      },
+      "last_cpu_histogram": {
+        "4": 83
+      },
+      "sample_span_s": 82.631866355,
+      "main_thread_cpu_s": 64.886203885,
+      "main_thread_runnable_wait_s": 2.073211694,
+      "cpu_percent_one_core": 78.52443221630536,
+      "runnable_wait_ms_per_second": 25.089735781752083
+    },
+    "worker": {
+      "samples": 83,
+      "task_masks": {
+        "(7,)": 83
+      },
+      "task_schedulers": {
+        "0": 83
+      },
+      "last_cpu_histogram": {
+        "7": 83
+      },
+      "sample_span_s": 82.631866355,
+      "main_thread_cpu_s": 0.631085416,
+      "main_thread_runnable_wait_s": 0.057125215,
+      "cpu_percent_one_core": 0.7637312865338827,
+      "runnable_wait_ms_per_second": 0.6913218534188825
+    }
+  },
+  "sensors": {
+    "/sys/class/devfreq/27700000.npu/cur_freq": {
+      "minimum": 950000000,
+      "maximum": 950000000,
+      "values": [
+        950000000
+      ]
+    },
+    "/sys/class/devfreq/27800000.gpu/cur_freq": {
+      "minimum": 900000000,
+      "maximum": 900000000,
+      "values": [
+        900000000
+      ]
+    },
+    "/sys/class/devfreq/27d00000.vop/cur_freq": {
+      "minimum": 702000000,
+      "maximum": 702000000,
+      "values": [
+        702000000
+      ]
+    },
+    "/sys/class/thermal/thermal_zone0/temp": {
+      "minimum": 34230,
+      "maximum": 42538,
+      "values": [
+        34230,
+        35153,
+        36076,
+        37000,
+        37923,
+        38846,
+        39769,
+        40692,
+        41615,
+        42538
+      ]
+    },
+    "/sys/class/thermal/thermal_zone1/temp": {
+      "minimum": 35153,
+      "maximum": 44384,
+      "values": [
+        35153,
+        36999,
+        37923,
+        38846,
+        39769,
+        40692,
+        41615,
+        42538,
+        43461,
+        44384
+      ]
+    },
+    "/sys/class/thermal/thermal_zone2/temp": {
+      "minimum": 36999,
+      "maximum": 46230,
+      "values": [
+        36999,
+        38846,
+        39769,
+        40692,
+        41615,
+        42538,
+        43461,
+        44384,
+        45307,
+        46230
+      ]
+    },
+    "/sys/class/thermal/thermal_zone3/temp": {
+      "minimum": 35153,
+      "maximum": 43461,
+      "values": [
+        35153,
+        36076,
+        36999,
+        37923,
+        38846,
+        39769,
+        40692,
+        41615,
+        42538,
+        43461
+      ]
+    },
+    "/sys/class/thermal/thermal_zone4/temp": {
+      "minimum": 34230,
+      "maximum": 42538,
+      "values": [
+        34230,
+        35153,
+        36076,
+        36999,
+        37923,
+        38846,
+        39769,
+        40692,
+        41615,
+        42538
+      ]
+    },
+    "/sys/class/thermal/thermal_zone5/temp": {
+      "minimum": 36076,
+      "maximum": 45307,
+      "values": [
+        36076,
+        37923,
+        38846,
+        39769,
+        40692,
+        41615,
+        42538,
+        43461,
+        44384,
+        45307
+      ]
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq": {
+      "minimum": 2016000,
+      "maximum": 2016000,
+      "values": [
+        2016000
+      ]
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq": {
+      "minimum": 2208000,
+      "maximum": 2208000,
+      "values": [
+        2208000
+      ]
+    }
+  }
+}

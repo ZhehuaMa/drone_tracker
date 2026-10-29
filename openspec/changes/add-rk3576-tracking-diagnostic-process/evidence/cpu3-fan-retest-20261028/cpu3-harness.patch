@@ -1,0 +1,82 @@
+--- original/board_acceptance.py
++++ cpu3/board_acceptance.py
+@@ -48,7 +48,11 @@
+                 'maps_regions': sum('memfd:drone-diagnostics' in x for x in (base / 'maps').read_text().splitlines()),
+                 'children': children.read_text().split() if children.exists() else None,
+                 'rss': [x for x in (base / 'status').read_text().splitlines() if x.startswith('VmRSS:')],
+-                'affinity': sorted(os.sched_getaffinity(pid)), 'scheduler': os.sched_getscheduler(pid)}
++                'affinity': sorted(os.sched_getaffinity(pid)), 'scheduler': os.sched_getscheduler(pid),
++                'task_affinities': {task.name: {
++                    'name': (task / 'comm').read_text().strip(),
++                    'allowed': sorted(os.sched_getaffinity(int(task.name)))}
++                    for task in (base / 'task').iterdir()}}
+     except (FileNotFoundError, ProcessLookupError):
+         return {'pid': pid, 'gone': True}
+ 
+@@ -128,6 +132,10 @@
+                             children.append(resource(int(directory.name)))
+                     except (FileNotFoundError, ProcessLookupError):
+                         pass
++                for process_name, observation in processes.items():
++                    if process_name in ('worker', 'replacement') and not observation.get('gone'):
++                        if any(task['allowed'] != [3] for task in observation['task_affinities'].values()):
++                            raise RuntimeError('Collector escaped CPU 3 during measurement')
+                 self.result['resources'].append({'mono_ns': time.monotonic_ns(),
+                     'processes': processes, 'owned_children': children})
+                 next_resource = time.monotonic() + 1
+@@ -140,7 +148,7 @@
+         self.result.setdefault('triggers', []).append({'command': text, 'mono_ns': time.monotonic_ns()})
+ 
+     def worker(self, name, fault=None):
+-        command = ['taskset', '-c', CPUS, str(BIN / 'rk3576_diagnostic_worker'),
++        command = ['taskset', '-c', '3', str(BIN / 'rk3576_diagnostic_worker'),
+                    '--socket', str(self.directory / 'diagnostics.sock'),
+                    '--directory', str(self.directory / 'diagnostics')]
+         env = {'LD_PRELOAD': str(ROOT / 'fault_io.so'), 'DRONE_DIAGNOSTIC_TEST_FAULT': fault,
+@@ -151,6 +159,11 @@
+             if time.monotonic() > end or process.poll() is not None:
+                 raise RuntimeError('日志实例启动失败')
+             time.sleep(0.02)
++        actual = {task.name: sorted(os.sched_getaffinity(int(task.name)))
++                  for task in (Path('/proc') / str(process.pid) / 'task').iterdir()}
++        if not actual or any(mask != [3] for mask in actual.values()):
++            raise RuntimeError(f'Collector CPU 3 affinity mismatch: {actual}')
++        self.result.setdefault('collector_affinity_start', []).append(actual)
+         return process
+ 
+     def business(self, name, mode, camera=False, hdmi=True):
+--- original/ten_round_restore_guard.py
++++ cpu3/ten_round_restore_guard.py
+@@ -40,7 +40,7 @@
+         time.sleep(remaining(1))
+     finally:
+         try:
+-            outcome = subprocess.run(['systemctl', 'start', 'drone-tracker.service'],
++            outcome = subprocess.run(['systemctl', 'stop', 'drone-tracker.service'],
+                                      capture_output=True, text=True, timeout=remaining(45))
+             start_result = {'returncode': outcome.returncode, 'output': outcome.stdout + outcome.stderr}
+         except Exception as error:
+@@ -52,9 +52,9 @@
+             service = repr(error)
+         (EVIDENCE / 'restore.json').write_text(json.dumps({'reason': reason, 'start_ns': started,
+             'restore_finished_ns': time.monotonic_ns(), 'elapsed_seconds': (time.monotonic_ns() - started) / 1e9,
+-            'cleanup': cleanup, 'start': start_result, 'formal_service': service}, ensure_ascii=False, indent=2))
+-    if start_result.get('returncode') != 0 or 'ActiveState=active' not in service or 'SubState=running' not in service or 'UnitFileState=enabled' not in service:
+-        raise RuntimeError('正式服务恢复失败')
++            'cleanup': cleanup, 'start': start_result, 'formal_service': service, 'leave_stopped_authorized': True}, ensure_ascii=False, indent=2))
++    if start_result.get('returncode') != 0 or 'ActiveState=inactive' not in service or 'SubState=dead' not in service or 'UnitFileState=enabled' not in service:
++        raise RuntimeError('Failed to leave the production tracker stopped')
+ 
+ 
+ if __name__ == '__main__':
+--- original/capture_manifest.py
++++ cpu3/capture_manifest.py
+@@ -14,7 +14,7 @@
+ paths += [root / 'drone_tracker/lib/drone_tracker' / name for name in (
+     'drone_tracker_node', 'rk3576_diagnostic_worker', 'rk3576_diagnostic_inspect')]
+ preflight = root / 'evidence/preflight/case.json'
+-manifest = {'captured_mono_ns': time.monotonic_ns(), 'hostname': platform.node(),
++manifest = {'collector_cpu': 3, 'transport': 'ssh firefly-production only', 'candidate': 'same archived binaries as the 2026-10-12 failed ten-pair batch', 'machine_id': Path('/etc/machine-id').read_text().strip(), 'captured_mono_ns': time.monotonic_ns(), 'hostname': platform.node(),
+     'uname': list(platform.uname()), 'board_model': Path('/proc/device-tree/model').read_text().rstrip('\0'),
+     'protected': window.identity(), 'files': {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths},
+     'input': {'frames': 3900, 'fps': 60, 'width': 1920, 'height': 1200},

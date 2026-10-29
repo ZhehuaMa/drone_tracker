@@ -1,0 +1,92 @@
+{
+  "status": "SSH became unreachable before final collection",
+  "board_alias": "firefly-production",
+  "board_machine_id": "1fe0a397f2ae4343896c7cf9d253a608",
+  "board_root": "/home/hzhy/drone-diagnostic-cpu3-20261028-batch01",
+  "pairs_confirmed_complete": 8,
+  "last_observed_running_pair": 9,
+  "raw_records_retrieved": false,
+  "full_acceptance_result_verified": false,
+  "pairs": [
+    {
+      "name": "pair1",
+      "off_p99_ms": 203.292406,
+      "basic_p99_ms": 259.198635,
+      "delta_ms": 55.906229,
+      "elapsed_seconds_rounded": 108.55,
+      "timeout": false,
+      "resources_recovered": true,
+      "execution_passed": true
+    },
+    {
+      "name": "pair2",
+      "off_p99_ms": 200.377338,
+      "basic_p99_ms": 249.164898,
+      "delta_ms": 48.78756,
+      "elapsed_seconds_rounded": 108.83,
+      "timeout": false,
+      "resources_recovered": true,
+      "execution_passed": true
+    },
+    {
+      "name": "pair3",
+      "off_p99_ms": 215.285928,
+      "basic_p99_ms": 258.854469,
+      "delta_ms": 43.568541,
+      "elapsed_seconds_rounded": 108.85,
+      "timeout": false,
+      "resources_recovered": true,
+      "execution_passed": true
+    },
+    {
+      "name": "pair4",
+      "off_p99_ms": 203.934589,
+      "basic_p99_ms": 192.328449,
+      "delta_ms": -11.60614,
+      "elapsed_seconds_rounded": 108.74,
+      "timeout": false,
+      "resources_recovered": true,
+      "execution_passed": true
+    },
+    {
+      "name": "pair5",
+      "off_p99_ms": 203.157671,
+      "basic_p99_ms": 258.323979,
+      "delta_ms": 55.166308,
+      "elapsed_seconds_rounded": 108.82,
+      "timeout": false,
+      "resources_recovered": true,
+      "execution_passed": true
+    },
+    {
+      "name": "pair6",
+      "off_p99_ms": 224.810511,
+      "basic_p99_ms": 204.258844,
+      "delta_ms": -20.551667,
+      "elapsed_seconds_rounded": 110.57,
+      "timeout": false,
+      "resources_recovered": true,
+      "execution_passed": true
+    },
+    {
+      "name": "pair7",
+      "off_p99_ms": 230.407775,
+      "basic_p99_ms": 195.190142,
+      "delta_ms": -35.217633,
+      "elapsed_seconds_rounded": 108.99,
+      "timeout": false,
+      "resources_recovered": true,
+      "execution_passed": true
+    },
+    {
+      "name": "pair8",
+      "off_p99_ms": 199.208606,
+      "basic_p99_ms": 200.94068,
+      "delta_ms": 1.732074,
+      "elapsed_seconds_rounded": 108.64,
+      "timeout": false,
+      "resources_recovered": true,
+      "execution_passed": true
+    }
+  ]
+}

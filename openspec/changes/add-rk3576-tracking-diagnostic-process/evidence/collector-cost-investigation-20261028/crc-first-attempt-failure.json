@@ -1,0 +1,57 @@
+{
+  "complete_matrix": false,
+  "executed_invocations": 1,
+  "planned_invocations": 20,
+  "reason": "Taskset/chrt emitted Chinese locale text; controller expected English affinity readback and aborted after first successful probe",
+  "no_repeated_experiment": true,
+  "scope": "single optimized CPU3 CRC invocation only; no baseline comparison, no CPU3/CPU7 comparison, no speedup estimate",
+  "partial_rows": [
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 21245408,
+      "cpu_ns": 21064931,
+      "crc": 1662321182,
+      "independent_zlib_crc32": 1662321182,
+      "crc_matches_zlib": true
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 18767885,
+      "cpu_ns": 18768876,
+      "crc": 1003508225,
+      "independent_zlib_crc32": 1003508225,
+      "crc_matches_zlib": true
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 18622636,
+      "cpu_ns": 18595458,
+      "crc": 9073095,
+      "independent_zlib_crc32": 9073095,
+      "crc_matches_zlib": true
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 18644984,
+      "cpu_ns": 18636482,
+      "crc": 1591736547,
+      "independent_zlib_crc32": 1591736547,
+      "crc_matches_zlib": true
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 37934869,
+      "cpu_ns": 37858106,
+      "crc": 577967587,
+      "independent_zlib_crc32": 577967587,
+      "crc_matches_zlib": true
+    }
+  ],
+  "protected_unchanged": true,
+  "group_remaining_members": []
+}

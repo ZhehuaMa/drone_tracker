@@ -1,0 +1,2043 @@
+{
+  "scope": "checksum CPU-only experiment, not tracker acceptance or total collector overhead",
+  "crc_verified_against_python_zlib": true,
+  "independent_expected_crc32": {
+    "20": 1662321182,
+    "256": 1003508225,
+    "4096": 9073095,
+    "65536": 1591736547,
+    "524288": 577967587
+  },
+  "invocation_count": 20,
+  "measurement_count": 100,
+  "elapsed_seconds": 6.088875682,
+  "protected_unchanged": true,
+  "per_cpu_length": [
+    {
+      "cpu": 3,
+      "length": 20,
+      "original": {
+        "median_cpu_ns_per_byte": 17.75681186371981,
+        "mean_cpu_ns_per_byte": 17.76200476837613,
+        "minimum_cpu_ns_per_byte": 17.74965167012374,
+        "maximum_cpu_ns_per_byte": 17.775506759173165
+      },
+      "optimized": {
+        "median_cpu_ns_per_byte": 5.023037932432111,
+        "mean_cpu_ns_per_byte": 5.025019669551535,
+        "minimum_cpu_ns_per_byte": 5.02037407910736,
+        "maximum_cpu_ns_per_byte": 5.031222850058413
+      },
+      "original_over_optimized_cpu_ratio_by_pair": [
+        3.5315982880822787,
+        3.527900114763882,
+        3.5346167917719122,
+        3.5402818688647053,
+        3.5391879584891055
+      ],
+      "median_paired_cpu_speedup": 3.5346167917719122
+    },
+    {
+      "cpu": 3,
+      "length": 256,
+      "original": {
+        "median_cpu_ns_per_byte": 17.264304161071777,
+        "mean_cpu_ns_per_byte": 17.261015701293946,
+        "minimum_cpu_ns_per_byte": 17.251240730285645,
+        "maximum_cpu_ns_per_byte": 17.269086122512817
+      },
+      "optimized": {
+        "median_cpu_ns_per_byte": 4.472759246826172,
+        "mean_cpu_ns_per_byte": 4.473215389251709,
+        "minimum_cpu_ns_per_byte": 4.472686767578125,
+        "maximum_cpu_ns_per_byte": 4.473945140838623
+      },
+      "original_over_optimized_cpu_ratio_by_pair": [
+        3.8599403575985427,
+        3.860946938909533,
+        3.856624941400366,
+        3.8602996225334114,
+        3.855934792944727
+      ],
+      "median_paired_cpu_speedup": 3.8599403575985427
+    },
+    {
+      "cpu": 3,
+      "length": 4096,
+      "original": {
+        "median_cpu_ns_per_byte": 17.215030908584595,
+        "mean_cpu_ns_per_byte": 17.219248819351197,
+        "minimum_cpu_ns_per_byte": 17.211889028549194,
+        "maximum_cpu_ns_per_byte": 17.23643159866333
+      },
+      "optimized": {
+        "median_cpu_ns_per_byte": 4.430711030960083,
+        "mean_cpu_ns_per_byte": 4.4316854000091555,
+        "minimum_cpu_ns_per_byte": 4.428204774856567,
+        "maximum_cpu_ns_per_byte": 4.4376373291015625
+      },
+      "original_over_optimized_cpu_ratio_by_pair": [
+        3.889020510589032,
+        3.8861904021626636,
+        3.878615522651079,
+        3.887423177769174,
+        3.886188165913721
+      ],
+      "median_paired_cpu_speedup": 3.8861904021626636
+    },
+    {
+      "cpu": 3,
+      "length": 65536,
+      "original": {
+        "median_cpu_ns_per_byte": 17.224347829818726,
+        "mean_cpu_ns_per_byte": 17.233634614944457,
+        "minimum_cpu_ns_per_byte": 17.22282075881958,
+        "maximum_cpu_ns_per_byte": 17.271920442581177
+      },
+      "optimized": {
+        "median_cpu_ns_per_byte": 4.440246343612671,
+        "mean_cpu_ns_per_byte": 4.441286706924439,
+        "minimum_cpu_ns_per_byte": 4.437527656555176,
+        "maximum_cpu_ns_per_byte": 4.445232391357422
+      },
+      "original_over_optimized_cpu_ratio_by_pair": [
+        3.8751527948026543,
+        3.874594092806003,
+        3.889856351647464,
+        3.8808584219136004,
+        3.8811748549618157
+      ],
+      "median_paired_cpu_speedup": 3.8808584219136004
+    },
+    {
+      "cpu": 3,
+      "length": 524288,
+      "original": {
+        "median_cpu_ns_per_byte": 17.298147916793823,
+        "mean_cpu_ns_per_byte": 17.301696586608887,
+        "minimum_cpu_ns_per_byte": 17.293135285377502,
+        "maximum_cpu_ns_per_byte": 17.31377351284027
+      },
+      "optimized": {
+        "median_cpu_ns_per_byte": 4.47691011428833,
+        "mean_cpu_ns_per_byte": 4.4804051399230955,
+        "minimum_cpu_ns_per_byte": 4.463914752006531,
+        "maximum_cpu_ns_per_byte": 4.50349760055542
+      },
+      "original_over_optimized_cpu_ratio_by_pair": [
+        3.839934384165038,
+        3.8638586603706284,
+        3.8737648596888725,
+        3.852264715943305,
+        3.878607561906895
+      ],
+      "median_paired_cpu_speedup": 3.8638586603706284
+    },
+    {
+      "cpu": 7,
+      "length": 20,
+      "original": {
+        "median_cpu_ns_per_byte": 14.364268411892331,
+        "mean_cpu_ns_per_byte": 14.362704956726986,
+        "minimum_cpu_ns_per_byte": 14.356234413370526,
+        "maximum_cpu_ns_per_byte": 14.364812722027514
+      },
+      "optimized": {
+        "median_cpu_ns_per_byte": 2.705240683785137,
+        "mean_cpu_ns_per_byte": 2.7054008535393272,
+        "minimum_cpu_ns_per_byte": 2.70337076508595,
+        "maximum_cpu_ns_per_byte": 2.707462031805069
+      },
+      "original_over_optimized_cpu_ratio_by_pair": [
+        5.307985838637262,
+        5.309481235377216,
+        5.313465913520611,
+        5.3056273439341,
+        5.307950049339436
+      ],
+      "median_paired_cpu_speedup": 5.307985838637262
+    },
+    {
+      "cpu": 7,
+      "length": 256,
+      "original": {
+        "median_cpu_ns_per_byte": 14.599509000778198,
+        "mean_cpu_ns_per_byte": 14.601077270507812,
+        "minimum_cpu_ns_per_byte": 14.596558332443237,
+        "maximum_cpu_ns_per_byte": 14.607885599136353
+      },
+      "optimized": {
+        "median_cpu_ns_per_byte": 3.5016424655914307,
+        "mean_cpu_ns_per_byte": 3.5017454624176025,
+        "minimum_cpu_ns_per_byte": 3.5005407333374023,
+        "maximum_cpu_ns_per_byte": 3.5029749870300293
+      },
+      "original_over_optimized_cpu_ratio_by_pair": [
+        4.170474349715018,
+        4.168796752851329,
+        4.170136998757601,
+        4.168685708419414,
+        4.17019105324297
+      ],
+      "median_paired_cpu_speedup": 4.170136998757601
+    },
+    {
+      "cpu": 7,
+      "length": 4096,
+      "original": {
+        "median_cpu_ns_per_byte": 14.596997022628784,
+        "mean_cpu_ns_per_byte": 14.597130584716798,
+        "minimum_cpu_ns_per_byte": 14.594984531402588,
+        "maximum_cpu_ns_per_byte": 14.600265502929688
+      },
+      "optimized": {
+        "median_cpu_ns_per_byte": 3.537137985229492,
+        "mean_cpu_ns_per_byte": 3.537049913406372,
+        "minimum_cpu_ns_per_byte": 3.5362818241119385,
+        "maximum_cpu_ns_per_byte": 3.5377519130706787
+      },
+      "original_over_optimized_cpu_ratio_by_pair": [
+        4.127568315536405,
+        4.126712792574644,
+        4.126781902086786,
+        4.1269896424865555,
+        4.126559585161165
+      ],
+      "median_paired_cpu_speedup": 4.126781902086786
+    },
+    {
+      "cpu": 7,
+      "length": 65536,
+      "original": {
+        "median_cpu_ns_per_byte": 14.612252712249756,
+        "mean_cpu_ns_per_byte": 14.611778783798218,
+        "minimum_cpu_ns_per_byte": 14.605752229690552,
+        "maximum_cpu_ns_per_byte": 14.618020296096802
+      },
+      "optimized": {
+        "median_cpu_ns_per_byte": 3.5430543422698975,
+        "mean_cpu_ns_per_byte": 3.543404245376587,
+        "minimum_cpu_ns_per_byte": 3.5421602725982666,
+        "maximum_cpu_ns_per_byte": 3.544842481613159
+      },
+      "original_over_optimized_cpu_ratio_by_pair": [
+        4.123402417072691,
+        4.124719811785127,
+        4.123182456322393,
+        4.122668144187705,
+        4.124305535001736
+      ],
+      "median_paired_cpu_speedup": 4.123402417072691
+    },
+    {
+      "cpu": 7,
+      "length": 524288,
+      "original": {
+        "median_cpu_ns_per_byte": 14.620387196540833,
+        "mean_cpu_ns_per_byte": 14.620802855491638,
+        "minimum_cpu_ns_per_byte": 14.620054125785828,
+        "maximum_cpu_ns_per_byte": 14.622538805007935
+      },
+      "optimized": {
+        "median_cpu_ns_per_byte": 3.5474796295166016,
+        "mean_cpu_ns_per_byte": 3.54737811088562,
+        "minimum_cpu_ns_per_byte": 3.5442302227020264,
+        "maximum_cpu_ns_per_byte": 3.5498788356781006
+      },
+      "original_over_optimized_cpu_ratio_by_pair": [
+        4.125107168715056,
+        4.123097897233367,
+        4.119101965067306,
+        4.1214344204342055,
+        4.119165605891652
+      ],
+      "median_paired_cpu_speedup": 4.1214344204342055
+    }
+  ],
+  "measurements": [
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 21386641,
+      "cpu_ns": 21088864,
+      "crc": 1662321182,
+      "cpu": 3,
+      "pair": 0,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 5.027981784803186,
+      "wall_ns_per_byte": 5.0989774217390265
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 18759062,
+      "cpu_ns": 18759808,
+      "crc": 1003508225,
+      "cpu": 3,
+      "pair": 0,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.472686767578125,
+      "wall_ns_per_byte": 4.472508907318115
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 18595504,
+      "cpu_ns": 18589471,
+      "crc": 9073095,
+      "cpu": 3,
+      "pair": 0,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.432075262069702,
+      "wall_ns_per_byte": 4.433513641357422
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 18690380,
+      "cpu_ns": 18644286,
+      "crc": 1591736547,
+      "cpu": 3,
+      "pair": 0,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.445144176483154,
+      "wall_ns_per_byte": 4.456133842468262
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 37923929,
+      "cpu_ns": 37778076,
+      "crc": 577967587,
+      "cpu": 3,
+      "pair": 0,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.50349760055542,
+      "wall_ns_per_byte": 4.52088463306427
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 74770736,
+      "cpu_ns": 74477396,
+      "crc": 1662321182,
+      "cpu": 3,
+      "pair": 0,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.75681186371981,
+      "wall_ns_per_byte": 17.82674963641132
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 72498728,
+      "cpu_ns": 72411740,
+      "crc": 1003508225,
+      "cpu": 3,
+      "pair": 0,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.264304161071777,
+      "wall_ns_per_byte": 17.285043716430664
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 72431681,
+      "cpu_ns": 72294834,
+      "crc": 9073095,
+      "cpu": 3,
+      "pair": 0,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.23643159866333,
+      "wall_ns_per_byte": 17.26905846595764
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 72266640,
+      "cpu_ns": 72249457,
+      "crc": 1591736547,
+      "cpu": 3,
+      "pair": 0,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.22561287879944,
+      "wall_ns_per_byte": 17.22970962524414
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 145235757,
+      "cpu_ns": 145065333,
+      "crc": 577967587,
+      "cpu": 3,
+      "pair": 0,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.293135285377502,
+      "wall_ns_per_byte": 17.313451409339905
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 21337680,
+      "cpu_ns": 21102458,
+      "crc": 1662321182,
+      "cpu": 3,
+      "pair": 1,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 5.031222850058413,
+      "wall_ns_per_byte": 5.087304198555182
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 18764517,
+      "cpu_ns": 18760112,
+      "crc": 1003508225,
+      "cpu": 3,
+      "pair": 1,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.472759246826172,
+      "wall_ns_per_byte": 4.473809480667114
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 18614972,
+      "cpu_ns": 18583749,
+      "crc": 9073095,
+      "cpu": 3,
+      "pair": 1,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.430711030960083,
+      "wall_ns_per_byte": 4.438155174255371
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 18652833,
+      "cpu_ns": 18644656,
+      "crc": 1591736547,
+      "cpu": 3,
+      "pair": 1,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.445232391357422,
+      "wall_ns_per_byte": 4.447181940078735
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 37586926,
+      "cpu_ns": 37555044,
+      "crc": 577967587,
+      "cpu": 3,
+      "pair": 1,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.47691011428833,
+      "wall_ns_per_byte": 4.480710744857788
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 74712326,
+      "cpu_ns": 74447364,
+      "crc": 1662321182,
+      "cpu": 3,
+      "pair": 1,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.74965167012374,
+      "wall_ns_per_byte": 17.81282359392509
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 72540859,
+      "cpu_ns": 72431797,
+      "crc": 1003508225,
+      "cpu": 3,
+      "pair": 1,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.269086122512817,
+      "wall_ns_per_byte": 17.295088529586792
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 72271389,
+      "cpu_ns": 72219987,
+      "crc": 9073095,
+      "cpu": 3,
+      "pair": 1,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.218586683273315,
+      "wall_ns_per_byte": 17.230841875076294
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 72251701,
+      "cpu_ns": 72240474,
+      "crc": 1591736547,
+      "cpu": 3,
+      "pair": 1,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.22347116470337,
+      "wall_ns_per_byte": 17.226147890090942
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 145307132,
+      "cpu_ns": 145107382,
+      "crc": 577967587,
+      "cpu": 3,
+      "pair": 1,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.298147916793823,
+      "wall_ns_per_byte": 17.321959972381592
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 21291479,
+      "cpu_ns": 21068128,
+      "crc": 1662321182,
+      "cpu": 3,
+      "pair": 2,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 5.023037932432111,
+      "wall_ns_per_byte": 5.076289011277209
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 18795879,
+      "cpu_ns": 18765049,
+      "crc": 1003508225,
+      "cpu": 3,
+      "pair": 2,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.473936319351196,
+      "wall_ns_per_byte": 4.4812867641448975
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 18687402,
+      "cpu_ns": 18612800,
+      "crc": 9073095,
+      "cpu": 3,
+      "pair": 2,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.4376373291015625,
+      "wall_ns_per_byte": 4.455423831939697
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 18634178,
+      "cpu_ns": 18623743,
+      "crc": 1591736547,
+      "cpu": 3,
+      "pair": 2,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.440246343612671,
+      "wall_ns_per_byte": 4.442734241485596
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 37454564,
+      "cpu_ns": 37448883,
+      "crc": 577967587,
+      "cpu": 3,
+      "pair": 2,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.46425473690033,
+      "wall_ns_per_byte": 4.464931964874268
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 74795585,
+      "cpu_ns": 74467759,
+      "crc": 1662321182,
+      "cpu": 3,
+      "pair": 2,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.754514221681806,
+      "wall_ns_per_byte": 17.832674105333428
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 72391329,
+      "cpu_ns": 72369756,
+      "crc": 1003508225,
+      "cpu": 3,
+      "pair": 2,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.254294395446777,
+      "wall_ns_per_byte": 17.259437799453735
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 72198067,
+      "cpu_ns": 72191895,
+      "crc": 9073095,
+      "cpu": 3,
+      "pair": 2,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.211889028549194,
+      "wall_ns_per_byte": 17.21336054801941
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 72569613,
+      "cpu_ns": 72443685,
+      "crc": 1591736547,
+      "cpu": 3,
+      "pair": 2,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.271920442581177,
+      "wall_ns_per_byte": 17.30194401741028
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 145403060,
+      "cpu_ns": 145068167,
+      "crc": 577967587,
+      "cpu": 3,
+      "pair": 2,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.29347312450409,
+      "wall_ns_per_byte": 17.33339548110962
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 74997034,
+      "cpu_ns": 74547556,
+      "crc": 1662321182,
+      "cpu": 3,
+      "pair": 3,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.773539327182128,
+      "wall_ns_per_byte": 17.8807033354791
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 72552471,
+      "cpu_ns": 72419495,
+      "crc": 1003508225,
+      "cpu": 3,
+      "pair": 3,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.26615309715271,
+      "wall_ns_per_byte": 17.29785704612732
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 72207770,
+      "cpu_ns": 72202032,
+      "crc": 9073095,
+      "cpu": 3,
+      "pair": 3,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.214305877685547,
+      "wall_ns_per_byte": 17.21567392349243
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 72278845,
+      "cpu_ns": 72244151,
+      "crc": 1591736547,
+      "cpu": 3,
+      "pair": 3,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.224347829818726,
+      "wall_ns_per_byte": 17.232619524002075
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 145424217,
+      "cpu_ns": 145206411,
+      "crc": 577967587,
+      "cpu": 3,
+      "pair": 3,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.309953093528748,
+      "wall_ns_per_byte": 17.335917592048645
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 21245861,
+      "cpu_ns": 21056955,
+      "crc": 1662321182,
+      "cpu": 3,
+      "pair": 3,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 5.02037407910736,
+      "wall_ns_per_byte": 5.065412822163412
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 18768770,
+      "cpu_ns": 18760071,
+      "crc": 1003508225,
+      "cpu": 3,
+      "pair": 3,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.472749471664429,
+      "wall_ns_per_byte": 4.474823474884033
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 18572177,
+      "cpu_ns": 18573237,
+      "crc": 9073095,
+      "cpu": 3,
+      "pair": 3,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.428204774856567,
+      "wall_ns_per_byte": 4.42795205116272
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 18614332,
+      "cpu_ns": 18615508,
+      "crc": 1591736547,
+      "cpu": 3,
+      "pair": 3,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.4382829666137695,
+      "wall_ns_per_byte": 4.438002586364746
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 37801286,
+      "cpu_ns": 37693778,
+      "crc": 577967587,
+      "cpu": 3,
+      "pair": 3,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.493448495864868,
+      "wall_ns_per_byte": 4.5062644481658936
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 21298697,
+      "cpu_ns": 21065795,
+      "crc": 1662321182,
+      "cpu": 3,
+      "pair": 4,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 5.022481701356603,
+      "wall_ns_per_byte": 5.0780099182223495
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 18778367,
+      "cpu_ns": 18765086,
+      "crc": 1003508225,
+      "cpu": 3,
+      "pair": 4,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.473945140838623,
+      "wall_ns_per_byte": 4.477111577987671
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 18579368,
+      "cpu_ns": 18579922,
+      "crc": 9073095,
+      "cpu": 3,
+      "pair": 4,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.429798603057861,
+      "wall_ns_per_byte": 4.429666519165039
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 18611009,
+      "cpu_ns": 18612340,
+      "crc": 1591736547,
+      "cpu": 3,
+      "pair": 4,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.437527656555176,
+      "wall_ns_per_byte": 4.437210321426392
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 37451567,
+      "cpu_ns": 37446031,
+      "crc": 577967587,
+      "cpu": 3,
+      "pair": 4,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 4.463914752006531,
+      "wall_ns_per_byte": 4.464574694633484
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 74972745,
+      "cpu_ns": 74555808,
+      "crc": 1662321182,
+      "cpu": 3,
+      "pair": 4,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.775506759173165,
+      "wall_ns_per_byte": 17.87491238108862
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 72371194,
+      "cpu_ns": 72356948,
+      "crc": 1003508225,
+      "cpu": 3,
+      "pair": 4,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.251240730285645,
+      "wall_ns_per_byte": 17.254637241363525
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 72312214,
+      "cpu_ns": 72205073,
+      "crc": 9073095,
+      "cpu": 3,
+      "pair": 4,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.215030908584595,
+      "wall_ns_per_byte": 17.240575313568115
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 72274501,
+      "cpu_ns": 72237746,
+      "crc": 1591736547,
+      "cpu": 3,
+      "pair": 4,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.22282075881958,
+      "wall_ns_per_byte": 17.231583833694458
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 145473923,
+      "cpu_ns": 145238459,
+      "crc": 577967587,
+      "cpu": 3,
+      "pair": 4,
+      "variant": "original",
+      "cpu_ns_per_byte": 17.31377351284027,
+      "wall_ns_per_byte": 17.341843008995056
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 60264865,
+      "cpu_ns": 60214354,
+      "crc": 1662321182,
+      "cpu": 7,
+      "pair": 0,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.356234413370526,
+      "wall_ns_per_byte": 14.36827718570441
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 61275203,
+      "cpu_ns": 61232289,
+      "crc": 1003508225,
+      "cpu": 7,
+      "pair": 0,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.598915338516235,
+      "wall_ns_per_byte": 14.6091468334198
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 61253515,
+      "cpu_ns": 61221088,
+      "crc": 9073095,
+      "cpu": 7,
+      "pair": 0,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.596244812011719,
+      "wall_ns_per_byte": 14.603976011276245
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 61261143,
+      "cpu_ns": 61260965,
+      "crc": 1591736547,
+      "cpu": 7,
+      "pair": 0,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.605752229690552,
+      "wall_ns_per_byte": 14.605794668197632
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 122672631,
+      "cpu_ns": 122644213,
+      "crc": 577967587,
+      "cpu": 7,
+      "pair": 0,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.62032949924469,
+      "wall_ns_per_byte": 14.623717188835144
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 11367266,
+      "cpu_ns": 11344106,
+      "crc": 1662321182,
+      "cpu": 7,
+      "pair": 0,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 2.7046482130510454,
+      "wall_ns_per_byte": 2.710169992609017
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 14696253,
+      "cpu_ns": 14682332,
+      "crc": 1003508225,
+      "cpu": 7,
+      "pair": 0,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5005407333374023,
+      "wall_ns_per_byte": 3.503859758377075
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 14831858,
+      "cpu_ns": 14832241,
+      "crc": 9073095,
+      "cpu": 7,
+      "pair": 0,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5362818241119385,
+      "wall_ns_per_byte": 3.5361905097961426
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 14856422,
+      "cpu_ns": 14856897,
+      "crc": 1591736547,
+      "cpu": 7,
+      "pair": 0,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5421602725982666,
+      "wall_ns_per_byte": 3.5420470237731934
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 29730531,
+      "cpu_ns": 29731158,
+      "crc": 577967587,
+      "cpu": 7,
+      "pair": 0,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5442302227020264,
+      "wall_ns_per_byte": 3.544155478477478
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 11369200,
+      "cpu_ns": 11346591,
+      "crc": 1662321182,
+      "cpu": 7,
+      "pair": 1,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 2.705240683785137,
+      "wall_ns_per_byte": 2.7106310945807404
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 14706782,
+      "cpu_ns": 14685869,
+      "crc": 1003508225,
+      "cpu": 7,
+      "pair": 1,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5013840198516846,
+      "wall_ns_per_byte": 3.5063700675964355
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 14833560,
+      "cpu_ns": 14834035,
+      "crc": 9073095,
+      "cpu": 7,
+      "pair": 1,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5367095470428467,
+      "wall_ns_per_byte": 3.5365962982177734
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 14858242,
+      "cpu_ns": 14858762,
+      "crc": 1591736547,
+      "cpu": 7,
+      "pair": 1,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.542604923248291,
+      "wall_ns_per_byte": 3.542480945587158
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 29765194,
+      "cpu_ns": 29745764,
+      "crc": 577967587,
+      "cpu": 7,
+      "pair": 1,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.545971393585205,
+      "wall_ns_per_byte": 3.5482876300811768
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 60288653,
+      "cpu_ns": 60244512,
+      "crc": 1662321182,
+      "cpu": 7,
+      "pair": 1,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.363424647736213,
+      "wall_ns_per_byte": 14.373948692272846
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 61222396,
+      "cpu_ns": 61222403,
+      "crc": 1003508225,
+      "cpu": 7,
+      "pair": 1,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.596558332443237,
+      "wall_ns_per_byte": 14.596556663513184
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 61215980,
+      "cpu_ns": 61215802,
+      "crc": 9073095,
+      "cpu": 7,
+      "pair": 1,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.594984531402588,
+      "wall_ns_per_byte": 14.595026969909668
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 61323324,
+      "cpu_ns": 61288230,
+      "crc": 1591736547,
+      "cpu": 7,
+      "pair": 1,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.612252712249756,
+      "wall_ns_per_byte": 14.620619773864746
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 122687421,
+      "cpu_ns": 122644697,
+      "crc": 577967587,
+      "cpu": 7,
+      "pair": 1,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.620387196540833,
+      "wall_ns_per_byte": 14.6254802942276
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 60324207,
+      "cpu_ns": 60248051,
+      "crc": 1662321182,
+      "cpu": 7,
+      "pair": 2,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.364268411892331,
+      "wall_ns_per_byte": 14.382425434518275
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 61323591,
+      "cpu_ns": 61269913,
+      "crc": 1003508225,
+      "cpu": 7,
+      "pair": 2,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.607885599136353,
+      "wall_ns_per_byte": 14.620683431625366
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 61233943,
+      "cpu_ns": 61224243,
+      "crc": 9073095,
+      "cpu": 7,
+      "pair": 2,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.596997022628784,
+      "wall_ns_per_byte": 14.59930968284607
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 61273314,
+      "cpu_ns": 61273159,
+      "crc": 1591736547,
+      "cpu": 7,
+      "pair": 2,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.608659505844116,
+      "wall_ns_per_byte": 14.608696460723877
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 122700039,
+      "cpu_ns": 122641903,
+      "crc": 577967587,
+      "cpu": 7,
+      "pair": 2,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.620054125785828,
+      "wall_ns_per_byte": 14.626984477043152
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 11349810,
+      "cpu_ns": 11338748,
+      "crc": 1662321182,
+      "cpu": 7,
+      "pair": 2,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 2.70337076508595,
+      "wall_ns_per_byte": 2.7060081539231815
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 14716238,
+      "cpu_ns": 14692542,
+      "crc": 1003508225,
+      "cpu": 7,
+      "pair": 2,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5029749870300293,
+      "wall_ns_per_byte": 3.50862455368042
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 14835403,
+      "cpu_ns": 14835832,
+      "crc": 9073095,
+      "cpu": 7,
+      "pair": 2,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.537137985229492,
+      "wall_ns_per_byte": 3.5370357036590576
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 14860103,
+      "cpu_ns": 14860647,
+      "crc": 1591736547,
+      "cpu": 7,
+      "pair": 2,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5430543422698975,
+      "wall_ns_per_byte": 3.542924642562866
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 29791417,
+      "cpu_ns": 29773942,
+      "crc": 577967587,
+      "cpu": 7,
+      "pair": 2,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.549330472946167,
+      "wall_ns_per_byte": 3.551413655281067
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 11381253,
+      "cpu_ns": 11355908,
+      "crc": 1662321182,
+      "cpu": 7,
+      "pair": 3,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 2.707462031805069,
+      "wall_ns_per_byte": 2.713504756455189
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 14709913,
+      "cpu_ns": 14689229,
+      "crc": 1003508225,
+      "cpu": 7,
+      "pair": 3,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.502185106277466,
+      "wall_ns_per_byte": 3.5071165561676025
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 14838001,
+      "cpu_ns": 14838407,
+      "crc": 9073095,
+      "cpu": 7,
+      "pair": 3,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5377519130706787,
+      "wall_ns_per_byte": 3.5376551151275635
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 14875080,
+      "cpu_ns": 14868147,
+      "crc": 1591736547,
+      "cpu": 7,
+      "pair": 3,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.544842481613159,
+      "wall_ns_per_byte": 3.5464954376220703
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 29771912,
+      "cpu_ns": 29758416,
+      "crc": 577967587,
+      "cpu": 7,
+      "pair": 3,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5474796295166016,
+      "wall_ns_per_byte": 3.549088478088379
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 60297022,
+      "cpu_ns": 60250216,
+      "crc": 1662321182,
+      "cpu": 7,
+      "pair": 3,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.36478458860835,
+      "wall_ns_per_byte": 14.375944019264239
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 61237831,
+      "cpu_ns": 61234779,
+      "crc": 1003508225,
+      "cpu": 7,
+      "pair": 3,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.599509000778198,
+      "wall_ns_per_byte": 14.600236654281616
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 61261406,
+      "cpu_ns": 61237952,
+      "crc": 9073095,
+      "cpu": 7,
+      "pair": 3,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.600265502929688,
+      "wall_ns_per_byte": 14.605857372283936
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 61330680,
+      "cpu_ns": 61296436,
+      "crc": 1591736547,
+      "cpu": 7,
+      "pair": 3,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.614209175109863,
+      "wall_ns_per_byte": 14.622373580932617
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 122676515,
+      "cpu_ns": 122647360,
+      "crc": 577967587,
+      "cpu": 7,
+      "pair": 3,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.620704650878906,
+      "wall_ns_per_byte": 14.62418019771576
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 11377873,
+      "cpu_ns": 11350961,
+      "crc": 1662321182,
+      "cpu": 7,
+      "pair": 4,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 2.7062825739694345,
+      "wall_ns_per_byte": 2.7126989008893023
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 14700782,
+      "cpu_ns": 14686953,
+      "crc": 1003508225,
+      "cpu": 7,
+      "pair": 4,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5016424655914307,
+      "wall_ns_per_byte": 3.504939556121826
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 14836369,
+      "cpu_ns": 14836798,
+      "crc": 9073095,
+      "cpu": 7,
+      "pair": 4,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5373682975769043,
+      "wall_ns_per_byte": 3.5372660160064697
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 14865600,
+      "cpu_ns": 14866120,
+      "crc": 1591736547,
+      "cpu": 7,
+      "pair": 4,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5443592071533203,
+      "wall_ns_per_byte": 3.5442352294921875
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 29814583,
+      "cpu_ns": 29778542,
+      "crc": 577967587,
+      "cpu": 7,
+      "pair": 4,
+      "variant": "optimized",
+      "cpu_ns_per_byte": 3.5498788356781006,
+      "wall_ns_per_byte": 3.5541752576828003
+    },
+    {
+      "length": 20,
+      "repetitions": 209715,
+      "wall_ns": 60290470,
+      "cpu_ns": 60250334,
+      "crc": 1662321182,
+      "cpu": 7,
+      "pair": 4,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.364812722027514,
+      "wall_ns_per_byte": 14.374381899244213
+    },
+    {
+      "length": 256,
+      "repetitions": 16384,
+      "wall_ns": 61264393,
+      "cpu_ns": 61247400,
+      "crc": 1003508225,
+      "cpu": 7,
+      "pair": 4,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.602518081665039,
+      "wall_ns_per_byte": 14.606569528579712
+    },
+    {
+      "length": 4096,
+      "repetitions": 1024,
+      "wall_ns": 61225085,
+      "cpu_ns": 61224931,
+      "crc": 9073095,
+      "cpu": 7,
+      "pair": 4,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.597161054611206,
+      "wall_ns_per_byte": 14.597197771072388
+    },
+    {
+      "length": 65536,
+      "repetitions": 64,
+      "wall_ns": 61361273,
+      "cpu_ns": 61312421,
+      "crc": 1591736547,
+      "cpu": 7,
+      "pair": 4,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.618020296096802,
+      "wall_ns_per_byte": 14.629667520523071
+    },
+    {
+      "length": 524288,
+      "repetitions": 16,
+      "wall_ns": 122675087,
+      "cpu_ns": 122662746,
+      "crc": 577967587,
+      "cpu": 7,
+      "pair": 4,
+      "variant": "original",
+      "cpu_ns_per_byte": 14.622538805007935,
+      "wall_ns_per_byte": 14.62400996685028
+    }
+  ],
+  "core3_over_core7_cpu_cost_ratios": [
+    {
+      "length": 20,
+      "variant": "original",
+      "ratio": 1.2361793413035054
+    },
+    {
+      "length": 20,
+      "variant": "optimized",
+      "ratio": 1.85678041977542
+    },
+    {
+      "length": 256,
+      "variant": "original",
+      "ratio": 1.1825263548350522
+    },
+    {
+      "length": 256,
+      "variant": "optimized",
+      "ratio": 1.2773317923738163
+    },
+    {
+      "length": 4096,
+      "variant": "original",
+      "ratio": 1.179354279643768
+    },
+    {
+      "length": 4096,
+      "variant": "optimized",
+      "ratio": 1.2526260070887834
+    },
+    {
+      "length": 65536,
+      "variant": "original",
+      "ratio": 1.1787606037896672
+    },
+    {
+      "length": 65536,
+      "variant": "optimized",
+      "ratio": 1.2532255829776455
+    },
+    {
+      "length": 524288,
+      "variant": "original",
+      "ratio": 1.183152517389317
+    },
+    {
+      "length": 524288,
+      "variant": "optimized",
+      "ratio": 1.2619974127655182
+    }
+  ],
+  "experiment_result": {
+    "seed": 20261028,
+    "started_ns": 19848257926563,
+    "scope": "checksum-only CPU cost; no model, ROS, camera, HDMI, bag or measured storage I/O",
+    "invocations": [
+      {
+        "cpu": 3,
+        "pair": 0,
+        "variant": "optimized",
+        "sequence": 0,
+        "command": [
+          "taskset",
+          "-c",
+          "3",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-optimized"
+        ],
+        "name": "00-cpu3-pair0-optimized",
+        "pid": 19464,
+        "begin_ns": 19848356454534,
+        "finish_ns": 19848524527499,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19464 (taskset) R 19450 19450 19450 0 -1 4194304 43 0 0 0 0 0 0 0 20 0 1 0 1984835 2248704 192 18446744073709551615 367035547648 367035560280 548695297120 0 0 0 0 0 0 0 0 0 17 2 0 0 0 0 0 367035628344 367035629584 367810482176 548695301470 548695301616 548695301616 548695302119 0",
+          "schedstat": "1638699 34953 4"
+        },
+        "affinity_and_scheduler_readback": "pid 19464's current affinity list: 3\npid 19464's current scheduling policy: SCHED_OTHER\npid 19464's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 3,
+        "pair": 0,
+        "variant": "original",
+        "sequence": 1,
+        "command": [
+          "taskset",
+          "-c",
+          "3",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-original"
+        ],
+        "name": "01-cpu3-pair0-original",
+        "pid": 19468,
+        "begin_ns": 19848526394510,
+        "finish_ns": 19848993645755,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19468 (taskset) R 19450 19450 19450 0 -1 4194304 24 0 0 0 0 0 0 0 20 0 1 0 1984852 2306048 1 18446744073709551615 367203909632 367203922264 549339210272 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 367203990328 367203991568 367987884032 549339213151 549339213296 549339213296 549339213799 0",
+          "schedstat": "1162679 10934 3"
+        },
+        "affinity_and_scheduler_readback": "pid 19468's current affinity list: 3\npid 19468's current scheduling policy: SCHED_OTHER\npid 19468's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 3,
+        "pair": 1,
+        "variant": "optimized",
+        "sequence": 2,
+        "command": [
+          "taskset",
+          "-c",
+          "3",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-optimized"
+        ],
+        "name": "02-cpu3-pair1-optimized",
+        "pid": 19472,
+        "begin_ns": 19848995927446,
+        "finish_ns": 19849162534875,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19472 (taskset) R 19450 19450 19450 0 -1 4194304 24 0 0 0 0 0 0 0 20 0 1 0 1984899 2306048 1 18446744073709551615 366711734272 366711746904 549366644144 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 366711814968 366711816208 367611019264 549366648158 549366648304 549366648304 549366648807 0",
+          "schedstat": "487788 4936 2"
+        },
+        "affinity_and_scheduler_readback": "pid 19472's current affinity list: 3\npid 19472's current scheduling policy: SCHED_OTHER\npid 19472's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 3,
+        "pair": 1,
+        "variant": "original",
+        "sequence": 3,
+        "command": [
+          "taskset",
+          "-c",
+          "3",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-original"
+        ],
+        "name": "03-cpu3-pair1-original",
+        "pid": 19476,
+        "begin_ns": 19849164962484,
+        "finish_ns": 19849632166560,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19476 (taskset) R 19450 19450 19450 0 -1 4194304 24 0 0 0 0 0 0 0 20 0 1 0 1984916 475136 1 18446744073709551615 367075852288 367075864920 549491203760 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 367075932984 367075934224 367260741632 549491207519 549491207664 549491207664 549491208167 0",
+          "schedstat": "539781 16021 2"
+        },
+        "affinity_and_scheduler_readback": "pid 19476's current affinity list: 3\npid 19476's current scheduling policy: SCHED_OTHER\npid 19476's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 3,
+        "pair": 2,
+        "variant": "optimized",
+        "sequence": 4,
+        "command": [
+          "taskset",
+          "-c",
+          "3",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-optimized"
+        ],
+        "name": "04-cpu3-pair2-optimized",
+        "pid": 19481,
+        "begin_ns": 19849635293784,
+        "finish_ns": 19849802810817,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19481 (taskset) R 19450 19450 19450 0 -1 4194304 31 0 0 0 0 0 0 0 20 0 1 0 1984963 2240512 82 18446744073709551615 367493840896 367493853528 549027325504 0 0 0 0 0 0 0 0 0 17 2 0 0 0 0 0 367493921592 367493922832 368559038464 549027327326 549027327472 549027327472 549027327975 0",
+          "schedstat": "1660964 42226 5"
+        },
+        "affinity_and_scheduler_readback": "pid 19481's current affinity list: 3\npid 19481's current scheduling policy: SCHED_OTHER\npid 19481's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 3,
+        "pair": 2,
+        "variant": "original",
+        "sequence": 5,
+        "command": [
+          "taskset",
+          "-c",
+          "3",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-original"
+        ],
+        "name": "05-cpu3-pair2-original",
+        "pid": 19485,
+        "begin_ns": 19849805947347,
+        "finish_ns": 19850273513137,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19485 (taskset) R 19450 19450 19450 0 -1 4194304 23 0 0 0 0 0 0 0 20 0 1 0 1984980 2306048 81 18446744073709551615 367304310784 367304323416 549208860896 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 367304391480 367304392720 367549009920 549208862047 549208862192 549208862192 549208862695 0",
+          "schedstat": "776912 17938 3"
+        },
+        "affinity_and_scheduler_readback": "pid 19485's current affinity list: 3\npid 19485's current scheduling policy: SCHED_OTHER\npid 19485's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 3,
+        "pair": 3,
+        "variant": "original",
+        "sequence": 6,
+        "command": [
+          "taskset",
+          "-c",
+          "3",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-original"
+        ],
+        "name": "06-cpu3-pair3-original",
+        "pid": 19489,
+        "begin_ns": 19850276305172,
+        "finish_ns": 19850743546716,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19489 (taskset) R 19450 19450 19450 0 -1 4194304 24 0 0 0 0 0 0 0 20 0 1 0 1985027 2306048 1 18446744073709551615 367516712960 367516725592 549020298272 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 367516793656 367516794896 367938281472 549020302687 549020302832 549020302832 549020303335 0",
+          "schedstat": "1248881 19204 2"
+        },
+        "affinity_and_scheduler_readback": "pid 19489's current affinity list: 3\npid 19489's current scheduling policy: SCHED_OTHER\npid 19489's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 3,
+        "pair": 3,
+        "variant": "optimized",
+        "sequence": 7,
+        "command": [
+          "taskset",
+          "-c",
+          "3",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-optimized"
+        ],
+        "name": "07-cpu3-pair3-optimized",
+        "pid": 19494,
+        "begin_ns": 19850746412061,
+        "finish_ns": 19850912743026,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19494 (taskset) R 19450 19450 19450 0 -1 4194304 23 0 0 0 0 0 0 0 20 0 1 0 1985074 475136 1 18446744073709551615 367351234560 367351247192 549700458080 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 367351315256 367351316496 367919448064 549700459870 549700460016 549700460016 549700460519 0",
+          "schedstat": "1107880 42004 3"
+        },
+        "affinity_and_scheduler_readback": "pid 19494's current affinity list: 3\npid 19494's current scheduling policy: SCHED_OTHER\npid 19494's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 3,
+        "pair": 4,
+        "variant": "optimized",
+        "sequence": 8,
+        "command": [
+          "taskset",
+          "-c",
+          "3",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-optimized"
+        ],
+        "name": "08-cpu3-pair4-optimized",
+        "pid": 19498,
+        "begin_ns": 19850915732097,
+        "finish_ns": 19851082086360,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19498 (taskset) R 19450 19450 19450 0 -1 4194304 22 0 0 0 0 0 0 0 20 0 1 0 1985091 475136 1 18446744073709551615 367518613504 367518626136 548719601056 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 367518694200 367518695440 367848189952 548719603038 548719603184 548719603184 548719603687 0",
+          "schedstat": "871903 20258 3"
+        },
+        "affinity_and_scheduler_readback": "pid 19498's current affinity list: 3\npid 19498's current scheduling policy: SCHED_OTHER\npid 19498's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 3,
+        "pair": 4,
+        "variant": "original",
+        "sequence": 9,
+        "command": [
+          "taskset",
+          "-c",
+          "3",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-original"
+        ],
+        "name": "09-cpu3-pair4-original",
+        "pid": 19501,
+        "begin_ns": 19851085213226,
+        "finish_ns": 19851552604965,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19501 (taskset) R 19450 19450 19450 0 -1 4194304 23 0 0 0 0 0 0 0 20 0 1 0 1985108 2306048 78 18446744073709551615 366515257344 366515269976 549739965456 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 366515338040 366515339280 367358091264 549739969887 549739970032 549739970032 549739970535 0",
+          "schedstat": "1276922 33572 3"
+        },
+        "affinity_and_scheduler_readback": "pid 19501's current affinity list: 3\npid 19501's current scheduling policy: SCHED_OTHER\npid 19501's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 7,
+        "pair": 0,
+        "variant": "original",
+        "sequence": 10,
+        "command": [
+          "taskset",
+          "-c",
+          "7",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-original"
+        ],
+        "name": "10-cpu7-pair0-original",
+        "pid": 19506,
+        "begin_ns": 19851555903787,
+        "finish_ns": 19851972936921,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19506 (taskset) R 19450 19450 19450 0 -1 4194304 23 0 0 0 0 0 0 0 20 0 1 0 1985155 475136 1 18446744073709551615 367017721856 367017734488 549741756672 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 367017802552 367017803792 367421018112 549741759839 549741759984 549741759984 549741760487 0",
+          "schedstat": "685879 21741 3"
+        },
+        "affinity_and_scheduler_readback": "pid 19506's current affinity list: 7\npid 19506's current scheduling policy: SCHED_OTHER\npid 19506's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 7,
+        "pair": 0,
+        "variant": "optimized",
+        "sequence": 11,
+        "command": [
+          "taskset",
+          "-c",
+          "7",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-optimized"
+        ],
+        "name": "11-cpu7-pair0-optimized",
+        "pid": 19511,
+        "begin_ns": 19851976249135,
+        "finish_ns": 19852092156807,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19511 (taskset) R 19450 19450 19450 0 -1 4194304 23 0 0 0 0 0 0 0 20 0 1 0 1985197 2244608 78 18446744073709551615 366814101504 366814114136 549233012160 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 366814182200 366814183440 367706038272 549233016158 549233016304 549233016304 549233016807 0",
+          "schedstat": "1284625 17718 3"
+        },
+        "affinity_and_scheduler_readback": "pid 19511's current affinity list: 7\npid 19511's current scheduling policy: SCHED_OTHER\npid 19511's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 7,
+        "pair": 1,
+        "variant": "optimized",
+        "sequence": 12,
+        "command": [
+          "taskset",
+          "-c",
+          "7",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-optimized"
+        ],
+        "name": "12-cpu7-pair1-optimized",
+        "pid": 19514,
+        "begin_ns": 19852095555728,
+        "finish_ns": 19852211539399,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19514 (taskset) R 19450 19450 19450 0 -1 4194304 23 0 0 0 0 0 0 0 20 0 1 0 1985209 2306048 1 18446744073709551615 367569272832 367569285464 549582212560 0 0 0 0 0 0 0 0 0 17 2 0 0 0 0 0 367569353528 367569354768 368507695104 549582216542 549582216688 549582216688 549582217191 0",
+          "schedstat": "1070328 21201 3"
+        },
+        "affinity_and_scheduler_readback": "pid 19514's current affinity list: 7\npid 19514's current scheduling policy: SCHED_OTHER\npid 19514's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 7,
+        "pair": 1,
+        "variant": "original",
+        "sequence": 13,
+        "command": [
+          "taskset",
+          "-c",
+          "7",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-original"
+        ],
+        "name": "13-cpu7-pair1-original",
+        "pid": 19518,
+        "begin_ns": 19852216152550,
+        "finish_ns": 19852633177638,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19518 (taskset) R 19450 19450 19450 0 -1 4194304 24 0 0 0 0 0 0 0 20 0 1 0 1985221 2306048 82 18446744073709551615 366520369152 366520381784 548782448816 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 366520449848 366520451088 367467667456 548782452063 548782452208 548782452208 548782452711 0",
+          "schedstat": "354381 7721 2"
+        },
+        "affinity_and_scheduler_readback": "pid 19518's current affinity list: 7\npid 19518's current scheduling policy: SCHED_OTHER\npid 19518's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 7,
+        "pair": 2,
+        "variant": "original",
+        "sequence": 14,
+        "command": [
+          "taskset",
+          "-c",
+          "7",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-original"
+        ],
+        "name": "14-cpu7-pair2-original",
+        "pid": 19522,
+        "begin_ns": 19852636802748,
+        "finish_ns": 19853053737839,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19522 (taskset) R 19450 19450 19450 0 -1 4194304 23 0 0 0 0 0 0 0 20 0 1 0 1985263 540672 81 18446744073709551615 367252733952 367252746584 549343704448 0 0 0 0 0 0 0 0 0 17 2 0 0 0 0 0 367252814648 367252815888 368192970752 549343706463 549343706608 549343706608 549343707111 0",
+          "schedstat": "716984 12160 2"
+        },
+        "affinity_and_scheduler_readback": "pid 19522's current affinity list: 7\npid 19522's current scheduling policy: SCHED_OTHER\npid 19522's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 7,
+        "pair": 2,
+        "variant": "optimized",
+        "sequence": 15,
+        "command": [
+          "taskset",
+          "-c",
+          "7",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-optimized"
+        ],
+        "name": "15-cpu7-pair2-optimized",
+        "pid": 19527,
+        "begin_ns": 19853057586648,
+        "finish_ns": 19853173731666,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19527 (taskset) R 19450 19450 19450 0 -1 4194304 23 0 0 0 0 0 0 0 20 0 1 0 1985305 2240512 81 18446744073709551615 367354904576 367354917208 549073167920 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 367354985272 367354986512 367719235584 549073169758 549073169904 549073169904 549073170407 0",
+          "schedstat": "824825 27130 3"
+        },
+        "affinity_and_scheduler_readback": "pid 19527's current affinity list: 7\npid 19527's current scheduling policy: SCHED_OTHER\npid 19527's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 7,
+        "pair": 3,
+        "variant": "optimized",
+        "sequence": 16,
+        "command": [
+          "taskset",
+          "-c",
+          "7",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-optimized"
+        ],
+        "name": "16-cpu7-pair3-optimized",
+        "pid": 19530,
+        "begin_ns": 19853177692087,
+        "finish_ns": 19853293805643,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19530 (taskset) R 19450 19450 19450 0 -1 4194304 24 0 0 0 0 0 0 0 20 0 1 0 1985317 2306048 82 18446744073709551615 367449079808 367449092440 548798352240 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 367449160504 367449161744 367962021888 548798356830 548798356976 548798356976 548798357479 0",
+          "schedstat": "800837 14896 2"
+        },
+        "affinity_and_scheduler_readback": "pid 19530's current affinity list: 7\npid 19530's current scheduling policy: SCHED_OTHER\npid 19530's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 7,
+        "pair": 3,
+        "variant": "original",
+        "sequence": 17,
+        "command": [
+          "taskset",
+          "-c",
+          "7",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-original"
+        ],
+        "name": "17-cpu7-pair3-original",
+        "pid": 19534,
+        "begin_ns": 19853297842307,
+        "finish_ns": 19853714883427,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19534 (taskset) R 19450 19450 19450 0 -1 4194304 24 0 0 0 0 0 0 0 20 0 1 0 1985329 2306048 82 18446744073709551615 366946942976 366946955608 549109096544 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 366947023672 366947024912 367499460608 549109099871 549109100016 549109100016 549109100519 0",
+          "schedstat": "691262 11796 2"
+        },
+        "affinity_and_scheduler_readback": "pid 19534's current affinity list: 7\npid 19534's current scheduling policy: SCHED_OTHER\npid 19534's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 7,
+        "pair": 4,
+        "variant": "optimized",
+        "sequence": 18,
+        "command": [
+          "taskset",
+          "-c",
+          "7",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-optimized"
+        ],
+        "name": "18-cpu7-pair4-optimized",
+        "pid": 19538,
+        "begin_ns": 19853719047622,
+        "finish_ns": 19853835639774,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19538 (taskset) R 19450 19450 19450 0 -1 4194304 24 0 0 0 0 0 0 0 20 0 1 0 1985371 2306048 82 18446744073709551615 366562967552 366562980184 549229260928 0 0 0 0 0 0 0 0 0 17 0 0 0 0 0 0 366563048248 366563049488 366880124928 549229264222 549229264368 549229264368 549229264871 0",
+          "schedstat": "1041421 25875 4"
+        },
+        "affinity_and_scheduler_readback": "pid 19538's current affinity list: 7\npid 19538's current scheduling policy: SCHED_OTHER\npid 19538's current scheduling priority: 0\n"
+      },
+      {
+        "cpu": 7,
+        "pair": 4,
+        "variant": "original",
+        "sequence": 19,
+        "command": [
+          "taskset",
+          "-c",
+          "7",
+          "/bin/bash",
+          "-c",
+          "taskset -pc $$ >&2; chrt -p $$ >&2; exec \"$1\"",
+          "crc-probe",
+          "/home/hzhy/crc-attribution-20261028-batch02/crc-probe-original"
+        ],
+        "name": "19-cpu7-pair4-original",
+        "pid": 19542,
+        "begin_ns": 19853840286152,
+        "finish_ns": 19854257244977,
+        "exit_status": 0,
+        "process_at_start": {
+          "stat": "19542 (taskset) R 19450 19450 19450 0 -1 4194304 23 0 0 0 0 0 0 0 20 0 1 0 1985384 540672 78 18446744073709551615 367431647232 367431659864 549418099472 0 0 0 0 0 0 0 0 0 17 1 0 0 0 0 0 367431727928 367431729168 368396546048 549418102111 549418102256 549418102256 549418102759 0",
+          "schedstat": "1216920 46299 4"
+        },
+        "affinity_and_scheduler_readback": "pid 19542's current affinity list: 7\npid 19542's current scheduling policy: SCHED_OTHER\npid 19542's current scheduling priority: 0\n"
+      }
+    ],
+    "success": true,
+    "protected_unchanged": true,
+    "remaining_probe_pids": [],
+    "finish_ns": 19854346802245,
+    "elapsed_seconds": 6.088875682
+  }
+}

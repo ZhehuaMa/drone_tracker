@@ -1,0 +1,59 @@
+{
+  "files": {
+    "src/diagnostics/storage.cpp": {
+      "sha256": "b57c538a1822952038dde7bbc19377ee89fbcf329959ca3a01417e8e6d2881fb",
+      "bytes": 12941
+    },
+    "src/diagnostics/tests/diagnostic_test.cpp": {
+      "sha256": "4918c050ca424cf41a84bfcf5b016b2b8fb74983f70b7c6bb5425d8847fbbe1e",
+      "bytes": 24301
+    },
+    ".docker-artifacts/backends/amd64/install/drone_tracker/lib/drone_tracker/rk3576_diagnostic_worker": {
+      "sha256": "2359d64998a19d8390853a4e7c7feac00dce65f3d350b83b31ecc7cf42b1db7c",
+      "bytes": 70744
+    },
+    ".docker-artifacts/collector-fix-20261028/build-original/src/diagnostics/rk3576_diagnostic_worker": {
+      "sha256": "780b2cd710714a9f71ac83512da164a6365839b8f62511dc61f721fe9b85aaa5",
+      "bytes": 70696
+    },
+    ".docker-artifacts/collector-fix-20261028/build-optimized/src/diagnostics/rk3576_diagnostic_worker": {
+      "sha256": "deb4f761466f1c1cb7d8c78a5d86e6940475cae0eda8072e4d3a97da9f6ea61a",
+      "bytes": 70768
+    },
+    ".docker-artifacts/collector-fix-20261028/crc-probe-original": {
+      "sha256": "0a323e55f13b289d1af93d48fafaeb8195c7bc26ffafbbd254c7e9a7e6295688",
+      "bytes": 47288
+    },
+    ".docker-artifacts/collector-fix-20261028/crc-probe-optimized": {
+      "sha256": "1a74e277c08a77404bbec165f6d074043b53a0db7d04d43248f707db9364e6c0",
+      "bytes": 47352
+    },
+    ".docker-artifacts/collector-fix-20261028/crc_probe.cpp": {
+      "sha256": "8370e4b156fcda977201866ca264b1bd34e395598b403bb2533f3e9d086797d8",
+      "bytes": 1288
+    },
+    ".docker-artifacts/collector-fix-20261028/build-legacy-workers.log": {
+      "sha256": "36b3c2b5396c18a4998e04b18019d589bd116d7358c4475dd960ebfeeb0be40a",
+      "bytes": 4628
+    },
+    ".docker-artifacts/collector-fix-20261028/test-console.log": {
+      "sha256": "15d33c4c016c1839ed19e5bc44d303b8c5dfe172b3ab2cc683f942cefb7971be",
+      "bytes": 8221
+    },
+    ".docker-artifacts/collector-fix-20261028/build-console.log": {
+      "sha256": "76d6072c89752734bfb3709b4db0e97a01517fe58b73cddca40a8ca1dab11b6a",
+      "bytes": 628
+    }
+  },
+  "validation": {
+    "cross_build_target": "ARM64",
+    "host": "x86_64",
+    "image": "sha256:025d0aa88983b0646a1b7a4d25cbc13dc96a6206e0148475bbfd5fad15057421",
+    "ctests_passed": 63,
+    "ctests_total": 63,
+    "native_resource_check": "passed",
+    "clang_tidy": "unavailable",
+    "clangd": "unavailable"
+  },
+  "legacy_scope": "format1 old probe controlled comparison, not current HEAD deployment acceptance"
+}

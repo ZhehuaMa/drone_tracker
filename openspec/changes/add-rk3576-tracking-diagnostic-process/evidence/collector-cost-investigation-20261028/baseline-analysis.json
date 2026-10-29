@@ -1,0 +1,151 @@
+{
+  "pairs": 40,
+  "samples_per_mode": 1600,
+  "all_model_work_and_behavior_verified": true,
+  "partial_full_csv_identical": true,
+  "categories": {
+    "all": {
+      "off": {
+        "count": 1600,
+        "median_ms": 23.333396999999998,
+        "p99_ms": 471.823139,
+        "maximum_ms": 475.799335
+      },
+      "basic": {
+        "count": 1600,
+        "median_ms": 23.597527,
+        "p99_ms": 477.007415,
+        "maximum_ms": 479.16635
+      },
+      "basic_minus_off_p99_ms": 5.184275999999954,
+      "five_adjacent_pairs_bootstrap95_ms": [
+        4.042096000000015,
+        5.783731999999986
+      ],
+      "paired_wall_delta_median_ms": 0.0015639999999999999,
+      "paired_thread_cpu_delta_median_ms": 0.0013799999999999997,
+      "paired_wall_minus_cpu_delta_median_ms": 2.3000000000000234e-05
+    },
+    "initialization_and_19_catchup": {
+      "off": {
+        "count": 40,
+        "median_ms": 471.5201725,
+        "p99_ms": 475.799335,
+        "maximum_ms": 475.799335
+      },
+      "basic": {
+        "count": 40,
+        "median_ms": 476.58994600000005,
+        "p99_ms": 479.16635,
+        "maximum_ms": 479.16635
+      },
+      "basic_minus_off_p99_ms": 3.3670150000000376,
+      "five_adjacent_pairs_bootstrap95_ms": [
+        3.141153000000031,
+        4.748866000000021
+      ],
+      "paired_wall_delta_median_ms": 4.958780999999988,
+      "paired_thread_cpu_delta_median_ms": 0.6036610000000167,
+      "paired_wall_minus_cpu_delta_median_ms": 4.37299950000002
+    },
+    "ordinary": {
+      "off": {
+        "count": 800,
+        "median_ms": 23.801806499999998,
+        "p99_ms": 24.572283,
+        "maximum_ms": 25.884085
+      },
+      "basic": {
+        "count": 800,
+        "median_ms": 24.053327,
+        "p99_ms": 24.713988,
+        "maximum_ms": 27.841669
+      },
+      "basic_minus_off_p99_ms": 0.14170500000000175,
+      "five_adjacent_pairs_bootstrap95_ms": [
+        -0.886061999999999,
+        1.1810950000000027
+      ],
+      "paired_wall_delta_median_ms": 0.23145349999999887,
+      "paired_thread_cpu_delta_median_ms": 0.012974000000001595,
+      "paired_wall_minus_cpu_delta_median_ms": 0.21828149999999802
+    },
+    "waiting": {
+      "off": {
+        "count": 760,
+        "median_ms": 0.001541,
+        "p99_ms": 0.010581,
+        "maximum_ms": 0.011201
+      },
+      "basic": {
+        "count": 760,
+        "median_ms": 0.002852,
+        "p99_ms": 0.015479,
+        "maximum_ms": 0.018884
+      },
+      "basic_minus_off_p99_ms": 0.004898,
+      "five_adjacent_pairs_bootstrap95_ms": [
+        0.004622000000000001,
+        0.005542000000000002
+      ],
+      "paired_wall_delta_median_ms": 0.001334,
+      "paired_thread_cpu_delta_median_ms": 0.0013570000000000001,
+      "paired_wall_minus_cpu_delta_median_ms": -2.2000000000000426e-05
+    }
+  },
+  "resources": {
+    "probe": {
+      "available": false,
+      "reason": "Missing /proc/PID/io invalidated whole process snapshot in collector; gone is not evidence of process exit during telemetry"
+    },
+    "worker": {
+      "available": false,
+      "reason": "Missing /proc/PID/io invalidated whole process snapshot in collector; gone is not evidence of process exit during telemetry"
+    }
+  },
+  "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=0\naudit=0\nmixed=1\nseed=20261028\nboundary_minimum_wait_ns=100000000\nboundary_maximum_wait_ns=250000000\ndropped_0=0\ndropped_1=0\ndropped_2=0\ndropped_3=0\nclock_resolution_ns=1\ncycles=80\n",
+  "whole_experiment": {
+    "started_ns": 19203672600831,
+    "seed": 20261028,
+    "blocks": 80,
+    "experiment_scope": "same-process fixed Nano work, randomized off/basic; no ROS, HDMI, camera, bag or concurrent measurement YOLO",
+    "command": [
+      "/home/hzhy/baseline-attribution-20261028/drone_tracker/lib/drone_tracker/fixed_workload_probe",
+      "mixed",
+      "/home/hzhy/baseline-attribution-20261028/worker.sock",
+      "/home/hzhy/drone-performance-investigation-20261013/fixed-balloon.avi",
+      "/home/hzhy/baseline-attribution-20261028/evidence",
+      "80",
+      "0",
+      "0"
+    ],
+    "probe_pid": 17520,
+    "worker_pid": 17519,
+    "probe_exit": 0,
+    "worker_exit": 0,
+    "inspect_exit": 0,
+    "success": true,
+    "after_processes": [
+      {
+        "pid": 17519,
+        "gone": true
+      },
+      {
+        "pid": 17520,
+        "gone": true
+      }
+    ],
+    "protected_unchanged": true,
+    "finish_ns": 19292322677259,
+    "elapsed_seconds": 88.650076428
+  },
+  "telemetry_samples": 87,
+  "maximum_sensor_millidegrees": {
+    "/sys/class/thermal/thermal_zone2/temp": 44384,
+    "/sys/class/thermal/thermal_zone0/temp": 40692,
+    "/sys/class/thermal/thermal_zone5/temp": 43461,
+    "/sys/class/thermal/thermal_zone3/temp": 41615,
+    "/sys/class/thermal/thermal_zone1/temp": 42538,
+    "/sys/class/thermal/thermal_zone4/temp": 40692
+  }
+}

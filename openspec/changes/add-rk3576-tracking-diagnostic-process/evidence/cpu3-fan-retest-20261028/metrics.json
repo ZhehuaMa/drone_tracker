@@ -1,0 +1,1207 @@
+{
+  "pairs": [
+    {
+      "name": "pair1",
+      "off": {
+        "mode": "off",
+        "window_seconds": 45.006766136,
+        "call_samples": 1588,
+        "consumed": 1588,
+        "consumed_fps": 35.28358369942494,
+        "call_p99_ms": 259.196015,
+        "call_max_ms": 353.824034,
+        "submit_samples": 0,
+        "submit_p99_us": null,
+        "submit_max_us": null,
+        "sample_overflow": 0,
+        "submit_by_producer": {}
+      },
+      "basic": {
+        "mode": "basic",
+        "window_seconds": 45.014490757,
+        "call_samples": 1617,
+        "consumed": 1617,
+        "consumed_fps": 35.92176592042303,
+        "call_p99_ms": 214.528912,
+        "call_max_ms": 341.651767,
+        "submit_samples": 22003,
+        "submit_p99_us": 13.777,
+        "submit_max_us": 451.218,
+        "sample_overflow": 0,
+        "submit_by_producer": {
+          "0": 20765,
+          "2": 1238
+        }
+      },
+      "call_p99_increment_ms": -44.667103,
+      "consumption_decline_percent": -1.808722794245221,
+      "passed": true
+    },
+    {
+      "name": "pair2",
+      "off": {
+        "mode": "off",
+        "window_seconds": 45.004822888,
+        "call_samples": 1629,
+        "consumed": 1629,
+        "consumed_fps": 36.1961206703105,
+        "call_p99_ms": 202.479187,
+        "call_max_ms": 360.263121,
+        "submit_samples": 0,
+        "submit_p99_us": null,
+        "submit_max_us": null,
+        "sample_overflow": 0,
+        "submit_by_producer": {}
+      },
+      "basic": {
+        "mode": "basic",
+        "window_seconds": 45.018489018,
+        "call_samples": 1469,
+        "consumed": 1469,
+        "consumed_fps": 32.63103742581501,
+        "call_p99_ms": 259.776794,
+        "call_max_ms": 371.623423,
+        "submit_samples": 20743,
+        "submit_p99_us": 13.709,
+        "submit_max_us": 329.32,
+        "sample_overflow": 0,
+        "submit_by_producer": {
+          "0": 19456,
+          "2": 1287
+        }
+      },
+      "call_p99_increment_ms": 57.297607,
+      "consumption_decline_percent": 9.84935174950865,
+      "passed": false
+    },
+    {
+      "name": "pair3",
+      "off": {
+        "mode": "off",
+        "window_seconds": 45.020428757,
+        "call_samples": 1640,
+        "consumed": 1640,
+        "consumed_fps": 36.427907180804105,
+        "call_p99_ms": 233.646363,
+        "call_max_ms": 337.091281,
+        "submit_samples": 0,
+        "submit_p99_us": null,
+        "submit_max_us": null,
+        "sample_overflow": 0,
+        "submit_by_producer": {}
+      },
+      "basic": {
+        "mode": "basic",
+        "window_seconds": 45.012642798,
+        "call_samples": 1632,
+        "consumed": 1632,
+        "consumed_fps": 36.256480369833184,
+        "call_p99_ms": 252.408479,
+        "call_max_ms": 353.970475,
+        "submit_samples": 21710,
+        "submit_p99_us": 13.985,
+        "submit_max_us": 385.421,
+        "sample_overflow": 0,
+        "submit_by_producer": {
+          "0": 20378,
+          "2": 1332
+        }
+      },
+      "call_p99_increment_ms": 18.762115999999992,
+      "consumption_decline_percent": 0.47059198355829945,
+      "passed": false
+    },
+    {
+      "name": "pair4",
+      "off": {
+        "mode": "off",
+        "window_seconds": 45.017158257,
+        "call_samples": 1612,
+        "consumed": 1612,
+        "consumed_fps": 35.80856860837812,
+        "call_p99_ms": 206.850056,
+        "call_max_ms": 356.438616,
+        "submit_samples": 0,
+        "submit_p99_us": null,
+        "submit_max_us": null,
+        "sample_overflow": 0,
+        "submit_by_producer": {}
+      },
+      "basic": {
+        "mode": "basic",
+        "window_seconds": 45.003180238,
+        "call_samples": 1610,
+        "consumed": 1610,
+        "consumed_fps": 35.77524947093718,
+        "call_p99_ms": 256.753824,
+        "call_max_ms": 354.828385,
+        "submit_samples": 21740,
+        "submit_p99_us": 13.824,
+        "submit_max_us": 458.825,
+        "sample_overflow": 0,
+        "submit_by_producer": {
+          "0": 20399,
+          "2": 1341
+        }
+      },
+      "call_p99_increment_ms": 49.903768000000014,
+      "consumption_decline_percent": 0.09304794560578422,
+      "passed": false
+    },
+    {
+      "name": "pair5",
+      "off": {
+        "mode": "off",
+        "window_seconds": 45.005105855,
+        "call_samples": 1615,
+        "consumed": 1615,
+        "consumed_fps": 35.88481727391773,
+        "call_p99_ms": 242.618877,
+        "call_max_ms": 356.048866,
+        "submit_samples": 0,
+        "submit_p99_us": null,
+        "submit_max_us": null,
+        "sample_overflow": 0,
+        "submit_by_producer": {}
+      },
+      "basic": {
+        "mode": "basic",
+        "window_seconds": 45.005138773,
+        "call_samples": 1581,
+        "consumed": 1581,
+        "consumed_fps": 35.12932174199831,
+        "call_p99_ms": 257.129823,
+        "call_max_ms": 314.576368,
+        "submit_samples": 21816,
+        "submit_p99_us": 13.685,
+        "submit_max_us": 629.182,
+        "sample_overflow": 0,
+        "submit_by_producer": {
+          "0": 20499,
+          "2": 1317
+        }
+      },
+      "call_p99_increment_ms": 14.51094599999999,
+      "consumption_decline_percent": 2.105334760805766,
+      "passed": false
+    },
+    {
+      "name": "pair6",
+      "off": {
+        "mode": "off",
+        "window_seconds": 45.000515095,
+        "call_samples": 1576,
+        "consumed": 1576,
+        "consumed_fps": 35.021821342998564,
+        "call_p99_ms": 215.469954,
+        "call_max_ms": 351.739371,
+        "submit_samples": 0,
+        "submit_p99_us": null,
+        "submit_max_us": null,
+        "sample_overflow": 0,
+        "submit_by_producer": {}
+      },
+      "basic": {
+        "mode": "basic",
+        "window_seconds": 45.00358171,
+        "call_samples": 1554,
+        "consumed": 1554,
+        "consumed_fps": 34.53058492130403,
+        "call_p99_ms": 265.318986,
+        "call_max_ms": 337.26498,
+        "submit_samples": 21320,
+        "submit_p99_us": 13.548,
+        "submit_max_us": 292.222,
+        "sample_overflow": 0,
+        "submit_by_producer": {
+          "0": 20046,
+          "2": 1274
+        }
+      },
+      "call_p99_increment_ms": 49.849031999999994,
+      "consumption_decline_percent": 1.4026581224415247,
+      "passed": false
+    },
+    {
+      "name": "pair7",
+      "off": {
+        "mode": "off",
+        "window_seconds": 45.01572283,
+        "call_samples": 1638,
+        "consumed": 1638,
+        "consumed_fps": 36.38728641958808,
+        "call_p99_ms": 213.914428,
+        "call_max_ms": 354.476906,
+        "submit_samples": 0,
+        "submit_p99_us": null,
+        "submit_max_us": null,
+        "sample_overflow": 0,
+        "submit_by_producer": {}
+      },
+      "basic": {
+        "mode": "basic",
+        "window_seconds": 45.013937981,
+        "call_samples": 1653,
+        "consumed": 1653,
+        "consumed_fps": 36.72195933396712,
+        "call_p99_ms": 200.360932,
+        "call_max_ms": 365.758854,
+        "submit_samples": 22148,
+        "submit_p99_us": 14.191,
+        "submit_max_us": 341.537,
+        "sample_overflow": 0,
+        "submit_by_producer": {
+          "0": 20836,
+          "2": 1312
+        }
+      },
+      "call_p99_increment_ms": -13.553495999999996,
+      "consumption_decline_percent": -0.9197523292060694,
+      "passed": true
+    },
+    {
+      "name": "pair8",
+      "off": {
+        "mode": "off",
+        "window_seconds": 45.021508034,
+        "call_samples": 1604,
+        "consumed": 1604,
+        "consumed_fps": 35.62741609607274,
+        "call_p99_ms": 186.123563,
+        "call_max_ms": 332.246734,
+        "submit_samples": 0,
+        "submit_p99_us": null,
+        "submit_max_us": null,
+        "sample_overflow": 0,
+        "submit_by_producer": {}
+      },
+      "basic": {
+        "mode": "basic",
+        "window_seconds": 45.000426236,
+        "call_samples": 1685,
+        "consumed": 1685,
+        "consumed_fps": 37.444089777354435,
+        "call_p99_ms": 201.633752,
+        "call_max_ms": 371.897581,
+        "submit_samples": 22060,
+        "submit_p99_us": 14.053,
+        "submit_max_us": 267.453,
+        "sample_overflow": 0,
+        "submit_by_producer": {
+          "0": 20730,
+          "2": 1330
+        }
+      },
+      "call_p99_increment_ms": 15.510188999999997,
+      "consumption_decline_percent": -5.099089073377816,
+      "passed": false
+    },
+    {
+      "name": "pair9",
+      "off": {
+        "mode": "off",
+        "window_seconds": 45.000752589,
+        "call_samples": 1616,
+        "consumed": 1616,
+        "consumed_fps": 35.910510536550795,
+        "call_p99_ms": 197.995607,
+        "call_max_ms": 358.532674,
+        "submit_samples": 0,
+        "submit_p99_us": null,
+        "submit_max_us": null,
+        "sample_overflow": 0,
+        "submit_by_producer": {}
+      },
+      "basic": {
+        "mode": "basic",
+        "window_seconds": 45.012554515,
+        "call_samples": 1602,
+        "consumed": 1602,
+        "consumed_fps": 35.59007075384155,
+        "call_p99_ms": 198.779766,
+        "call_max_ms": 356.302745,
+        "submit_samples": 21822,
+        "submit_p99_us": 14.214,
+        "submit_max_us": 341.718,
+        "sample_overflow": 0,
+        "submit_by_producer": {
+          "0": 20513,
+          "2": 1309
+        }
+      },
+      "call_p99_increment_ms": 0.7841589999999883,
+      "consumption_decline_percent": 0.8923286745898262,
+      "passed": false
+    },
+    {
+      "name": "pair10",
+      "off": {
+        "mode": "off",
+        "window_seconds": 45.005186621,
+        "call_samples": 1597,
+        "consumed": 1597,
+        "consumed_fps": 35.48479897325477,
+        "call_p99_ms": 220.165932,
+        "call_max_ms": 350.992738,
+        "submit_samples": 0,
+        "submit_p99_us": null,
+        "submit_max_us": null,
+        "sample_overflow": 0,
+        "submit_by_producer": {}
+      },
+      "basic": {
+        "mode": "basic",
+        "window_seconds": 45.016274726,
+        "call_samples": 1565,
+        "consumed": 1565,
+        "consumed_fps": 34.76520457380505,
+        "call_p99_ms": 224.382715,
+        "call_max_ms": 350.652532,
+        "submit_samples": 21848,
+        "submit_p99_us": 14.076,
+        "submit_max_us": 594.817,
+        "sample_overflow": 0,
+        "submit_by_producer": {
+          "0": 20490,
+          "2": 1358
+        }
+      },
+      "call_p99_increment_ms": 4.216782999999992,
+      "consumption_decline_percent": 2.0278948176994938,
+      "passed": false
+    }
+  ],
+  "cases": {
+    "pair1": {
+      "executed": true,
+      "execution_passed": true,
+      "elapsed_seconds": 104.482244025,
+      "events": 23989,
+      "event_types": {
+        "运行开始": 1,
+        "健康": 208,
+        "轮次开始": 1,
+        "时钟对应": 1,
+        "节点选择": 1745,
+        "调用开始": 1745,
+        "缓存追加": 1745,
+        "请求决策": 288,
+        "调用结束": 1745,
+        "输出": 1745,
+        "检测开始": 233,
+        "发布开始": 1745,
+        "发布结束": 1745,
+        "未投递": 1457,
+        "检测阶段": 885,
+        "检测结束": 233,
+        "结果读取": 232,
+        "缓存查找": 175,
+        "初始化开始": 80,
+        "初始化结束": 80,
+        "补跟踪步骤": 882,
+        "补跟踪汇总": 80,
+        "节点跳过": 1195,
+        "跳变比较": 2070,
+        "仲裁决策": 1954,
+        "缓存淘汰": 1715,
+        "请求取消": 2,
+        "轮次结束": 1,
+        "运行结束": 1
+      },
+      "max_gap_counter": 0,
+      "max_health_drops": 0,
+      "complete_segments": true,
+      "received_states": {
+        "0": 15,
+        "1": 16,
+        "2": 16,
+        "3": 14
+      },
+      "received_boxes": 3469,
+      "metrics": [
+        {
+          "mode": "off",
+          "window_seconds": 45.006766136,
+          "call_samples": 1588,
+          "consumed": 1588,
+          "consumed_fps": 35.28358369942494,
+          "call_p99_ms": 259.196015,
+          "call_max_ms": 353.824034,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "submit_max_us": null,
+          "sample_overflow": 0,
+          "submit_by_producer": {}
+        },
+        {
+          "mode": "basic",
+          "window_seconds": 45.014490757,
+          "call_samples": 1617,
+          "consumed": 1617,
+          "consumed_fps": 35.92176592042303,
+          "call_p99_ms": 214.528912,
+          "call_max_ms": 341.651767,
+          "submit_samples": 22003,
+          "submit_p99_us": 13.777,
+          "submit_max_us": 451.218,
+          "sample_overflow": 0,
+          "submit_by_producer": {
+            "0": 20765,
+            "2": 1238
+          }
+        }
+      ]
+    },
+    "pair2": {
+      "executed": true,
+      "execution_passed": true,
+      "elapsed_seconds": 104.507197499,
+      "events": 22776,
+      "event_types": {
+        "运行开始": 1,
+        "健康": 208,
+        "轮次开始": 1,
+        "时钟对应": 1,
+        "节点选择": 1602,
+        "调用开始": 1602,
+        "缓存追加": 1602,
+        "请求决策": 310,
+        "调用结束": 1602,
+        "输出": 1602,
+        "检测开始": 244,
+        "发布开始": 1602,
+        "发布结束": 1602,
+        "节点跳过": 1338,
+        "未投递": 1292,
+        "检测阶段": 922,
+        "检测结束": 244,
+        "结果读取": 243,
+        "缓存查找": 194,
+        "初始化开始": 112,
+        "初始化结束": 112,
+        "补跟踪步骤": 1128,
+        "补跟踪汇总": 112,
+        "跳变比较": 1829,
+        "仲裁决策": 1696,
+        "缓存淘汰": 1572,
+        "请求取消": 1,
+        "轮次结束": 1,
+        "运行结束": 1
+      },
+      "max_gap_counter": 0,
+      "max_health_drops": 0,
+      "complete_segments": true,
+      "received_states": {
+        "0": 20,
+        "1": 22,
+        "2": 21,
+        "3": 20
+      },
+      "received_boxes": 3362,
+      "metrics": [
+        {
+          "mode": "basic",
+          "window_seconds": 45.018489018,
+          "call_samples": 1469,
+          "consumed": 1469,
+          "consumed_fps": 32.63103742581501,
+          "call_p99_ms": 259.776794,
+          "call_max_ms": 371.623423,
+          "submit_samples": 20743,
+          "submit_p99_us": 13.709,
+          "submit_max_us": 329.32,
+          "sample_overflow": 0,
+          "submit_by_producer": {
+            "0": 19456,
+            "2": 1287
+          }
+        },
+        {
+          "mode": "off",
+          "window_seconds": 45.004822888,
+          "call_samples": 1629,
+          "consumed": 1629,
+          "consumed_fps": 36.1961206703105,
+          "call_p99_ms": 202.479187,
+          "call_max_ms": 360.263121,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "submit_max_us": null,
+          "sample_overflow": 0,
+          "submit_by_producer": {}
+        }
+      ]
+    },
+    "pair3": {
+      "executed": true,
+      "execution_passed": true,
+      "elapsed_seconds": 104.47013792,
+      "events": 23941,
+      "event_types": {
+        "运行开始": 1,
+        "健康": 208,
+        "轮次开始": 1,
+        "时钟对应": 1,
+        "节点选择": 1784,
+        "调用开始": 1784,
+        "缓存追加": 1784,
+        "请求决策": 332,
+        "调用结束": 1784,
+        "输出": 1784,
+        "检测开始": 237,
+        "发布开始": 1784,
+        "发布结束": 1784,
+        "未投递": 1452,
+        "检测阶段": 980,
+        "检测结束": 237,
+        "结果读取": 236,
+        "缓存查找": 164,
+        "初始化开始": 86,
+        "初始化结束": 86,
+        "补跟踪步骤": 931,
+        "补跟踪汇总": 86,
+        "节点跳过": 1153,
+        "跳变比较": 1797,
+        "仲裁决策": 1708,
+        "缓存淘汰": 1754,
+        "请求取消": 1,
+        "轮次结束": 1,
+        "运行结束": 1
+      },
+      "max_gap_counter": 0,
+      "max_health_drops": 0,
+      "complete_segments": true,
+      "received_states": {
+        "0": 23,
+        "1": 24,
+        "2": 24,
+        "3": 22
+      },
+      "received_boxes": 3575,
+      "metrics": [
+        {
+          "mode": "off",
+          "window_seconds": 45.020428757,
+          "call_samples": 1640,
+          "consumed": 1640,
+          "consumed_fps": 36.427907180804105,
+          "call_p99_ms": 233.646363,
+          "call_max_ms": 337.091281,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "submit_max_us": null,
+          "sample_overflow": 0,
+          "submit_by_producer": {}
+        },
+        {
+          "mode": "basic",
+          "window_seconds": 45.012642798,
+          "call_samples": 1632,
+          "consumed": 1632,
+          "consumed_fps": 36.256480369833184,
+          "call_p99_ms": 252.408479,
+          "call_max_ms": 353.970475,
+          "submit_samples": 21710,
+          "submit_p99_us": 13.985,
+          "submit_max_us": 385.421,
+          "sample_overflow": 0,
+          "submit_by_producer": {
+            "0": 20378,
+            "2": 1332
+          }
+        }
+      ]
+    },
+    "pair4": {
+      "executed": true,
+      "execution_passed": true,
+      "elapsed_seconds": 106.317985944,
+      "events": 23837,
+      "event_types": {
+        "运行开始": 1,
+        "健康": 208,
+        "轮次开始": 1,
+        "时钟对应": 1,
+        "节点选择": 1747,
+        "调用开始": 1747,
+        "缓存追加": 1747,
+        "请求决策": 318,
+        "调用结束": 1747,
+        "输出": 1747,
+        "检测开始": 239,
+        "发布开始": 1747,
+        "发布结束": 1747,
+        "未投递": 1429,
+        "检测阶段": 983,
+        "检测结束": 239,
+        "结果读取": 239,
+        "缓存查找": 177,
+        "初始化开始": 90,
+        "初始化结束": 90,
+        "补跟踪步骤": 967,
+        "补跟踪汇总": 90,
+        "节点跳过": 1192,
+        "跳变比较": 1869,
+        "仲裁决策": 1756,
+        "缓存淘汰": 1717,
+        "轮次结束": 1,
+        "运行结束": 1
+      },
+      "max_gap_counter": 0,
+      "max_health_drops": 0,
+      "complete_segments": true,
+      "received_states": {
+        "0": 21,
+        "1": 22,
+        "2": 22,
+        "3": 20
+      },
+      "received_boxes": 3503,
+      "metrics": [
+        {
+          "mode": "basic",
+          "window_seconds": 45.003180238,
+          "call_samples": 1610,
+          "consumed": 1610,
+          "consumed_fps": 35.77524947093718,
+          "call_p99_ms": 256.753824,
+          "call_max_ms": 354.828385,
+          "submit_samples": 21740,
+          "submit_p99_us": 13.824,
+          "submit_max_us": 458.825,
+          "sample_overflow": 0,
+          "submit_by_producer": {
+            "0": 20399,
+            "2": 1341
+          }
+        },
+        {
+          "mode": "off",
+          "window_seconds": 45.017158257,
+          "call_samples": 1612,
+          "consumed": 1612,
+          "consumed_fps": 35.80856860837812,
+          "call_p99_ms": 206.850056,
+          "call_max_ms": 356.438616,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "submit_max_us": null,
+          "sample_overflow": 0,
+          "submit_by_producer": {}
+        }
+      ]
+    },
+    "pair5": {
+      "executed": true,
+      "execution_passed": true,
+      "elapsed_seconds": 104.392203515,
+      "events": 23988,
+      "event_types": {
+        "运行开始": 1,
+        "健康": 208,
+        "轮次开始": 1,
+        "时钟对应": 1,
+        "节点选择": 1728,
+        "调用开始": 1728,
+        "缓存追加": 1728,
+        "请求决策": 343,
+        "调用结束": 1728,
+        "输出": 1728,
+        "检测开始": 255,
+        "发布开始": 1728,
+        "发布结束": 1728,
+        "未投递": 1385,
+        "检测阶段": 939,
+        "检测结束": 255,
+        "结果读取": 254,
+        "缓存查找": 201,
+        "初始化开始": 101,
+        "初始化结束": 101,
+        "补跟踪步骤": 955,
+        "补跟踪汇总": 101,
+        "节点跳过": 1211,
+        "跳变比较": 2009,
+        "仲裁决策": 1870,
+        "缓存淘汰": 1698,
+        "请求取消": 1,
+        "轮次结束": 1,
+        "运行结束": 1
+      },
+      "max_gap_counter": 0,
+      "max_health_drops": 0,
+      "complete_segments": true,
+      "received_states": {
+        "0": 17,
+        "1": 20,
+        "2": 20,
+        "3": 18
+      },
+      "received_boxes": 3484,
+      "metrics": [
+        {
+          "mode": "off",
+          "window_seconds": 45.005105855,
+          "call_samples": 1615,
+          "consumed": 1615,
+          "consumed_fps": 35.88481727391773,
+          "call_p99_ms": 242.618877,
+          "call_max_ms": 356.048866,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "submit_max_us": null,
+          "sample_overflow": 0,
+          "submit_by_producer": {}
+        },
+        {
+          "mode": "basic",
+          "window_seconds": 45.005138773,
+          "call_samples": 1581,
+          "consumed": 1581,
+          "consumed_fps": 35.12932174199831,
+          "call_p99_ms": 257.129823,
+          "call_max_ms": 314.576368,
+          "submit_samples": 21816,
+          "submit_p99_us": 13.685,
+          "submit_max_us": 629.182,
+          "sample_overflow": 0,
+          "submit_by_producer": {
+            "0": 20499,
+            "2": 1317
+          }
+        }
+      ]
+    },
+    "pair6": {
+      "executed": true,
+      "execution_passed": true,
+      "elapsed_seconds": 104.447956015,
+      "events": 23281,
+      "event_types": {
+        "运行开始": 1,
+        "健康": 208,
+        "轮次开始": 1,
+        "时钟对应": 1,
+        "节点选择": 1679,
+        "调用开始": 1679,
+        "缓存追加": 1679,
+        "请求决策": 310,
+        "调用结束": 1679,
+        "输出": 1679,
+        "检测开始": 234,
+        "发布开始": 1679,
+        "发布结束": 1679,
+        "节点跳过": 1260,
+        "未投递": 1369,
+        "检测阶段": 921,
+        "检测结束": 234,
+        "结果读取": 233,
+        "缓存查找": 178,
+        "初始化开始": 98,
+        "初始化结束": 98,
+        "补跟踪步骤": 1054,
+        "补跟踪汇总": 98,
+        "跳变比较": 1847,
+        "仲裁决策": 1730,
+        "缓存淘汰": 1649,
+        "请求取消": 2,
+        "轮次结束": 1,
+        "运行结束": 1
+      },
+      "max_gap_counter": 0,
+      "max_health_drops": 0,
+      "complete_segments": true,
+      "received_states": {
+        "0": 22,
+        "1": 26,
+        "2": 25,
+        "3": 24
+      },
+      "received_boxes": 3383,
+      "metrics": [
+        {
+          "mode": "basic",
+          "window_seconds": 45.00358171,
+          "call_samples": 1554,
+          "consumed": 1554,
+          "consumed_fps": 34.53058492130403,
+          "call_p99_ms": 265.318986,
+          "call_max_ms": 337.26498,
+          "submit_samples": 21320,
+          "submit_p99_us": 13.548,
+          "submit_max_us": 292.222,
+          "sample_overflow": 0,
+          "submit_by_producer": {
+            "0": 20046,
+            "2": 1274
+          }
+        },
+        {
+          "mode": "off",
+          "window_seconds": 45.000515095,
+          "call_samples": 1576,
+          "consumed": 1576,
+          "consumed_fps": 35.021821342998564,
+          "call_p99_ms": 215.469954,
+          "call_max_ms": 351.739371,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "submit_max_us": null,
+          "sample_overflow": 0,
+          "submit_by_producer": {}
+        }
+      ]
+    },
+    "pair7": {
+      "executed": true,
+      "execution_passed": true,
+      "elapsed_seconds": 104.510757646,
+      "events": 24175,
+      "event_types": {
+        "运行开始": 1,
+        "健康": 208,
+        "轮次开始": 1,
+        "时钟对应": 1,
+        "节点选择": 1785,
+        "调用开始": 1785,
+        "缓存追加": 1785,
+        "请求决策": 322,
+        "调用结束": 1785,
+        "输出": 1785,
+        "检测开始": 243,
+        "发布开始": 1785,
+        "发布结束": 1785,
+        "未投递": 1463,
+        "检测阶段": 943,
+        "检测结束": 243,
+        "结果读取": 242,
+        "缓存查找": 183,
+        "初始化开始": 99,
+        "初始化结束": 99,
+        "补跟踪步骤": 1003,
+        "补跟踪汇总": 99,
+        "节点跳过": 1153,
+        "跳变比较": 1869,
+        "仲裁决策": 1750,
+        "缓存淘汰": 1755,
+        "请求取消": 1,
+        "轮次结束": 1,
+        "运行结束": 1
+      },
+      "max_gap_counter": 0,
+      "max_health_drops": 0,
+      "complete_segments": true,
+      "received_states": {
+        "0": 23,
+        "1": 23,
+        "2": 23,
+        "3": 21
+      },
+      "received_boxes": 3567,
+      "metrics": [
+        {
+          "mode": "off",
+          "window_seconds": 45.01572283,
+          "call_samples": 1638,
+          "consumed": 1638,
+          "consumed_fps": 36.38728641958808,
+          "call_p99_ms": 213.914428,
+          "call_max_ms": 354.476906,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "submit_max_us": null,
+          "sample_overflow": 0,
+          "submit_by_producer": {}
+        },
+        {
+          "mode": "basic",
+          "window_seconds": 45.013937981,
+          "call_samples": 1653,
+          "consumed": 1653,
+          "consumed_fps": 36.72195933396712,
+          "call_p99_ms": 200.360932,
+          "call_max_ms": 365.758854,
+          "submit_samples": 22148,
+          "submit_p99_us": 14.191,
+          "submit_max_us": 341.537,
+          "sample_overflow": 0,
+          "submit_by_producer": {
+            "0": 20836,
+            "2": 1312
+          }
+        }
+      ]
+    },
+    "pair8": {
+      "executed": true,
+      "execution_passed": true,
+      "elapsed_seconds": 104.560062776,
+      "events": 24095,
+      "event_types": {
+        "健康": 208,
+        "运行开始": 1,
+        "轮次开始": 1,
+        "时钟对应": 1,
+        "节点选择": 1820,
+        "调用开始": 1820,
+        "缓存追加": 1820,
+        "请求决策": 310,
+        "调用结束": 1820,
+        "输出": 1820,
+        "检测开始": 228,
+        "发布开始": 1820,
+        "发布结束": 1820,
+        "未投递": 1510,
+        "检测阶段": 997,
+        "检测结束": 228,
+        "结果读取": 227,
+        "缓存查找": 159,
+        "初始化开始": 85,
+        "初始化结束": 85,
+        "补跟踪步骤": 916,
+        "补跟踪汇总": 85,
+        "节点跳过": 1120,
+        "跳变比较": 1747,
+        "仲裁决策": 1653,
+        "缓存淘汰": 1790,
+        "请求取消": 2,
+        "轮次结束": 1,
+        "运行结束": 1
+      },
+      "max_gap_counter": 0,
+      "max_health_drops": 0,
+      "complete_segments": true,
+      "received_states": {
+        "0": 21,
+        "1": 21,
+        "2": 21,
+        "3": 19
+      },
+      "received_boxes": 3568,
+      "metrics": [
+        {
+          "mode": "basic",
+          "window_seconds": 45.000426236,
+          "call_samples": 1685,
+          "consumed": 1685,
+          "consumed_fps": 37.444089777354435,
+          "call_p99_ms": 201.633752,
+          "call_max_ms": 371.897581,
+          "submit_samples": 22060,
+          "submit_p99_us": 14.053,
+          "submit_max_us": 267.453,
+          "sample_overflow": 0,
+          "submit_by_producer": {
+            "0": 20730,
+            "2": 1330
+          }
+        },
+        {
+          "mode": "off",
+          "window_seconds": 45.021508034,
+          "call_samples": 1604,
+          "consumed": 1604,
+          "consumed_fps": 35.62741609607274,
+          "call_p99_ms": 186.123563,
+          "call_max_ms": 332.246734,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "submit_max_us": null,
+          "sample_overflow": 0,
+          "submit_by_producer": {}
+        }
+      ]
+    },
+    "pair9": {
+      "executed": true,
+      "execution_passed": true,
+      "elapsed_seconds": 104.489537972,
+      "events": 24066,
+      "event_types": {
+        "运行开始": 1,
+        "健康": 208,
+        "轮次开始": 1,
+        "时钟对应": 1,
+        "节点选择": 1760,
+        "调用开始": 1760,
+        "缓存追加": 1760,
+        "请求决策": 328,
+        "调用结束": 1760,
+        "输出": 1760,
+        "检测开始": 244,
+        "发布开始": 1760,
+        "发布结束": 1760,
+        "未投递": 1432,
+        "检测阶段": 945,
+        "检测结束": 244,
+        "结果读取": 243,
+        "缓存查找": 183,
+        "初始化开始": 92,
+        "初始化结束": 92,
+        "补跟踪步骤": 917,
+        "补跟踪汇总": 92,
+        "节点跳过": 1181,
+        "跳变比较": 1965,
+        "仲裁决策": 1843,
+        "缓存淘汰": 1730,
+        "请求取消": 2,
+        "轮次结束": 1,
+        "运行结束": 1
+      },
+      "max_gap_counter": 0,
+      "max_health_drops": 0,
+      "complete_segments": true,
+      "received_states": {
+        "0": 14,
+        "1": 14,
+        "2": 14,
+        "3": 12
+      },
+      "received_boxes": 3526,
+      "metrics": [
+        {
+          "mode": "off",
+          "window_seconds": 45.000752589,
+          "call_samples": 1616,
+          "consumed": 1616,
+          "consumed_fps": 35.910510536550795,
+          "call_p99_ms": 197.995607,
+          "call_max_ms": 358.532674,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "submit_max_us": null,
+          "sample_overflow": 0,
+          "submit_by_producer": {}
+        },
+        {
+          "mode": "basic",
+          "window_seconds": 45.012554515,
+          "call_samples": 1602,
+          "consumed": 1602,
+          "consumed_fps": 35.59007075384155,
+          "call_p99_ms": 198.779766,
+          "call_max_ms": 356.302745,
+          "submit_samples": 21822,
+          "submit_p99_us": 14.214,
+          "submit_max_us": 341.718,
+          "sample_overflow": 0,
+          "submit_by_producer": {
+            "0": 20513,
+            "2": 1309
+          }
+        }
+      ]
+    },
+    "pair10": {
+      "executed": true,
+      "execution_passed": true,
+      "elapsed_seconds": 104.533185323,
+      "events": 24025,
+      "event_types": {
+        "运行开始": 1,
+        "健康": 208,
+        "轮次开始": 1,
+        "时钟对应": 1,
+        "节点选择": 1712,
+        "调用开始": 1712,
+        "缓存追加": 1712,
+        "请求决策": 339,
+        "调用结束": 1712,
+        "输出": 1712,
+        "检测开始": 261,
+        "发布开始": 1712,
+        "发布结束": 1712,
+        "未投递": 1373,
+        "检测阶段": 963,
+        "检测结束": 261,
+        "结果读取": 260,
+        "缓存查找": 205,
+        "初始化开始": 113,
+        "初始化结束": 113,
+        "补跟踪步骤": 1052,
+        "补跟踪汇总": 113,
+        "节点跳过": 1228,
+        "跳变比较": 2002,
+        "仲裁决策": 1861,
+        "缓存淘汰": 1682,
+        "请求取消": 2,
+        "轮次结束": 1,
+        "运行结束": 1
+      },
+      "max_gap_counter": 0,
+      "max_health_drops": 0,
+      "complete_segments": true,
+      "received_states": {
+        "0": 21,
+        "1": 23,
+        "2": 23,
+        "3": 21
+      },
+      "received_boxes": 3444,
+      "metrics": [
+        {
+          "mode": "basic",
+          "window_seconds": 45.016274726,
+          "call_samples": 1565,
+          "consumed": 1565,
+          "consumed_fps": 34.76520457380505,
+          "call_p99_ms": 224.382715,
+          "call_max_ms": 350.652532,
+          "submit_samples": 21848,
+          "submit_p99_us": 14.076,
+          "submit_max_us": 594.817,
+          "sample_overflow": 0,
+          "submit_by_producer": {
+            "0": 20490,
+            "2": 1358
+          }
+        },
+        {
+          "mode": "off",
+          "window_seconds": 45.005186621,
+          "call_samples": 1597,
+          "consumed": 1597,
+          "consumed_fps": 35.48479897325477,
+          "call_p99_ms": 220.165932,
+          "call_max_ms": 350.992738,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "submit_max_us": null,
+          "sample_overflow": 0,
+          "submit_by_producer": {}
+        }
+      ]
+    },
+    "detail": {
+      "executed": false
+    },
+    "lifecycle": {
+      "executed": false
+    },
+    "business-kill": {
+      "executed": false
+    },
+    "worker-kill": {
+      "executed": false
+    },
+    "full": {
+      "executed": false
+    },
+    "write": {
+      "executed": false
+    },
+    "sync": {
+      "executed": false
+    },
+    "services": {
+      "executed": false
+    },
+    "write-after-data": {
+      "executed": false
+    },
+    "sync-after-data": {
+      "executed": false
+    }
+  },
+  "passed_pairs": 2,
+  "basic_passed": false
+}

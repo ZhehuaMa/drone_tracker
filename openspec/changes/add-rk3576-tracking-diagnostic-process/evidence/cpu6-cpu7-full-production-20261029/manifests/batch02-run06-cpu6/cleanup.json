@@ -1,0 +1,14 @@
+{
+  "unit": "drone-full-placement-v2-batch02-run06-cpu6.service",
+  "state": {
+    "MainPID": "0",
+    "Result": "success",
+    "ExecMainStatus": "0",
+    "ControlGroup": "",
+    "ActiveState": "inactive",
+    "SubState": "dead"
+  },
+  "remaining_cgroup_pids": [],
+  "remaining_root_pids": [],
+  "released": true
+}

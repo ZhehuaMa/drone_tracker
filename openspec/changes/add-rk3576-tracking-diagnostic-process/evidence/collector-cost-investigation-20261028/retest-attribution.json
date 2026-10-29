@@ -1,0 +1,4342 @@
+[
+  {
+    "root": "/home/mzh/nickluo/drone_tracker/.docker-artifacts/diagnostic-cpu3-fan-20261028/raw-complete",
+    "pairs": [
+      {
+        "number": 1,
+        "modes": {
+          "off": {
+            "samples": 1588,
+            "p99_ms": 259.196015,
+            "consumed_fps": 35.28358369942494
+          },
+          "basic": {
+            "samples": 1617,
+            "p99_ms": 214.528912,
+            "consumed_fps": 35.92176592042303,
+            "tail_calls": [
+              {
+                "start_ns": 378583540254,
+                "duration_ns": 222202580,
+                "round": 1,
+                "frame_time_us": 1793173383074817,
+                "consumed": 1,
+                "update_id": 224,
+                "steps": 16,
+                "init_ns": 20310100,
+                "step_ns": 189898804,
+                "init_and_steps_fraction": 0.9460236870336969
+              },
+              {
+                "start_ns": 379848565684,
+                "duration_ns": 222456764,
+                "round": 1,
+                "frame_time_us": 1793173384341484,
+                "consumed": 1,
+                "update_id": 264,
+                "steps": 16,
+                "init_ns": 20098760,
+                "step_ns": 190621166,
+                "init_and_steps_fraction": 0.947239913999648
+              },
+              {
+                "start_ns": 386037459557,
+                "duration_ns": 214528912,
+                "round": 1,
+                "frame_time_us": 1793173390524817,
+                "consumed": 1,
+                "update_id": 487,
+                "steps": 15,
+                "init_ns": 22270475,
+                "step_ns": 179781984,
+                "init_and_steps_fraction": 0.9418425568671136
+              },
+              {
+                "start_ns": 388151976346,
+                "duration_ns": 309752723,
+                "round": 1,
+                "frame_time_us": 1793173392641484,
+                "consumed": 1,
+                "update_id": 563,
+                "steps": 23,
+                "init_ns": 21146129,
+                "step_ns": 275728249,
+                "init_and_steps_fraction": 0.9584237876094475
+              },
+              {
+                "start_ns": 390801034501,
+                "duration_ns": 327943941,
+                "round": 1,
+                "frame_time_us": 1793173395291484,
+                "consumed": 1,
+                "update_id": 651,
+                "steps": 23,
+                "init_ns": 20477435,
+                "step_ns": 294242068,
+                "init_and_steps_fraction": 0.9596746994023592
+              },
+              {
+                "start_ns": 396247387545,
+                "duration_ns": 323288720,
+                "round": 1,
+                "frame_time_us": 1793173400741484,
+                "consumed": 1,
+                "update_id": 860,
+                "steps": 24,
+                "init_ns": 21938085,
+                "step_ns": 288560874,
+                "init_and_steps_fraction": 0.9604385794839981
+              },
+              {
+                "start_ns": 399230838444,
+                "duration_ns": 222123461,
+                "round": 1,
+                "frame_time_us": 1793173403724817,
+                "consumed": 1,
+                "update_id": 959,
+                "steps": 15,
+                "init_ns": 22249532,
+                "step_ns": 187416741,
+                "init_and_steps_fraction": 0.9439177296089403
+              },
+              {
+                "start_ns": 400387806221,
+                "duration_ns": 328946804,
+                "round": 1,
+                "frame_time_us": 1793173404874817,
+                "consumed": 1,
+                "update_id": 999,
+                "steps": 23,
+                "init_ns": 20887666,
+                "step_ns": 294343422,
+                "init_and_steps_fraction": 0.9583041518165959
+              },
+              {
+                "start_ns": 402352155319,
+                "duration_ns": 222613567,
+                "round": 1,
+                "frame_time_us": 1793173406841484,
+                "consumed": 1,
+                "update_id": 1064,
+                "steps": 16,
+                "init_ns": 19911720,
+                "step_ns": 190984398,
+                "init_and_steps_fraction": 0.9473641739005062
+              },
+              {
+                "start_ns": 406784169977,
+                "duration_ns": 229544121,
+                "round": 1,
+                "frame_time_us": 1793173411274817,
+                "consumed": 1,
+                "update_id": 1219,
+                "steps": 15,
+                "init_ns": 22118590,
+                "step_ns": 194363904,
+                "init_and_steps_fraction": 0.9430975319990879
+              },
+              {
+                "start_ns": 407991439048,
+                "duration_ns": 215366774,
+                "round": 1,
+                "frame_time_us": 1793173412474817,
+                "consumed": 1,
+                "update_id": 1259,
+                "steps": 15,
+                "init_ns": 22299012,
+                "step_ns": 180276580,
+                "init_and_steps_fraction": 0.9406074495037939
+              },
+              {
+                "start_ns": 410815564746,
+                "duration_ns": 332818875,
+                "round": 1,
+                "frame_time_us": 1793173415308150,
+                "consumed": 1,
+                "update_id": 1379,
+                "steps": 23,
+                "init_ns": 21735461,
+                "step_ns": 297691010,
+                "init_and_steps_fraction": 0.9597606836451208
+              },
+              {
+                "start_ns": 411970445625,
+                "duration_ns": 263774723,
+                "round": 1,
+                "frame_time_us": 1793173416458150,
+                "consumed": 1,
+                "update_id": 1419,
+                "steps": 19,
+                "init_ns": 22613477,
+                "step_ns": 227365770,
+                "init_and_steps_fraction": 0.9476997801643033
+              },
+              {
+                "start_ns": 412847142028,
+                "duration_ns": 303449480,
+                "round": 1,
+                "frame_time_us": 1793173417341484,
+                "consumed": 1,
+                "update_id": 1449,
+                "steps": 21,
+                "init_ns": 22222605,
+                "step_ns": 267867780,
+                "init_and_steps_fraction": 0.9559758843547862
+              },
+              {
+                "start_ns": 414414082501,
+                "duration_ns": 323406435,
+                "round": 1,
+                "frame_time_us": 1793173418908150,
+                "consumed": 1,
+                "update_id": 1504,
+                "steps": 24,
+                "init_ns": 21618542,
+                "step_ns": 287736372,
+                "init_and_steps_fraction": 0.9565515107947682
+              },
+              {
+                "start_ns": 416644994495,
+                "duration_ns": 341651767,
+                "round": 1,
+                "frame_time_us": 1793173421141484,
+                "consumed": 1,
+                "update_id": 1584,
+                "steps": 24,
+                "init_ns": 22666712,
+                "step_ns": 306644496,
+                "init_and_steps_fraction": 0.9638797155701525
+              },
+              {
+                "start_ns": 418678453328,
+                "duration_ns": 302950741,
+                "round": 1,
+                "frame_time_us": 1793173423174817,
+                "consumed": 1,
+                "update_id": 1665,
+                "steps": 21,
+                "init_ns": 22506315,
+                "step_ns": 268370634,
+                "init_and_steps_fraction": 0.9601460225509071
+              }
+            ]
+          }
+        },
+        "p99_delta_ms": -44.667103,
+        "fps_decline_percent": -1.808722794245221
+      },
+      {
+        "number": 2,
+        "modes": {
+          "basic": {
+            "samples": 1469,
+            "p99_ms": 259.776794,
+            "consumed_fps": 32.63103742581501,
+            "tail_calls": [
+              {
+                "start_ns": 434197624030,
+                "duration_ns": 260026561,
+                "round": 1,
+                "frame_time_us": 1793173438689115,
+                "consumed": 1,
+                "update_id": 179,
+                "steps": 19,
+                "init_ns": 20889459,
+                "step_ns": 226133188,
+                "init_and_steps_fraction": 0.9499900550544143
+              },
+              {
+                "start_ns": 435029931643,
+                "duration_ns": 267345362,
+                "round": 1,
+                "frame_time_us": 1793173439522449,
+                "consumed": 1,
+                "update_id": 207,
+                "steps": 19,
+                "init_ns": 21086652,
+                "step_ns": 233186581,
+                "init_and_steps_fraction": 0.9511039619232294
+              },
+              {
+                "start_ns": 435872325980,
+                "duration_ns": 267242849,
+                "round": 1,
+                "frame_time_us": 1793173440372449,
+                "consumed": 1,
+                "update_id": 235,
+                "steps": 19,
+                "init_ns": 21219692,
+                "step_ns": 233438199,
+                "init_and_steps_fraction": 0.9529081580775993
+              },
+              {
+                "start_ns": 440453379513,
+                "duration_ns": 262912924,
+                "round": 1,
+                "frame_time_us": 1793173444939115,
+                "consumed": 1,
+                "update_id": 395,
+                "steps": 19,
+                "init_ns": 21341643,
+                "step_ns": 228177275,
+                "init_and_steps_fraction": 0.9490553533990592
+              },
+              {
+                "start_ns": 441272636178,
+                "duration_ns": 259776794,
+                "round": 1,
+                "frame_time_us": 1793173445772449,
+                "consumed": 1,
+                "update_id": 422,
+                "steps": 18,
+                "init_ns": 23036420,
+                "step_ns": 224572966,
+                "init_and_steps_fraction": 0.953162067278419
+              },
+              {
+                "start_ns": 442951913789,
+                "duration_ns": 260219916,
+                "round": 1,
+                "frame_time_us": 1793173447439115,
+                "consumed": 1,
+                "update_id": 475,
+                "steps": 19,
+                "init_ns": 20995050,
+                "step_ns": 225987039,
+                "init_and_steps_fraction": 0.9491283096102452
+              },
+              {
+                "start_ns": 443787102764,
+                "duration_ns": 267259205,
+                "round": 1,
+                "frame_time_us": 1793173448272449,
+                "consumed": 1,
+                "update_id": 503,
+                "steps": 19,
+                "init_ns": 21606108,
+                "step_ns": 232707370,
+                "init_and_steps_fraction": 0.9515611557701071
+              },
+              {
+                "start_ns": 448768256145,
+                "duration_ns": 259976198,
+                "round": 1,
+                "frame_time_us": 1793173453255782,
+                "consumed": 1,
+                "update_id": 666,
+                "steps": 18,
+                "init_ns": 22701589,
+                "step_ns": 224917438,
+                "init_and_steps_fraction": 0.9524680678651974
+              },
+              {
+                "start_ns": 449638917277,
+                "duration_ns": 371623423,
+                "round": 1,
+                "frame_time_us": 1793173454139115,
+                "consumed": 1,
+                "update_id": 697,
+                "steps": 28,
+                "init_ns": 21079980,
+                "step_ns": 347431729,
+                "init_and_steps_fraction": 0.9916267010973633
+              },
+              {
+                "start_ns": 460050884178,
+                "duration_ns": 268617879,
+                "round": 1,
+                "frame_time_us": 1793173464539115,
+                "consumed": 1,
+                "update_id": 1031,
+                "steps": 19,
+                "init_ns": 22288303,
+                "step_ns": 232941774,
+                "init_and_steps_fraction": 0.95016042100459
+              },
+              {
+                "start_ns": 461707626492,
+                "duration_ns": 273894568,
+                "round": 1,
+                "frame_time_us": 1793173466205782,
+                "consumed": 1,
+                "update_id": 1083,
+                "steps": 19,
+                "init_ns": 20997026,
+                "step_ns": 239559025,
+                "init_and_steps_fraction": 0.9513005420392273
+              },
+              {
+                "start_ns": 468429874777,
+                "duration_ns": 311649855,
+                "round": 1,
+                "frame_time_us": 1793173472922449,
+                "consumed": 1,
+                "update_id": 1306,
+                "steps": 22,
+                "init_ns": 21392420,
+                "step_ns": 276957973,
+                "init_and_steps_fraction": 0.9573256275059072
+              },
+              {
+                "start_ns": 471700715933,
+                "duration_ns": 276002487,
+                "round": 1,
+                "frame_time_us": 1793173476189115,
+                "consumed": 1,
+                "update_id": 1403,
+                "steps": 19,
+                "init_ns": 22705445,
+                "step_ns": 239955627,
+                "init_and_steps_fraction": 0.9516619754227069
+              },
+              {
+                "start_ns": 473782357189,
+                "duration_ns": 274890146,
+                "round": 1,
+                "frame_time_us": 1793173478272449,
+                "consumed": 1,
+                "update_id": 1467,
+                "steps": 19,
+                "init_ns": 22046236,
+                "step_ns": 239839599,
+                "init_and_steps_fraction": 0.9526926985589363
+              },
+              {
+                "start_ns": 477115707437,
+                "duration_ns": 274896304,
+                "round": 1,
+                "frame_time_us": 1793173481605782,
+                "consumed": 1,
+                "update_id": 1575,
+                "steps": 19,
+                "init_ns": 21387414,
+                "step_ns": 239913271,
+                "init_and_steps_fraction": 0.95054273628939
+              }
+            ]
+          },
+          "off": {
+            "samples": 1629,
+            "p99_ms": 202.479187,
+            "consumed_fps": 36.1961206703105
+          }
+        },
+        "p99_delta_ms": 57.297607,
+        "fps_decline_percent": 9.84935174950865
+      },
+      {
+        "number": 3,
+        "modes": {
+          "off": {
+            "samples": 1640,
+            "p99_ms": 233.646363,
+            "consumed_fps": 36.427907180804105
+          },
+          "basic": {
+            "samples": 1632,
+            "p99_ms": 252.408479,
+            "consumed_fps": 36.256480369833184,
+            "tail_calls": [
+              {
+                "start_ns": 594576108611,
+                "duration_ns": 290065367,
+                "round": 1,
+                "frame_time_us": 1793173599072515,
+                "consumed": 1,
+                "update_id": 180,
+                "steps": 20,
+                "init_ns": 21556535,
+                "step_ns": 255288361,
+                "init_and_steps_fraction": 0.9544224423041858
+              },
+              {
+                "start_ns": 595672679509,
+                "duration_ns": 334916772,
+                "round": 1,
+                "frame_time_us": 1793173600172515,
+                "consumed": 1,
+                "update_id": 229,
+                "steps": 26,
+                "init_ns": 23350936,
+                "step_ns": 311258089,
+                "init_and_steps_fraction": 0.9990811239515948
+              },
+              {
+                "start_ns": 597931589155,
+                "duration_ns": 308710110,
+                "round": 1,
+                "frame_time_us": 1793173602422515,
+                "consumed": 1,
+                "update_id": 305,
+                "steps": 21,
+                "init_ns": 22839204,
+                "step_ns": 273912479,
+                "init_and_steps_fraction": 0.96126324790594
+              },
+              {
+                "start_ns": 599305697554,
+                "duration_ns": 279930205,
+                "round": 1,
+                "frame_time_us": 1793173603805848,
+                "consumed": 1,
+                "update_id": 357,
+                "steps": 20,
+                "init_ns": 21529638,
+                "step_ns": 258101743,
+                "init_and_steps_fraction": 0.9989325053364642
+              },
+              {
+                "start_ns": 602071155190,
+                "duration_ns": 281981056,
+                "round": 1,
+                "frame_time_us": 1793173606555848,
+                "consumed": 1,
+                "update_id": 459,
+                "steps": 19,
+                "init_ns": 22408542,
+                "step_ns": 247248798,
+                "init_and_steps_fraction": 0.9562959435118932
+              },
+              {
+                "start_ns": 604127714911,
+                "duration_ns": 282431980,
+                "round": 1,
+                "frame_time_us": 1793173608622515,
+                "consumed": 1,
+                "update_id": 535,
+                "steps": 19,
+                "init_ns": 22061423,
+                "step_ns": 247344484,
+                "init_and_steps_fraction": 0.9538789020988345
+              },
+              {
+                "start_ns": 605814123701,
+                "duration_ns": 292328811,
+                "round": 1,
+                "frame_time_us": 1793173610305848,
+                "consumed": 1,
+                "update_id": 588,
+                "steps": 20,
+                "init_ns": 23819719,
+                "step_ns": 255919899,
+                "init_and_steps_fraction": 0.9569348195378525
+              },
+              {
+                "start_ns": 610408854316,
+                "duration_ns": 294670644,
+                "round": 1,
+                "frame_time_us": 1793173614905848,
+                "consumed": 1,
+                "update_id": 752,
+                "steps": 20,
+                "init_ns": 20878625,
+                "step_ns": 260716797,
+                "init_and_steps_fraction": 0.9556276735866502
+              },
+              {
+                "start_ns": 611389276244,
+                "duration_ns": 276133340,
+                "round": 1,
+                "frame_time_us": 1793173615889182,
+                "consumed": 1,
+                "update_id": 794,
+                "steps": 20,
+                "init_ns": 23042627,
+                "step_ns": 252838261,
+                "init_and_steps_fraction": 0.9990857605242452
+              },
+              {
+                "start_ns": 614964072549,
+                "duration_ns": 280584721,
+                "round": 1,
+                "frame_time_us": 1793173619455848,
+                "consumed": 1,
+                "update_id": 931,
+                "steps": 19,
+                "init_ns": 24972980,
+                "step_ns": 243255523,
+                "init_and_steps_fraction": 0.9559626128038525
+              },
+              {
+                "start_ns": 616610532504,
+                "duration_ns": 252408479,
+                "round": 1,
+                "frame_time_us": 1793173621105848,
+                "consumed": 1,
+                "update_id": 982,
+                "steps": 18,
+                "init_ns": 22375321,
+                "step_ns": 217143365,
+                "init_and_steps_fraction": 0.9489328050663465
+              },
+              {
+                "start_ns": 620379266501,
+                "duration_ns": 261526019,
+                "round": 1,
+                "frame_time_us": 1793173624872515,
+                "consumed": 1,
+                "update_id": 1130,
+                "steps": 18,
+                "init_ns": 23152086,
+                "step_ns": 225810446,
+                "init_and_steps_fraction": 0.9519608525069928
+              },
+              {
+                "start_ns": 628522510197,
+                "duration_ns": 303232277,
+                "round": 1,
+                "frame_time_us": 1793173633022515,
+                "consumed": 1,
+                "update_id": 1411,
+                "steps": 23,
+                "init_ns": 22003049,
+                "step_ns": 280960487,
+                "init_and_steps_fraction": 0.9991137454011862
+              },
+              {
+                "start_ns": 631652811216,
+                "duration_ns": 298819244,
+                "round": 1,
+                "frame_time_us": 1793173636139182,
+                "consumed": 1,
+                "update_id": 1520,
+                "steps": 20,
+                "init_ns": 21277494,
+                "step_ns": 263412177,
+                "init_and_steps_fraction": 0.95271531775912
+              },
+              {
+                "start_ns": 633355608675,
+                "duration_ns": 333134438,
+                "round": 1,
+                "frame_time_us": 1793173637855848,
+                "consumed": 1,
+                "update_id": 1589,
+                "steps": 25,
+                "init_ns": 22688507,
+                "step_ns": 310049631,
+                "init_and_steps_fraction": 0.9988103901764729
+              },
+              {
+                "start_ns": 634983152621,
+                "duration_ns": 286391768,
+                "round": 1,
+                "frame_time_us": 1793173639472515,
+                "consumed": 1,
+                "update_id": 1648,
+                "steps": 20,
+                "init_ns": 23060361,
+                "step_ns": 251483356,
+                "init_and_steps_fraction": 0.9586299177426078
+              },
+              {
+                "start_ns": 636672325661,
+                "duration_ns": 353970475,
+                "round": 1,
+                "frame_time_us": 1793173641172515,
+                "consumed": 1,
+                "update_id": 1718,
+                "steps": 28,
+                "init_ns": 21347538,
+                "step_ns": 332289062,
+                "init_and_steps_fraction": 0.9990567716135081
+              }
+            ]
+          }
+        },
+        "p99_delta_ms": 18.762115999999992,
+        "fps_decline_percent": 0.47059198355829945
+      },
+      {
+        "number": 4,
+        "modes": {
+          "basic": {
+            "samples": 1610,
+            "p99_ms": 256.753824,
+            "consumed_fps": 35.775249470937176,
+            "tail_calls": [
+              {
+                "start_ns": 652154123457,
+                "duration_ns": 260087710,
+                "round": 1,
+                "frame_time_us": 1793173656646630,
+                "consumed": 1,
+                "update_id": 183,
+                "steps": 19,
+                "init_ns": 21573020,
+                "step_ns": 226117656,
+                "init_and_steps_fraction": 0.9523351795438546
+              },
+              {
+                "start_ns": 652958729354,
+                "duration_ns": 257476685,
+                "round": 1,
+                "frame_time_us": 1793173657446630,
+                "consumed": 1,
+                "update_id": 210,
+                "steps": 18,
+                "init_ns": 21402236,
+                "step_ns": 222842132,
+                "init_and_steps_fraction": 0.9486077079173207
+              },
+              {
+                "start_ns": 656316428628,
+                "duration_ns": 276600302,
+                "round": 1,
+                "frame_time_us": 1793173660813297,
+                "consumed": 1,
+                "update_id": 331,
+                "steps": 19,
+                "init_ns": 22264991,
+                "step_ns": 242459998,
+                "init_and_steps_fraction": 0.9570668834627665
+              },
+              {
+                "start_ns": 658820539580,
+                "duration_ns": 260642208,
+                "round": 1,
+                "frame_time_us": 1793173663313297,
+                "consumed": 1,
+                "update_id": 411,
+                "steps": 19,
+                "init_ns": 22078616,
+                "step_ns": 226089307,
+                "init_and_steps_fraction": 0.9521401959578243
+              },
+              {
+                "start_ns": 659666189806,
+                "duration_ns": 285658883,
+                "round": 1,
+                "frame_time_us": 1793173664163297,
+                "consumed": 1,
+                "update_id": 440,
+                "steps": 20,
+                "init_ns": 21183184,
+                "step_ns": 250075331,
+                "init_and_steps_fraction": 0.9495889368159435
+              },
+              {
+                "start_ns": 662151662719,
+                "duration_ns": 260571235,
+                "round": 1,
+                "frame_time_us": 1793173666646630,
+                "consumed": 1,
+                "update_id": 519,
+                "steps": 19,
+                "init_ns": 21520110,
+                "step_ns": 226452362,
+                "init_and_steps_fraction": 0.951649448182567
+              },
+              {
+                "start_ns": 663425838748,
+                "duration_ns": 276927867,
+                "round": 1,
+                "frame_time_us": 1793173667913297,
+                "consumed": 1,
+                "update_id": 559,
+                "steps": 19,
+                "init_ns": 21840876,
+                "step_ns": 242269371,
+                "init_and_steps_fraction": 0.9537149506156417
+              },
+              {
+                "start_ns": 671333620171,
+                "duration_ns": 285621637,
+                "round": 1,
+                "frame_time_us": 1793173675829964,
+                "consumed": 1,
+                "update_id": 848,
+                "steps": 20,
+                "init_ns": 21717744,
+                "step_ns": 251882463,
+                "init_and_steps_fraction": 0.9579113468914121
+              },
+              {
+                "start_ns": 672167491540,
+                "duration_ns": 276337738,
+                "round": 1,
+                "frame_time_us": 1793173676663297,
+                "consumed": 1,
+                "update_id": 875,
+                "steps": 19,
+                "init_ns": 22857565,
+                "step_ns": 241077671,
+                "init_and_steps_fraction": 0.9551183197424884
+              },
+              {
+                "start_ns": 675492827784,
+                "duration_ns": 281347682,
+                "round": 1,
+                "frame_time_us": 1793173679979964,
+                "consumed": 1,
+                "update_id": 987,
+                "steps": 19,
+                "init_ns": 22027242,
+                "step_ns": 245750570,
+                "init_and_steps_fraction": 0.9517683248586353
+              },
+              {
+                "start_ns": 678472854330,
+                "duration_ns": 312374178,
+                "round": 1,
+                "frame_time_us": 1793173682963297,
+                "consumed": 1,
+                "update_id": 1091,
+                "steps": 23,
+                "init_ns": 21188410,
+                "step_ns": 278631029,
+                "init_and_steps_fraction": 0.9598086529418575
+              },
+              {
+                "start_ns": 680508690499,
+                "duration_ns": 285435732,
+                "round": 1,
+                "frame_time_us": 1793173684996630,
+                "consumed": 1,
+                "update_id": 1160,
+                "steps": 20,
+                "init_ns": 21511416,
+                "step_ns": 251094202,
+                "init_and_steps_fraction": 0.9550507782956901
+              },
+              {
+                "start_ns": 682929745097,
+                "duration_ns": 354828385,
+                "round": 1,
+                "frame_time_us": 1793173687429964,
+                "consumed": 1,
+                "update_id": 1272,
+                "steps": 28,
+                "init_ns": 21095042,
+                "step_ns": 333401396,
+                "init_and_steps_fraction": 0.9990644857795128
+              },
+              {
+                "start_ns": 690060523640,
+                "duration_ns": 256753824,
+                "round": 1,
+                "frame_time_us": 1793173694546630,
+                "consumed": 1,
+                "update_id": 1530,
+                "steps": 18,
+                "init_ns": 21538113,
+                "step_ns": 222497889,
+                "init_and_steps_fraction": 0.9504668643221454
+              },
+              {
+                "start_ns": 691213089536,
+                "duration_ns": 328613031,
+                "round": 1,
+                "frame_time_us": 1793173695713297,
+                "consumed": 1,
+                "update_id": 1579,
+                "steps": 26,
+                "init_ns": 21067716,
+                "step_ns": 307255351,
+                "init_and_steps_fraction": 0.9991176125940058
+              },
+              {
+                "start_ns": 692592071006,
+                "duration_ns": 288066636,
+                "round": 1,
+                "frame_time_us": 1793173697079964,
+                "consumed": 1,
+                "update_id": 1624,
+                "steps": 20,
+                "init_ns": 22352526,
+                "step_ns": 253534842,
+                "init_and_steps_fraction": 0.957720657382898
+              },
+              {
+                "start_ns": 693424334299,
+                "duration_ns": 275755461,
+                "round": 1,
+                "frame_time_us": 1793173697913297,
+                "consumed": 1,
+                "update_id": 1651,
+                "steps": 19,
+                "init_ns": 22286179,
+                "step_ns": 240842384,
+                "init_and_steps_fraction": 0.954209798949367
+              }
+            ]
+          },
+          "off": {
+            "samples": 1612,
+            "p99_ms": 206.850056,
+            "consumed_fps": 35.80856860837812
+          }
+        },
+        "p99_delta_ms": 49.903768000000014,
+        "fps_decline_percent": 0.09304794560580643
+      },
+      {
+        "number": 5,
+        "modes": {
+          "off": {
+            "samples": 1615,
+            "p99_ms": 242.618877,
+            "consumed_fps": 35.88481727391773
+          },
+          "basic": {
+            "samples": 1581,
+            "p99_ms": 257.129823,
+            "consumed_fps": 35.12932174199831,
+            "tail_calls": [
+              {
+                "start_ns": 817306096759,
+                "duration_ns": 314576368,
+                "round": 1,
+                "frame_time_us": 1793173821797233,
+                "consumed": 1,
+                "update_id": 290,
+                "steps": 22,
+                "init_ns": 21523190,
+                "step_ns": 280339218,
+                "init_and_steps_fraction": 0.9595838680418614
+              },
+              {
+                "start_ns": 821831441756,
+                "duration_ns": 266181196,
+                "round": 1,
+                "frame_time_us": 1793173826330566,
+                "consumed": 1,
+                "update_id": 455,
+                "steps": 19,
+                "init_ns": 21570799,
+                "step_ns": 231578851,
+                "init_and_steps_fraction": 0.9510425747730129
+              },
+              {
+                "start_ns": 824734893366,
+                "duration_ns": 258483324,
+                "round": 1,
+                "frame_time_us": 1793173829230566,
+                "consumed": 1,
+                "update_id": 555,
+                "steps": 19,
+                "init_ns": 21182957,
+                "step_ns": 224218953,
+                "init_and_steps_fraction": 0.9493916520510236
+              },
+              {
+                "start_ns": 826819424767,
+                "duration_ns": 276469024,
+                "round": 1,
+                "frame_time_us": 1793173831313900,
+                "consumed": 1,
+                "update_id": 619,
+                "steps": 19,
+                "init_ns": 22466110,
+                "step_ns": 241668673,
+                "init_and_steps_fraction": 0.9553865354550534
+              },
+              {
+                "start_ns": 828899685870,
+                "duration_ns": 259798849,
+                "round": 1,
+                "frame_time_us": 1793173833397233,
+                "consumed": 1,
+                "update_id": 683,
+                "steps": 19,
+                "init_ns": 20900052,
+                "step_ns": 226136940,
+                "init_and_steps_fraction": 0.9508779309488011
+              },
+              {
+                "start_ns": 830175952974,
+                "duration_ns": 271142044,
+                "round": 1,
+                "frame_time_us": 1793173834663900,
+                "consumed": 1,
+                "update_id": 723,
+                "steps": 19,
+                "init_ns": 20646410,
+                "step_ns": 237147921,
+                "init_and_steps_fraction": 0.9507722491020242
+              },
+              {
+                "start_ns": 835153206339,
+                "duration_ns": 279532461,
+                "round": 1,
+                "frame_time_us": 1793173839647233,
+                "consumed": 1,
+                "update_id": 891,
+                "steps": 19,
+                "init_ns": 22151646,
+                "step_ns": 244991538,
+                "init_and_steps_fraction": 0.9556785750188777
+              },
+              {
+                "start_ns": 836383154877,
+                "duration_ns": 268102641,
+                "round": 1,
+                "frame_time_us": 1793173840880566,
+                "consumed": 1,
+                "update_id": 926,
+                "steps": 18,
+                "init_ns": 22907035,
+                "step_ns": 231004668,
+                "init_and_steps_fraction": 0.9470690107823294
+              },
+              {
+                "start_ns": 837247416196,
+                "duration_ns": 287034536,
+                "round": 1,
+                "frame_time_us": 1793173841747233,
+                "consumed": 1,
+                "update_id": 957,
+                "steps": 21,
+                "init_ns": 22701391,
+                "step_ns": 261722388,
+                "init_and_steps_fraction": 0.9909043802310953
+              },
+              {
+                "start_ns": 840153752113,
+                "duration_ns": 259740263,
+                "round": 1,
+                "frame_time_us": 1793173844647233,
+                "consumed": 1,
+                "update_id": 1067,
+                "steps": 19,
+                "init_ns": 21567844,
+                "step_ns": 224961307,
+                "init_and_steps_fraction": 0.9491372194383279
+              },
+              {
+                "start_ns": 841426741338,
+                "duration_ns": 271576261,
+                "round": 1,
+                "frame_time_us": 1793173845913900,
+                "consumed": 1,
+                "update_id": 1107,
+                "steps": 19,
+                "init_ns": 24091863,
+                "step_ns": 233783742,
+                "init_and_steps_fraction": 0.9495513490407764
+              },
+              {
+                "start_ns": 843901176831,
+                "duration_ns": 259451602,
+                "round": 1,
+                "frame_time_us": 1793173848397233,
+                "consumed": 1,
+                "update_id": 1191,
+                "steps": 19,
+                "init_ns": 20521051,
+                "step_ns": 225135919,
+                "init_and_steps_fraction": 0.9468315790164209
+              },
+              {
+                "start_ns": 845153621728,
+                "duration_ns": 257129823,
+                "round": 1,
+                "frame_time_us": 1793173849647233,
+                "consumed": 1,
+                "update_id": 1230,
+                "steps": 18,
+                "init_ns": 21443586,
+                "step_ns": 222292853,
+                "init_and_steps_fraction": 0.9479119775227318
+              },
+              {
+                "start_ns": 848747750308,
+                "duration_ns": 260616990,
+                "round": 1,
+                "frame_time_us": 1793173853247233,
+                "consumed": 1,
+                "update_id": 1359,
+                "steps": 19,
+                "init_ns": 21156680,
+                "step_ns": 226259193,
+                "init_and_steps_fraction": 0.9493466753644879
+              },
+              {
+                "start_ns": 849738171922,
+                "duration_ns": 277870524,
+                "round": 1,
+                "frame_time_us": 1793173854230566,
+                "consumed": 1,
+                "update_id": 1395,
+                "steps": 19,
+                "init_ns": 21882827,
+                "step_ns": 243850077,
+                "init_and_steps_fraction": 0.9563191524409405
+              },
+              {
+                "start_ns": 850583388488,
+                "duration_ns": 274079663,
+                "round": 1,
+                "frame_time_us": 1793173855080566,
+                "consumed": 1,
+                "update_id": 1423,
+                "steps": 19,
+                "init_ns": 21793748,
+                "step_ns": 239424744,
+                "init_and_steps_fraction": 0.9530750627054003
+              }
+            ]
+          }
+        },
+        "p99_delta_ms": 14.51094599999999,
+        "fps_decline_percent": 2.105334760805766
+      },
+      {
+        "number": 6,
+        "modes": {
+          "basic": {
+            "samples": 1554,
+            "p99_ms": 265.318986,
+            "consumed_fps": 34.53058492130403,
+            "tail_calls": [
+              {
+                "start_ns": 876158322944,
+                "duration_ns": 265318986,
+                "round": 1,
+                "frame_time_us": 1793173880650666,
+                "consumed": 1,
+                "update_id": 315,
+                "steps": 19,
+                "init_ns": 21193336,
+                "step_ns": 230966030,
+                "init_and_steps_fraction": 0.9504007602380932
+              },
+              {
+                "start_ns": 878644614732,
+                "duration_ns": 268532647,
+                "round": 1,
+                "frame_time_us": 1793173883133999,
+                "consumed": 1,
+                "update_id": 403,
+                "steps": 19,
+                "init_ns": 21558002,
+                "step_ns": 233850041,
+                "init_and_steps_fraction": 0.9511247360549051
+              },
+              {
+                "start_ns": 885330353314,
+                "duration_ns": 270508630,
+                "round": 1,
+                "frame_time_us": 1793173889817332,
+                "consumed": 1,
+                "update_id": 619,
+                "steps": 19,
+                "init_ns": 21582711,
+                "step_ns": 236017786,
+                "init_and_steps_fraction": 0.9522819918906099
+              },
+              {
+                "start_ns": 888925205350,
+                "duration_ns": 272341753,
+                "round": 1,
+                "frame_time_us": 1793173893417332,
+                "consumed": 1,
+                "update_id": 744,
+                "steps": 20,
+                "init_ns": 22162588,
+                "step_ns": 238021666,
+                "init_and_steps_fraction": 0.9553594009509074
+              },
+              {
+                "start_ns": 894081725395,
+                "duration_ns": 277244939,
+                "round": 1,
+                "frame_time_us": 1793173898567332,
+                "consumed": 1,
+                "update_id": 919,
+                "steps": 19,
+                "init_ns": 21560274,
+                "step_ns": 242419181,
+                "init_and_steps_fraction": 0.9521524755407709
+              },
+              {
+                "start_ns": 896177795292,
+                "duration_ns": 287947889,
+                "round": 1,
+                "frame_time_us": 1793173900667332,
+                "consumed": 1,
+                "update_id": 992,
+                "steps": 20,
+                "init_ns": 21527374,
+                "step_ns": 253825027,
+                "init_and_steps_fraction": 0.9562577519017685
+              },
+              {
+                "start_ns": 897016156063,
+                "duration_ns": 267822161,
+                "round": 1,
+                "frame_time_us": 1793173901500666,
+                "consumed": 1,
+                "update_id": 1019,
+                "steps": 19,
+                "init_ns": 22622771,
+                "step_ns": 232969786,
+                "init_and_steps_fraction": 0.9543368481744122
+              },
+              {
+                "start_ns": 899467138502,
+                "duration_ns": 337264980,
+                "round": 1,
+                "frame_time_us": 1793173903967332,
+                "consumed": 1,
+                "update_id": 1099,
+                "steps": 26,
+                "init_ns": 22742112,
+                "step_ns": 314232511,
+                "init_and_steps_fraction": 0.9991390834589468
+              },
+              {
+                "start_ns": 900747674142,
+                "duration_ns": 287233041,
+                "round": 1,
+                "frame_time_us": 1793173905233999,
+                "consumed": 1,
+                "update_id": 1140,
+                "steps": 20,
+                "init_ns": 21824955,
+                "step_ns": 252121037,
+                "init_and_steps_fraction": 0.9537412236637497
+              },
+              {
+                "start_ns": 902417143161,
+                "duration_ns": 326281720,
+                "round": 1,
+                "frame_time_us": 1793173906917332,
+                "consumed": 1,
+                "update_id": 1208,
+                "steps": 25,
+                "init_ns": 21232012,
+                "step_ns": 304763766,
+                "init_and_steps_fraction": 0.9991236346308338
+              },
+              {
+                "start_ns": 905356292960,
+                "duration_ns": 305619470,
+                "round": 1,
+                "frame_time_us": 1793173909850666,
+                "consumed": 1,
+                "update_id": 1314,
+                "steps": 22,
+                "init_ns": 20995529,
+                "step_ns": 270208098,
+                "init_and_steps_fraction": 0.9528307440622157
+              },
+              {
+                "start_ns": 907003243413,
+                "duration_ns": 288064300,
+                "round": 1,
+                "frame_time_us": 1793173911500666,
+                "consumed": 1,
+                "update_id": 1364,
+                "steps": 20,
+                "init_ns": 20701599,
+                "step_ns": 254067115,
+                "init_and_steps_fraction": 0.9538450755612549
+              },
+              {
+                "start_ns": 908117065924,
+                "duration_ns": 331223454,
+                "round": 1,
+                "frame_time_us": 1793173912617332,
+                "consumed": 1,
+                "update_id": 1414,
+                "steps": 26,
+                "init_ns": 22745756,
+                "step_ns": 308203783,
+                "init_and_steps_fraction": 0.9991730205192535
+              },
+              {
+                "start_ns": 909514678925,
+                "duration_ns": 291107247,
+                "round": 1,
+                "frame_time_us": 1793173914000666,
+                "consumed": 1,
+                "update_id": 1460,
+                "steps": 20,
+                "init_ns": 20600252,
+                "step_ns": 256256201,
+                "init_and_steps_fraction": 0.9510462410439408
+              },
+              {
+                "start_ns": 913530078935,
+                "duration_ns": 284235347,
+                "round": 1,
+                "frame_time_us": 1793173918017332,
+                "consumed": 1,
+                "update_id": 1605,
+                "steps": 21,
+                "init_ns": 22557868,
+                "step_ns": 249040200,
+                "init_and_steps_fraction": 0.9555393826510958
+              },
+              {
+                "start_ns": 915308422911,
+                "duration_ns": 268236636,
+                "round": 1,
+                "frame_time_us": 1793173919800666,
+                "consumed": 1,
+                "update_id": 1667,
+                "steps": 19,
+                "init_ns": 21430072,
+                "step_ns": 233781219,
+                "init_and_steps_fraction": 0.9514408427042755
+              }
+            ]
+          },
+          "off": {
+            "samples": 1576,
+            "p99_ms": 215.469954,
+            "consumed_fps": 35.021821342998564
+          }
+        },
+        "p99_delta_ms": 49.849031999999994,
+        "fps_decline_percent": 1.4026581224415247
+      },
+      {
+        "number": 7,
+        "modes": {
+          "off": {
+            "samples": 1638,
+            "p99_ms": 213.914428,
+            "consumed_fps": 36.38728641958808
+          },
+          "basic": {
+            "samples": 1653,
+            "p99_ms": 200.360932,
+            "consumed_fps": 36.72195933396712,
+            "tail_calls": [
+              {
+                "start_ns": 1032526775990,
+                "duration_ns": 200360932,
+                "round": 1,
+                "frame_time_us": 1793174037016085,
+                "consumed": 1,
+                "update_id": 169,
+                "steps": 13,
+                "init_ns": 23895410,
+                "step_ns": 163853991,
+                "init_and_steps_fraction": 0.9370559376315938
+              },
+              {
+                "start_ns": 1034294201190,
+                "duration_ns": 260005220,
+                "round": 1,
+                "frame_time_us": 1793174038782752,
+                "consumed": 1,
+                "update_id": 227,
+                "steps": 19,
+                "init_ns": 20392522,
+                "step_ns": 226496282,
+                "init_and_steps_fraction": 0.9495532589691853
+              },
+              {
+                "start_ns": 1035145468781,
+                "duration_ns": 290075854,
+                "round": 1,
+                "frame_time_us": 1793174039632752,
+                "consumed": 1,
+                "update_id": 256,
+                "steps": 20,
+                "init_ns": 20475788,
+                "step_ns": 255864681,
+                "init_and_steps_fraction": 0.9526489888400018
+              },
+              {
+                "start_ns": 1037199516474,
+                "duration_ns": 327889968,
+                "round": 1,
+                "frame_time_us": 1793174041699419,
+                "consumed": 1,
+                "update_id": 346,
+                "steps": 26,
+                "init_ns": 7374784,
+                "step_ns": 320194190,
+                "init_and_steps_fraction": 0.9990210313479307
+              },
+              {
+                "start_ns": 1040569523690,
+                "duration_ns": 274729716,
+                "round": 1,
+                "frame_time_us": 1793174045066085,
+                "consumed": 1,
+                "update_id": 468,
+                "steps": 20,
+                "init_ns": 8382973,
+                "step_ns": 253334447,
+                "init_and_steps_fraction": 0.9526360082576578
+              },
+              {
+                "start_ns": 1042208960084,
+                "duration_ns": 279933467,
+                "round": 1,
+                "frame_time_us": 1793174046699419,
+                "consumed": 1,
+                "update_id": 533,
+                "steps": 21,
+                "init_ns": 7949833,
+                "step_ns": 259342797,
+                "init_and_steps_fraction": 0.9548434235624996
+              },
+              {
+                "start_ns": 1046370246526,
+                "duration_ns": 249103719,
+                "round": 1,
+                "frame_time_us": 1793174050866085,
+                "consumed": 1,
+                "update_id": 674,
+                "steps": 18,
+                "init_ns": 7737510,
+                "step_ns": 228265467,
+                "init_and_steps_fraction": 0.9474084848970079
+              },
+              {
+                "start_ns": 1048935442367,
+                "duration_ns": 299293912,
+                "round": 1,
+                "frame_time_us": 1793174053432752,
+                "consumed": 1,
+                "update_id": 758,
+                "steps": 22,
+                "init_ns": 8523816,
+                "step_ns": 277470882,
+                "init_and_steps_fraction": 0.955564702565684
+              },
+              {
+                "start_ns": 1056376329599,
+                "duration_ns": 261453249,
+                "round": 1,
+                "frame_time_us": 1793174060866085,
+                "consumed": 1,
+                "update_id": 1051,
+                "steps": 19,
+                "init_ns": 8081033,
+                "step_ns": 240409274,
+                "init_and_steps_fraction": 0.9504196560969108
+              },
+              {
+                "start_ns": 1057677816258,
+                "duration_ns": 290249793,
+                "round": 1,
+                "frame_time_us": 1793174062166085,
+                "consumed": 1,
+                "update_id": 1101,
+                "steps": 21,
+                "init_ns": 7707610,
+                "step_ns": 268733964,
+                "init_and_steps_fraction": 0.9524264294651883
+              },
+              {
+                "start_ns": 1062990191261,
+                "duration_ns": 319157988,
+                "round": 1,
+                "frame_time_us": 1793174067482752,
+                "consumed": 1,
+                "update_id": 1300,
+                "steps": 24,
+                "init_ns": 8290541,
+                "step_ns": 298646750,
+                "init_and_steps_fraction": 0.9617095687418609
+              },
+              {
+                "start_ns": 1064182592988,
+                "duration_ns": 326761348,
+                "round": 1,
+                "frame_time_us": 1793174068682752,
+                "consumed": 1,
+                "update_id": 1349,
+                "steps": 27,
+                "init_ns": 7897443,
+                "step_ns": 318518230,
+                "init_and_steps_fraction": 0.9989421178419181
+              },
+              {
+                "start_ns": 1067199436180,
+                "duration_ns": 257344074,
+                "round": 1,
+                "frame_time_us": 1793174071699419,
+                "consumed": 1,
+                "update_id": 1449,
+                "steps": 21,
+                "init_ns": 7631876,
+                "step_ns": 249454294,
+                "init_and_steps_fraction": 0.9989978242125754
+              },
+              {
+                "start_ns": 1070159624635,
+                "duration_ns": 286576916,
+                "round": 1,
+                "frame_time_us": 1793174074649419,
+                "consumed": 1,
+                "update_id": 1561,
+                "steps": 21,
+                "init_ns": 7321176,
+                "step_ns": 266340443,
+                "init_and_steps_fraction": 0.9549325284804168
+              },
+              {
+                "start_ns": 1071865850849,
+                "duration_ns": 365758854,
+                "round": 1,
+                "frame_time_us": 1793174076366085,
+                "consumed": 1,
+                "update_id": 1632,
+                "steps": 28,
+                "init_ns": 8088662,
+                "step_ns": 357363731,
+                "init_and_steps_fraction": 0.9991621228122067
+              },
+              {
+                "start_ns": 1073785067457,
+                "duration_ns": 275192072,
+                "round": 1,
+                "frame_time_us": 1793174078282752,
+                "consumed": 1,
+                "update_id": 1705,
+                "steps": 21,
+                "init_ns": 8028454,
+                "step_ns": 253822438,
+                "init_and_steps_fraction": 0.9515204783951771
+              },
+              {
+                "start_ns": 1075582548292,
+                "duration_ns": 291336988,
+                "round": 1,
+                "frame_time_us": 1793174080082752,
+                "consumed": 1,
+                "update_id": 1763,
+                "steps": 23,
+                "init_ns": 8189283,
+                "step_ns": 282866845,
+                "init_and_steps_fraction": 0.9990359617502464
+              }
+            ]
+          }
+        },
+        "p99_delta_ms": -13.553495999999996,
+        "fps_decline_percent": -0.9197523292060694
+      },
+      {
+        "number": 8,
+        "modes": {
+          "basic": {
+            "samples": 1685,
+            "p99_ms": 201.633752,
+            "consumed_fps": 37.444089777354435,
+            "tail_calls": [
+              {
+                "start_ns": 1090061209070,
+                "duration_ns": 371897581,
+                "round": 1,
+                "frame_time_us": 1793174094561096,
+                "consumed": 1,
+                "update_id": 220,
+                "steps": 28,
+                "init_ns": 22973906,
+                "step_ns": 348568157,
+                "init_and_steps_fraction": 0.9990440432577055
+              },
+              {
+                "start_ns": 1099772105741,
+                "duration_ns": 282449688,
+                "round": 1,
+                "frame_time_us": 1793174104261096,
+                "consumed": 1,
+                "update_id": 584,
+                "steps": 20,
+                "init_ns": 21963768,
+                "step_ns": 247292442,
+                "init_and_steps_fraction": 0.9532891040049583
+              },
+              {
+                "start_ns": 1100594214604,
+                "duration_ns": 337453646,
+                "round": 1,
+                "frame_time_us": 1793174105094430,
+                "consumed": 1,
+                "update_id": 613,
+                "steps": 26,
+                "init_ns": 21641934,
+                "step_ns": 315516181,
+                "init_and_steps_fraction": 0.999124232310117
+              },
+              {
+                "start_ns": 1102558480949,
+                "duration_ns": 201633752,
+                "round": 1,
+                "frame_time_us": 1793174107044430,
+                "consumed": 1,
+                "update_id": 678,
+                "steps": 14,
+                "init_ns": 22705850,
+                "step_ns": 166085935,
+                "init_and_steps_fraction": 0.9363104298133579
+              },
+              {
+                "start_ns": 1106018735302,
+                "duration_ns": 280479590,
+                "round": 1,
+                "frame_time_us": 1793174110511096,
+                "consumed": 1,
+                "update_id": 815,
+                "steps": 19,
+                "init_ns": 21323297,
+                "step_ns": 246127520,
+                "init_and_steps_fraction": 0.9535482314417245
+              },
+              {
+                "start_ns": 1106944537469,
+                "duration_ns": 212172775,
+                "round": 1,
+                "frame_time_us": 1793174111444430,
+                "consumed": 1,
+                "update_id": 843,
+                "steps": 15,
+                "init_ns": 21822390,
+                "step_ns": 190031048,
+                "init_and_steps_fraction": 0.9984949200009285
+              },
+              {
+                "start_ns": 1111309111280,
+                "duration_ns": 202458079,
+                "round": 1,
+                "frame_time_us": 1793174115794430,
+                "consumed": 1,
+                "update_id": 1006,
+                "steps": 14,
+                "init_ns": 21620392,
+                "step_ns": 168194387,
+                "init_and_steps_fraction": 0.937551022599597
+              },
+              {
+                "start_ns": 1112694573611,
+                "duration_ns": 353247767,
+                "round": 1,
+                "frame_time_us": 1793174117194430,
+                "consumed": 1,
+                "update_id": 1051,
+                "steps": 27,
+                "init_ns": 22608355,
+                "step_ns": 330311976,
+                "init_and_steps_fraction": 0.9990730698660014
+              },
+              {
+                "start_ns": 1114329834344,
+                "duration_ns": 252326772,
+                "round": 1,
+                "frame_time_us": 1793174118827763,
+                "consumed": 1,
+                "update_id": 1098,
+                "steps": 18,
+                "init_ns": 23096503,
+                "step_ns": 217053704,
+                "init_and_steps_fraction": 0.9517428733245952
+              },
+              {
+                "start_ns": 1116468718590,
+                "duration_ns": 292066011,
+                "round": 1,
+                "frame_time_us": 1793174120961096,
+                "consumed": 1,
+                "update_id": 1172,
+                "steps": 20,
+                "init_ns": 21378184,
+                "step_ns": 255613632,
+                "init_and_steps_fraction": 0.9483877122559119
+              },
+              {
+                "start_ns": 1117560886927,
+                "duration_ns": 349977928,
+                "round": 1,
+                "frame_time_us": 1793174122061096,
+                "consumed": 1,
+                "update_id": 1221,
+                "steps": 26,
+                "init_ns": 22552039,
+                "step_ns": 327028463,
+                "init_and_steps_fraction": 0.9988644255302865
+              },
+              {
+                "start_ns": 1120588965263,
+                "duration_ns": 264235137,
+                "round": 1,
+                "frame_time_us": 1793174125077763,
+                "consumed": 1,
+                "update_id": 1335,
+                "steps": 19,
+                "init_ns": 21598277,
+                "step_ns": 230047726,
+                "init_and_steps_fraction": 0.9523563211807066
+              },
+              {
+                "start_ns": 1121884346030,
+                "duration_ns": 290284437,
+                "round": 1,
+                "frame_time_us": 1793174126377763,
+                "consumed": 1,
+                "update_id": 1376,
+                "steps": 20,
+                "init_ns": 22086149,
+                "step_ns": 256125339,
+                "init_and_steps_fraction": 0.9584099336334727
+              },
+              {
+                "start_ns": 1123760874333,
+                "duration_ns": 333853344,
+                "round": 1,
+                "frame_time_us": 1793174128261096,
+                "consumed": 1,
+                "update_id": 1472,
+                "steps": 25,
+                "init_ns": 21663909,
+                "step_ns": 311880101,
+                "init_and_steps_fraction": 0.9990734434578555
+              },
+              {
+                "start_ns": 1125057542804,
+                "duration_ns": 223227752,
+                "round": 1,
+                "frame_time_us": 1793174129544430,
+                "consumed": 1,
+                "update_id": 1515,
+                "steps": 15,
+                "init_ns": 22313063,
+                "step_ns": 188188602,
+                "init_and_steps_fraction": 0.9429905695596487
+              },
+              {
+                "start_ns": 1130173396654,
+                "duration_ns": 255376311,
+                "round": 1,
+                "frame_time_us": 1793174134661096,
+                "consumed": 1,
+                "update_id": 1694,
+                "steps": 18,
+                "init_ns": 22027424,
+                "step_ns": 220699577,
+                "init_and_steps_fraction": 0.9504679586353646
+              },
+              {
+                "start_ns": 1131360884492,
+                "duration_ns": 350393890,
+                "round": 1,
+                "frame_time_us": 1793174135861096,
+                "consumed": 1,
+                "update_id": 1745,
+                "steps": 28,
+                "init_ns": 21188869,
+                "step_ns": 328901371,
+                "init_and_steps_fraction": 0.9991334038387485
+              }
+            ]
+          },
+          "off": {
+            "samples": 1604,
+            "p99_ms": 186.123563,
+            "consumed_fps": 35.62741609607274
+          }
+        },
+        "p99_delta_ms": 15.510188999999997,
+        "fps_decline_percent": -5.099089073377816
+      },
+      {
+        "number": 9,
+        "modes": {
+          "off": {
+            "samples": 1616,
+            "p99_ms": 197.995607,
+            "consumed_fps": 35.910510536550795
+          },
+          "basic": {
+            "samples": 1602,
+            "p99_ms": 198.779766,
+            "consumed_fps": 35.59007075384155,
+            "tail_calls": [
+              {
+                "start_ns": 1251414818012,
+                "duration_ns": 259940125,
+                "round": 1,
+                "frame_time_us": 1793174255905554,
+                "consumed": 1,
+                "update_id": 227,
+                "steps": 19,
+                "init_ns": 22030739,
+                "step_ns": 225186660,
+                "init_and_steps_fraction": 0.9510551670312538
+              },
+              {
+                "start_ns": 1256429366536,
+                "duration_ns": 289359868,
+                "round": 1,
+                "frame_time_us": 1793174260922220,
+                "consumed": 1,
+                "update_id": 404,
+                "steps": 20,
+                "init_ns": 21797803,
+                "step_ns": 253905198,
+                "init_and_steps_fraction": 0.952803175179773
+              },
+              {
+                "start_ns": 1257268800116,
+                "duration_ns": 278030357,
+                "round": 1,
+                "frame_time_us": 1793174261755554,
+                "consumed": 1,
+                "update_id": 431,
+                "steps": 19,
+                "init_ns": 23120148,
+                "step_ns": 241682122,
+                "init_and_steps_fraction": 0.952422148636093
+              },
+              {
+                "start_ns": 1260564804650,
+                "duration_ns": 259610563,
+                "round": 1,
+                "frame_time_us": 1793174265055554,
+                "consumed": 1,
+                "update_id": 542,
+                "steps": 18,
+                "init_ns": 24143511,
+                "step_ns": 223501491,
+                "init_and_steps_fraction": 0.9539095757055155
+              },
+              {
+                "start_ns": 1261738720915,
+                "duration_ns": 356302745,
+                "round": 1,
+                "frame_time_us": 1793174266238887,
+                "consumed": 1,
+                "update_id": 592,
+                "steps": 28,
+                "init_ns": 22580196,
+                "step_ns": 333394054,
+                "init_and_steps_fraction": 0.9990780452729883
+              },
+              {
+                "start_ns": 1264310524367,
+                "duration_ns": 250571188,
+                "round": 1,
+                "frame_time_us": 1793174268805554,
+                "consumed": 1,
+                "update_id": 678,
+                "steps": 18,
+                "init_ns": 21982017,
+                "step_ns": 214945613,
+                "init_and_steps_fraction": 0.9455501723526171
+              },
+              {
+                "start_ns": 1265574857666,
+                "duration_ns": 260769395,
+                "round": 1,
+                "frame_time_us": 1793174270072220,
+                "consumed": 1,
+                "update_id": 727,
+                "steps": 19,
+                "init_ns": 22676835,
+                "step_ns": 225611194,
+                "init_and_steps_fraction": 0.9521363847164657
+              },
+              {
+                "start_ns": 1270161189898,
+                "duration_ns": 262213080,
+                "round": 1,
+                "frame_time_us": 1793174274655554,
+                "consumed": 1,
+                "update_id": 895,
+                "steps": 19,
+                "init_ns": 21612425,
+                "step_ns": 227434723,
+                "init_and_steps_fraction": 0.9497891867179166
+              },
+              {
+                "start_ns": 1271370888878,
+                "duration_ns": 215083006,
+                "round": 1,
+                "frame_time_us": 1793174275855554,
+                "consumed": 1,
+                "update_id": 931,
+                "steps": 15,
+                "init_ns": 20409953,
+                "step_ns": 182359677,
+                "init_and_steps_fraction": 0.9427505862550573
+              },
+              {
+                "start_ns": 1275508423235,
+                "duration_ns": 198779766,
+                "round": 1,
+                "frame_time_us": 1793174280005554,
+                "consumed": 1,
+                "update_id": 1074,
+                "steps": 14,
+                "init_ns": 20519788,
+                "step_ns": 166580762,
+                "init_and_steps_fraction": 0.941245448492982
+              },
+              {
+                "start_ns": 1276850215372,
+                "duration_ns": 288741887,
+                "round": 1,
+                "frame_time_us": 1793174281338887,
+                "consumed": 1,
+                "update_id": 1120,
+                "steps": 20,
+                "init_ns": 21518777,
+                "step_ns": 254091764,
+                "init_and_steps_fraction": 0.954522199267888
+              },
+              {
+                "start_ns": 1277972403709,
+                "duration_ns": 345090701,
+                "round": 1,
+                "frame_time_us": 1793174282472220,
+                "consumed": 1,
+                "update_id": 1171,
+                "steps": 27,
+                "init_ns": 23306351,
+                "step_ns": 321454823,
+                "init_and_steps_fraction": 0.9990451003198721
+              },
+              {
+                "start_ns": 1282282242328,
+                "duration_ns": 287263219,
+                "round": 1,
+                "frame_time_us": 1793174286772220,
+                "consumed": 1,
+                "update_id": 1320,
+                "steps": 20,
+                "init_ns": 22068872,
+                "step_ns": 252881587,
+                "init_and_steps_fraction": 0.9571377079082303
+              },
+              {
+                "start_ns": 1287263406806,
+                "duration_ns": 291243512,
+                "round": 1,
+                "frame_time_us": 1793174291755554,
+                "consumed": 1,
+                "update_id": 1496,
+                "steps": 20,
+                "init_ns": 21728272,
+                "step_ns": 256150637,
+                "init_and_steps_fraction": 0.9541119288521696
+              },
+              {
+                "start_ns": 1288122454193,
+                "duration_ns": 286978379,
+                "round": 1,
+                "frame_time_us": 1793174292622220,
+                "consumed": 1,
+                "update_id": 1524,
+                "steps": 20,
+                "init_ns": 22277885,
+                "step_ns": 251641818,
+                "init_and_steps_fraction": 0.9544959587356231
+              },
+              {
+                "start_ns": 1291606371426,
+                "duration_ns": 205382288,
+                "round": 1,
+                "frame_time_us": 1793174296105554,
+                "consumed": 1,
+                "update_id": 1649,
+                "steps": 13,
+                "init_ns": 21483828,
+                "step_ns": 170706682,
+                "init_and_steps_fraction": 0.9357696414405511
+              },
+              {
+                "start_ns": 1293911048810,
+                "duration_ns": 280730498,
+                "round": 1,
+                "frame_time_us": 1793174298405554,
+                "consumed": 1,
+                "update_id": 1747,
+                "steps": 19,
+                "init_ns": 21775946,
+                "step_ns": 245733643,
+                "init_and_steps_fraction": 0.9529053341400763
+              }
+            ]
+          }
+        },
+        "p99_delta_ms": 0.7841589999999883,
+        "fps_decline_percent": 0.8923286745898262
+      },
+      {
+        "number": 10,
+        "modes": {
+          "basic": {
+            "samples": 1565,
+            "p99_ms": 224.382715,
+            "consumed_fps": 34.76520457380505,
+            "tail_calls": [
+              {
+                "start_ns": 1308055152833,
+                "duration_ns": 282578756,
+                "round": 1,
+                "frame_time_us": 1793174312550670,
+                "consumed": 1,
+                "update_id": 201,
+                "steps": 21,
+                "init_ns": 8466348,
+                "step_ns": 261349648,
+                "init_and_steps_fraction": 0.9548346797874643
+              },
+              {
+                "start_ns": 1308946567611,
+                "duration_ns": 260383589,
+                "round": 1,
+                "frame_time_us": 1793174313434003,
+                "consumed": 1,
+                "update_id": 231,
+                "steps": 19,
+                "init_ns": 7394155,
+                "step_ns": 239944378,
+                "init_and_steps_fraction": 0.9499006214251083
+              },
+              {
+                "start_ns": 1316887351732,
+                "duration_ns": 264252864,
+                "round": 1,
+                "frame_time_us": 1793174321384003,
+                "consumed": 1,
+                "update_id": 523,
+                "steps": 19,
+                "init_ns": 8551682,
+                "step_ns": 243591651,
+                "init_and_steps_fraction": 0.9541744569322813
+              },
+              {
+                "start_ns": 1322644137773,
+                "duration_ns": 271821193,
+                "round": 1,
+                "frame_time_us": 1793174327134003,
+                "consumed": 1,
+                "update_id": 721,
+                "steps": 21,
+                "init_ns": 6993925,
+                "step_ns": 252349451,
+                "init_and_steps_fraction": 0.9540954961521341
+              },
+              {
+                "start_ns": 1323528360798,
+                "duration_ns": 252145913,
+                "round": 1,
+                "frame_time_us": 1793174328017337,
+                "consumed": 1,
+                "update_id": 751,
+                "steps": 19,
+                "init_ns": 7965818,
+                "step_ns": 231565201,
+                "init_and_steps_fraction": 0.9499698652660692
+              },
+              {
+                "start_ns": 1326442763125,
+                "duration_ns": 264024206,
+                "round": 1,
+                "frame_time_us": 1793174330934003,
+                "consumed": 1,
+                "update_id": 855,
+                "steps": 19,
+                "init_ns": 7769267,
+                "step_ns": 243705264,
+                "init_and_steps_fraction": 0.9524677104795459
+              },
+              {
+                "start_ns": 1327264224370,
+                "duration_ns": 240448762,
+                "round": 1,
+                "frame_time_us": 1793174331750670,
+                "consumed": 1,
+                "update_id": 882,
+                "steps": 18,
+                "init_ns": 7392363,
+                "step_ns": 219026773,
+                "init_and_steps_fraction": 0.9416523259121625
+              },
+              {
+                "start_ns": 1328084774090,
+                "duration_ns": 236463142,
+                "round": 1,
+                "frame_time_us": 1793174332584003,
+                "consumed": 1,
+                "update_id": 906,
+                "steps": 18,
+                "init_ns": 9347579,
+                "step_ns": 214467841,
+                "init_and_steps_fraction": 0.9465129242002545
+              },
+              {
+                "start_ns": 1329800424149,
+                "duration_ns": 276254951,
+                "round": 1,
+                "frame_time_us": 1793174334300670,
+                "consumed": 1,
+                "update_id": 958,
+                "steps": 22,
+                "init_ns": 7662417,
+                "step_ns": 268335984,
+                "init_and_steps_fraction": 0.9990713288609984
+              },
+              {
+                "start_ns": 1333949763689,
+                "duration_ns": 252930241,
+                "round": 1,
+                "frame_time_us": 1793174338434003,
+                "consumed": 1,
+                "update_id": 1107,
+                "steps": 19,
+                "init_ns": 7451215,
+                "step_ns": 232396328,
+                "init_and_steps_fraction": 0.9482754693615304
+              },
+              {
+                "start_ns": 1334800437122,
+                "duration_ns": 350652532,
+                "round": 1,
+                "frame_time_us": 1793174339300670,
+                "consumed": 1,
+                "update_id": 1138,
+                "steps": 28,
+                "init_ns": 8461965,
+                "step_ns": 339065287,
+                "init_and_steps_fraction": 0.9910872453075571
+              },
+              {
+                "start_ns": 1336452890606,
+                "duration_ns": 270681716,
+                "round": 1,
+                "frame_time_us": 1793174340950670,
+                "consumed": 1,
+                "update_id": 1187,
+                "steps": 19,
+                "init_ns": 8175449,
+                "step_ns": 249393412,
+                "init_and_steps_fraction": 0.9515561849031576
+              },
+              {
+                "start_ns": 1338104843686,
+                "duration_ns": 253980227,
+                "round": 1,
+                "frame_time_us": 1793174342600670,
+                "consumed": 1,
+                "update_id": 1242,
+                "steps": 18,
+                "init_ns": 8434862,
+                "step_ns": 232817512,
+                "init_and_steps_fraction": 0.9498864413567124
+              },
+              {
+                "start_ns": 1338964328050,
+                "duration_ns": 273936132,
+                "round": 1,
+                "frame_time_us": 1793174343450670,
+                "consumed": 1,
+                "update_id": 1267,
+                "steps": 19,
+                "init_ns": 9915469,
+                "step_ns": 250238503,
+                "init_and_steps_fraction": 0.9496884186128466
+              },
+              {
+                "start_ns": 1341399436892,
+                "duration_ns": 224382715,
+                "round": 1,
+                "frame_time_us": 1793174345884003,
+                "consumed": 1,
+                "update_id": 1349,
+                "steps": 17,
+                "init_ns": 9184929,
+                "step_ns": 202239237,
+                "init_and_steps_fraction": 0.942248006937611
+              },
+              {
+                "start_ns": 1351041684590,
+                "duration_ns": 272173711,
+                "round": 1,
+                "frame_time_us": 1793174355534003,
+                "consumed": 1,
+                "update_id": 1700,
+                "steps": 20,
+                "init_ns": 6891163,
+                "step_ns": 251562239,
+                "init_and_steps_fraction": 0.9495898815885271
+              }
+            ]
+          },
+          "off": {
+            "samples": 1597,
+            "p99_ms": 220.165932,
+            "consumed_fps": 35.48479897325477
+          }
+        },
+        "p99_delta_ms": 4.216782999999992,
+        "fps_decline_percent": 2.0278948176994938
+      }
+    ],
+    "tail_summary": {
+      "count": 165,
+      "minimum_steps": 13,
+      "maximum_steps": 28,
+      "minimum_init_and_steps_fraction": 0.9357696414405511,
+      "maximum_call_ms": 371.897581
+    }
+  },
+  {
+    "root": "/home/mzh/nickluo/drone_tracker/.docker-artifacts/diagnostic-cpu7-fan-20261028/raw-complete",
+    "pairs": [
+      {
+        "number": 1,
+        "modes": {
+          "off": {
+            "samples": 1634,
+            "p99_ms": 258.459696,
+            "consumed_fps": 36.295076568945156
+          },
+          "basic": {
+            "samples": 1546,
+            "p99_ms": 209.725107,
+            "consumed_fps": 34.34042893314671,
+            "tail_calls": [
+              {
+                "start_ns": 2290419513945,
+                "duration_ns": 209725107,
+                "round": 1,
+                "frame_time_us": 1793175294908470,
+                "consumed": 1,
+                "update_id": 191,
+                "steps": 15,
+                "init_ns": 19277563,
+                "step_ns": 178846570,
+                "init_and_steps_fraction": 0.9446848583560384
+              },
+              {
+                "start_ns": 2292556581372,
+                "duration_ns": 258575089,
+                "round": 1,
+                "frame_time_us": 1793175297041804,
+                "consumed": 1,
+                "update_id": 274,
+                "steps": 18,
+                "init_ns": 22739849,
+                "step_ns": 223396907,
+                "init_and_steps_fraction": 0.9518966306920618
+              },
+              {
+                "start_ns": 2293408306194,
+                "duration_ns": 353146329,
+                "round": 1,
+                "frame_time_us": 1793175297908470,
+                "consumed": 1,
+                "update_id": 304,
+                "steps": 27,
+                "init_ns": 21680189,
+                "step_ns": 331176613,
+                "init_and_steps_fraction": 0.9991801500504909
+              },
+              {
+                "start_ns": 2299269315520,
+                "duration_ns": 267247013,
+                "round": 1,
+                "frame_time_us": 1793175303758470,
+                "consumed": 1,
+                "update_id": 503,
+                "steps": 19,
+                "init_ns": 21276009,
+                "step_ns": 233548121,
+                "init_and_steps_fraction": 0.9535153532286627
+              },
+              {
+                "start_ns": 2300687378152,
+                "duration_ns": 211084943,
+                "round": 1,
+                "frame_time_us": 1793175305175137,
+                "consumed": 1,
+                "update_id": 546,
+                "steps": 14,
+                "init_ns": 21754703,
+                "step_ns": 176184714,
+                "init_and_steps_fraction": 0.937723999574901
+              },
+              {
+                "start_ns": 2301734521423,
+                "duration_ns": 259536560,
+                "round": 1,
+                "frame_time_us": 1793175306225137,
+                "consumed": 1,
+                "update_id": 587,
+                "steps": 19,
+                "init_ns": 20956634,
+                "step_ns": 225956257,
+                "init_and_steps_fraction": 0.9513607292937842
+              },
+              {
+                "start_ns": 2302561481971,
+                "duration_ns": 276533112,
+                "round": 1,
+                "frame_time_us": 1793175307058470,
+                "consumed": 1,
+                "update_id": 615,
+                "steps": 19,
+                "init_ns": 21360868,
+                "step_ns": 242429044,
+                "init_and_steps_fraction": 0.9539179959035069
+              },
+              {
+                "start_ns": 2303385367837,
+                "duration_ns": 256131025,
+                "round": 1,
+                "frame_time_us": 1793175307875137,
+                "consumed": 1,
+                "update_id": 642,
+                "steps": 18,
+                "init_ns": 20711539,
+                "step_ns": 222328761,
+                "init_and_steps_fraction": 0.9488905141421271
+              },
+              {
+                "start_ns": 2306749357599,
+                "duration_ns": 271141963,
+                "round": 1,
+                "frame_time_us": 1793175311241804,
+                "consumed": 1,
+                "update_id": 751,
+                "steps": 19,
+                "init_ns": 20641616,
+                "step_ns": 234955061,
+                "init_and_steps_fraction": 0.942667354665423
+              },
+              {
+                "start_ns": 2311340632527,
+                "duration_ns": 276521661,
+                "round": 1,
+                "frame_time_us": 1793175315825137,
+                "consumed": 1,
+                "update_id": 903,
+                "steps": 19,
+                "init_ns": 22726536,
+                "step_ns": 241448071,
+                "init_and_steps_fraction": 0.9553486914719495
+              },
+              {
+                "start_ns": 2313391735471,
+                "duration_ns": 311183976,
+                "round": 1,
+                "frame_time_us": 1793175317891804,
+                "consumed": 1,
+                "update_id": 971,
+                "steps": 22,
+                "init_ns": 20894834,
+                "step_ns": 289311703,
+                "init_and_steps_fraction": 0.9968589674424624
+              },
+              {
+                "start_ns": 2315503221945,
+                "duration_ns": 285104206,
+                "round": 1,
+                "frame_time_us": 1793175319991804,
+                "consumed": 1,
+                "update_id": 1040,
+                "steps": 20,
+                "init_ns": 21340969,
+                "step_ns": 251221304,
+                "init_and_steps_fraction": 0.9560093020865501
+              },
+              {
+                "start_ns": 2319182250585,
+                "duration_ns": 210403697,
+                "round": 1,
+                "frame_time_us": 1793175323675137,
+                "consumed": 1,
+                "update_id": 1163,
+                "steps": 15,
+                "init_ns": 19805032,
+                "step_ns": 178895304,
+                "init_and_steps_fraction": 0.9443766380207663
+              },
+              {
+                "start_ns": 2321800130406,
+                "duration_ns": 318322904,
+                "round": 1,
+                "frame_time_us": 1793175326291804,
+                "consumed": 1,
+                "update_id": 1262,
+                "steps": 22,
+                "init_ns": 20642760,
+                "step_ns": 283847540,
+                "init_and_steps_fraction": 0.9565453700434952
+              },
+              {
+                "start_ns": 2323008235395,
+                "duration_ns": 268338718,
+                "round": 1,
+                "frame_time_us": 1793175327508470,
+                "consumed": 1,
+                "update_id": 1303,
+                "steps": 20,
+                "init_ns": 21975715,
+                "step_ns": 246121889,
+                "init_and_steps_fraction": 0.9991014565404609
+              },
+              {
+                "start_ns": 2327540266783,
+                "duration_ns": 262507153,
+                "round": 1,
+                "frame_time_us": 1793175332025137,
+                "consumed": 1,
+                "update_id": 1466,
+                "steps": 18,
+                "init_ns": 22157721,
+                "step_ns": 227876260,
+                "init_and_steps_fraction": 0.9524844490618509
+              }
+            ]
+          }
+        },
+        "p99_delta_ms": -48.734589,
+        "fps_decline_percent": 5.385434666559929
+      },
+      {
+        "number": 2,
+        "modes": {
+          "basic": {
+            "samples": 1620,
+            "p99_ms": 202.733419,
+            "consumed_fps": 35.984998055027184,
+            "tail_calls": [
+              {
+                "start_ns": 2346699468524,
+                "duration_ns": 210789254,
+                "round": 1,
+                "frame_time_us": 1793175351185737,
+                "consumed": 1,
+                "update_id": 182,
+                "steps": 14,
+                "init_ns": 23281586,
+                "step_ns": 174787434,
+                "init_and_steps_fraction": 0.9396542577070841
+              },
+              {
+                "start_ns": 2348993269347,
+                "duration_ns": 274237830,
+                "round": 1,
+                "frame_time_us": 1793175353485737,
+                "consumed": 1,
+                "update_id": 267,
+                "steps": 19,
+                "init_ns": 22583346,
+                "step_ns": 239540136,
+                "init_and_steps_fraction": 0.9558253943301696
+              },
+              {
+                "start_ns": 2352366812882,
+                "duration_ns": 303510365,
+                "round": 1,
+                "frame_time_us": 1793175356852403,
+                "consumed": 1,
+                "update_id": 385,
+                "steps": 21,
+                "init_ns": 22075939,
+                "step_ns": 268499899,
+                "init_and_steps_fraction": 0.9573835740337896
+              },
+              {
+                "start_ns": 2354452335522,
+                "duration_ns": 334737275,
+                "round": 1,
+                "frame_time_us": 1793175358952403,
+                "consumed": 1,
+                "update_id": 477,
+                "steps": 26,
+                "init_ns": 21847260,
+                "step_ns": 312612767,
+                "init_and_steps_fraction": 0.9991717444673588
+              },
+              {
+                "start_ns": 2363238582752,
+                "duration_ns": 323999549,
+                "round": 1,
+                "frame_time_us": 1793175367735737,
+                "consumed": 1,
+                "update_id": 807,
+                "steps": 23,
+                "init_ns": 21471573,
+                "step_ns": 289538943,
+                "init_and_steps_fraction": 0.9599103361714865
+              },
+              {
+                "start_ns": 2365037302083,
+                "duration_ns": 210895046,
+                "round": 1,
+                "frame_time_us": 1793175369535737,
+                "consumed": 1,
+                "update_id": 874,
+                "steps": 14,
+                "init_ns": 22748555,
+                "step_ns": 175202128,
+                "init_and_steps_fraction": 0.9386217777728169
+              },
+              {
+                "start_ns": 2366153981865,
+                "duration_ns": 326126618,
+                "round": 1,
+                "frame_time_us": 1793175370652403,
+                "consumed": 1,
+                "update_id": 919,
+                "steps": 23,
+                "init_ns": 22164630,
+                "step_ns": 291218025,
+                "init_and_steps_fraction": 0.9609232663124725
+              },
+              {
+                "start_ns": 2368215675750,
+                "duration_ns": 312396835,
+                "round": 1,
+                "frame_time_us": 1793175372702403,
+                "consumed": 1,
+                "update_id": 998,
+                "steps": 22,
+                "init_ns": 22425915,
+                "step_ns": 277651775,
+                "init_and_steps_fraction": 0.9605657176392328
+              },
+              {
+                "start_ns": 2371430890199,
+                "duration_ns": 211038917,
+                "round": 1,
+                "frame_time_us": 1793175375919070,
+                "consumed": 1,
+                "update_id": 1095,
+                "steps": 15,
+                "init_ns": 20685657,
+                "step_ns": 177398353,
+                "init_and_steps_fraction": 0.938613658636241
+              },
+              {
+                "start_ns": 2372709344619,
+                "duration_ns": 229074897,
+                "round": 1,
+                "frame_time_us": 1793175377202403,
+                "consumed": 1,
+                "update_id": 1136,
+                "steps": 16,
+                "init_ns": 21660759,
+                "step_ns": 195722766,
+                "init_and_steps_fraction": 0.9489626661274893
+              },
+              {
+                "start_ns": 2373656124162,
+                "duration_ns": 340515132,
+                "round": 1,
+                "frame_time_us": 1793175378152403,
+                "consumed": 1,
+                "update_id": 1171,
+                "steps": 23,
+                "init_ns": 26338636,
+                "step_ns": 301190671,
+                "init_and_steps_fraction": 0.9618641764208
+              },
+              {
+                "start_ns": 2375054302059,
+                "duration_ns": 223215234,
+                "round": 1,
+                "frame_time_us": 1793175379552403,
+                "consumed": 1,
+                "update_id": 1223,
+                "steps": 15,
+                "init_ns": 22993684,
+                "step_ns": 188429530,
+                "init_and_steps_fraction": 0.9471719748303559
+              },
+              {
+                "start_ns": 2378942411959,
+                "duration_ns": 222058581,
+                "round": 1,
+                "frame_time_us": 1793175383435737,
+                "consumed": 1,
+                "update_id": 1368,
+                "steps": 16,
+                "init_ns": 20698072,
+                "step_ns": 189661214,
+                "init_and_steps_fraction": 0.9473143755701113
+              },
+              {
+                "start_ns": 2380765480147,
+                "duration_ns": 304206539,
+                "round": 1,
+                "frame_time_us": 1793175385252403,
+                "consumed": 1,
+                "update_id": 1434,
+                "steps": 22,
+                "init_ns": 21540757,
+                "step_ns": 269969060,
+                "init_and_steps_fraction": 0.958262823535164
+              },
+              {
+                "start_ns": 2384913255616,
+                "duration_ns": 312305077,
+                "round": 1,
+                "frame_time_us": 1793175389402403,
+                "consumed": 1,
+                "update_id": 1574,
+                "steps": 22,
+                "init_ns": 22532462,
+                "step_ns": 276802117,
+                "init_and_steps_fraction": 0.9584685009779716
+              },
+              {
+                "start_ns": 2386837693602,
+                "duration_ns": 202733419,
+                "round": 1,
+                "frame_time_us": 1793175391335737,
+                "consumed": 1,
+                "update_id": 1630,
+                "steps": 14,
+                "init_ns": 22121280,
+                "step_ns": 166657457,
+                "init_and_steps_fraction": 0.9311673326043991
+              },
+              {
+                "start_ns": 2388702215522,
+                "duration_ns": 226285350,
+                "round": 1,
+                "frame_time_us": 1793175393202403,
+                "consumed": 1,
+                "update_id": 1692,
+                "steps": 16,
+                "init_ns": 22056466,
+                "step_ns": 203978636,
+                "init_and_steps_fraction": 0.9988941042802815
+              }
+            ]
+          },
+          "off": {
+            "samples": 1622,
+            "p99_ms": 197.158329,
+            "consumed_fps": 36.04284722168886
+          }
+        },
+        "p99_delta_ms": 5.575089999999989,
+        "fps_decline_percent": 0.16050110110853444
+      },
+      {
+        "number": 3,
+        "modes": {
+          "off": {
+            "samples": 1566,
+            "p99_ms": 209.693474,
+            "consumed_fps": 34.79390817508219
+          },
+          "basic": {
+            "samples": 1573,
+            "p99_ms": 197.094178,
+            "consumed_fps": 34.94826068705489,
+            "tail_calls": [
+              {
+                "start_ns": 2506658721521,
+                "duration_ns": 274034506,
+                "round": 1,
+                "frame_time_us": 1793175511151570,
+                "consumed": 1,
+                "update_id": 147,
+                "steps": 19,
+                "init_ns": 21641242,
+                "step_ns": 240069467,
+                "init_and_steps_fraction": 0.9550283021657134
+              },
+              {
+                "start_ns": 2509970731248,
+                "duration_ns": 249598062,
+                "round": 1,
+                "frame_time_us": 1793175514468237,
+                "consumed": 1,
+                "update_id": 266,
+                "steps": 18,
+                "init_ns": 22396677,
+                "step_ns": 214585960,
+                "init_and_steps_fraction": 0.9494570394540964
+              },
+              {
+                "start_ns": 2512091417903,
+                "duration_ns": 281262144,
+                "round": 1,
+                "frame_time_us": 1793175516584903,
+                "consumed": 1,
+                "update_id": 335,
+                "steps": 19,
+                "init_ns": 21853880,
+                "step_ns": 247375572,
+                "init_and_steps_fraction": 0.9572189423401395
+              },
+              {
+                "start_ns": 2514115858846,
+                "duration_ns": 239182554,
+                "round": 1,
+                "frame_time_us": 1793175518601570,
+                "consumed": 1,
+                "update_id": 405,
+                "steps": 17,
+                "init_ns": 21958160,
+                "step_ns": 204380685,
+                "init_and_steps_fraction": 0.9463016479036344
+              },
+              {
+                "start_ns": 2517908250098,
+                "duration_ns": 281293313,
+                "round": 1,
+                "frame_time_us": 1793175522401570,
+                "consumed": 1,
+                "update_id": 539,
+                "steps": 19,
+                "init_ns": 22501290,
+                "step_ns": 246279931,
+                "init_and_steps_fraction": 0.9555194118674268
+              },
+              {
+                "start_ns": 2519538028101,
+                "duration_ns": 241857647,
+                "round": 1,
+                "frame_time_us": 1793175524034903,
+                "consumed": 1,
+                "update_id": 593,
+                "steps": 17,
+                "init_ns": 22739666,
+                "step_ns": 207306749,
+                "init_and_steps_fraction": 0.9511645294390878
+              },
+              {
+                "start_ns": 2521542626612,
+                "duration_ns": 197094178,
+                "round": 1,
+                "frame_time_us": 1793175526034903,
+                "consumed": 1,
+                "update_id": 661,
+                "steps": 13,
+                "init_ns": 21957178,
+                "step_ns": 163206114,
+                "init_and_steps_fraction": 0.9394660658114417
+              },
+              {
+                "start_ns": 2524572247917,
+                "duration_ns": 260708134,
+                "round": 1,
+                "frame_time_us": 1793175529068237,
+                "consumed": 1,
+                "update_id": 763,
+                "steps": 19,
+                "init_ns": 21768458,
+                "step_ns": 225949631,
+                "init_and_steps_fraction": 0.9501739941876919
+              },
+              {
+                "start_ns": 2525846352221,
+                "duration_ns": 280972606,
+                "round": 1,
+                "frame_time_us": 1793175530334903,
+                "consumed": 1,
+                "update_id": 803,
+                "steps": 19,
+                "init_ns": 21642384,
+                "step_ns": 246406540,
+                "init_and_steps_fraction": 0.9540037650503196
+              },
+              {
+                "start_ns": 2535826812550,
+                "duration_ns": 278617950,
+                "round": 1,
+                "frame_time_us": 1793175540318237,
+                "consumed": 1,
+                "update_id": 1163,
+                "steps": 19,
+                "init_ns": 21287316,
+                "step_ns": 244643953,
+                "init_and_steps_fraction": 0.9544656724378311
+              },
+              {
+                "start_ns": 2536569720258,
+                "duration_ns": 197161281,
+                "round": 1,
+                "frame_time_us": 1793175541068237,
+                "consumed": 1,
+                "update_id": 1186,
+                "steps": 14,
+                "init_ns": 19909312,
+                "step_ns": 165797984,
+                "init_and_steps_fraction": 0.9419055052700738
+              },
+              {
+                "start_ns": 2537518016953,
+                "duration_ns": 337428792,
+                "round": 1,
+                "frame_time_us": 1793175542018237,
+                "consumed": 1,
+                "update_id": 1232,
+                "steps": 26,
+                "init_ns": 21468100,
+                "step_ns": 315653474,
+                "init_and_steps_fraction": 0.9990895323479094
+              },
+              {
+                "start_ns": 2540420979474,
+                "duration_ns": 273454284,
+                "round": 1,
+                "frame_time_us": 1793175544918237,
+                "consumed": 1,
+                "update_id": 1327,
+                "steps": 19,
+                "init_ns": 22247355,
+                "step_ns": 238904031,
+                "init_and_steps_fraction": 0.9550093060527807
+              },
+              {
+                "start_ns": 2542926470825,
+                "duration_ns": 285159702,
+                "round": 1,
+                "frame_time_us": 1793175547418237,
+                "consumed": 1,
+                "update_id": 1407,
+                "steps": 19,
+                "init_ns": 21901342,
+                "step_ns": 250319649,
+                "init_and_steps_fraction": 0.9546264394679442
+              },
+              {
+                "start_ns": 2547908595576,
+                "duration_ns": 284142177,
+                "round": 1,
+                "frame_time_us": 1793175552401570,
+                "consumed": 1,
+                "update_id": 1583,
+                "steps": 19,
+                "init_ns": 22362493,
+                "step_ns": 249880860,
+                "init_and_steps_fraction": 0.9581236966450074
+              },
+              {
+                "start_ns": 2548851394983,
+                "duration_ns": 207299406,
+                "round": 1,
+                "frame_time_us": 1793175553351570,
+                "consumed": 1,
+                "update_id": 1611,
+                "steps": 15,
+                "init_ns": 22947490,
+                "step_ns": 184151029,
+                "init_and_steps_fraction": 0.9990309330649988
+              }
+            ]
+          }
+        },
+        "p99_delta_ms": -12.59929600000001,
+        "fps_decline_percent": -0.4436193577220582
+      },
+      {
+        "number": 4,
+        "modes": {
+          "basic": {
+            "samples": 1591,
+            "p99_ms": 199.039013,
+            "consumed_fps": 35.35009861503584,
+            "tail_calls": [
+              {
+                "start_ns": 2563959694871,
+                "duration_ns": 296299656,
+                "round": 1,
+                "frame_time_us": 1793175568452302,
+                "consumed": 1,
+                "update_id": 176,
+                "steps": 20,
+                "init_ns": 21669775,
+                "step_ns": 261466481,
+                "init_and_steps_fraction": 0.9555740287460881
+              },
+              {
+                "start_ns": 2565685411865,
+                "duration_ns": 359762728,
+                "round": 1,
+                "frame_time_us": 1793175570185636,
+                "consumed": 1,
+                "update_id": 246,
+                "steps": 27,
+                "init_ns": 21960960,
+                "step_ns": 337521920,
+                "init_and_steps_fraction": 0.9992221317601305
+              },
+              {
+                "start_ns": 2567296150066,
+                "duration_ns": 267525039,
+                "round": 1,
+                "frame_time_us": 1793175571785636,
+                "consumed": 1,
+                "update_id": 295,
+                "steps": 19,
+                "init_ns": 20897604,
+                "step_ns": 233280400,
+                "init_and_steps_fraction": 0.9501092120203373
+              },
+              {
+                "start_ns": 2569763078270,
+                "duration_ns": 254791200,
+                "round": 1,
+                "frame_time_us": 1793175574252302,
+                "consumed": 1,
+                "update_id": 386,
+                "steps": 18,
+                "init_ns": 20669626,
+                "step_ns": 221483217,
+                "init_and_steps_fraction": 0.9503971997463021
+              },
+              {
+                "start_ns": 2570580167135,
+                "duration_ns": 230394456,
+                "round": 1,
+                "frame_time_us": 1793175575068969,
+                "consumed": 1,
+                "update_id": 409,
+                "steps": 17,
+                "init_ns": 9113016,
+                "step_ns": 208476760,
+                "init_and_steps_fraction": 0.94442279461794
+              },
+              {
+                "start_ns": 2571876388985,
+                "duration_ns": 276439908,
+                "round": 1,
+                "frame_time_us": 1793175576368969,
+                "consumed": 1,
+                "update_id": 448,
+                "steps": 20,
+                "init_ns": 8392043,
+                "step_ns": 253970817,
+                "init_and_steps_fraction": 0.949077366933576
+              },
+              {
+                "start_ns": 2572735377730,
+                "duration_ns": 360688587,
+                "round": 1,
+                "frame_time_us": 1793175577235636,
+                "consumed": 1,
+                "update_id": 483,
+                "steps": 29,
+                "init_ns": 7479576,
+                "step_ns": 352882146,
+                "init_and_steps_fraction": 0.9990937750409054
+              },
+              {
+                "start_ns": 2573985725098,
+                "duration_ns": 286422315,
+                "round": 1,
+                "frame_time_us": 1793175578485636,
+                "consumed": 1,
+                "update_id": 521,
+                "steps": 21,
+                "init_ns": 9001317,
+                "step_ns": 264248806,
+                "init_and_steps_fraction": 0.9540112927304564
+              },
+              {
+                "start_ns": 2582710242702,
+                "duration_ns": 273049257,
+                "round": 1,
+                "frame_time_us": 1793175587202302,
+                "consumed": 1,
+                "update_id": 840,
+                "steps": 20,
+                "init_ns": 8234732,
+                "step_ns": 252804887,
+                "init_and_steps_fraction": 0.9560165878788676
+              },
+              {
+                "start_ns": 2583552089243,
+                "duration_ns": 347145423,
+                "round": 1,
+                "frame_time_us": 1793175588052302,
+                "consumed": 1,
+                "update_id": 874,
+                "steps": 28,
+                "init_ns": 8139809,
+                "step_ns": 338724134,
+                "init_and_steps_fraction": 0.9991891582565962
+              },
+              {
+                "start_ns": 2585212454210,
+                "duration_ns": 274505933,
+                "round": 1,
+                "frame_time_us": 1793175589702302,
+                "consumed": 1,
+                "update_id": 924,
+                "steps": 20,
+                "init_ns": 7474342,
+                "step_ns": 254287474,
+                "init_and_steps_fraction": 0.9535743476990715
+              },
+              {
+                "start_ns": 2588399601639,
+                "duration_ns": 199039013,
+                "round": 1,
+                "frame_time_us": 1793175592885636,
+                "consumed": 1,
+                "update_id": 1039,
+                "steps": 15,
+                "init_ns": 8489879,
+                "step_ns": 178082989,
+                "init_and_steps_fraction": 0.9373683339155224
+              },
+              {
+                "start_ns": 2592718792305,
+                "duration_ns": 275270591,
+                "round": 1,
+                "frame_time_us": 1793175597218969,
+                "consumed": 1,
+                "update_id": 1194,
+                "steps": 22,
+                "init_ns": 8082042,
+                "step_ns": 266905270,
+                "init_and_steps_fraction": 0.9989709071391503
+              },
+              {
+                "start_ns": 2595414296503,
+                "duration_ns": 199555404,
+                "round": 1,
+                "frame_time_us": 1793175599902302,
+                "consumed": 1,
+                "update_id": 1279,
+                "steps": 15,
+                "init_ns": 8488291,
+                "step_ns": 178447168,
+                "init_and_steps_fraction": 0.9367596930624841
+              },
+              {
+                "start_ns": 2599847925744,
+                "duration_ns": 306475094,
+                "round": 1,
+                "frame_time_us": 1793175604335636,
+                "consumed": 1,
+                "update_id": 1438,
+                "steps": 22,
+                "init_ns": 8382739,
+                "step_ns": 285180151,
+                "init_and_steps_fraction": 0.9578686677880585
+              },
+              {
+                "start_ns": 2602287224185,
+                "duration_ns": 265269995,
+                "round": 1,
+                "frame_time_us": 1793175606785636,
+                "consumed": 1,
+                "update_id": 1527,
+                "steps": 19,
+                "init_ns": 9556956,
+                "step_ns": 242397386,
+                "init_and_steps_fraction": 0.9498033955932332
+              }
+            ]
+          },
+          "off": {
+            "samples": 1588,
+            "p99_ms": 247.738751,
+            "consumed_fps": 35.28276919763581
+          }
+        },
+        "p99_delta_ms": -48.699737999999996,
+        "fps_decline_percent": -0.19082804136740794
+      },
+      {
+        "number": 5,
+        "modes": {
+          "off": {
+            "samples": 1597,
+            "p99_ms": 208.913373,
+            "consumed_fps": 35.48640887940925
+          },
+          "basic": {
+            "samples": 1563,
+            "p99_ms": 257.977218,
+            "consumed_fps": 34.72520199515032,
+            "tail_calls": [
+              {
+                "start_ns": 2725883609881,
+                "duration_ns": 306188779,
+                "round": 1,
+                "frame_time_us": 1793175730378266,
+                "consumed": 1,
+                "update_id": 229,
+                "steps": 21,
+                "init_ns": 22108473,
+                "step_ns": 271585940,
+                "init_and_steps_fraction": 0.9591939128507384
+              },
+              {
+                "start_ns": 2731114527271,
+                "duration_ns": 301770707,
+                "round": 1,
+                "frame_time_us": 1793175735611600,
+                "consumed": 1,
+                "update_id": 441,
+                "steps": 21,
+                "init_ns": 21658124,
+                "step_ns": 267626270,
+                "init_and_steps_fraction": 0.9586231774312011
+              },
+              {
+                "start_ns": 2733984541346,
+                "duration_ns": 275815037,
+                "round": 1,
+                "frame_time_us": 1793175738478266,
+                "consumed": 1,
+                "update_id": 539,
+                "steps": 19,
+                "init_ns": 20278341,
+                "step_ns": 242357936,
+                "init_and_steps_fraction": 0.9522188487497149
+              },
+              {
+                "start_ns": 2735656230566,
+                "duration_ns": 276894544,
+                "round": 1,
+                "frame_time_us": 1793175740144933,
+                "consumed": 1,
+                "update_id": 595,
+                "steps": 19,
+                "init_ns": 21737276,
+                "step_ns": 242971983,
+                "init_and_steps_fraction": 0.9559930476636621
+              },
+              {
+                "start_ns": 2738987707602,
+                "duration_ns": 268545319,
+                "round": 1,
+                "frame_time_us": 1793175743478266,
+                "consumed": 1,
+                "update_id": 703,
+                "steps": 19,
+                "init_ns": 21427683,
+                "step_ns": 234296950,
+                "init_and_steps_fraction": 0.952258761955929
+              },
+              {
+                "start_ns": 2739820940057,
+                "duration_ns": 279439937,
+                "round": 1,
+                "frame_time_us": 1793175744311600,
+                "consumed": 1,
+                "update_id": 731,
+                "steps": 19,
+                "init_ns": 24131106,
+                "step_ns": 242572515,
+                "init_and_steps_fraction": 0.9544219908695442
+              },
+              {
+                "start_ns": 2740687048394,
+                "duration_ns": 287063178,
+                "round": 1,
+                "frame_time_us": 1793175745178266,
+                "consumed": 1,
+                "update_id": 760,
+                "steps": 20,
+                "init_ns": 22141725,
+                "step_ns": 252608108,
+                "init_and_steps_fraction": 0.9571058012881053
+              },
+              {
+                "start_ns": 2743979977431,
+                "duration_ns": 258659425,
+                "round": 1,
+                "frame_time_us": 1793175748478266,
+                "consumed": 1,
+                "update_id": 875,
+                "steps": 19,
+                "init_ns": 20924744,
+                "step_ns": 224681641,
+                "init_and_steps_fraction": 0.9495358036924423
+              },
+              {
+                "start_ns": 2749032072481,
+                "duration_ns": 303907415,
+                "round": 1,
+                "frame_time_us": 1793175753528266,
+                "consumed": 1,
+                "update_id": 1033,
+                "steps": 21,
+                "init_ns": 20345090,
+                "step_ns": 270250497,
+                "init_and_steps_fraction": 0.9561977518712401
+              },
+              {
+                "start_ns": 2749844803036,
+                "duration_ns": 367774558,
+                "round": 1,
+                "frame_time_us": 1793175754344933,
+                "consumed": 1,
+                "update_id": 1064,
+                "steps": 28,
+                "init_ns": 21573542,
+                "step_ns": 343991821,
+                "init_and_steps_fraction": 0.9939930727889013
+              },
+              {
+                "start_ns": 2752344628903,
+                "duration_ns": 359225379,
+                "round": 1,
+                "frame_time_us": 1793175756844933,
+                "consumed": 1,
+                "update_id": 1141,
+                "steps": 28,
+                "init_ns": 21156248,
+                "step_ns": 337800004,
+                "init_and_steps_fraction": 0.9992508129555067
+              },
+              {
+                "start_ns": 2753982244360,
+                "duration_ns": 257977218,
+                "round": 1,
+                "frame_time_us": 1793175758478266,
+                "consumed": 1,
+                "update_id": 1187,
+                "steps": 19,
+                "init_ns": 21650814,
+                "step_ns": 224312075,
+                "init_and_steps_fraction": 0.9534287209810907
+              },
+              {
+                "start_ns": 2756488488238,
+                "duration_ns": 274328087,
+                "round": 1,
+                "frame_time_us": 1793175760978266,
+                "consumed": 1,
+                "update_id": 1267,
+                "steps": 19,
+                "init_ns": 21908720,
+                "step_ns": 240105678,
+                "init_and_steps_fraction": 0.9551132764615531
+              },
+              {
+                "start_ns": 2762764542950,
+                "duration_ns": 289806853,
+                "round": 1,
+                "frame_time_us": 1793175767261600,
+                "consumed": 1,
+                "update_id": 1488,
+                "steps": 20,
+                "init_ns": 21243715,
+                "step_ns": 254566333,
+                "init_and_steps_fraction": 0.9517029881967629
+              },
+              {
+                "start_ns": 2765677110913,
+                "duration_ns": 291446592,
+                "round": 1,
+                "frame_time_us": 1793175770161600,
+                "consumed": 1,
+                "update_id": 1588,
+                "steps": 20,
+                "init_ns": 22211362,
+                "step_ns": 256696062,
+                "init_and_steps_fraction": 0.956976103532547
+              },
+              {
+                "start_ns": 2767778256902,
+                "duration_ns": 359201299,
+                "round": 1,
+                "frame_time_us": 1793175772278266,
+                "consumed": 1,
+                "update_id": 1681,
+                "steps": 28,
+                "init_ns": 21492529,
+                "step_ns": 337383106,
+                "init_and_steps_fraction": 0.9990933663076759
+              }
+            ]
+          }
+        },
+        "p99_delta_ms": 49.063844999999986,
+        "fps_decline_percent": 2.1450659796139915
+      },
+      {
+        "number": 6,
+        "modes": {
+          "basic": {
+            "samples": 1540,
+            "p99_ms": 237.474615,
+            "consumed_fps": 34.21239675031454,
+            "tail_calls": [
+              {
+                "start_ns": 2781753577608,
+                "duration_ns": 276638843,
+                "round": 1,
+                "frame_time_us": 1793175786246048,
+                "consumed": 1,
+                "update_id": 171,
+                "steps": 19,
+                "init_ns": 22198851,
+                "step_ns": 242497221,
+                "init_and_steps_fraction": 0.9568290162347158
+              },
+              {
+                "start_ns": 2783441747987,
+                "duration_ns": 293096683,
+                "round": 1,
+                "frame_time_us": 1793175787929381,
+                "consumed": 1,
+                "update_id": 228,
+                "steps": 20,
+                "init_ns": 20750186,
+                "step_ns": 259220737,
+                "init_and_steps_fraction": 0.9552169616331004
+              },
+              {
+                "start_ns": 2784279778311,
+                "duration_ns": 271758152,
+                "round": 1,
+                "frame_time_us": 1793175788779381,
+                "consumed": 1,
+                "update_id": 255,
+                "steps": 19,
+                "init_ns": 21616176,
+                "step_ns": 237988668,
+                "init_and_steps_fraction": 0.9552789570043883
+              },
+              {
+                "start_ns": 2786757922292,
+                "duration_ns": 265390521,
+                "round": 1,
+                "frame_time_us": 1793175791246048,
+                "consumed": 1,
+                "update_id": 347,
+                "steps": 19,
+                "init_ns": 21279659,
+                "step_ns": 231138076,
+                "init_and_steps_fraction": 0.9511181260313363
+              },
+              {
+                "start_ns": 2787588901376,
+                "duration_ns": 271423797,
+                "round": 1,
+                "frame_time_us": 1793175792079381,
+                "consumed": 1,
+                "update_id": 375,
+                "steps": 19,
+                "init_ns": 20969867,
+                "step_ns": 237374216,
+                "init_and_steps_fraction": 0.9518107323507821
+              },
+              {
+                "start_ns": 2789212414566,
+                "duration_ns": 241428478,
+                "round": 1,
+                "frame_time_us": 1793175793712714,
+                "consumed": 1,
+                "update_id": 429,
+                "steps": 17,
+                "init_ns": 21550273,
+                "step_ns": 207979259,
+                "init_and_steps_fraction": 0.9507144057794209
+              },
+              {
+                "start_ns": 2791335488718,
+                "duration_ns": 277731141,
+                "round": 1,
+                "frame_time_us": 1793175795829381,
+                "consumed": 1,
+                "update_id": 499,
+                "steps": 19,
+                "init_ns": 21139971,
+                "step_ns": 243351142,
+                "init_and_steps_fraction": 0.9523278954159483
+              },
+              {
+                "start_ns": 2793850502607,
+                "duration_ns": 278834407,
+                "round": 1,
+                "frame_time_us": 1793175798346048,
+                "consumed": 1,
+                "update_id": 579,
+                "steps": 19,
+                "init_ns": 22012890,
+                "step_ns": 244481688,
+                "init_and_steps_fraction": 0.9557449558224713
+              },
+              {
+                "start_ns": 2796962419106,
+                "duration_ns": 286497017,
+                "round": 1,
+                "frame_time_us": 1793175801462714,
+                "consumed": 1,
+                "update_id": 681,
+                "steps": 21,
+                "init_ns": 22304220,
+                "step_ns": 263949293,
+                "init_and_steps_fraction": 0.9991500644490131
+              },
+              {
+                "start_ns": 2800065402491,
+                "duration_ns": 246445151,
+                "round": 1,
+                "frame_time_us": 1793175804562714,
+                "consumed": 1,
+                "update_id": 781,
+                "steps": 17,
+                "init_ns": 22584976,
+                "step_ns": 211758190,
+                "init_and_steps_fraction": 0.950893799488877
+              },
+              {
+                "start_ns": 2800916238476,
+                "duration_ns": 253993189,
+                "round": 1,
+                "frame_time_us": 1793175805412714,
+                "consumed": 1,
+                "update_id": 806,
+                "steps": 18,
+                "init_ns": 21540817,
+                "step_ns": 219875477,
+                "init_and_steps_fraction": 0.950483337566977
+              },
+              {
+                "start_ns": 2805052534276,
+                "duration_ns": 241587461,
+                "round": 1,
+                "frame_time_us": 1793175809546048,
+                "consumed": 1,
+                "update_id": 957,
+                "steps": 17,
+                "init_ns": 21612960,
+                "step_ns": 206947111,
+                "init_and_steps_fraction": 0.9460758851222001
+              },
+              {
+                "start_ns": 2805912091253,
+                "duration_ns": 278882716,
+                "round": 1,
+                "frame_time_us": 1793175810396048,
+                "consumed": 1,
+                "update_id": 983,
+                "steps": 19,
+                "init_ns": 21842746,
+                "step_ns": 244897335,
+                "init_and_steps_fraction": 0.9564597075998069
+              },
+              {
+                "start_ns": 2812974152149,
+                "duration_ns": 245908024,
+                "round": 1,
+                "frame_time_us": 1793175817462714,
+                "consumed": 1,
+                "update_id": 1237,
+                "steps": 17,
+                "init_ns": 21578079,
+                "step_ns": 211456354,
+                "init_and_steps_fraction": 0.9476487558616632
+              },
+              {
+                "start_ns": 2815042998990,
+                "duration_ns": 237474615,
+                "round": 1,
+                "frame_time_us": 1793175819529381,
+                "consumed": 1,
+                "update_id": 1301,
+                "steps": 17,
+                "init_ns": 21837539,
+                "step_ns": 202156077,
+                "init_and_steps_fraction": 0.9432318313264767
+              },
+              {
+                "start_ns": 2818383133568,
+                "duration_ns": 244371403,
+                "round": 1,
+                "frame_time_us": 1793175822879381,
+                "consumed": 1,
+                "update_id": 1409,
+                "steps": 17,
+                "init_ns": 22050907,
+                "step_ns": 209858728,
+                "init_and_steps_fraction": 0.9490048023336021
+              }
+            ]
+          },
+          "off": {
+            "samples": 1628,
+            "p99_ms": 212.499519,
+            "consumed_fps": 36.16976733335354
+          }
+        },
+        "p99_delta_ms": 24.975096000000008,
+        "fps_decline_percent": 5.411620608446754
+      },
+      {
+        "number": 7,
+        "modes": {
+          "off": {
+            "samples": 1557,
+            "p99_ms": 200.502244,
+            "consumed_fps": 34.591972846605366
+          },
+          "basic": {
+            "samples": 1649,
+            "p99_ms": 174.221155,
+            "consumed_fps": 36.6401744783049,
+            "tail_calls": [
+              {
+                "start_ns": 2943540240666,
+                "duration_ns": 239248200,
+                "round": 1,
+                "frame_time_us": 1793175948040430,
+                "consumed": 1,
+                "update_id": 142,
+                "steps": 18,
+                "init_ns": 21173710,
+                "step_ns": 217847222,
+                "init_and_steps_fraction": 0.9990500743579263
+              },
+              {
+                "start_ns": 2945492949319,
+                "duration_ns": 311643355,
+                "round": 1,
+                "frame_time_us": 1793175949990430,
+                "consumed": 1,
+                "update_id": 222,
+                "steps": 22,
+                "init_ns": 21367825,
+                "step_ns": 277172267,
+                "init_and_steps_fraction": 0.9579543000363347
+              },
+              {
+                "start_ns": 2948112432766,
+                "duration_ns": 201346790,
+                "round": 1,
+                "frame_time_us": 1793175952607097,
+                "consumed": 1,
+                "update_id": 317,
+                "steps": 13,
+                "init_ns": 21488148,
+                "step_ns": 166481789,
+                "init_and_steps_fraction": 0.9335631176439416
+              },
+              {
+                "start_ns": 2949178827638,
+                "duration_ns": 278330987,
+                "round": 1,
+                "frame_time_us": 1793175953673764,
+                "consumed": 1,
+                "update_id": 359,
+                "steps": 19,
+                "init_ns": 22418355,
+                "step_ns": 243901478,
+                "init_and_steps_fraction": 0.9568457895060027
+              },
+              {
+                "start_ns": 2950156922719,
+                "duration_ns": 232988765,
+                "round": 1,
+                "frame_time_us": 1793175954657097,
+                "consumed": 1,
+                "update_id": 389,
+                "steps": 17,
+                "init_ns": 21879374,
+                "step_ns": 210787130,
+                "init_and_steps_fraction": 0.9986168388849136
+              },
+              {
+                "start_ns": 2952762955726,
+                "duration_ns": 174221155,
+                "round": 1,
+                "frame_time_us": 1793175957257097,
+                "consumed": 1,
+                "update_id": 475,
+                "steps": 11,
+                "init_ns": 21728920,
+                "step_ns": 138909781,
+                "init_and_steps_fraction": 0.9220390084085942
+              },
+              {
+                "start_ns": 2953652160127,
+                "duration_ns": 201222800,
+                "round": 1,
+                "frame_time_us": 1793175958140430,
+                "consumed": 1,
+                "update_id": 510,
+                "steps": 14,
+                "init_ns": 22795403,
+                "step_ns": 166371693,
+                "init_and_steps_fraction": 0.940087783292947
+              },
+              {
+                "start_ns": 2955915429092,
+                "duration_ns": 311006738,
+                "round": 1,
+                "frame_time_us": 1793175960407097,
+                "consumed": 1,
+                "update_id": 610,
+                "steps": 22,
+                "init_ns": 22703341,
+                "step_ns": 276439694,
+                "init_and_steps_fraction": 0.9618538714746431
+              },
+              {
+                "start_ns": 2957809198694,
+                "duration_ns": 198771082,
+                "round": 1,
+                "frame_time_us": 1793175962307097,
+                "consumed": 1,
+                "update_id": 666,
+                "steps": 14,
+                "init_ns": 21196569,
+                "step_ns": 165072789,
+                "init_and_steps_fraction": 0.9371049154926873
+              },
+              {
+                "start_ns": 2964926478486,
+                "duration_ns": 298114092,
+                "round": 1,
+                "frame_time_us": 1793175969423764,
+                "consumed": 1,
+                "update_id": 950,
+                "steps": 22,
+                "init_ns": 22636395,
+                "step_ns": 263374110,
+                "init_and_steps_fraction": 0.9593994805183513
+              },
+              {
+                "start_ns": 2966174216256,
+                "duration_ns": 198375717,
+                "round": 1,
+                "frame_time_us": 1793175970673764,
+                "consumed": 1,
+                "update_id": 986,
+                "steps": 14,
+                "init_ns": 20412312,
+                "step_ns": 166050160,
+                "init_and_steps_fraction": 0.9399460519656244
+              },
+              {
+                "start_ns": 2971277777874,
+                "duration_ns": 292611361,
+                "round": 1,
+                "frame_time_us": 1793175975773764,
+                "consumed": 1,
+                "update_id": 1176,
+                "steps": 20,
+                "init_ns": 21165235,
+                "step_ns": 258375294,
+                "init_and_steps_fraction": 0.9553304015424062
+              },
+              {
+                "start_ns": 2972292277775,
+                "duration_ns": 224169151,
+                "round": 1,
+                "frame_time_us": 1793175976790430,
+                "consumed": 1,
+                "update_id": 1207,
+                "steps": 15,
+                "init_ns": 21550595,
+                "step_ns": 187154254,
+                "init_and_steps_fraction": 0.9310150306988494
+              },
+              {
+                "start_ns": 2977230528619,
+                "duration_ns": 339788481,
+                "round": 1,
+                "frame_time_us": 1793175981723764,
+                "consumed": 1,
+                "update_id": 1376,
+                "steps": 24,
+                "init_ns": 20928678,
+                "step_ns": 305324901,
+                "init_and_steps_fraction": 0.9601666838140991
+              },
+              {
+                "start_ns": 2977990326424,
+                "duration_ns": 293864674,
+                "round": 1,
+                "frame_time_us": 1793175982490430,
+                "consumed": 1,
+                "update_id": 1402,
+                "steps": 23,
+                "init_ns": 21428513,
+                "step_ns": 272188055,
+                "init_and_steps_fraction": 0.9991557134220223
+              },
+              {
+                "start_ns": 2981857292377,
+                "duration_ns": 178077912,
+                "round": 1,
+                "frame_time_us": 1793175986357097,
+                "consumed": 1,
+                "update_id": 1544,
+                "steps": 12,
+                "init_ns": 22079473,
+                "step_ns": 143576656,
+                "init_and_steps_fraction": 0.9302452344567023
+              },
+              {
+                "start_ns": 2987831273139,
+                "duration_ns": 212159893,
+                "round": 1,
+                "frame_time_us": 1793175992323764,
+                "consumed": 1,
+                "update_id": 1767,
+                "steps": 15,
+                "init_ns": 22366412,
+                "step_ns": 177738334,
+                "init_and_steps_fraction": 0.9431789541862184
+              }
+            ]
+          }
+        },
+        "p99_delta_ms": -26.28108899999998,
+        "fps_decline_percent": -5.921031566433288
+      },
+      {
+        "number": 8,
+        "modes": {
+          "basic": {
+            "samples": 1630,
+            "p99_ms": 195.412935,
+            "consumed_fps": 36.208675770485904,
+            "tail_calls": [
+              {
+                "start_ns": 3006792966205,
+                "duration_ns": 213325744,
+                "round": 1,
+                "frame_time_us": 1793176011277915,
+                "consumed": 1,
+                "update_id": 383,
+                "steps": 15,
+                "init_ns": 20937871,
+                "step_ns": 180563649,
+                "init_and_steps_fraction": 0.9445719781481227
+              },
+              {
+                "start_ns": 3008105872781,
+                "duration_ns": 277843078,
+                "round": 1,
+                "frame_time_us": 1793176012594582,
+                "consumed": 1,
+                "update_id": 427,
+                "steps": 19,
+                "init_ns": 22367901,
+                "step_ns": 243329327,
+                "init_and_steps_fraction": 0.9562852165062755
+              },
+              {
+                "start_ns": 3009775914354,
+                "duration_ns": 291712878,
+                "round": 1,
+                "frame_time_us": 1793176014261249,
+                "consumed": 1,
+                "update_id": 489,
+                "steps": 21,
+                "init_ns": 21437288,
+                "step_ns": 257344204,
+                "init_and_steps_fraction": 0.9556708428895622
+              },
+              {
+                "start_ns": 3012257327471,
+                "duration_ns": 277589140,
+                "round": 1,
+                "frame_time_us": 1793176016744582,
+                "consumed": 1,
+                "update_id": 571,
+                "steps": 19,
+                "init_ns": 22516735,
+                "step_ns": 241885414,
+                "init_and_steps_fraction": 0.9524945716536317
+              },
+              {
+                "start_ns": 3013920078406,
+                "duration_ns": 272592290,
+                "round": 1,
+                "frame_time_us": 1793176018411249,
+                "consumed": 1,
+                "update_id": 627,
+                "steps": 19,
+                "init_ns": 22541969,
+                "step_ns": 238275568,
+                "init_and_steps_fraction": 0.9568045266430683
+              },
+              {
+                "start_ns": 3015962601297,
+                "duration_ns": 236731305,
+                "round": 1,
+                "frame_time_us": 1793176020461249,
+                "consumed": 1,
+                "update_id": 697,
+                "steps": 17,
+                "init_ns": 22417814,
+                "step_ns": 201492264,
+                "init_and_steps_fraction": 0.9458405934103223
+              },
+              {
+                "start_ns": 3017215713122,
+                "duration_ns": 238472093,
+                "round": 1,
+                "frame_time_us": 1793176021711249,
+                "consumed": 1,
+                "update_id": 737,
+                "steps": 17,
+                "init_ns": 21996524,
+                "step_ns": 203394637,
+                "init_and_steps_fraction": 0.9451469065606767
+              },
+              {
+                "start_ns": 3021327413687,
+                "duration_ns": 197864112,
+                "round": 1,
+                "frame_time_us": 1793176025811249,
+                "consumed": 1,
+                "update_id": 886,
+                "steps": 14,
+                "init_ns": 20982830,
+                "step_ns": 165411287,
+                "init_and_steps_fraction": 0.9420309479871721
+              },
+              {
+                "start_ns": 3024319396060,
+                "duration_ns": 271133947,
+                "round": 1,
+                "frame_time_us": 1793176028811249,
+                "consumed": 1,
+                "update_id": 1006,
+                "steps": 18,
+                "init_ns": 23594749,
+                "step_ns": 235147548,
+                "init_and_steps_fraction": 0.9542969438644288
+              },
+              {
+                "start_ns": 3027172165617,
+                "duration_ns": 197797134,
+                "round": 1,
+                "frame_time_us": 1793176031661249,
+                "consumed": 1,
+                "update_id": 1102,
+                "steps": 14,
+                "init_ns": 20378529,
+                "step_ns": 165922792,
+                "init_and_steps_fraction": 0.941880790851095
+              },
+              {
+                "start_ns": 3029236386358,
+                "duration_ns": 195412935,
+                "round": 1,
+                "frame_time_us": 1793176033727915,
+                "consumed": 1,
+                "update_id": 1181,
+                "steps": 13,
+                "init_ns": 21964635,
+                "step_ns": 160288429,
+                "init_and_steps_fraction": 0.9326560905499935
+              },
+              {
+                "start_ns": 3030868220489,
+                "duration_ns": 273351474,
+                "round": 1,
+                "frame_time_us": 1793176035361249,
+                "consumed": 1,
+                "update_id": 1248,
+                "steps": 20,
+                "init_ns": 22757165,
+                "step_ns": 238447726,
+                "init_and_steps_fraction": 0.9555642308334507
+              },
+              {
+                "start_ns": 3034257901386,
+                "duration_ns": 200159614,
+                "round": 1,
+                "frame_time_us": 1793176038744582,
+                "consumed": 1,
+                "update_id": 1370,
+                "steps": 14,
+                "init_ns": 20521491,
+                "step_ns": 167626144,
+                "init_and_steps_fraction": 0.9399879987778154
+              },
+              {
+                "start_ns": 3036377622277,
+                "duration_ns": 255152484,
+                "round": 1,
+                "frame_time_us": 1793176040877915,
+                "consumed": 1,
+                "update_id": 1447,
+                "steps": 19,
+                "init_ns": 22369145,
+                "step_ns": 232553702,
+                "init_and_steps_fraction": 0.9991000009233694
+              },
+              {
+                "start_ns": 3038901657264,
+                "duration_ns": 248927970,
+                "round": 1,
+                "frame_time_us": 1793176043394582,
+                "consumed": 1,
+                "update_id": 1534,
+                "steps": 18,
+                "init_ns": 22971234,
+                "step_ns": 213997534,
+                "init_and_steps_fraction": 0.9519571786167701
+              },
+              {
+                "start_ns": 3043081072712,
+                "duration_ns": 277970839,
+                "round": 1,
+                "frame_time_us": 1793176047577915,
+                "consumed": 1,
+                "update_id": 1695,
+                "steps": 19,
+                "init_ns": 22663122,
+                "step_ns": 243427972,
+                "init_and_steps_fraction": 0.9572626213500043
+              },
+              {
+                "start_ns": 3044027725900,
+                "duration_ns": 212675932,
+                "round": 1,
+                "frame_time_us": 1793176048527915,
+                "consumed": 1,
+                "update_id": 1723,
+                "steps": 15,
+                "init_ns": 22624187,
+                "step_ns": 189792785,
+                "init_and_steps_fraction": 0.9987823727980654
+              }
+            ]
+          },
+          "off": {
+            "samples": 1676,
+            "p99_ms": 197.953542,
+            "consumed_fps": 37.23280476886957
+          }
+        },
+        "p99_delta_ms": -2.5406069999999943,
+        "fps_decline_percent": 2.750609320842634
+      },
+      {
+        "number": 9,
+        "modes": {
+          "off": {
+            "samples": 1588,
+            "p99_ms": 221.218551,
+            "consumed_fps": 35.276806655514775
+          },
+          "basic": {
+            "samples": 1559,
+            "p99_ms": 269.715165,
+            "consumed_fps": 34.63819971585212,
+            "tail_calls": [
+              {
+                "start_ns": 3161652773946,
+                "duration_ns": 280208347,
+                "round": 1,
+                "frame_time_us": 1793176166152792,
+                "consumed": 1,
+                "update_id": 159,
+                "steps": 19,
+                "init_ns": 22124347,
+                "step_ns": 245987609,
+                "init_and_steps_fraction": 0.9568307256742784
+              },
+              {
+                "start_ns": 3162908402807,
+                "duration_ns": 273732997,
+                "round": 1,
+                "frame_time_us": 1793176167402792,
+                "consumed": 1,
+                "update_id": 195,
+                "steps": 19,
+                "init_ns": 21685921,
+                "step_ns": 239097852,
+                "init_and_steps_fraction": 0.9526939603850536
+              },
+              {
+                "start_ns": 3163751349173,
+                "duration_ns": 269715165,
+                "round": 1,
+                "frame_time_us": 1793176168236125,
+                "consumed": 1,
+                "update_id": 223,
+                "steps": 19,
+                "init_ns": 21686593,
+                "step_ns": 234942820,
+                "init_and_steps_fraction": 0.9514830691852273
+              },
+              {
+                "start_ns": 3168788685398,
+                "duration_ns": 289105648,
+                "round": 1,
+                "frame_time_us": 1793176173286125,
+                "consumed": 1,
+                "update_id": 408,
+                "steps": 20,
+                "init_ns": 21387390,
+                "step_ns": 254860399,
+                "init_and_steps_fraction": 0.9555253967227925
+              },
+              {
+                "start_ns": 3169586233853,
+                "duration_ns": 348982229,
+                "round": 1,
+                "frame_time_us": 1793176174086125,
+                "consumed": 1,
+                "update_id": 439,
+                "steps": 27,
+                "init_ns": 22723419,
+                "step_ns": 325974753,
+                "init_and_steps_fraction": 0.9991860416479832
+              },
+              {
+                "start_ns": 3175835453849,
+                "duration_ns": 283745659,
+                "round": 1,
+                "frame_time_us": 1793176180319459,
+                "consumed": 1,
+                "update_id": 652,
+                "steps": 20,
+                "init_ns": 21037047,
+                "step_ns": 248740674,
+                "init_and_steps_fraction": 0.9507730336766139
+              },
+              {
+                "start_ns": 3177094930968,
+                "duration_ns": 290475416,
+                "round": 1,
+                "frame_time_us": 1793176181586125,
+                "consumed": 1,
+                "update_id": 696,
+                "steps": 20,
+                "init_ns": 21668973,
+                "step_ns": 256378008,
+                "init_and_steps_fraction": 0.9572134703475216
+              },
+              {
+                "start_ns": 3177951470859,
+                "duration_ns": 288884465,
+                "round": 1,
+                "frame_time_us": 1793176182436125,
+                "consumed": 1,
+                "update_id": 724,
+                "steps": 20,
+                "init_ns": 21786523,
+                "step_ns": 254765273,
+                "init_and_steps_fraction": 0.9573093381812691
+              },
+              {
+                "start_ns": 3182066918185,
+                "duration_ns": 280540178,
+                "round": 1,
+                "frame_time_us": 1793176186552792,
+                "consumed": 1,
+                "update_id": 875,
+                "steps": 19,
+                "init_ns": 22028253,
+                "step_ns": 245963411,
+                "init_and_steps_fraction": 0.9552701716757305
+              },
+              {
+                "start_ns": 3186679066935,
+                "duration_ns": 289195410,
+                "round": 1,
+                "frame_time_us": 1793176191169459,
+                "consumed": 1,
+                "update_id": 1040,
+                "steps": 20,
+                "init_ns": 21047881,
+                "step_ns": 255512269,
+                "init_and_steps_fraction": 0.9563089192874811
+              },
+              {
+                "start_ns": 3188385937781,
+                "duration_ns": 348429852,
+                "round": 1,
+                "frame_time_us": 1793176192886125,
+                "consumed": 1,
+                "update_id": 1110,
+                "steps": 27,
+                "init_ns": 22276374,
+                "step_ns": 325879193,
+                "init_and_steps_fraction": 0.9992127970711304
+              },
+              {
+                "start_ns": 3192094269667,
+                "duration_ns": 272792831,
+                "round": 1,
+                "frame_time_us": 1793176196586125,
+                "consumed": 1,
+                "update_id": 1223,
+                "steps": 19,
+                "init_ns": 21473612,
+                "step_ns": 238708775,
+                "init_and_steps_fraction": 0.9537728174388864
+              },
+              {
+                "start_ns": 3197098169113,
+                "duration_ns": 292917305,
+                "round": 1,
+                "frame_time_us": 1793176201586125,
+                "consumed": 1,
+                "update_id": 1388,
+                "steps": 20,
+                "init_ns": 20992864,
+                "step_ns": 258688923,
+                "init_and_steps_fraction": 0.9548148307591455
+              },
+              {
+                "start_ns": 3198802874782,
+                "duration_ns": 351904866,
+                "round": 1,
+                "frame_time_us": 1793176203302792,
+                "consumed": 1,
+                "update_id": 1457,
+                "steps": 26,
+                "init_ns": 21649692,
+                "step_ns": 329932914,
+                "init_and_steps_fraction": 0.9990842411369214
+              },
+              {
+                "start_ns": 3200816926581,
+                "duration_ns": 278217975,
+                "round": 1,
+                "frame_time_us": 1793176205302792,
+                "consumed": 1,
+                "update_id": 1519,
+                "steps": 19,
+                "init_ns": 23851800,
+                "step_ns": 241358056,
+                "init_and_steps_fraction": 0.9532448649300966
+              },
+              {
+                "start_ns": 3206254372098,
+                "duration_ns": 275875026,
+                "round": 1,
+                "frame_time_us": 1793176210752792,
+                "consumed": 1,
+                "update_id": 1703,
+                "steps": 19,
+                "init_ns": 22687727,
+                "step_ns": 240298474,
+                "init_and_steps_fraction": 0.9532802037687891
+              }
+            ]
+          }
+        },
+        "p99_delta_ms": 48.49661400000002,
+        "fps_decline_percent": 1.8102742288971463
+      },
+      {
+        "number": 10,
+        "modes": {
+          "basic": {
+            "samples": 1565,
+            "p99_ms": 212.196863,
+            "consumed_fps": 34.762367989301715,
+            "tail_calls": [
+              {
+                "start_ns": 3218492314874,
+                "duration_ns": 274908862,
+                "round": 1,
+                "frame_time_us": 1793176222989089,
+                "consumed": 1,
+                "update_id": 155,
+                "steps": 19,
+                "init_ns": 22322870,
+                "step_ns": 240426859,
+                "init_and_steps_fraction": 0.9557703127082168
+              },
+              {
+                "start_ns": 3219455540698,
+                "duration_ns": 223913213,
+                "round": 1,
+                "frame_time_us": 1793176223955755,
+                "consumed": 1,
+                "update_id": 184,
+                "steps": 16,
+                "init_ns": 22746428,
+                "step_ns": 200951338,
+                "init_and_steps_fraction": 0.9990378102430248
+              },
+              {
+                "start_ns": 3220582668088,
+                "duration_ns": 289480033,
+                "round": 1,
+                "frame_time_us": 1793176225072422,
+                "consumed": 1,
+                "update_id": 228,
+                "steps": 20,
+                "init_ns": 20623787,
+                "step_ns": 256135809,
+                "init_and_steps_fraction": 0.9560576359337364
+              },
+              {
+                "start_ns": 3222222330218,
+                "duration_ns": 341222264,
+                "round": 1,
+                "frame_time_us": 1793176226722422,
+                "consumed": 1,
+                "update_id": 295,
+                "steps": 26,
+                "init_ns": 22846059,
+                "step_ns": 318077497,
+                "init_and_steps_fraction": 0.9991245940505219
+              },
+              {
+                "start_ns": 3224929575101,
+                "duration_ns": 213861649,
+                "round": 1,
+                "frame_time_us": 1793176229422422,
+                "consumed": 1,
+                "update_id": 387,
+                "steps": 15,
+                "init_ns": 24045853,
+                "step_ns": 176850017,
+                "init_and_steps_fraction": 0.9393730523418904
+              },
+              {
+                "start_ns": 3237231347413,
+                "duration_ns": 271157123,
+                "round": 1,
+                "frame_time_us": 1793176241722422,
+                "consumed": 1,
+                "update_id": 835,
+                "steps": 19,
+                "init_ns": 21143761,
+                "step_ns": 234801144,
+                "init_and_steps_fraction": 0.9438988810926424
+              },
+              {
+                "start_ns": 3238073713782,
+                "duration_ns": 274594051,
+                "round": 1,
+                "frame_time_us": 1793176242572422,
+                "consumed": 1,
+                "update_id": 863,
+                "steps": 19,
+                "init_ns": 22046313,
+                "step_ns": 239983940,
+                "init_and_steps_fraction": 0.9542459206445081
+              },
+              {
+                "start_ns": 3240353795386,
+                "duration_ns": 277478258,
+                "round": 1,
+                "frame_time_us": 1793176244839089,
+                "consumed": 1,
+                "update_id": 935,
+                "steps": 19,
+                "init_ns": 22291947,
+                "step_ns": 242503949,
+                "init_and_steps_fraction": 0.9542942135668158
+              },
+              {
+                "start_ns": 3241438873633,
+                "duration_ns": 348633988,
+                "round": 1,
+                "frame_time_us": 1793176245939089,
+                "consumed": 1,
+                "update_id": 984,
+                "steps": 27,
+                "init_ns": 22249075,
+                "step_ns": 326112337,
+                "init_and_steps_fraction": 0.9992181599919053
+              },
+              {
+                "start_ns": 3244729948796,
+                "duration_ns": 254579540,
+                "round": 1,
+                "frame_time_us": 1793176249222422,
+                "consumed": 1,
+                "update_id": 1082,
+                "steps": 18,
+                "init_ns": 21102798,
+                "step_ns": 219955072,
+                "init_and_steps_fraction": 0.9468862658798111
+              },
+              {
+                "start_ns": 3247542572452,
+                "duration_ns": 212196863,
+                "round": 1,
+                "frame_time_us": 1793176252039089,
+                "consumed": 1,
+                "update_id": 1175,
+                "steps": 15,
+                "init_ns": 22197333,
+                "step_ns": 178249094,
+                "init_and_steps_fraction": 0.9446248364190002
+              },
+              {
+                "start_ns": 3254472551422,
+                "duration_ns": 261837678,
+                "round": 1,
+                "frame_time_us": 1793176258972422,
+                "consumed": 1,
+                "update_id": 1412,
+                "steps": 20,
+                "init_ns": 22897388,
+                "step_ns": 238683719,
+                "init_and_steps_fraction": 0.9990201142862258
+              },
+              {
+                "start_ns": 3255975303205,
+                "duration_ns": 275833573,
+                "round": 1,
+                "frame_time_us": 1793176260472422,
+                "consumed": 1,
+                "update_id": 1463,
+                "steps": 19,
+                "init_ns": 21314633,
+                "step_ns": 241767626,
+                "init_and_steps_fraction": 0.9537717114660296
+              },
+              {
+                "start_ns": 3258462192744,
+                "duration_ns": 248567639,
+                "round": 1,
+                "frame_time_us": 1793176262955755,
+                "consumed": 1,
+                "update_id": 1546,
+                "steps": 18,
+                "init_ns": 21376148,
+                "step_ns": 214106011,
+                "init_and_steps_fraction": 0.9473564617958977
+              },
+              {
+                "start_ns": 3259754398303,
+                "duration_ns": 290582290,
+                "round": 1,
+                "frame_time_us": 1793176264239089,
+                "consumed": 1,
+                "update_id": 1596,
+                "steps": 20,
+                "init_ns": 22091673,
+                "step_ns": 255590204,
+                "init_and_steps_fraction": 0.9556049578933389
+              },
+              {
+                "start_ns": 3261222181594,
+                "duration_ns": 381423350,
+                "round": 1,
+                "frame_time_us": 1793176265722422,
+                "consumed": 1,
+                "update_id": 1650,
+                "steps": 29,
+                "init_ns": 21452437,
+                "step_ns": 359693920,
+                "init_and_steps_fraction": 0.9992737911824223
+              }
+            ]
+          },
+          "off": {
+            "samples": 1629,
+            "p99_ms": 200.664911,
+            "consumed_fps": 36.19120162452997
+          }
+        },
+        "p99_delta_ms": 11.531952000000018,
+        "fps_decline_percent": 3.9480138019507116
+      }
+    ],
+    "tail_summary": {
+      "count": 163,
+      "minimum_steps": 11,
+      "maximum_steps": 29,
+      "minimum_init_and_steps_fraction": 0.9220390084085942,
+      "maximum_call_ms": 381.42335
+    }
+  }
+]

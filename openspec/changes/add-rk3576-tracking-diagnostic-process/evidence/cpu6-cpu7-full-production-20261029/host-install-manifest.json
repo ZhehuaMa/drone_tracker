@@ -1,0 +1,458 @@
+{
+  "lib/drone_tracker/drone_tracker_node": {
+    "sha256": "5179ca225955c03efaa1494fdf0f9cd1e1d0b9ff3ce9e99efee126b37825a186",
+    "bytes": 6188160
+  },
+  "lib/drone_tracker/nanotrackv3_baseline": {
+    "sha256": "919f7f903b7f58ed2293a44326e5d98e5398f3d963f3b778178b9a439554f101",
+    "bytes": 480208
+  },
+  "lib/drone_tracker/nanotrackv3_benchmark_compare": {
+    "sha256": "3c44d818320c53829a65cc0d02f63e9ebb4469ce97f7bf646bdc42adacec2063",
+    "bytes": 223888
+  },
+  "lib/drone_tracker/nanotrackv3_search_direct": {
+    "sha256": "e928d90178be24465549c746950bdc29d8cecbd03d43aa4a8e523c76aa14d3e5",
+    "bytes": 644544
+  },
+  "lib/drone_tracker/nanotrackv3_search_direct_probe": {
+    "sha256": "847b609df8d47bb9709d7d74b67eafc2ab48e32899eebeba5ca3130d43718183",
+    "bytes": 444680
+  },
+  "lib/drone_tracker/rk3576_diagnostic_inspect": {
+    "sha256": "cef97064e0b33aabd7d0f4d46490de1eef35905b714b95aa24ab9bde49a5e72c",
+    "bytes": 104920
+  },
+  "lib/drone_tracker/rk3576_diagnostic_worker": {
+    "sha256": "2359d64998a19d8390853a4e7c7feac00dce65f3d350b83b31ecc7cf42b1db7c",
+    "bytes": 70744
+  },
+  "lib/drone_tracker/rk3576_recording_inspect": {
+    "sha256": "e6c5260a09485cae8f8551bbcc302ab553b90aacfb11d601a5ec5f9e41f2e82a",
+    "bytes": 110192
+  },
+  "lib/drone_tracker/rk3576_recording_worker": {
+    "sha256": "881949d2f2e7568ba4d7d6de218827c855daddf13bc074f95862c4f224681988",
+    "bytes": 360696
+  },
+  "lib/drone_tracker/rk3576_tracking_regression": {
+    "sha256": "ff83b4970d4b85ac770d06dd087df6682ab07c223ad81c38213a0c36da3bb949",
+    "bytes": 6351696
+  },
+  "share/ament_index/resource_index/package_run_dependencies/drone_tracker": {
+    "sha256": "d08203fd8fdc04ce16965a5fd44582390dcf421b8a15a9ceab2d11c4b48ab4cd",
+    "bytes": 188
+  },
+  "share/ament_index/resource_index/packages/drone_tracker": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "share/ament_index/resource_index/parent_prefix_path/drone_tracker": {
+    "sha256": "ed58bed9c9ed6979b95b9187736a0c6d3c51cab32e5037f15d5f6b411dc6f3a7",
+    "bytes": 15
+  },
+  "share/colcon-core/packages/drone_tracker": {
+    "sha256": "cfbfdaafba04d620b9e02345e26352942ea90554391ae48ba9e0acc3f10c222c",
+    "bytes": 141
+  },
+  "share/drone_tracker/cmake/drone_trackerConfig-version.cmake": {
+    "sha256": "5df7fb3481e154840dd6ac6d1b6eb53c81ed9cadd5e7a00398962383332be7ea",
+    "bytes": 432
+  },
+  "share/drone_tracker/cmake/drone_trackerConfig.cmake": {
+    "sha256": "fba22f75ead768f12ab3c7d195c3ed358551739fdd12260529ef1b15f5977de5",
+    "bytes": 1294
+  },
+  "share/drone_tracker/environment/ament_prefix_path.dsv": {
+    "sha256": "c4797d0a0670c70b4d3bcb5b7d47563635c7950595603f3af66f70af546ad57e",
+    "bytes": 41
+  },
+  "share/drone_tracker/environment/ament_prefix_path.sh": {
+    "sha256": "6658f14efe913e291c0bf2c74059a9e14fb8abdb5a31628bef61d3b41e206679",
+    "bytes": 160
+  },
+  "share/drone_tracker/environment/path.dsv": {
+    "sha256": "3f2cdf6234ea2525c1670c140b6a03700d98a2408e7a232107791fa96c08b58b",
+    "bytes": 41
+  },
+  "share/drone_tracker/environment/path.sh": {
+    "sha256": "abe10a0452bc4b93f665fc343a7e6d32fe3f3a2b6beb90d338044a71d2583f18",
+    "bytes": 185
+  },
+  "share/drone_tracker/hook/cmake_prefix_path.dsv": {
+    "sha256": "7ab2eb0a25c282f9a5bf62596b4c098865cd3a8aa5740601a9efa8620acd69d3",
+    "bytes": 41
+  },
+  "share/drone_tracker/hook/cmake_prefix_path.ps1": {
+    "sha256": "0c7394c1d89765deec81cb10e59a36d0d98867690b4b8781d5bc9186fc67885a",
+    "bytes": 152
+  },
+  "share/drone_tracker/hook/cmake_prefix_path.sh": {
+    "sha256": "ee9849def404b669097010f38735aa521e0731366a319b6e1abe996c793494b2",
+    "bytes": 142
+  },
+  "share/drone_tracker/launch/balloon_tracker.launch.py": {
+    "sha256": "9de1cc3c65a3fd517c877826b0a030a62cc604f2a7275f014c76cdf06c91f05e",
+    "bytes": 2309
+  },
+  "share/drone_tracker/launch/drone_tracker.launch.py": {
+    "sha256": "e63f0b7bf932ce7e9223ef49fd27551d5012ca575754a0e7ae21dfd0afad51fe",
+    "bytes": 1474
+  },
+  "share/drone_tracker/launch/rk3576_camera.launch.py": {
+    "sha256": "ca54a0c82b7b801466b901971222ad87c2caf8c6a46f7db7d9e5362d975c72b5",
+    "bytes": 1071
+  },
+  "share/drone_tracker/launch/rk3576_video.launch.py": {
+    "sha256": "6c1d0d9a66a87333d96fcbcba6479c445ea1ca456522f4f03dc87dbcb4fb25eb",
+    "bytes": 1041
+  },
+  "share/drone_tracker/licenses/DEJAVU_FONT_LICENSE.txt": {
+    "sha256": "e81d9dced49fea2a7d576cbea283873de58563c5d488f954deb282843c3ea79c",
+    "bytes": 3857
+  },
+  "share/drone_tracker/licenses/FONT_LICENSE.txt": {
+    "sha256": "c6ee95a7be3b49aca9e53906c6584ecdb215174268aacc9fbafae767fc35b2a8",
+    "bytes": 4432
+  },
+  "share/drone_tracker/local_setup.bash": {
+    "sha256": "41b30b6c107da94a2478e43953b8cbd0d920f5e8fc1ea847c61a213623d623b0",
+    "bytes": 1594
+  },
+  "share/drone_tracker/local_setup.dsv": {
+    "sha256": "f2bf910fcd5f4b435f032ab864aeac8e113e55ed324fcf9bac7e5c7c27430f81",
+    "bytes": 107
+  },
+  "share/drone_tracker/local_setup.sh": {
+    "sha256": "17da001cea88a964411d1d431e737a1ae2f2bc92f6ba50337a9dd18f78d0aff1",
+    "bytes": 5011
+  },
+  "share/drone_tracker/local_setup.zsh": {
+    "sha256": "56942873096201f4e7fe5e7b9bd87e56cc42ced33fadb53fbc25766fd9149c81",
+    "bytes": 1957
+  },
+  "share/drone_tracker/models/model_stub.md": {
+    "sha256": "e38d588890c7555072f3276ee61e53bf058db44c81f9393d5cd8537ddc3e14ba",
+    "bytes": 15
+  },
+  "share/drone_tracker/package.bash": {
+    "sha256": "5b9f639a71f32ab6a75a284873204655362d604a2e60ef243a5fc8436d19daf9",
+    "bytes": 1376
+  },
+  "share/drone_tracker/package.dsv": {
+    "sha256": "5a6657f5be6b49bd816923483293ceee2e3eaa02fd13c32a20ea59881ab45bf5",
+    "bytes": 376
+  },
+  "share/drone_tracker/package.ps1": {
+    "sha256": "8a4766e525e40c0a200357ce021f06400eb9f2a7224a7c87a83799afccb602af",
+    "bytes": 3255
+  },
+  "share/drone_tracker/package.sh": {
+    "sha256": "2a4d978c0cf5c8d8ed35d6933c340d3d98ec8a6b9037111fde4ef3c7163b963e",
+    "bytes": 2857
+  },
+  "share/drone_tracker/package.xml": {
+    "sha256": "f9c222196355655e772761790f6364f8a6815a474d56421ab33faeca967cffb5",
+    "bytes": 1065
+  },
+  "share/drone_tracker/package.zsh": {
+    "sha256": "60679d9800380bb3246608d643ef820de8f36f0229ee10ad61b66ea1cd6c6e7b",
+    "bytes": 1660
+  },
+  "share/drone_tracker/parameters/README.md": {
+    "sha256": "f7b021584c39936e1722fc63b68a273db43c94a0c177feaea80f4cbdfdfd812c",
+    "bytes": 382
+  },
+  "share/drone_tracker/parameters/balloon_tracker_params.yaml": {
+    "sha256": "f6b6410be3d05292e6df3b4bd468a759348f056c16880fdcfdd1330cd6616b57",
+    "bytes": 2682
+  },
+  "share/drone_tracker/parameters/drone_tracker_params.yaml": {
+    "sha256": "167125cb1b532f3c2433a797e2af0ad4c4677055a5e2a0daef4e11a302111871",
+    "bytes": 2415
+  },
+  "share/drone_tracker/parameters/replay_fp16.yaml": {
+    "sha256": "905a772c126ef5d71883c4754e3168542238a4a2878bfcf9444cf74f9b9531eb",
+    "bytes": 1789
+  },
+  "share/drone_tracker/parameters/replay_int8.yaml": {
+    "sha256": "0433e9fba0e576165d2e994bfefb3f210afa093116dd2e9172412ebc060b79fd",
+    "bytes": 1789
+  },
+  "share/drone_tracker/parameters/rk3576_ar0234_camera_params.yaml": {
+    "sha256": "cbc9aa80f99a6630e48d15738c1e699f66890cea98969c3ca9558e726ce12588",
+    "bytes": 6159
+  },
+  "share/drone_tracker/parameters/rk3576_sc233hgs_production_params.yaml": {
+    "sha256": "bd988d875d03cb88376ddb08fb1da019db818c515567ca13e780b604c70457b3",
+    "bytes": 2951
+  },
+  "share/drone_tracker/parameters/rk3576_video_params.yaml": {
+    "sha256": "99e0afeee3c506ad96fab2e96c564cb29bfeb1ba6d34c8e0345e3dc31c126582",
+    "bytes": 3500
+  },
+  "share/drone_tracker/tracking_regression/CMakeLists.txt": {
+    "sha256": "64c7e0d0d1ae7d1b2bc89320beb0e8d4fb65b58fd4881dea6e7e28bc6a2ef747",
+    "bytes": 4991
+  },
+  "share/drone_tracker/tracking_regression/README.md": {
+    "sha256": "fdc17953bf0aad3eae6f385374331403369ef472a6dbea3aaaf753bb3b428ed3",
+    "bytes": 23957
+  },
+  "share/drone_tracker/tracking_regression/acceptance.md": {
+    "sha256": "4cfec1e9891a6b3cab485f9c9a2bc4d90bf1bfd1abe66b6ab8743ffd71a82c13",
+    "bytes": 16319
+  },
+  "share/drone_tracker/tracking_regression/affinity.py": {
+    "sha256": "895e55b49c347fa6972f4e28ff0ff20ae398bf5d81484972756062078c7bd8ec",
+    "bytes": 8695
+  },
+  "share/drone_tracker/tracking_regression/affinity_experiment.py": {
+    "sha256": "970aec0a3a7b08b74f53bacfd0d77b88535671c5035d82692711a6cc43694206",
+    "bytes": 4550
+  },
+  "share/drone_tracker/tracking_regression/baseline.py": {
+    "sha256": "334e4ec52e89074e817fe194c91cc20071ec38af4637790a7d24981b8c156eee",
+    "bytes": 16431
+  },
+  "share/drone_tracker/tracking_regression/collect.py": {
+    "sha256": "9fd76646d71e5b82813c9b4331801c694df61a2061f8c95713c5e895b33190e8",
+    "bytes": 20236
+  },
+  "share/drone_tracker/tracking_regression/common.py": {
+    "sha256": "495dd648fb66077d5a9f225f2e753cf90f78f2a87ac3247de5567388472111a8",
+    "bytes": 3962
+  },
+  "share/drone_tracker/tracking_regression/compare.py": {
+    "sha256": "b0ac528c0be9bfb782ca287c948555d48cac7174b1d331b4368b2f0f3d6c45f7",
+    "bytes": 20410
+  },
+  "share/drone_tracker/tracking_regression/configs/affinity-example.yaml": {
+    "sha256": "dfe0b08edd18bd19f41e2cb960927ca96be5fd6b8cfb552dc1f8d0435baab194",
+    "bytes": 1729
+  },
+  "share/drone_tracker/tracking_regression/configs/affinity-experiment-example.json": {
+    "sha256": "dc744377128d3690e9adbf1be06263675a5953e827072d6ef4935d36f5991d4f",
+    "bytes": 1764
+  },
+  "share/drone_tracker/tracking_regression/configs/example.yaml": {
+    "sha256": "730d8a842e3b47e2228961ba563c79ca4dbbf6aa279be54a30bd5e2faf4cd974",
+    "bytes": 3042
+  },
+  "share/drone_tracker/tracking_regression/configs/wlcb-overlay-four-cases.yaml": {
+    "sha256": "49477b24212ce4426b11044912a2fc402a95bf0975f7a7051276702a10456a5e",
+    "bytes": 4678
+  },
+  "share/drone_tracker/tracking_regression/configs/wlcb-reference.yaml": {
+    "sha256": "260010f73e9fc628a52d0beee7809bea504f62d0adca63ff5321f54bd81724dd",
+    "bytes": 1249
+  },
+  "share/drone_tracker/tracking_regression/configuration.py": {
+    "sha256": "01238cfa2ed6f1dc68bc1066cf9975d7c17ce017cb6461b48ee3f08327520b17",
+    "bytes": 15405
+  },
+  "share/drone_tracker/tracking_regression/cpu_evidence.py": {
+    "sha256": "6533b624d4500c026c0c4d495f7a969098613a279e2602fabd2646a35d083449",
+    "bytes": 9241
+  },
+  "share/drone_tracker/tracking_regression/diagnostic_contract.md": {
+    "sha256": "c97260c29813c460b4314c87b100a8f604d1615a82251acab2cbf75f82df7eab",
+    "bytes": 14799
+  },
+  "share/drone_tracker/tracking_regression/identity.py": {
+    "sha256": "af1b6e171285589bfca246233c86b5f4d51ea3f65e87785567a98755304d27cd",
+    "bytes": 11105
+  },
+  "share/drone_tracker/tracking_regression/metrics.md": {
+    "sha256": "53e07be73ec47f030ece7b8c8c936e80c9ae5b1b79731d2825f2c7cc5e4564dd",
+    "bytes": 21320
+  },
+  "share/drone_tracker/tracking_regression/metrics.py": {
+    "sha256": "3e2c84906164827b6da5ec35e98cdbdfd989579378ce95dcab1ccdd328644484",
+    "bytes": 39861
+  },
+  "share/drone_tracker/tracking_regression/native_resource_limit/CMakeLists.txt": {
+    "sha256": "9f76c4d08bc451ccedfb029a7549ed9a6b8b9873d025abd1d11b597c4dbe41f0",
+    "bytes": 1806
+  },
+  "share/drone_tracker/tracking_regression/prepare_fixture.py": {
+    "sha256": "02e6b8cd90c24362873721c5d9477ead84756173d9b73228d32ca487057bd411",
+    "bytes": 15597
+  },
+  "share/drone_tracker/tracking_regression/prepare_test_tools.sh": {
+    "sha256": "6c0d05b7c7a68c6d120aeff5545e8ed0702a2f707db96f00abdf471f3659988c",
+    "bytes": 3328
+  },
+  "share/drone_tracker/tracking_regression/run_batch.py": {
+    "sha256": "2cb91cd735a314310b4b4ee05e39d34479a2bf75b8a55604a508007a02001e58",
+    "bytes": 25880
+  },
+  "share/drone_tracker/tracking_regression/run_sdk_tests.sh": {
+    "sha256": "12d3f481bb9d9dd394344303bdc5133e02cfdf38849411afb8bb45695358b120",
+    "bytes": 228
+  },
+  "share/drone_tracker/tracking_regression/run_suite.py": {
+    "sha256": "8293aaa8dc0be5c543cf6906b109f437584270f8dc939acf2f59b5e7da46032f",
+    "bytes": 12885
+  },
+  "share/drone_tracker/tracking_regression/schema/affinity_experiment.schema.json": {
+    "sha256": "1fa145f58cedfa0922378a775bfeb101ad57f549260844a329a5463c85e1b2c7",
+    "bytes": 2620
+  },
+  "share/drone_tracker/tracking_regression/schema/attitude.schema.json": {
+    "sha256": "bb2d205a173049f42a32bc2f5ead86f3eda5f584beea9051dc71a48aa2da0b5d",
+    "bytes": 695
+  },
+  "share/drone_tracker/tracking_regression/schema/baseline.schema.json": {
+    "sha256": "42b7246e0ee10b7108be07b15387dd95e449cfd23cda723b81a11326403584c9",
+    "bytes": 457
+  },
+  "share/drone_tracker/tracking_regression/schema/baseline.v2.schema.json": {
+    "sha256": "21409d1f4702e78b1e0d1c011d95fbda25ea11a1373f8fc4b57d34e152391627",
+    "bytes": 461
+  },
+  "share/drone_tracker/tracking_regression/schema/comparison.schema.json": {
+    "sha256": "c5330a38d4ed5f5dfcd1ef40d5fbfa8ec1d05dcfe4643f3b6bdb6b039e38ab53",
+    "bytes": 432
+  },
+  "share/drone_tracker/tracking_regression/schema/comparison.v2.schema.json": {
+    "sha256": "179e5066eaf119db5848b94bc8b2e1da00344804291f71bc98f72469e0a5fbac",
+    "bytes": 562
+  },
+  "share/drone_tracker/tracking_regression/schema/completion.schema.json": {
+    "sha256": "f9519fbe0de98843927a0e654a237135cefa671bd8a25f80ece2dfac20ae36db",
+    "bytes": 551
+  },
+  "share/drone_tracker/tracking_regression/schema/completion.v2.schema.json": {
+    "sha256": "9f07913510c1c7f8b578e55560d94f589cddd7a4d5fd4e2ae9f2885542144cdc",
+    "bytes": 551
+  },
+  "share/drone_tracker/tracking_regression/schema/cpu_observation.schema.json": {
+    "sha256": "d6d8ce64d982c68f08e928bb1e2aa72832c45c7cf189e8cb1b50fbd61f4164ba",
+    "bytes": 1764
+  },
+  "share/drone_tracker/tracking_regression/schema/fixture.schema.json": {
+    "sha256": "0a006469238ca3ce2d4478941627e31a4094509350fb4cf2601da4ce593f058d",
+    "bytes": 873
+  },
+  "share/drone_tracker/tracking_regression/schema/fixture.v2.schema.json": {
+    "sha256": "829f7b2f7cf37eee20f4312068d292f7c0f55311ae4549a2b1295bdbe577ee55",
+    "bytes": 1047
+  },
+  "share/drone_tracker/tracking_regression/schema/frame.schema.json": {
+    "sha256": "54925b2247ff060c76a3827faae0d565bcb824eb8e659f9705afc3ca7bdf291b",
+    "bytes": 773
+  },
+  "share/drone_tracker/tracking_regression/schema/identity.schema.json": {
+    "sha256": "24272b95900931d1da2df721d19704248ef3cbc58cdb970885824128c1039fa3",
+    "bytes": 1890
+  },
+  "share/drone_tracker/tracking_regression/schema/identity.v2.schema.json": {
+    "sha256": "a3628519c76499b628aff8a637bd2adf5d72eb3fb553430ac051650bb978f015",
+    "bytes": 2124
+  },
+  "share/drone_tracker/tracking_regression/schema/metric.schema.json": {
+    "sha256": "b3e9ae75f18ed973f172902fbb39b851947f2aa505e7c4c04ce1a6857883e688",
+    "bytes": 471
+  },
+  "share/drone_tracker/tracking_regression/schema/metrics.schema.json": {
+    "sha256": "197bcdc6bcbb052d1ef846dfd465db77983d18cc337eee3dac704f40be472426",
+    "bytes": 304
+  },
+  "share/drone_tracker/tracking_regression/schema/metrics.v2.schema.json": {
+    "sha256": "1f4daf7a1537ba5d36eea05e06c7062c516a4b83cfb6c7ae2cbfaac3be4f3a26",
+    "bytes": 304
+  },
+  "share/drone_tracker/tracking_regression/schema/preparation.schema.json": {
+    "sha256": "799eb69f59f53770c86af78796d0b9570fbf41a8d6cf78b1c96af16ccf63fdca",
+    "bytes": 1348
+  },
+  "share/drone_tracker/tracking_regression/schema/preparation.v2.schema.json": {
+    "sha256": "b16cae82b3f21d071426cae11c590d4700b6a833da409650c5b7da311f9f7c26",
+    "bytes": 1348
+  },
+  "share/drone_tracker/tracking_regression/schema/run_config.schema.json": {
+    "sha256": "cab0e0b6e5270e16ce32bf8a2bbaaee4464cb378a0f88600a8e7e208b27b6a9b",
+    "bytes": 1472
+  },
+  "share/drone_tracker/tracking_regression/schema/run_config.v3.schema.json": {
+    "sha256": "6e92ca08a141e6234d7c71420b8719f18f17300a15a3537aa330e97539380bbb",
+    "bytes": 3676
+  },
+  "share/drone_tracker/tracking_regression/schema/suite.schema.json": {
+    "sha256": "4a436640103eb142934507f42dccc5b77a57b4c62c12e7ba2d966cddc14204f5",
+    "bytes": 3617
+  },
+  "share/drone_tracker/tracking_regression/sdk_python_tests.py": {
+    "sha256": "395e1e3c30f894996f8c5e84ccf36bc1edb2efc7a6641b21153154519c5d3abe",
+    "bytes": 3082
+  },
+  "share/drone_tracker/tracking_regression/target_python.sh": {
+    "sha256": "0b9c2c7a041c151e17e16f9fb19d0b8cc115aaa03101f20c8d489e037c6222e7",
+    "bytes": 807
+  },
+  "share/drone_tracker/tracking_regression/target_tools/ldd": {
+    "sha256": "d2d9401cdd12712b3948763530da8eac46114d7af39f7846f477b209a38dbf17",
+    "bytes": 376
+  },
+  "share/drone_tracker/tracking_regression/tests/cpu_observer_integration.py": {
+    "sha256": "db8ef185816e91fc3065ab64e284e6d5f52aa52095221b7ac3bcb5711885ba44",
+    "bytes": 4487
+  },
+  "share/drone_tracker/tracking_regression/tests/preflight_test.cmake": {
+    "sha256": "39ed66e77ff07d281f870564e920868683b4bed8454c30958b8c249da08a71a2",
+    "bytes": 2628
+  },
+  "share/drone_tracker/tracking_regression/tests/test_affinity.py": {
+    "sha256": "19a42bbc72ca43f96e5a61d5e19dd9bfcaa422d576dc682a5d828c1278e68f40",
+    "bytes": 14873
+  },
+  "share/drone_tracker/tracking_regression/tests/test_collect.py": {
+    "sha256": "69b1b3d70a206da138e2b6642f0132de840aa774f4ce4b26faf78b32e276e42a",
+    "bytes": 5575
+  },
+  "share/drone_tracker/tracking_regression/tests/test_compare.py": {
+    "sha256": "f37affff4d4dbabc6af6f06cfc759c189adc808cc39d5217a16cdc7652c11ed9",
+    "bytes": 17736
+  },
+  "share/drone_tracker/tracking_regression/tests/test_configuration.py": {
+    "sha256": "a6b858695675d596a1b4fff313b238d3a33f44ecfbb1b2b90bc491cc311a3131",
+    "bytes": 5912
+  },
+  "share/drone_tracker/tracking_regression/tests/test_controller.py": {
+    "sha256": "ea2d512fa04501bce6c43d39bacfe1542cd7078ffca58d8c543b9cdd72527087",
+    "bytes": 9244
+  },
+  "share/drone_tracker/tracking_regression/tests/test_fixture.py": {
+    "sha256": "d08aea989bb459055f5202166e657d90dd0563b5e95abc093afa7f2ef530899a",
+    "bytes": 11190
+  },
+  "share/drone_tracker/tracking_regression/tests/test_identity.py": {
+    "sha256": "d4ad0f5f92f6a5f2bf1879b05ed0b35a2b3f158990f7eab49552edc47af10731",
+    "bytes": 14552
+  },
+  "share/drone_tracker/tracking_regression/tests/test_metrics.py": {
+    "sha256": "0cc070495d04d991dbc99d9d666445ce44e23c9357e6ccef5468da66f7318e3e",
+    "bytes": 14601
+  },
+  "share/drone_tracker/tracking_regression/tests/test_observations.py": {
+    "sha256": "94554e901ddf728403050258744a1fedc37fd532543c280020a8c6edd3ac342b",
+    "bytes": 6059
+  },
+  "share/drone_tracker/tracking_regression/tests/test_suite.py": {
+    "sha256": "11f8331d35239cb77f07d6f1ce7ab6b95caed10610837f4e0f2abb496b07c7c8",
+    "bytes": 5788
+  },
+  "share/drone_tracker/tracking_regression/tests/test_supplier_cpu.py": {
+    "sha256": "ab7bf4a23132e654c20ca05212ed0d0aa570f1f07793a6a53104c7a259cc95d0",
+    "bytes": 3291
+  },
+  "share/drone_tracker/tracking_regression/tests/test_variable_comparison.py": {
+    "sha256": "d9e63d31bd3b56a0b4577c3f7bb0c33a9986cc48437f4330c2e77cf1d2c43530",
+    "bytes": 3761
+  },
+  "share/drone_tracker/tracking_regression/verify_fixture.py": {
+    "sha256": "1b919080afec2770244ad078088d29db6e4dfe237520f5c9c13b158bfcdac8c2",
+    "bytes": 7512
+  }
+}

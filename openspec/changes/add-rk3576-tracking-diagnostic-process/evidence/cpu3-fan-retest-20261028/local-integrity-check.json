@@ -1,0 +1,8 @@
+{
+  "verified_regular_files": 465,
+  "preserved_symlinks": [
+    "fixed-balloon.avi"
+  ],
+  "regular_file_hashes_match": true,
+  "note": "Board-absolute symlink targets are preserved, not resolved on the host."
+}

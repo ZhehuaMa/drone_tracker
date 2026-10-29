@@ -1,0 +1,24 @@
+{
+  "checked_mono_ns": 3424217936862,
+  "collector_cpu": 7,
+  "protected_unchanged": true,
+  "program_hashes_match": true,
+  "programs_after": {
+    "/home/hzhy/drone-diagnostic-cpu7-fan-20261028-batch01/drone_tracker/lib/drone_tracker/nanotrackv3_benchmark_compare": "3c44d818320c53829a65cc0d02f63e9ebb4469ce97f7bf646bdc42adacec2063",
+    "/home/hzhy/drone-diagnostic-cpu7-fan-20261028-batch01/drone_tracker/lib/drone_tracker/rk3576_recording_inspect": "e6c5260a09485cae8f8551bbcc302ab553b90aacfb11d601a5ec5f9e41f2e82a",
+    "/home/hzhy/drone-diagnostic-cpu7-fan-20261028-batch01/drone_tracker/lib/drone_tracker/rk3576_recording_worker": "6cd37520ced9bdfa9de32e0a5044dfc6fe55140bcafb6e064010f1663beaa860",
+    "/home/hzhy/drone-diagnostic-cpu7-fan-20261028-batch01/drone_tracker/lib/drone_tracker/nanotrackv3_search_direct_probe": "82df804a58e1e08f2bd6f2d6ac0868ee552694a6502b5746102cd3ae8e1ae207",
+    "/home/hzhy/drone-diagnostic-cpu7-fan-20261028-batch01/drone_tracker/lib/drone_tracker/rk3576_diagnostic_inspect": "bc00627919b9e60ea3f95b9ab17a9aad11103f6348c8bffd22850543179a8970",
+    "/home/hzhy/drone-diagnostic-cpu7-fan-20261028-batch01/drone_tracker/lib/drone_tracker/drone_tracker_node": "ec0391e9fb5783943ac2b857c18cfe9ca52acf53784a448fa561bef9a76585db",
+    "/home/hzhy/drone-diagnostic-cpu7-fan-20261028-batch01/drone_tracker/lib/drone_tracker/rk3576_diagnostic_worker": "780b2cd710714a9f71ac83512da164a6365839b8f62511dc61f721fe9b85aaa5",
+    "/home/hzhy/drone-diagnostic-cpu7-fan-20261028-batch01/drone_tracker/lib/drone_tracker/nanotrackv3_search_direct": "fa82599c8633aaf296e72e4184ca446d8a29527480cc3cdfe25328453f0d1099",
+    "/home/hzhy/drone-diagnostic-cpu7-fan-20261028-batch01/drone_tracker/lib/drone_tracker/nanotrackv3_baseline": "966b262a6217d6e0da2f0dc0f21fcb71db4cb66c9e3162169fd61ae473a1a253"
+  },
+  "leftover_test_processes": [],
+  "passed_pairs": 3,
+  "independent_passed_pairs": 3,
+  "independent_analyzer_agrees": true,
+  "production_service_left_stopped": true,
+  "boot_id_unchanged": true,
+  "board_machine_id_unchanged": true
+}

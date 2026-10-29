@@ -1,0 +1,81 @@
+{
+  "same_board": true,
+  "same_boot": true,
+  "measurement_masks": {
+    "probe": {
+      "measurement_telemetry_samples": 83,
+      "all_task_masks": [
+        [
+          4
+        ]
+      ],
+      "schedulers": [
+        0
+      ]
+    },
+    "worker": {
+      "measurement_telemetry_samples": 83,
+      "all_task_masks": [
+        [
+          4,
+          5,
+          6,
+          7
+        ]
+      ],
+      "schedulers": [
+        0
+      ]
+    }
+  },
+  "sensor_ranges": {
+    "/sys/class/devfreq/27700000.npu/cur_freq": {
+      "minimum": 950000000,
+      "maximum": 950000000
+    },
+    "/sys/class/devfreq/27800000.gpu/cur_freq": {
+      "minimum": 900000000,
+      "maximum": 900000000
+    },
+    "/sys/class/devfreq/27d00000.vop/cur_freq": {
+      "minimum": 702000000,
+      "maximum": 702000000
+    },
+    "/sys/class/thermal/thermal_zone0/temp": {
+      "minimum": 33307,
+      "maximum": 40692
+    },
+    "/sys/class/thermal/thermal_zone1/temp": {
+      "minimum": 34230,
+      "maximum": 43461
+    },
+    "/sys/class/thermal/thermal_zone2/temp": {
+      "minimum": 36076,
+      "maximum": 45307
+    },
+    "/sys/class/thermal/thermal_zone3/temp": {
+      "minimum": 34230,
+      "maximum": 42538
+    },
+    "/sys/class/thermal/thermal_zone4/temp": {
+      "minimum": 33307,
+      "maximum": 41615
+    },
+    "/sys/class/thermal/thermal_zone5/temp": {
+      "minimum": 35153,
+      "maximum": 44384
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq": {
+      "minimum": 2016000,
+      "maximum": 2016000
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq": {
+      "minimum": 2208000,
+      "maximum": 2208000
+    }
+  },
+  "measurement_start_ns": 19509092768532,
+  "measurement_end_ns": 19592938400762,
+  "analysis_interpreter": "/usr/bin/python3; preferred conda base lacks NumPy",
+  "one_experiment_no_repeats": true
+}

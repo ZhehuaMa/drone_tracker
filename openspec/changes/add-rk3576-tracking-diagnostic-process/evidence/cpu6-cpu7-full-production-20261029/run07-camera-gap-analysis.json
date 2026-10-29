@@ -1,0 +1,197 @@
+{
+  "run_id": "batch02-run07-cpu6",
+  "driver_gap_frames": 49,
+  "driver_gap_events": [
+    {
+      "version": 2,
+      "run_id": 57058186740612,
+      "round_id": 1,
+      "producer_id": 1,
+      "producer_seq": 851,
+      "type": "\u91c7\u96c6",
+      "reason": "\u9a71\u52a8\u5e8f\u53f7\u7f3a\u53e3",
+      "flags": 4,
+      "mono_ns": 74991914423581,
+      "capture_id": 851,
+      "driver_sequence": 899,
+      "frame_flags": 3,
+      "update_id": 0,
+      "tracker_frame_id": 0,
+      "request_id": 0,
+      "source_update_id": 0,
+      "source_tracker_frame_id": 0,
+      "frame_time_us": 1793247995276095,
+      "prediction_us": 0,
+      "duration_ns": 0,
+      "score": 0,
+      "iou": 0,
+      "threshold": 0,
+      "highest_score": 0,
+      "box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "other_box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "values": [
+        49,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "error_code_known": false,
+      "error_domain": null,
+      "error_code": null
+    }
+  ],
+  "largest_capture_delivery_gap_ms": 870.433066,
+  "capture_gap_bracketing_events": [
+    {
+      "version": 2,
+      "run_id": 57058186740612,
+      "round_id": 1,
+      "producer_id": 1,
+      "producer_seq": 845,
+      "type": "\u91c7\u96c6",
+      "reason": "\u65e0",
+      "flags": 132,
+      "mono_ns": 74991000256820,
+      "capture_id": 845,
+      "driver_sequence": 844,
+      "frame_flags": 3,
+      "update_id": 0,
+      "tracker_frame_id": 0,
+      "request_id": 0,
+      "source_update_id": 0,
+      "source_tracker_frame_id": 0,
+      "frame_time_us": 1793247994359716,
+      "prediction_us": 0,
+      "duration_ns": 0,
+      "score": 0,
+      "iou": 0,
+      "threshold": 0,
+      "highest_score": 0,
+      "box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "other_box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "error_code_known": false,
+      "error_domain": null,
+      "error_code": null
+    },
+    {
+      "version": 2,
+      "run_id": 57058186740612,
+      "round_id": 1,
+      "producer_id": 1,
+      "producer_seq": 846,
+      "type": "\u91c7\u96c6",
+      "reason": "\u65e0",
+      "flags": 132,
+      "mono_ns": 74991870689886,
+      "capture_id": 846,
+      "driver_sequence": 845,
+      "frame_flags": 3,
+      "update_id": 0,
+      "tracker_frame_id": 0,
+      "request_id": 0,
+      "source_update_id": 0,
+      "source_tracker_frame_id": 0,
+      "frame_time_us": 1793247994376380,
+      "prediction_us": 0,
+      "duration_ns": 0,
+      "score": 0,
+      "iou": 0,
+      "threshold": 0,
+      "highest_score": 0,
+      "box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "other_box": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "error_code_known": false,
+      "error_domain": null,
+      "error_code": null
+    }
+  ],
+  "largest_call_start_gap_ms": 860.706005,
+  "outside_update_call_interval_ms": 841.442117,
+  "call_gap_bracketing_samples": [
+    {
+      "start_ns": 74991011110462,
+      "duration_ns": 19263888,
+      "round": 1,
+      "frame_time_us": 1793247994359716,
+      "consumed": 1
+    },
+    {
+      "start_ns": 74991871816467,
+      "duration_ns": 19534793,
+      "round": 1,
+      "frame_time_us": 1793247994376380,
+      "consumed": 1
+    }
+  ],
+  "call_gap_started_seconds_into_measurement": 7.619568367,
+  "note": "Driver sequence summary follows a delivery stall and queued older frames. No unique cause established; do not attribute it to CPU binding from one run."
+}

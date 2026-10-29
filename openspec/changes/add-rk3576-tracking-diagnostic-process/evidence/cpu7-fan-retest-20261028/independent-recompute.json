@@ -1,0 +1,596 @@
+{
+  "pairs": [
+    {
+      "name": "pair1",
+      "errors": [
+        "frame rate decline exceeds 1 percent"
+      ],
+      "metrics": {
+        "off": {
+          "call_samples": 1634,
+          "call_p99_ms": 258.459696,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "consumed_fps": 36.295076568945156,
+          "window_seconds": 45.019880228,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "a464ddde9e96489e34c9aa50b8f0bfbea7dcb5148a6588cfb39f5a3146f1f3dc"
+        },
+        "basic": {
+          "call_samples": 1546,
+          "call_p99_ms": 209.725107,
+          "submit_samples": 21380,
+          "submit_p99_us": 14.306,
+          "consumed_fps": 34.34042893314671,
+          "window_seconds": 45.019822059,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "9f479ba9ad0e1b0d4d67cbc686e0d915005d520857e884ecfee4077083244c50"
+        }
+      },
+      "collector_samples": 107,
+      "collector_masks": [
+        [
+          7
+        ]
+      ],
+      "collector_schedulers": [
+        0
+      ],
+      "inspect_outputs": {
+        "inspect-47003813390778.txt": ""
+      },
+      "events": 23430,
+      "gap_counter": 0,
+      "health_drops": 0,
+      "call_p99_increment_ms": -48.734589,
+      "consumption_decline_percent": 5.385434666559929,
+      "elapsed_seconds": 108.465524116,
+      "passed": false
+    },
+    {
+      "name": "pair2",
+      "errors": [
+        "tracking P99 increment exceeds 0.2 ms"
+      ],
+      "metrics": {
+        "basic": {
+          "call_samples": 1620,
+          "call_p99_ms": 202.733419,
+          "submit_samples": 21873,
+          "submit_p99_us": 14.169,
+          "consumed_fps": 35.98499805502718,
+          "window_seconds": 45.018760249,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "b26f5a80b1dcbaed0ba25ed4ae7413d08a08041536a706c50ae62d56b39b564f"
+        },
+        "off": {
+          "call_samples": 1622,
+          "call_p99_ms": 197.158329,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "consumed_fps": 36.04284722168886,
+          "window_seconds": 45.001994155,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "dbdc4636e3096a020d949276a83e8121d31bfeaaaf298cf99a2449040a415b2f"
+        }
+      },
+      "collector_samples": 107,
+      "collector_masks": [
+        [
+          7
+        ]
+      ],
+      "collector_schedulers": [
+        0
+      ],
+      "inspect_outputs": {
+        "inspect-44148645106071.txt": ""
+      },
+      "events": 23943,
+      "gap_counter": 0,
+      "health_drops": 0,
+      "call_p99_increment_ms": 5.575089999999989,
+      "consumption_decline_percent": 0.16050110110854554,
+      "elapsed_seconds": 108.637356066,
+      "passed": false
+    },
+    {
+      "name": "pair3",
+      "errors": [],
+      "metrics": {
+        "off": {
+          "call_samples": 1566,
+          "call_p99_ms": 209.693474,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "consumed_fps": 34.793908175082194,
+          "window_seconds": 45.007878739,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "19502aff23487938801ba46a54e7cb1fbfe4174c9cddda82cc817564dc541cac"
+        },
+        "basic": {
+          "call_samples": 1573,
+          "call_p99_ms": 197.094178,
+          "submit_samples": 21724,
+          "submit_p99_us": 14.536,
+          "consumed_fps": 34.94826068705488,
+          "window_seconds": 45.009393002,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "fa1d5bdfb858431acee5d32f7affdb1d9949f47847773b682597a0d95d063a2a"
+        }
+      },
+      "collector_samples": 107,
+      "collector_masks": [
+        [
+          7
+        ]
+      ],
+      "collector_schedulers": [
+        0
+      ],
+      "inspect_outputs": {
+        "inspect-52705896677185.txt": ""
+      },
+      "events": 23777,
+      "gap_counter": 0,
+      "health_drops": 0,
+      "call_p99_increment_ms": -12.59929600000001,
+      "consumption_decline_percent": -0.4436193577220138,
+      "elapsed_seconds": 108.503320892,
+      "passed": true
+    },
+    {
+      "name": "pair4",
+      "errors": [],
+      "metrics": {
+        "basic": {
+          "call_samples": 1591,
+          "call_p99_ms": 199.039013,
+          "submit_samples": 21867,
+          "submit_p99_us": 14.1,
+          "consumed_fps": 35.35009861503583,
+          "window_seconds": 45.006946581,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "68a03cd21b86d02f5f988d03c70637608ad40c6553f4f09e279d2d2c18f1cfbb"
+        },
+        "off": {
+          "call_samples": 1588,
+          "call_p99_ms": 247.738751,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "consumed_fps": 35.28276919763581,
+          "window_seconds": 45.007805116,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "27c547cd9e49f8a1464519e5dc41dddd1254ff0121680bdf80599610d6d78c67"
+        }
+      },
+      "collector_samples": 107,
+      "collector_masks": [
+        [
+          7
+        ]
+      ],
+      "collector_schedulers": [
+        0
+      ],
+      "inspect_outputs": {
+        "inspect-49829290629270.txt": ""
+      },
+      "events": 24000,
+      "gap_counter": 0,
+      "health_drops": 0,
+      "call_p99_increment_ms": -48.699737999999996,
+      "consumption_decline_percent": -0.19082804136738574,
+      "elapsed_seconds": 108.681841873,
+      "passed": true
+    },
+    {
+      "name": "pair5",
+      "errors": [
+        "tracking P99 increment exceeds 0.2 ms",
+        "frame rate decline exceeds 1 percent"
+      ],
+      "metrics": {
+        "off": {
+          "call_samples": 1597,
+          "call_p99_ms": 208.913373,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "consumed_fps": 35.48640887940925,
+          "window_seconds": 45.003144878,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "672e6b3a7e585bac58d8f588e3ca7b923802cb49d50b551b82faabfdf78592b8"
+        },
+        "basic": {
+          "call_samples": 1563,
+          "call_p99_ms": 257.977218,
+          "submit_samples": 21306,
+          "submit_p99_us": 13.755,
+          "consumed_fps": 34.72520199515032,
+          "window_seconds": 45.01053731,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "4bf372c7ea82fdb1fb2ff1cdd5977dc5b36a2c5e595cff8314e8e22376b3bd72"
+        }
+      },
+      "collector_samples": 107,
+      "collector_masks": [
+        [
+          7
+        ]
+      ],
+      "collector_schedulers": [
+        0
+      ],
+      "inspect_outputs": {
+        "inspect-53748273479699.txt": ""
+      },
+      "events": 23398,
+      "gap_counter": 0,
+      "health_drops": 0,
+      "call_p99_increment_ms": 49.063844999999986,
+      "consumption_decline_percent": 2.1450659796139915,
+      "elapsed_seconds": 108.826185167,
+      "passed": false
+    },
+    {
+      "name": "pair6",
+      "errors": [
+        "tracking P99 increment exceeds 0.2 ms",
+        "frame rate decline exceeds 1 percent"
+      ],
+      "metrics": {
+        "basic": {
+          "call_samples": 1540,
+          "call_p99_ms": 237.474615,
+          "submit_samples": 21492,
+          "submit_p99_us": 14.375,
+          "consumed_fps": 34.21239675031454,
+          "window_seconds": 45.012923568,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "d07fa950386604dd13346fa3d72d6c9932a7a66e39bf3127738a92acf0b33472"
+        },
+        "off": {
+          "call_samples": 1628,
+          "call_p99_ms": 212.499519,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "consumed_fps": 36.16976733335354,
+          "window_seconds": 45.009966058,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "6446cd71c794effcaec1ea61e5b5c8288b72355059dbad7775c6d6f205faf7ef"
+        }
+      },
+      "collector_samples": 107,
+      "collector_masks": [
+        [
+          7
+        ]
+      ],
+      "collector_schedulers": [
+        0
+      ],
+      "inspect_outputs": {
+        "inspect-54363522478377.txt": ""
+      },
+      "events": 23647,
+      "gap_counter": 0,
+      "health_drops": 0,
+      "call_p99_increment_ms": 24.975096000000008,
+      "consumption_decline_percent": 5.411620608446754,
+      "elapsed_seconds": 108.657133332,
+      "passed": false
+    },
+    {
+      "name": "pair7",
+      "errors": [],
+      "metrics": {
+        "off": {
+          "call_samples": 1557,
+          "call_p99_ms": 200.502244,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "consumed_fps": 34.591972846605366,
+          "window_seconds": 45.010442362,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "915869d710a3b9212b5ff78a4aaa29109dc28a01893e2a9c612f2b6bd995c3b3"
+        },
+        "basic": {
+          "call_samples": 1649,
+          "call_p99_ms": 174.221155,
+          "submit_samples": 22308,
+          "submit_p99_us": 14.076,
+          "consumed_fps": 36.6401744783049,
+          "window_seconds": 45.005244202,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "5228e75b9accf5fca69fa9930ec3d6ef309737136e5b186b43c32a613411ae44"
+        }
+      },
+      "collector_samples": 127,
+      "collector_masks": [
+        [
+          7
+        ]
+      ],
+      "collector_schedulers": [
+        0
+      ],
+      "inspect_outputs": {
+        "inspect-58290802466583.txt": ""
+      },
+      "events": 24402,
+      "gap_counter": 0,
+      "health_drops": 0,
+      "call_p99_increment_ms": -26.28108899999998,
+      "consumption_decline_percent": -5.921031566433288,
+      "elapsed_seconds": 110.724681875,
+      "passed": true
+    },
+    {
+      "name": "pair8",
+      "errors": [
+        "frame rate decline exceeds 1 percent"
+      ],
+      "metrics": {
+        "basic": {
+          "call_samples": 1630,
+          "call_p99_ms": 195.412935,
+          "submit_samples": 22272,
+          "submit_p99_us": 14.283,
+          "consumed_fps": 36.2086757704859,
+          "window_seconds": 45.016835477,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "9cb0bdc1ef5e40d0e047d84936682a9097fe3a639b2cc05f70232051b47c44ba"
+        },
+        "off": {
+          "call_samples": 1676,
+          "call_p99_ms": 197.953542,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "consumed_fps": 37.23280476886957,
+          "window_seconds": 45.014067847,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "1235383a5c72bf2edd15b645bf69b39bb5a1c96c4b5f51660ae7c4e6b9638045"
+        }
+      },
+      "collector_samples": 107,
+      "collector_masks": [
+        [
+          7
+        ]
+      ],
+      "collector_schedulers": [
+        0
+      ],
+      "inspect_outputs": {
+        "inspect-65629850119989.txt": ""
+      },
+      "events": 24451,
+      "gap_counter": 0,
+      "health_drops": 0,
+      "call_p99_increment_ms": -2.5406069999999943,
+      "consumption_decline_percent": 2.7506093208426563,
+      "elapsed_seconds": 108.751004308,
+      "passed": false
+    },
+    {
+      "name": "pair9",
+      "errors": [
+        "tracking P99 increment exceeds 0.2 ms",
+        "frame rate decline exceeds 1 percent"
+      ],
+      "metrics": {
+        "off": {
+          "call_samples": 1588,
+          "call_p99_ms": 221.218551,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "consumed_fps": 35.276806655514775,
+          "window_seconds": 45.015412407,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "bf91f43fca52d93e9625e120bbaf293fa8f33f809c45cd14b578efed80ab0ee1"
+        },
+        "basic": {
+          "call_samples": 1559,
+          "call_p99_ms": 269.715165,
+          "submit_samples": 21261,
+          "submit_p99_us": 14.398,
+          "consumed_fps": 34.63819971585212,
+          "window_seconds": 45.0081128,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "68dff6811414235b7a49c79f854f54970150bf2c0356f25c4b335f7ca16844db"
+        }
+      },
+      "collector_samples": 106,
+      "collector_masks": [
+        [
+          7
+        ]
+      ],
+      "collector_schedulers": [
+        0
+      ],
+      "inspect_outputs": {
+        "inspect-68672477184182.txt": ""
+      },
+      "events": 23440,
+      "gap_counter": 0,
+      "health_drops": 0,
+      "call_p99_increment_ms": 48.49661400000002,
+      "consumption_decline_percent": 1.8102742288971463,
+      "elapsed_seconds": 108.487435043,
+      "passed": false
+    },
+    {
+      "name": "pair10",
+      "errors": [
+        "tracking P99 increment exceeds 0.2 ms",
+        "frame rate decline exceeds 1 percent"
+      ],
+      "metrics": {
+        "basic": {
+          "call_samples": 1565,
+          "call_p99_ms": 212.196863,
+          "submit_samples": 21386,
+          "submit_p99_us": 13.985,
+          "consumed_fps": 34.762367989301715,
+          "window_seconds": 45.019948022,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "b64f560bcf809ae9127069c08d5a4f235112d3e936cd52e529712920cfa31efc"
+        },
+        "off": {
+          "call_samples": 1629,
+          "call_p99_ms": 200.664911,
+          "submit_samples": 0,
+          "submit_p99_us": null,
+          "consumed_fps": 36.19120162452997,
+          "window_seconds": 45.010939866,
+          "role_affinity_logs": {
+            "control": true,
+            "tracking": true,
+            "yolo": true,
+            "display": true,
+            "capture": true
+          },
+          "configuration_sha256": "e4c8aa4243037f7f9eab44cc8447c35631e083c39f53a2e60045348ec6b9ec2e"
+        }
+      },
+      "collector_samples": 107,
+      "collector_masks": [
+        [
+          7
+        ]
+      ],
+      "collector_schedulers": [
+        0
+      ],
+      "inspect_outputs": {
+        "inspect-69326265896954.txt": ""
+      },
+      "events": 23482,
+      "gap_counter": 0,
+      "health_drops": 0,
+      "call_p99_increment_ms": 11.531952000000018,
+      "consumption_decline_percent": 3.9480138019507116,
+      "elapsed_seconds": 108.543961396,
+      "passed": false
+    }
+  ],
+  "collector_cpu": 7,
+  "passed_pairs": 3,
+  "basic_passed": false,
+  "original_analyzer_agrees": true
+}

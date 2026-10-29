@@ -1,0 +1,65 @@
+{
+  "runs": [
+    {
+      "run_id": "batch02-run01-cpu6",
+      "checked_original_files": 38,
+      "mismatches": [],
+      "additional_host_derived_files": []
+    },
+    {
+      "run_id": "batch02-run02-cpu7",
+      "checked_original_files": 38,
+      "mismatches": [],
+      "additional_host_derived_files": []
+    },
+    {
+      "run_id": "batch02-run03-cpu7",
+      "checked_original_files": 38,
+      "mismatches": [],
+      "additional_host_derived_files": [
+        "calls-full-run-slow-samples.json",
+        "independent-metrics.json",
+        "report.md",
+        "submissions-full-run-slow-samples.json"
+      ]
+    },
+    {
+      "run_id": "batch02-run04-cpu6",
+      "checked_original_files": 38,
+      "mismatches": [],
+      "additional_host_derived_files": [
+        "concise-metrics.json",
+        "independent-metrics.json",
+        "report.md"
+      ]
+    },
+    {
+      "run_id": "batch02-run05-cpu7",
+      "checked_original_files": 38,
+      "mismatches": [],
+      "additional_host_derived_files": []
+    },
+    {
+      "run_id": "batch02-run06-cpu6",
+      "checked_original_files": 38,
+      "mismatches": [],
+      "additional_host_derived_files": []
+    },
+    {
+      "run_id": "batch02-run07-cpu6",
+      "checked_original_files": 38,
+      "mismatches": [],
+      "additional_host_derived_files": []
+    },
+    {
+      "run_id": "batch02-run08-cpu7",
+      "checked_original_files": 38,
+      "mismatches": [],
+      "additional_host_derived_files": []
+    }
+  ],
+  "checked_original_files": 304,
+  "mismatches": [],
+  "controller_mismatches": [],
+  "passed": true
+}

@@ -1,0 +1,1835 @@
+{
+  "whole_run": {
+    "sample_count": 1116,
+    "temperature_celsius": {
+      "soc-thermal": {
+        "minimum": 35.153,
+        "maximum": 56.384
+      },
+      "bigcore-thermal": {
+        "minimum": 36.999,
+        "maximum": 60.999
+      },
+      "little-core-thermal": {
+        "minimum": 36.999,
+        "maximum": 62.846
+      },
+      "ddr-thermal": {
+        "minimum": 36.076,
+        "maximum": 58.23
+      },
+      "npu-thermal": {
+        "minimum": 36.076,
+        "maximum": 56.384
+      },
+      "gpu-thermal": {
+        "minimum": 36.999,
+        "maximum": 60.999
+      }
+    },
+    "cpu_policy_khz": {
+      "/sys/devices/system/cpu/cpufreq/policy0": {
+        "minimum": 2016000,
+        "maximum": 2016000,
+        "observed_values": [
+          2016000
+        ],
+        "governors": [
+          "performance"
+        ]
+      },
+      "/sys/devices/system/cpu/cpufreq/policy4": {
+        "minimum": 2208000,
+        "maximum": 2208000,
+        "observed_values": [
+          2208000
+        ],
+        "governors": [
+          "performance"
+        ]
+      }
+    },
+    "devfreq_hz": {
+      "27700000.npu": {
+        "minimum": 950000000,
+        "maximum": 950000000,
+        "observed_values": [
+          950000000
+        ],
+        "governors": [
+          "performance"
+        ]
+      },
+      "27800000.gpu": {
+        "minimum": 900000000,
+        "maximum": 900000000,
+        "observed_values": [
+          900000000
+        ],
+        "governors": [
+          "performance"
+        ]
+      },
+      "27d00000.vop": {
+        "minimum": 702000000,
+        "maximum": 702000000,
+        "observed_values": [
+          702000000
+        ],
+        "governors": [
+          "performance"
+        ]
+      }
+    },
+    "first_mono_ns": 295122995964,
+    "last_mono_ns": 1410124042946,
+    "max_interval_seconds": 1.001092451
+  },
+  "windows": {
+    "pair1": {
+      "off": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 43.461,
+            "maximum": 50.846
+          },
+          "bigcore-thermal": {
+            "minimum": 46.23,
+            "maximum": 54.538
+          },
+          "little-core-thermal": {
+            "minimum": 48.076,
+            "maximum": 55.461
+          },
+          "ddr-thermal": {
+            "minimum": 44.384,
+            "maximum": 51.769
+          },
+          "npu-thermal": {
+            "minimum": 43.461,
+            "maximum": 50.846
+          },
+          "gpu-thermal": {
+            "minimum": 46.23,
+            "maximum": 54.538
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 324124169709,
+        "last_mono_ns": 368124068942,
+        "max_interval_seconds": 1.0010062
+      },
+      "basic": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 49.923,
+            "maximum": 53.615
+          },
+          "bigcore-thermal": {
+            "minimum": 52.692,
+            "maximum": 57.307
+          },
+          "little-core-thermal": {
+            "minimum": 54.538,
+            "maximum": 59.153
+          },
+          "ddr-thermal": {
+            "minimum": 50.846,
+            "maximum": 54.538
+          },
+          "npu-thermal": {
+            "minimum": 49.923,
+            "maximum": 53.615
+          },
+          "gpu-thermal": {
+            "minimum": 52.692,
+            "maximum": 57.307
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 376123272115,
+        "last_mono_ns": 420124097492,
+        "max_interval_seconds": 1.000792495
+      }
+    },
+    "pair2": {
+      "basic": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 50.846,
+            "maximum": 54.538
+          },
+          "bigcore-thermal": {
+            "minimum": 53.615,
+            "maximum": 58.23
+          },
+          "little-core-thermal": {
+            "minimum": 55.461,
+            "maximum": 59.153
+          },
+          "ddr-thermal": {
+            "minimum": 51.769,
+            "maximum": 55.461
+          },
+          "npu-thermal": {
+            "minimum": 50.846,
+            "maximum": 54.538
+          },
+          "gpu-thermal": {
+            "minimum": 54.538,
+            "maximum": 58.23
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 433124136878,
+        "last_mono_ns": 477124060950,
+        "max_interval_seconds": 1.000955561
+      },
+      "off": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 53.615,
+            "maximum": 55.461
+          },
+          "bigcore-thermal": {
+            "minimum": 56.384,
+            "maximum": 59.153
+          },
+          "little-core-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.999
+          },
+          "ddr-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "npu-thermal": {
+            "minimum": 52.692,
+            "maximum": 55.461
+          },
+          "gpu-thermal": {
+            "minimum": 56.384,
+            "maximum": 59.153
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 485124058482,
+        "last_mono_ns": 529124053147,
+        "max_interval_seconds": 1.001092451
+      }
+    },
+    "pair3": {
+      "off": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 52.692,
+            "maximum": 55.461
+          },
+          "bigcore-thermal": {
+            "minimum": 55.461,
+            "maximum": 59.153
+          },
+          "little-core-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          },
+          "ddr-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "npu-thermal": {
+            "minimum": 51.769,
+            "maximum": 55.461
+          },
+          "gpu-thermal": {
+            "minimum": 55.461,
+            "maximum": 58.23
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 542123299138,
+        "last_mono_ns": 586124072211,
+        "max_interval_seconds": 1.001004174
+      },
+      "basic": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 56.384,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 58.23,
+            "maximum": 61.923
+          },
+          "ddr-thermal": {
+            "minimum": 54.538,
+            "maximum": 57.307
+          },
+          "npu-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 56.384,
+            "maximum": 60.076
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 594124062216,
+        "last_mono_ns": 638124057849,
+        "max_interval_seconds": 1.000922615
+      }
+    },
+    "pair4": {
+      "basic": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 52.692,
+            "maximum": 55.461
+          },
+          "bigcore-thermal": {
+            "minimum": 56.384,
+            "maximum": 59.153
+          },
+          "little-core-thermal": {
+            "minimum": 58.23,
+            "maximum": 60.076
+          },
+          "ddr-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "npu-thermal": {
+            "minimum": 52.692,
+            "maximum": 55.461
+          },
+          "gpu-thermal": {
+            "minimum": 56.384,
+            "maximum": 59.153
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 651124100506,
+        "last_mono_ns": 695124050382,
+        "max_interval_seconds": 1.00092199
+      },
+      "off": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 53.615,
+            "maximum": 55.461
+          },
+          "bigcore-thermal": {
+            "minimum": 56.384,
+            "maximum": 59.153
+          },
+          "little-core-thermal": {
+            "minimum": 58.23,
+            "maximum": 60.999
+          },
+          "ddr-thermal": {
+            "minimum": 55.461,
+            "maximum": 57.307
+          },
+          "npu-thermal": {
+            "minimum": 53.615,
+            "maximum": 55.461
+          },
+          "gpu-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 705124128714,
+        "last_mono_ns": 749124091269,
+        "max_interval_seconds": 1.000778502
+      }
+    },
+    "pair5": {
+      "off": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 52.692,
+            "maximum": 55.461
+          },
+          "bigcore-thermal": {
+            "minimum": 55.461,
+            "maximum": 59.153
+          },
+          "little-core-thermal": {
+            "minimum": 56.384,
+            "maximum": 60.999
+          },
+          "ddr-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "npu-thermal": {
+            "minimum": 51.769,
+            "maximum": 55.461
+          },
+          "gpu-thermal": {
+            "minimum": 56.384,
+            "maximum": 59.153
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 762123558166,
+        "last_mono_ns": 806123715427,
+        "max_interval_seconds": 1.000769694
+      },
+      "basic": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 58.23,
+            "maximum": 61.923
+          },
+          "ddr-thermal": {
+            "minimum": 54.538,
+            "maximum": 57.307
+          },
+          "npu-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 814124072036,
+        "last_mono_ns": 858124054569,
+        "max_interval_seconds": 1.001011957
+      }
+    },
+    "pair6": {
+      "basic": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 56.384,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.999
+          },
+          "ddr-thermal": {
+            "minimum": 54.538,
+            "maximum": 57.307
+          },
+          "npu-thermal": {
+            "minimum": 52.692,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 56.384,
+            "maximum": 60.076
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 871124101792,
+        "last_mono_ns": 915124061123,
+        "max_interval_seconds": 1.000916663
+      },
+      "off": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 58.23,
+            "maximum": 61.923
+          },
+          "ddr-thermal": {
+            "minimum": 55.461,
+            "maximum": 57.307
+          },
+          "npu-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 58.23,
+            "maximum": 60.076
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 923123531657,
+        "last_mono_ns": 967124126872,
+        "max_interval_seconds": 1.000979339
+      }
+    },
+    "pair7": {
+      "off": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 53.615,
+            "maximum": 55.461
+          },
+          "bigcore-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 58.23,
+            "maximum": 60.999
+          },
+          "ddr-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "npu-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 57.307,
+            "maximum": 59.153
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 980123738574,
+        "last_mono_ns": 1024124110675,
+        "max_interval_seconds": 1.000964598
+      },
+      "basic": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 58.23,
+            "maximum": 61.923
+          },
+          "ddr-thermal": {
+            "minimum": 55.461,
+            "maximum": 58.23
+          },
+          "npu-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.999
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 1032124082221,
+        "last_mono_ns": 1076123286782,
+        "max_interval_seconds": 1.000937077
+      }
+    },
+    "pair8": {
+      "basic": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 58.23,
+            "maximum": 61.923
+          },
+          "ddr-thermal": {
+            "minimum": 54.538,
+            "maximum": 57.307
+          },
+          "npu-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 1089124048631,
+        "last_mono_ns": 1133124062309,
+        "max_interval_seconds": 1.001023399
+      },
+      "off": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 55.461,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 58.23,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 59.153,
+            "maximum": 60.999
+          },
+          "ddr-thermal": {
+            "minimum": 56.384,
+            "maximum": 58.23
+          },
+          "npu-thermal": {
+            "minimum": 55.461,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 58.23,
+            "maximum": 60.076
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 1141124057488,
+        "last_mono_ns": 1185124077928,
+        "max_interval_seconds": 1.00074676
+      }
+    },
+    "pair9": {
+      "off": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 53.615,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 58.23,
+            "maximum": 61.923
+          },
+          "ddr-thermal": {
+            "minimum": 54.538,
+            "maximum": 57.307
+          },
+          "npu-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 1198124034619,
+        "last_mono_ns": 1242124078906,
+        "max_interval_seconds": 1.001022412
+      },
+      "basic": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.999
+          },
+          "little-core-thermal": {
+            "minimum": 59.153,
+            "maximum": 62.846
+          },
+          "ddr-thermal": {
+            "minimum": 55.461,
+            "maximum": 58.23
+          },
+          "npu-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 58.23,
+            "maximum": 60.999
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 1250124065757,
+        "last_mono_ns": 1294124074444,
+        "max_interval_seconds": 1.000824495
+      }
+    },
+    "pair10": {
+      "basic": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 59.153,
+            "maximum": 61.923
+          },
+          "ddr-thermal": {
+            "minimum": 55.461,
+            "maximum": 57.307
+          },
+          "npu-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 58.23,
+            "maximum": 60.076
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 1307123690988,
+        "last_mono_ns": 1351124053407,
+        "max_interval_seconds": 1.00090992
+      },
+      "off": {
+        "sample_count": 45,
+        "temperature_celsius": {
+          "soc-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "bigcore-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          },
+          "little-core-thermal": {
+            "minimum": 59.153,
+            "maximum": 60.999
+          },
+          "ddr-thermal": {
+            "minimum": 55.461,
+            "maximum": 57.307
+          },
+          "npu-thermal": {
+            "minimum": 54.538,
+            "maximum": 56.384
+          },
+          "gpu-thermal": {
+            "minimum": 57.307,
+            "maximum": 60.076
+          }
+        },
+        "cpu_policy_khz": {
+          "/sys/devices/system/cpu/cpufreq/policy0": {
+            "minimum": 2016000,
+            "maximum": 2016000,
+            "observed_values": [
+              2016000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4": {
+            "minimum": 2208000,
+            "maximum": 2208000,
+            "observed_values": [
+              2208000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "devfreq_hz": {
+          "27700000.npu": {
+            "minimum": 950000000,
+            "maximum": 950000000,
+            "observed_values": [
+              950000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27800000.gpu": {
+            "minimum": 900000000,
+            "maximum": 900000000,
+            "observed_values": [
+              900000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          },
+          "27d00000.vop": {
+            "minimum": 702000000,
+            "maximum": 702000000,
+            "observed_values": [
+              702000000
+            ],
+            "governors": [
+              "performance"
+            ]
+          }
+        },
+        "first_mono_ns": 1359124122206,
+        "last_mono_ns": 1403124052393,
+        "max_interval_seconds": 1.001008735
+      }
+    }
+  },
+  "limitations": [
+    "1 Hz observations do not exclude transient frequency changes.",
+    "Fan addition and reboot changed together; this is not a controlled attribution of heat alone.",
+    "Monitoring is restricted to CPUs 0-2 and writes to tmpfs during measurement; its overhead was not independently calibrated."
+  ]
+}

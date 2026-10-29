@@ -1,0 +1,11 @@
+{
+  "matches": {
+    "run_full_workload_v2.py": true,
+    "launch_full_workload_v2.py": true,
+    "postprocess_full_workload_v2.py": true,
+    "collect_full_workload_v2.py": true,
+    "resource_monitor_v2.py": true
+  },
+  "all_match": true,
+  "hardware_experiments_run": 0
+}

@@ -1,0 +1,154 @@
+{
+  "actual-camera.yaml": {
+    "sha256": "35a3322c6dc8535680cdc51374c60e9b8a14118c6acc637162187539cabc1787",
+    "bytes": 2454
+  },
+  "bags/drone_rosbag_1793247616_619794437/drone_rosbag_1793247616_619794437_0.db3": {
+    "sha256": "d87533549ba8a31a3d80640ed50c904193eaa3e584a971430281332651aee235",
+    "bytes": 3702784
+  },
+  "bags/drone_rosbag_1793247616_619794437/metadata.yaml": {
+    "sha256": "d1d30d6a40f7702876a3e4b9797e288c073fae83bab2030054db4eccb382b6aa",
+    "bytes": 1463
+  },
+  "calls-slow-samples.json": {
+    "sha256": "d7d08280f3990d761ce08d55b83ef6270a9ec543e08c987d26d7426dcebe7dc3",
+    "bytes": 3435
+  },
+  "case.json": {
+    "sha256": "d602f8f9cec57456bf1f52ce1cd87a45c7aba15ddc29cfe430c6a87b712c7308",
+    "bytes": 1714336
+  },
+  "collector.log": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "diagnostic-export/events.csv": {
+    "sha256": "3dde02369e3c2071fa1384ee2f925cf3884c88781a459d2c882f588c06d452c4",
+    "bytes": 10179177
+  },
+  "diagnostic-export/events.jsonl": {
+    "sha256": "ea8c491e0f0ac3a148304d5b1b0f98371d6a796b08eb0d18872c2c9cc9e71bf0",
+    "bytes": 32699526
+  },
+  "diagnostic-export/identities.txt": {
+    "sha256": "b03faa83cb9e8bd67402a7afdde207fb2e1deaf393e6e8abd9ded24d3f2c2f77",
+    "bytes": 3983
+  },
+  "diagnostic-export/timeline.txt": {
+    "sha256": "652d1633dbb28918abd07fc20b8c09600fe05664ac926a9e3e3f49176e57eba1",
+    "bytes": 6055783
+  },
+  "diagnostic-inspect.log": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "diagnostics/55889775782640/identity.json": {
+    "sha256": "635ad2796e56a009834a5e029d59f1aafbd86e5f7275e685b9a6421ee4541432",
+    "bytes": 3960
+  },
+  "diagnostics/55889775782640/segment-28942-74611541823852-0.dtd": {
+    "sha256": "04385c46adb85f7e7da4d7ba675052b96dca1976b77a4e37316f127b55c568b9",
+    "bytes": 12955856
+  },
+  "diagnostics.sock.lock": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "metrics.json": {
+    "sha256": "c65428e9e9bd001cebf6e2433210fb40d9bd8f5ced38656174a3422e3c99667d",
+    "bytes": 70626
+  },
+  "progress.json": {
+    "sha256": "f4f3b47eeda1fa50484ebb1c8aa1aaa80da7f1f0dc9b641ada85e7fc1854cbcf",
+    "bytes": 69
+  },
+  "protected-after.json": {
+    "sha256": "85f9a31dc5582e67f23a392c60bb2b094d2d7cf70b2a17c05986cd5b03c21dcf",
+    "bytes": 3298
+  },
+  "protected-before.json": {
+    "sha256": "85f9a31dc5582e67f23a392c60bb2b094d2d7cf70b2a17c05986cd5b03c21dcf",
+    "bytes": 3298
+  },
+  "recording-inspect.log": {
+    "sha256": "c50f5c797df694d6a5abc11f46ec4d6e160a166cd4d3cd57934827e6c3d46c69",
+    "bytes": 86
+  },
+  "recording-inspection.jsonl": {
+    "sha256": "d4c898c74f45d44f0421ea70bd238ebdb3d8a433970251d3a2a51f1080354b39",
+    "bytes": 636
+  },
+  "recordings/session-938ba3ed14f3771f370015f1795db8ae/000001.complete.json": {
+    "sha256": "6b59fccae0776f12864079f6a74426474f8981b43614ac1a807531eeb9a86611",
+    "bytes": 37
+  },
+  "recordings/session-938ba3ed14f3771f370015f1795db8ae/000001.frames.jsonl": {
+    "sha256": "41489b4583da9ce1f5d72d25d41e7fe749249962a47865ef5d77a6fe270a5ce9",
+    "bytes": 881877
+  },
+  "recordings/session-938ba3ed14f3771f370015f1795db8ae/000001.ts": {
+    "sha256": "3823237c61cb82b2d9297988ef616473594a63029c0d5eb8b696d7c8af5e0776",
+    "bytes": 51560504
+  },
+  "recordings/session-938ba3ed14f3771f370015f1795db8ae/camera.json": {
+    "sha256": "9e63b3f882b25e498d8e0f99549455eef016fab6a8acc93b65630caade89c39d",
+    "bytes": 2136
+  },
+  "recordings/session-938ba3ed14f3771f370015f1795db8ae/commits.jsonl": {
+    "sha256": "95616f680b43a68f47c871e3449b417fee958afda7be3de47133b9c3425ce82c",
+    "bytes": 4665
+  },
+  "recordings/session-938ba3ed14f3771f370015f1795db8ae/complete.json": {
+    "sha256": "927a644bbdc6a693073dc0ae1a808f7451f1f1958bf646ef221fbd06a2bf654d",
+    "bytes": 217
+  },
+  "recordings/session-938ba3ed14f3771f370015f1795db8ae/events.jsonl": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "recordings/session-938ba3ed14f3771f370015f1795db8ae/session.json": {
+    "sha256": "c5dc17ab4f58bd6307ed2f672c07a39621c3b9820310d65772d2bd991a862528",
+    "bytes": 4561
+  },
+  "resource-observer-ready.json": {
+    "sha256": "44f460317feb5c70414222d9966a862c3dbad57c2050bb4ba8541b04f1324b4e",
+    "bytes": 45
+  },
+  "resource-observer.json": {
+    "sha256": "07f6cf6f272b0e69f73cecdece936291fd82c6d8e01b27a2e273e2278a14f7e4",
+    "bytes": 1061248
+  },
+  "resource-observer.log": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "ros-controller/python3_28885_1793247615156.log": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "ros-tracker/drone_tracker_node_28943_1793247615791.log": {
+    "sha256": "b5d59c64c3c1b093d5e12da3b6d3fa063996f95846edffda3ad3149b8d4f7ef4",
+    "bytes": 233647
+  },
+  "sampling/calls.csv": {
+    "sha256": "ce72c298ac533615967cfbf64f1ed31da6992119e4f3004907c9d60a9d73af20",
+    "bytes": 119066
+  },
+  "sampling/sampling-status.txt": {
+    "sha256": "39090df7e2a127df7f3b1787ce37170116234dd76be7016aace6a54a804b2de8",
+    "bytes": 126
+  },
+  "sampling/submissions.csv": {
+    "sha256": "c35ee5a11cf2c16b2a32d5d81222fe938d6d1a89f6c181b4d387ba7ca8081bba",
+    "bytes": 1435908
+  },
+  "submissions-slow-samples.json": {
+    "sha256": "721e9ef34032d1cc3d94818b7d84b253398840b2be087f8128be3884452c6b4f",
+    "bytes": 54340
+  },
+  "tracker.log": {
+    "sha256": "d7bc4d9e394954a0af50ee9ca1feeab59c6d9a1c7bae4ee4bc7cdb8790e1fe5b",
+    "bytes": 244946
+  }
+}

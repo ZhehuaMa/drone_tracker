@@ -1,0 +1,103 @@
+{
+  "measurement_samples": 16,
+  "all_samples": 20,
+  "interval_ns": 16638805397,
+  "processes": {
+    "probe": {
+      "masks": [
+        [
+          4
+        ]
+      ],
+      "schedulers": [
+        0
+      ],
+      "sampled_last_cpu_counts": {
+        "4": 16
+      },
+      "sample_interval_seconds": 15.11631538,
+      "main_cpu_seconds": 11.711900308,
+      "main_cpu_percent_onecore": 77.47853900624294,
+      "main_runnable_wait_seconds": 0.516638239,
+      "main_runnable_wait_ms_per_second": 34.17752448348296
+    },
+    "worker": {
+      "masks": [
+        [
+          4,
+          5,
+          6,
+          7
+        ]
+      ],
+      "schedulers": [
+        0
+      ],
+      "sampled_last_cpu_counts": {
+        "4": 16
+      },
+      "sample_interval_seconds": 15.11631538,
+      "main_cpu_seconds": 0.124117223,
+      "main_cpu_percent_onecore": 0.8210811952509025,
+      "main_runnable_wait_seconds": 0.015133254,
+      "main_runnable_wait_ms_per_second": 1.0011205521699034
+    }
+  },
+  "sensors": {
+    "/sys/class/devfreq/27700000.npu/cur_freq": {
+      "minimum": 950000000,
+      "maximum": 950000000,
+      "count": 20
+    },
+    "/sys/class/devfreq/27800000.gpu/cur_freq": {
+      "minimum": 900000000,
+      "maximum": 900000000,
+      "count": 20
+    },
+    "/sys/class/devfreq/27d00000.vop/cur_freq": {
+      "minimum": 702000000,
+      "maximum": 702000000,
+      "count": 20
+    },
+    "/sys/class/thermal/thermal_zone0/temp": {
+      "minimum": 33307,
+      "maximum": 37923,
+      "count": 20
+    },
+    "/sys/class/thermal/thermal_zone1/temp": {
+      "minimum": 35153,
+      "maximum": 39769,
+      "count": 20
+    },
+    "/sys/class/thermal/thermal_zone2/temp": {
+      "minimum": 36999,
+      "maximum": 41615,
+      "count": 20
+    },
+    "/sys/class/thermal/thermal_zone3/temp": {
+      "minimum": 35153,
+      "maximum": 38846,
+      "count": 20
+    },
+    "/sys/class/thermal/thermal_zone4/temp": {
+      "minimum": 34230,
+      "maximum": 37923,
+      "count": 20
+    },
+    "/sys/class/thermal/thermal_zone5/temp": {
+      "minimum": 36076,
+      "maximum": 40692,
+      "count": 20
+    },
+    "/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq": {
+      "minimum": 2016000,
+      "maximum": 2016000,
+      "count": 20
+    },
+    "/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq": {
+      "minimum": 2208000,
+      "maximum": 2208000,
+      "count": 20
+    }
+  }
+}

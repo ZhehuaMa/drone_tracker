@@ -1,0 +1,55 @@
+--- original/storage.cpp
++++ optimized/storage.cpp
+@@ -9,14 +9,26 @@
+ #include <unistd.h>
+ 
+ namespace diagnostics {
++namespace {
++constexpr std::array<std::uint32_t, 256> makeCrcTable() noexcept {
++    std::array<std::uint32_t, 256> table{};
++    for (std::size_t index{}; index < table.size(); ++index) {
++        std::uint32_t value{static_cast<std::uint32_t>(index)};
++        for (unsigned bit{}; bit < 8; ++bit) {
++            value = (value >> 1) ^ (0xedb88320U & (0U - (value & 1U)));
++        }
++        table[index] = value;
++    }
++    return table;
++}
++// Keep the existing IEEE CRC-32 bytes without requiring optional ARM CPU instructions.
++constexpr auto CRC_TABLE{makeCrcTable()};
++} // namespace
+ std::uint32_t crc32(const void *data, std::size_t length) noexcept {
+     const auto *bytes{static_cast<const unsigned char *>(data)};
+     std::uint32_t crc{0xffffffffU};
+     for (std::size_t index{0}; index < length; ++index) {
+-        crc ^= bytes[index];
+-        for (unsigned bit{0}; bit < 8; ++bit) {
+-            crc = (crc >> 1) ^ (0xedb88320U & (0U - (crc & 1U)));
+-        }
++        crc = CRC_TABLE[(crc ^ bytes[index]) & 0xffU] ^ (crc >> 8);
+     }
+     return ~crc;
+ }
+@@ -185,13 +197,19 @@
+         const Event &event{events[index]};
+         if (event.producer_id < PRODUCERS && event.producer_seq != 0) {
+             written_[event.producer_id] = std::max(written_[event.producer_id], event.producer_seq);
+-            region_.producers[event.producer_id].position.written.store(written_[event.producer_id],
+-                                                                        std::memory_order_release);
+         }
+         if (event.type == Type::Gap && event.producer_id < PRODUCERS && event.values[5] == 0) {
+             dropped_written_[event.producer_id] = event.values[0];
+         }
+         critical_ = critical_ || (event.flags & Critical) != 0;
++    }
++    // The entire batch is already written. Publish once per changed producer so
++    // the collector does not repeatedly invalidate the producer's generated counter.
++    for (std::size_t index{}; index < PRODUCERS; ++index) {
++        auto &position{region_.producers[index].position};
++        if (position.written.load(std::memory_order_relaxed) != written_[index]) {
++            position.written.store(written_[index], std::memory_order_release);
++        }
+     }
+     if (region_.oldest_unsynced_ns.load(std::memory_order_acquire) == 0) {
+         region_.oldest_unsynced_ns.store(events[0].mono_ns, std::memory_order_release);

@@ -1,0 +1,189 @@
+{
+  "pairs": 40,
+  "samples_per_mode": 1600,
+  "all_model_work_and_behavior_verified": true,
+  "partial_full_csv_identical": true,
+  "categories": {
+    "all": {
+      "off": {
+        "count": 1600,
+        "median_ms": 23.680809,
+        "p99_ms": 476.674648,
+        "maximum_ms": 480.710835
+      },
+      "basic": {
+        "count": 1600,
+        "median_ms": 23.8665205,
+        "p99_ms": 480.042386,
+        "maximum_ms": 484.125853
+      },
+      "basic_minus_off_p99_ms": 3.367738000000031,
+      "five_adjacent_pairs_bootstrap95_ms": [
+        2.1068599999999833,
+        3.980794000000003
+      ],
+      "paired_wall_delta_median_ms": 0.001541,
+      "paired_thread_cpu_delta_median_ms": 0.0014489999999999998,
+      "paired_wall_minus_cpu_delta_median_ms": 2.3000000000000017e-05
+    },
+    "initialization_and_19_catchup": {
+      "off": {
+        "count": 40,
+        "median_ms": 476.4292895,
+        "p99_ms": 480.710835,
+        "maximum_ms": 480.710835
+      },
+      "basic": {
+        "count": 40,
+        "median_ms": 479.74692500000003,
+        "p99_ms": 484.125853,
+        "maximum_ms": 484.125853
+      },
+      "basic_minus_off_p99_ms": 3.415018000000032,
+      "five_adjacent_pairs_bootstrap95_ms": [
+        1.7211920000000305,
+        4.966293000000007
+      ],
+      "paired_wall_delta_median_ms": 2.9573870000000113,
+      "paired_thread_cpu_delta_median_ms": 0.18638799999999378,
+      "paired_wall_minus_cpu_delta_median_ms": 3.1474179999999876
+    },
+    "ordinary": {
+      "off": {
+        "count": 800,
+        "median_ms": 24.039279999999998,
+        "p99_ms": 25.001523,
+        "maximum_ms": 27.833813
+      },
+      "basic": {
+        "count": 800,
+        "median_ms": 24.2528845,
+        "p99_ms": 25.024934,
+        "maximum_ms": 27.855984
+      },
+      "basic_minus_off_p99_ms": 0.023410999999999405,
+      "five_adjacent_pairs_bootstrap95_ms": [
+        -0.9554340000000003,
+        1.0445652500000013
+      ],
+      "paired_wall_delta_median_ms": 0.19050050000000063,
+      "paired_thread_cpu_delta_median_ms": 0.007756000000002317,
+      "paired_wall_minus_cpu_delta_median_ms": 0.19541000000000075
+    },
+    "waiting": {
+      "off": {
+        "count": 760,
+        "median_ms": 0.001656,
+        "p99_ms": 0.010971,
+        "maximum_ms": 0.012305
+      },
+      "basic": {
+        "count": 760,
+        "median_ms": 0.003059,
+        "p99_ms": 0.013616,
+        "maximum_ms": 0.27612
+      },
+      "basic_minus_off_p99_ms": 0.0026449999999999998,
+      "five_adjacent_pairs_bootstrap95_ms": [
+        0.0023690000000000013,
+        0.002968
+      ],
+      "paired_wall_delta_median_ms": 0.001426,
+      "paired_thread_cpu_delta_median_ms": 0.0014260000000000002,
+      "paired_wall_minus_cpu_delta_median_ms": -2.168404344971009e-19
+    }
+  },
+  "resources": {
+    "probe": {
+      "sample_count": 88,
+      "sample_span_s": 87.694535884,
+      "main_thread_cpu_s": 68.347160619,
+      "main_thread_runnable_wait_s": 2.990702923,
+      "cpu_percent_one_core": 77.937764229014,
+      "runnable_wait_ms_per_second": 34.103640470325566,
+      "all_task_masks": [
+        [
+          0,
+          1,
+          2,
+          3
+        ],
+        [
+          4
+        ]
+      ],
+      "all_task_schedulers": [
+        0
+      ]
+    },
+    "worker": {
+      "sample_count": 88,
+      "sample_span_s": 87.694535884,
+      "main_thread_cpu_s": 0.732799451,
+      "main_thread_runnable_wait_s": 0.088428466,
+      "cpu_percent_one_core": 0.835627264131174,
+      "runnable_wait_ms_per_second": 1.008369165861951,
+      "all_task_masks": [
+        [
+          4,
+          5,
+          6,
+          7
+        ]
+      ],
+      "all_task_schedulers": [
+        0
+      ]
+    }
+  },
+  "metadata": "pixels_sha256=ad27883488764165ad633e74a354d9e02e0f29794e55b33d835c28e6d3146115\nwidth=1920\nheight=1200\ncv_type=0\nrow_stride=1920\ncv_threads=1\nfixed_box=755.115234,457.962402,39.9310913,36.562439,0.589952648\nobserver=0\naudit=0\nmixed=1\nseed=20261028\nboundary_minimum_wait_ns=100000000\nboundary_maximum_wait_ns=250000000\ndropped_0=0\ndropped_1=0\ndropped_2=0\ndropped_3=0\nclock_resolution_ns=1\ncycles=80\n",
+  "whole_experiment": {
+    "started_ns": 20014710223850,
+    "seed": 20261028,
+    "blocks": 80,
+    "experiment_scope": "same-process fixed Nano work, randomized off/basic; no ROS, HDMI, camera, bag or concurrent measurement YOLO",
+    "command": [
+      "/home/hzhy/notification-attribution-20261028/drone_tracker/lib/drone_tracker/fixed_workload_probe",
+      "mixed",
+      "/home/hzhy/notification-attribution-20261028/worker.sock",
+      "/home/hzhy/drone-performance-investigation-20261013/fixed-balloon.avi",
+      "/home/hzhy/notification-attribution-20261028/evidence",
+      "80",
+      "0",
+      "0"
+    ],
+    "probe_pid": 19820,
+    "worker_pid": 19819,
+    "probe_exit": 0,
+    "notification_suppression": {
+      "identified_descriptor_pairs": 1,
+      "suppressed_writes": 1644,
+      "suppressed_bytes": 13152
+    },
+    "worker_exit": 0,
+    "inspect_exit": 0,
+    "success": true,
+    "after_processes": [
+      {
+        "pid": 19819,
+        "gone": true
+      },
+      {
+        "pid": 19820,
+        "gone": true
+      }
+    ],
+    "protected_unchanged": true,
+    "finish_ns": 20104305979062,
+    "elapsed_seconds": 89.595755212
+  },
+  "telemetry_samples": 88,
+  "maximum_sensor_millidegrees": {
+    "/sys/class/thermal/thermal_zone2/temp": 46230,
+    "/sys/class/thermal/thermal_zone0/temp": 41615,
+    "/sys/class/thermal/thermal_zone5/temp": 45307,
+    "/sys/class/thermal/thermal_zone3/temp": 42538,
+    "/sys/class/thermal/thermal_zone1/temp": 44384,
+    "/sys/class/thermal/thermal_zone4/temp": 42538
+  }
+}

@@ -1,0 +1,2301 @@
+{
+  "same_programs": true,
+  "same_normalized_configuration": true,
+  "all_planned_runs_valid": false,
+  "order": [
+    6,
+    7,
+    7,
+    6,
+    7,
+    6,
+    6,
+    7
+  ],
+  "runs": [
+    {
+      "run_id": "run01-cpu6",
+      "cpu": 6,
+      "available": true,
+      "execution_passed": true,
+      "protected_unchanged": true,
+      "full_workload": {
+        "camera": true,
+        "raw_recording": true,
+        "internal_bag": true,
+        "hdmi": true,
+        "yolo": true,
+        "nano_tracking": false,
+        "diagnostics": true
+      },
+      "cleanup_released": true,
+      "integrity_mismatches": [],
+      "whole_seconds": 70.267679872,
+      "outer_window_seconds": 75.87755005899999,
+      "window_status": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ControlGroup": "",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "timeout": false,
+      "programs": {
+        "drone_tracker_node": "5179ca225955c03efaa1494fdf0f9cd1e1d0b9ff3ce9e99efee126b37825a186",
+        "rk3576_diagnostic_worker": "2359d64998a19d8390853a4e7c7feac00dce65f3d350b83b31ecc7cf42b1db7c",
+        "rk3576_diagnostic_inspect": "cef97064e0b33aabd7d0f4d46490de1eef35905b714b95aa24ab9bde49a5e72c",
+        "rk3576_recording_worker": "881949d2f2e7568ba4d7d6de218827c855daddf13bc074f95862c4f224681988",
+        "rk3576_recording_inspect": "e6c5260a09485cae8f8551bbcc302ab553b90aacfb11d601a5ec5f9e41f2e82a"
+      },
+      "normalized_config": {
+        "drone_tracker_node": {
+          "ros__parameters": {
+            "need_save": true,
+            "save_path": "<isolated bag directory>",
+            "visualized_result": false,
+            "osd": {
+              "timing_enabled": true,
+              "enabled": true,
+              "drm_device": "/dev/dri/card0",
+              "connector": "HDMI-A-1",
+              "width": 720,
+              "height": 480,
+              "refresh_hz": 60.0,
+              "frame_stale_ms": 1000,
+              "telemetry_timeout_ms": 2000,
+              "craft_name": "FPV",
+              "battery_cells": 0
+            },
+            "use_history_timestamp": false,
+            "use_sim_time": false,
+            "camera": {
+              "fx": 1333.3,
+              "fy": 1333.3,
+              "cx": 960.0,
+              "cy": 600.0
+            },
+            "tracker": {
+              "yolo_engine": "/opt/drone_tracker/models/balloon_best_zoo6_int8_fp16_cls.rknn",
+              "nano_backbone": "",
+              "nano_template_backbone": "/opt/drone_tracker/models/fp16/template_backbone.rknn",
+              "nano_search_backbone": "/opt/drone_tracker/models/fp16/search_backbone.rknn",
+              "nano_head": "/opt/drone_tracker/models/fp16/head.rknn",
+              "yolo_target_class_id": 0,
+              "yolo_conf_threshold": 0.5,
+              "yolo_nms_threshold": 0.45,
+              "yolo_interval": 4,
+              "yolo_recall_relax_ratio": 1.0,
+              "iou_reset_threshold": 0.4,
+              "iou_calibrate_threshold": 0.8,
+              "max_position_jump": 150.0,
+              "max_size_jump_ratio": 2.0,
+              "max_box_area_ratio": 0.8,
+              "tracking_roi_scale_factor": 2.0,
+              "lost_max_count": 5,
+              "frame_buffer_size": 30,
+              "jump_tolerance": 3,
+              "enable_dcf": false,
+              "dcf_fixed_template": true,
+              "dcf_learning_rate": 0.01,
+              "dcf_lambda": 0.0001,
+              "dcf_psr_thresh": 5.0,
+              "dcf_max_div_factor": 0.5,
+              "kf_r_pos": 4.0,
+              "kf_r_size": 4.0,
+              "kf_q_a": 50000.0,
+              "kf_q_size": 1000.0
+            },
+            "mv_camera": {
+              "sensor_model": "sc233hgs",
+              "capture_mode": "continuous",
+              "trigger_rate_hz": 0.0,
+              "media_device": "/dev/media2",
+              "sensor_entity": "m00_b_sc233hgs 0-0030",
+              "buffer_count": 4,
+              "width_px": 1920,
+              "height_px": 1200,
+              "fps": 60,
+              "output_width_px": 0,
+              "output_height_px": 0,
+              "flip": false,
+              "mirror": false,
+              "pixel_size_um": 3.0,
+              "focal_length_mm": 4.0
+            },
+            "video_source": "/dev/video22",
+            "recording": {
+              "enabled": true,
+              "directory": "<isolated recording directory>",
+              "bitrate_bps": 12000000,
+              "segment_seconds": 60,
+              "sync_interval_ms": 1000,
+              "max_total_bytes": 21474836480,
+              "min_free_bytes": 5368709120
+            },
+            "diagnostics": {
+              "mode": "basic",
+              "socket": "<isolated socket>"
+            }
+          }
+        }
+      },
+      "window_seconds": 60.001122008,
+      "calls": 3601,
+      "consumed": 3601,
+      "consumed_fps": 60.01554436798491,
+      "call_p50_ms": 0.024933,
+      "call_p95_ms": 0.039583,
+      "call_p99_ms": 0.056397,
+      "call_max_ms": 0.815481,
+      "submit_p99_us": 7.866,
+      "work": {
+        "selected_calls_with_event_identity": 3601,
+        "initializations": 0,
+        "catchup_steps": 0,
+        "tracking_output_calls": 0,
+        "detect_completions_in_window": 227,
+        "successful_detections_in_window": 0
+      },
+      "camera": {
+        "qualified_capture_events": 3601,
+        "capture_fps": 60.01554436798491,
+        "queue_full": 0,
+        "driver_gap_frames": 0,
+        "latest_skipped": 0
+      },
+      "osd_whole_run": {
+        "windows": 69,
+        "submitted": 4103,
+        "displayed": 4100,
+        "commits": 4106,
+        "rejected": 0,
+        "raw_windows": [
+          {
+            "round": "0",
+            "window_id": "1",
+            "window_us": "182824",
+            "submitted": "0",
+            "replaced": "0",
+            "displayed": "0",
+            "stream": "0",
+            "preview_submitted": "0",
+            "tracking_submitted": "0",
+            "preview_displayed": "0",
+            "tracking_displayed": "0",
+            "rejected": "0",
+            "commits": "2",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "0",
+            "window_id": "2",
+            "window_us": "643129",
+            "submitted": "21",
+            "replaced": "1",
+            "displayed": "19",
+            "stream": "1",
+            "preview_submitted": "21",
+            "tracking_submitted": "0",
+            "preview_displayed": "19",
+            "tracking_displayed": "0",
+            "rejected": "0",
+            "commits": "22",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "0",
+            "window_id": "3",
+            "window_us": "437616",
+            "submitted": "0",
+            "replaced": "0",
+            "displayed": "1",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "0",
+            "preview_displayed": "1",
+            "tracking_displayed": "0",
+            "rejected": "0",
+            "commits": "1",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "4",
+            "window_us": "437616",
+            "submitted": "26",
+            "replaced": "1",
+            "displayed": "24",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "26",
+            "preview_displayed": "0",
+            "tracking_displayed": "24",
+            "rejected": "0",
+            "commits": "24",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "5",
+            "window_us": "1000054",
+            "submitted": "61",
+            "replaced": "0",
+            "displayed": "61",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "61",
+            "preview_displayed": "0",
+            "tracking_displayed": "61",
+            "rejected": "0",
+            "commits": "61",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "6",
+            "window_us": "1000089",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "7",
+            "window_us": "1099848",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "8",
+            "window_us": "1000027",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "9",
+            "window_us": "1000008",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "10",
+            "window_us": "1000016",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "11",
+            "window_us": "1000052",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "12",
+            "window_us": "1099806",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "65",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "65",
+            "rejected": "0",
+            "commits": "65",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "13",
+            "window_us": "1000174",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "14",
+            "window_us": "1099913",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "67",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "67",
+            "rejected": "0",
+            "commits": "67",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "15",
+            "window_us": "1000134",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "16",
+            "window_us": "1100046",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "17",
+            "window_us": "1000039",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "18",
+            "window_us": "1100007",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "19",
+            "window_us": "1000570",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "20",
+            "window_us": "1099438",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "21",
+            "window_us": "1099973",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "22",
+            "window_us": "1000080",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "23",
+            "window_us": "1099986",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "24",
+            "window_us": "1000053",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "25",
+            "window_us": "1100118",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "26",
+            "window_us": "1099790",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "27",
+            "window_us": "1000255",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "28",
+            "window_us": "1099850",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "29",
+            "window_us": "1099930",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "30",
+            "window_us": "1000092",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "61",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "61",
+            "rejected": "0",
+            "commits": "61",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "31",
+            "window_us": "1000036",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "59",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "59",
+            "rejected": "0",
+            "commits": "59",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "32",
+            "window_us": "1099845",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "33",
+            "window_us": "1000142",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "34",
+            "window_us": "1000167",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "35",
+            "window_us": "1099859",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "36",
+            "window_us": "1000022",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "37",
+            "window_us": "1099970",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "38",
+            "window_us": "1100254",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "67",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "67",
+            "rejected": "0",
+            "commits": "67",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "39",
+            "window_us": "1099782",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "40",
+            "window_us": "1000075",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "59",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "59",
+            "rejected": "0",
+            "commits": "59",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "41",
+            "window_us": "1100110",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "42",
+            "window_us": "1099826",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "43",
+            "window_us": "1000405",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "44",
+            "window_us": "1099778",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "45",
+            "window_us": "1100579",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "67",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "67",
+            "rejected": "0",
+            "commits": "67",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "46",
+            "window_us": "1099529",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "47",
+            "window_us": "1099966",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "48",
+            "window_us": "1000047",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "49",
+            "window_us": "1100021",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "50",
+            "window_us": "1099937",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "65",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "65",
+            "rejected": "0",
+            "commits": "65",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "51",
+            "window_us": "1001371",
+            "submitted": "61",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "61",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "52",
+            "window_us": "1098655",
+            "submitted": "65",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "65",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "53",
+            "window_us": "1000125",
+            "submitted": "61",
+            "replaced": "0",
+            "displayed": "61",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "61",
+            "preview_displayed": "0",
+            "tracking_displayed": "61",
+            "rejected": "0",
+            "commits": "61",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "54",
+            "window_us": "1100309",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "55",
+            "window_us": "1099540",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "56",
+            "window_us": "1000029",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "57",
+            "window_us": "1000005",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "58",
+            "window_us": "1000066",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "59",
+            "window_us": "1099989",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "60",
+            "window_us": "1100004",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "65",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "65",
+            "rejected": "0",
+            "commits": "65",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "61",
+            "window_us": "1000166",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "61",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "61",
+            "rejected": "0",
+            "commits": "61",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "62",
+            "window_us": "1099871",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "63",
+            "window_us": "1000134",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "60",
+            "preview_displayed": "0",
+            "tracking_displayed": "60",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "64",
+            "window_us": "1100021",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "65",
+            "window_us": "1099972",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "66",
+            "window_us": "1099917",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "66",
+            "stream": "1",
+            "preview_submitted": "0",
+            "tracking_submitted": "66",
+            "preview_displayed": "0",
+            "tracking_displayed": "66",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "67",
+            "window_us": "1099905",
+            "submitted": "66",
+            "replaced": "0",
+            "displayed": "65",
+            "stream": "1",
+            "preview_submitted": "56",
+            "tracking_submitted": "10",
+            "preview_displayed": "55",
+            "tracking_displayed": "10",
+            "rejected": "0",
+            "commits": "66",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "68",
+            "window_us": "1000015",
+            "submitted": "60",
+            "replaced": "0",
+            "displayed": "60",
+            "stream": "1",
+            "preview_submitted": "60",
+            "tracking_submitted": "0",
+            "preview_displayed": "60",
+            "tracking_displayed": "0",
+            "rejected": "0",
+            "commits": "60",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          },
+          {
+            "round": "1",
+            "window_id": "69",
+            "window_us": "104403",
+            "submitted": "4",
+            "replaced": "0",
+            "displayed": "5",
+            "stream": "1",
+            "preview_submitted": "4",
+            "tracking_submitted": "0",
+            "preview_displayed": "5",
+            "tracking_displayed": "0",
+            "rejected": "0",
+            "commits": "5",
+            "unit": "us",
+            "quantiles": "approx_pow2"
+          }
+        ]
+      },
+      "recordings_whole_run": [
+        {
+          "session": "session-199938cbc72991884b362bc0ac1c4d39",
+          "complete.json": {
+            "outcome": "complete",
+            "end_reason": "user_off",
+            "video_success": true,
+            "frames": 3954,
+            "accepted": 3954,
+            "attempted": 3954,
+            "dropped": 0,
+            "cancelled": 0,
+            "first_accepted_sequence": 39,
+            "first_accepted_timestamp_us": 1793246047238219
+          },
+          "camera.json": {
+            "reason": "",
+            "failed": false,
+            "phase": "streaming",
+            "warmup_reason": "",
+            "dequeued": 3993,
+            "warmup_discarded": 10,
+            "terminal_discarded": 0,
+            "qualified": 3983,
+            "tracking_enqueued": 3983,
+            "tracking_dropped": 0,
+            "sequence_gaps": 0,
+            "time_source": "driver_monotonic",
+            "warmup_examined": 11,
+            "warmup_repeats": 2,
+            "warmup_us": 298104,
+            "warmup_limit_us": 2000000,
+            "stream_started_monotonic_us": 73043065580,
+            "warmup_max_samples": 120,
+            "warmup_required_streak": 8,
+            "first_sequence": 10,
+            "first_timestamp_us": 1793246046755030,
+            "first_latency_us": 298104,
+            "observations": [
+              {
+                "seconds": 73042,
+                "microseconds": 120831,
+                "sequence": 0,
+                "flags": 8193,
+                "dequeue_us": 73043218763,
+                "streak": 1,
+                "decision": "discarded"
+              },
+              {
+                "seconds": 73042,
+                "microseconds": 120831,
+                "sequence": 1,
+                "flags": 8193,
+                "dequeue_us": 73043224980,
+                "streak": 1,
+                "decision": "discarded"
+              },
+              {
+                "seconds": 73042,
+                "microseconds": 137491,
+                "sequence": 2,
+                "flags": 8193,
+                "dequeue_us": 73043231351,
+                "streak": 2,
+                "decision": "discarded"
+              },
+              {
+                "seconds": 73042,
+                "microseconds": 137491,
+                "sequence": 3,
+                "flags": 8193,
+                "dequeue_us": 73043245118,
+                "streak": 1,
+                "decision": "discarded"
+              },
+              {
+                "seconds": 73042,
+                "microseconds": 154154,
+                "sequence": 4,
+                "flags": 8193,
+                "dequeue_us": 73043261549,
+                "streak": 2,
+                "decision": "discarded"
+              },
+              {
+                "seconds": 73042,
+                "microseconds": 170817,
+                "sequence": 5,
+                "flags": 8193,
+                "dequeue_us": 73043278228,
+                "streak": 3,
+                "decision": "discarded"
+              },
+              {
+                "seconds": 73042,
+                "microseconds": 187480,
+                "sequence": 6,
+                "flags": 8193,
+                "dequeue_us": 73043294899,
+                "streak": 4,
+                "decision": "discarded"
+              },
+              {
+                "seconds": 73042,
+                "microseconds": 204145,
+                "sequence": 7,
+                "flags": 8193,
+                "dequeue_us": 73043311514,
+                "streak": 5,
+                "decision": "discarded"
+              },
+              {
+                "seconds": 73042,
+                "microseconds": 220802,
+                "sequence": 8,
+                "flags": 8193,
+                "dequeue_us": 73043328185,
+                "streak": 6,
+                "decision": "discarded"
+              },
+              {
+                "seconds": 73042,
+                "microseconds": 237463,
+                "sequence": 9,
+                "flags": 8193,
+                "dequeue_us": 73043344833,
+                "streak": 7,
+                "decision": "discarded"
+              },
+              {
+                "seconds": 73042,
+                "microseconds": 254123,
+                "sequence": 10,
+                "flags": 8193,
+                "dequeue_us": 73043361525,
+                "streak": 8,
+                "decision": "ready"
+              }
+            ],
+            "stream_id": 1,
+            "tracking_round": 1,
+            "end_reason": "user_off",
+            "camera_running_at_end": true,
+            "start_dequeued": 31,
+            "end_dequeued": 3993,
+            "window_dequeued": 3962,
+            "start_qualified": 21,
+            "end_qualified": 3983,
+            "window_qualified": 3962,
+            "warmup_from_stream": true
+          },
+          "session.json": {
+            "directory": "/home/hzhy/cpu6-cpu7-full-production-20261029/runs/run01-cpu6/recordings",
+            "identity": "program_sha256=5179ca225955c03efaa1494fdf0f9cd1e1d0b9ff3ce9e99efee126b37825a186\ncamera.cx=960.000000\ncamera.cy=600.000000\ncamera.fx=1333.300000\ncamera.fy=1333.300000\ndiagnostics.mode=basic\ndiagnostics.socket=/home/hzhy/cpu6-cpu7-full-production-20261029/runs/run01-cpu6/diagnostics.sock\nlos.rate_filter_tau=0.120000\nmv_camera.buffer_count=4\nmv_camera.capture_mode=continuous\nmv_camera.flip=false\nmv_camera.focal_length_mm=4.000000\nmv_camera.fps=60\nmv_camera.height_px=1200\nmv_camera.media_device=/dev/media2\nmv_camera.mirror=false\nmv_camera.output_height_px=0\nmv_camera.output_width_px=0\nmv_camera.pixel_size_um=3.000000\nmv_camera.sensor_entity=m00_b_sc233hgs 0-0030\nmv_camera.sensor_model=sc233hgs\nmv_camera.trigger_rate_hz=0.000000\nmv_camera.width_px=1920\nneed_save=true\nosd.battery_cells=0\nosd.connector=HDMI-A-1\nosd.craft_name=FPV\nosd.drm_device=/dev/dri/card0\nosd.enabled=true\nosd.frame_stale_ms=1000\nosd.height=480\nosd.refresh_hz=60.000000\nosd.render_path=cached-overlay\nosd.telemetry_timeout_ms=2000\nosd.timing_enabled=true\nosd.width=720\npublish_prediction=false\nqos_overrides./parameter_events.publisher.depth=1000\nqos_overrides./parameter_events.publisher.durability=volatile\nqos_overrides./parameter_events.publisher.history=keep_last\nqos_overrides./parameter_events.publisher.reliability=reliable\nrecording.bitrate_bps=12000000\nrecording.directory=/home/hzhy/cpu6-cpu7-full-production-20261029/runs/run01-cpu6/recordings\nrecording.enabled=true\nrecording.max_total_bytes=21474836480\nrecording.min_free_bytes=5368709120\nrecording.segment_seconds=60\nrecording.sync_interval_ms=1000\nsave_path=/home/hzhy/cpu6-cpu7-full-production-20261029/runs/run01-cpu6/bags\ntracker.dcf_fixed_template=true\ntracker.dcf_lambda=0.000100\ntracker.dcf_learning_rate=0.010000\ntracker.dcf_max_div_factor=0.500000\ntracker.dcf_psr_thresh=5.000000\ntracker.enable_dcf=false\ntracker.frame_buffer_size=30\ntracker.iou_calibrate_threshold=0.800000\ntracker.iou_reset_threshold=0.400000\ntracker.jump_tolerance=3\ntracker.kf_q_a=50000.000000\ntracker.kf_q_size=1000.000000\ntracker.kf_r_pos=4.000000\ntracker.kf_r_size=4.000000\ntracker.lost_max_count=5\ntracker.max_box_area_ratio=0.800000\ntracker.max_position_jump=150.000000\ntracker.max_size_jump_ratio=2.000000\ntracker.nano_backbone=\ntracker.nano_head=/opt/drone_tracker/models/fp16/head.rknn\ntracker.nano_search_backbone=/opt/drone_tracker/models/fp16/search_backbone.rknn\ntracker.nano_template_backbone=/opt/drone_tracker/models/fp16/template_backbone.rknn\ntracker.tracking_roi_scale_factor=2.000000\ntracker.yolo_conf_threshold=0.500000\ntracker.yolo_engine=/opt/drone_tracker/models/balloon_best_zoo6_int8_fp16_cls.rknn\ntracker.yolo_interval=4\ntracker.yolo_nms_threshold=0.450000\ntracker.yolo_recall_relax_ratio=1.000000\ntracker.yolo_target_class_id=0\nuse_history_timestamp=false\nuse_sim_time=false\nvideo_source=/dev/video22\nvisualized_result=false\ntracker.yolo_engine path=/opt/drone_tracker/models/balloon_best_zoo6_int8_fp16_cls.rknn sha256=002b1b0a5e7476a5cc62f495997f05d2550e44697fb89c8d48913fb1ee5e06f7\ntracker.nano_template_backbone path=/opt/drone_tracker/models/fp16/template_backbone.rknn sha256=622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2\ntracker.nano_search_backbone path=/opt/drone_tracker/models/fp16/search_backbone.rknn sha256=9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44\ntracker.nano_head path=/opt/drone_tracker/models/fp16/head.rknn sha256=2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889\n",
+            "board_hostname": "hzhy",
+            "board_model": "HZ-RK3576_WuKong Board",
+            "kernel": "6.1.141-rt36",
+            "architecture": "aarch64",
+            "bitrate_bps": 12000000,
+            "segment_seconds": 60,
+            "sync_interval_ms": 1000,
+            "max_total_bytes": 21474836480,
+            "min_free_bytes": 5368709120,
+            "round": 1,
+            "stream_id": 1,
+            "tracking_round": 1,
+            "width": 1920,
+            "height": 1200,
+            "stride": 1920,
+            "cpu_policy_version": 1,
+            "cpu_policy_mode": "role-pinned",
+            "cpu_allowed": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "cpu_recording": 7,
+            "fps": 60,
+            "quantization": 1,
+            "colorspace": 0,
+            "ycbcr": 0,
+            "transfer": 0,
+            "camera": "/dev/video22"
+          },
+          "video_bytes": 74035340,
+          "frame_records": 3954
+        }
+      ],
+      "recording_counter_maxima_whole_run": {
+        "attempted": 3954,
+        "accepted": 3954,
+        "encoded": 3954,
+        "written": 3954,
+        "synced": 3954,
+        "dropped": 0,
+        "cancelled": 0
+      },
+      "bags_whole_run": [
+        {
+          "path": "bags/drone_rosbag_1793246048_209668056/drone_rosbag_1793246048_209668056_0.db3",
+          "topics": [
+            [
+              "/fpv/gimbal",
+              "sensor_msgs/msg/Imu",
+              2981
+            ],
+            [
+              "/fpv/odom",
+              "nav_msgs/msg/Odometry",
+              2982
+            ],
+            [
+              "/fpv/target_bbox",
+              "vision_msgs/msg/Detection2D",
+              3963
+            ],
+            [
+              "/fpv/target_los",
+              "geometry_msgs/msg/TwistStamped",
+              3963
+            ],
+            [
+              "/mavros/imu/data",
+              "sensor_msgs/msg/Imu",
+              0
+            ]
+          ],
+          "integrity_check": "ok"
+        }
+      ],
+      "bag_log": [
+        "[INFO] [1793246114.221271446] [drone_tracker_node]: Bag topic=/fpv/gimbal attempted=2981 accepted=2981 written=2981 dropped=0",
+        "[INFO] [1793246114.221450641] [drone_tracker_node]: Bag topic=/fpv/odom attempted=2982 accepted=2982 written=2982 dropped=0",
+        "[INFO] [1793246114.221493974] [drone_tracker_node]: Bag topic=/fpv/target_bbox attempted=3963 accepted=3963 written=3963 dropped=0",
+        "[INFO] [1793246114.221533742] [drone_tracker_node]: Bag topic=/fpv/target_los attempted=3963 accepted=3963 written=3963 dropped=0",
+        "[INFO] [1793246114.221572359] [drone_tracker_node]: Bag phase=complete accepted=13889 written=13889 dropped=0 peak_bytes=1312 reason="
+      ],
+      "diagnostic_gaps": 0,
+      "resources": {
+        "tasks": [
+          {
+            "pid": 24288,
+            "tid": 24288,
+            "name": "rk3576_diagnost",
+            "actor": "collector",
+            "role": "collector",
+            "samples": 53,
+            "masks": [
+              [
+                6
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "6": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 2.426155594036797,
+            "runnable_wait_ms_per_second": 1.3874986316369047
+          },
+          {
+            "pid": 24289,
+            "tid": 24289,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "control",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 3.5993019197479934,
+            "runnable_wait_ms_per_second": 4.810562557491818
+          },
+          {
+            "pid": 24289,
+            "tid": 24290,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.0015250502926551614,
+            "runnable_wait_ms_per_second": 0.0005013445800013503
+          },
+          {
+            "pid": 24289,
+            "tid": 24291,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.0,
+            "runnable_wait_ms_per_second": 0.0
+          },
+          {
+            "pid": 24289,
+            "tid": 24292,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.003937626659985964,
+            "runnable_wait_ms_per_second": 0.011618592151834571
+          },
+          {
+            "pid": 24289,
+            "tid": 24293,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.2441309335060142,
+            "runnable_wait_ms_per_second": 28.64462813601293
+          },
+          {
+            "pid": 24289,
+            "tid": 24294,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.0,
+            "runnable_wait_ms_per_second": 0.0
+          },
+          {
+            "pid": 24289,
+            "tid": 24295,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.0022217342941357058,
+            "runnable_wait_ms_per_second": 0.03619596242166148
+          },
+          {
+            "pid": 24289,
+            "tid": 24296,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.0018500521958779081,
+            "runnable_wait_ms_per_second": 0.022494296557217696
+          },
+          {
+            "pid": 24289,
+            "tid": 24297,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.0,
+            "runnable_wait_ms_per_second": 0.0
+          },
+          {
+            "pid": 24289,
+            "tid": 24298,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 1.0595653404671526,
+            "runnable_wait_ms_per_second": 69.52407331607577
+          },
+          {
+            "pid": 24289,
+            "tid": 24299,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.0,
+            "runnable_wait_ms_per_second": 0.0
+          },
+          {
+            "pid": 24289,
+            "tid": 24300,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.0,
+            "runnable_wait_ms_per_second": 0.0
+          },
+          {
+            "pid": 24289,
+            "tid": 24301,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "display",
+            "samples": 53,
+            "masks": [
+              [
+                6
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "6": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 19.36836396189159,
+            "runnable_wait_ms_per_second": 13.692938949827717
+          },
+          {
+            "pid": 24289,
+            "tid": 24303,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "yolo",
+            "samples": 53,
+            "masks": [
+              [
+                5
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "5": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 72.4365076286033,
+            "runnable_wait_ms_per_second": 2.9278850691176483
+          },
+          {
+            "pid": 24289,
+            "tid": 24304,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "recording",
+            "samples": 53,
+            "masks": [
+              [
+                7
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "7": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.0,
+            "runnable_wait_ms_per_second": 0.0
+          },
+          {
+            "pid": 24289,
+            "tid": 24307,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "capture",
+            "samples": 53,
+            "masks": [
+              [
+                7
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "7": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 11.095451973980612,
+            "runnable_wait_ms_per_second": 11.542357606175662
+          },
+          {
+            "pid": 24289,
+            "tid": 24308,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "capture",
+            "samples": 53,
+            "masks": [
+              [
+                7
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "7": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.28840265645071544,
+            "runnable_wait_ms_per_second": 1.5815150874165453
+          },
+          {
+            "pid": 24289,
+            "tid": 24309,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "tracking",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 2.0189455725003187,
+            "runnable_wait_ms_per_second": 5.066239768239573
+          },
+          {
+            "pid": 24289,
+            "tid": 24335,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                4
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "4": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 6.838647619734826,
+            "runnable_wait_ms_per_second": 27.18295759612519
+          },
+          {
+            "pid": 24289,
+            "tid": 24336,
+            "name": "drone_tracker_n",
+            "actor": "tracker",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                7
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "7": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 0.19567022926677016,
+            "runnable_wait_ms_per_second": 0.4417631381935531
+          },
+          {
+            "pid": 24337,
+            "tid": 24337,
+            "name": "rk3576_recordin",
+            "actor": "child-24337",
+            "role": "recording",
+            "samples": 53,
+            "masks": [
+              [
+                7
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "7": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 6.664262926406097,
+            "runnable_wait_ms_per_second": 7.085617416286995
+          },
+          {
+            "pid": 24337,
+            "tid": 24338,
+            "name": "mpp_h264e_2433",
+            "actor": "child-24337",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                7
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "7": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 1.1287646806318739,
+            "runnable_wait_ms_per_second": 0.5503365447798022
+          },
+          {
+            "pid": 24337,
+            "tid": 24339,
+            "name": "rk3576_recordin",
+            "actor": "child-24337",
+            "role": "unmapped",
+            "samples": 53,
+            "masks": [
+              [
+                7
+              ]
+            ],
+            "schedulers": [
+              0
+            ],
+            "last_cpu_counts": {
+              "7": 53
+            },
+            "sample_seconds": 58.767963543,
+            "cpu_percent_one_core": 1.2723750712458817,
+            "runnable_wait_ms_per_second": 1.2748329954496753
+          }
+        ],
+        "cpu_busy_percent_excluding_idle_and_iowait": {
+          "cpu0": 37.05972434915773,
+          "cpu1": 32.420013614703876,
+          "cpu2": 33.39006126616746,
+          "cpu3": 33.79850238257318,
+          "cpu4": 17.985366683682148,
+          "cpu5": 72.02654415518121,
+          "cpu6": 22.30729964267484,
+          "cpu7": 20.843968010889913
+        },
+        "sensor_ranges": {
+          "/sys/class/thermal/thermal_zone2/temp": {
+            "min": 46230,
+            "max": 54538
+          },
+          "/sys/class/thermal/thermal_zone0/temp": {
+            "min": 41615,
+            "max": 49923
+          },
+          "/sys/class/thermal/thermal_zone5/temp": {
+            "min": 45307,
+            "max": 53615
+          },
+          "/sys/class/thermal/thermal_zone3/temp": {
+            "min": 42538,
+            "max": 50846
+          },
+          "/sys/class/thermal/thermal_zone1/temp": {
+            "min": 45307,
+            "max": 53615
+          },
+          "/sys/class/thermal/thermal_zone4/temp": {
+            "min": 42538,
+            "max": 49923
+          },
+          "/sys/devices/system/cpu/cpufreq/policy4/scaling_cur_freq": {
+            "min": 2208000,
+            "max": 2208000
+          },
+          "/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq": {
+            "min": 2016000,
+            "max": 2016000
+          },
+          "/sys/class/devfreq/27700000.npu/cur_freq": {
+            "min": 950000000,
+            "max": 950000000
+          },
+          "/sys/class/devfreq/27d00000.vop/cur_freq": {
+            "min": 702000000,
+            "max": 702000000
+          },
+          "/sys/class/devfreq/27800000.gpu/cur_freq": {
+            "min": 900000000,
+            "max": 900000000
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "run_id": "run02-cpu7",
+      "cpu": 7,
+      "available": false
+    },
+    {
+      "run_id": "run03-cpu7",
+      "cpu": 7,
+      "available": false
+    },
+    {
+      "run_id": "run04-cpu6",
+      "cpu": 6,
+      "available": false
+    },
+    {
+      "run_id": "run05-cpu7",
+      "cpu": 7,
+      "available": false
+    },
+    {
+      "run_id": "run06-cpu6",
+      "cpu": 6,
+      "available": false
+    },
+    {
+      "run_id": "run07-cpu6",
+      "cpu": 6,
+      "available": false
+    },
+    {
+      "run_id": "run08-cpu7",
+      "cpu": 7,
+      "available": false
+    }
+  ],
+  "pairs": [
+    {
+      "pair": 1,
+      "valid": false,
+      "runs": [
+        "run01-cpu6",
+        "run02-cpu7"
+      ]
+    },
+    {
+      "pair": 2,
+      "valid": false,
+      "runs": [
+        "run03-cpu7",
+        "run04-cpu6"
+      ]
+    },
+    {
+      "pair": 3,
+      "valid": false,
+      "runs": [
+        "run05-cpu7",
+        "run06-cpu6"
+      ]
+    },
+    {
+      "pair": 4,
+      "valid": false,
+      "runs": [
+        "run07-cpu6",
+        "run08-cpu7"
+      ]
+    }
+  ],
+  "aggregates": {
+    "6": {
+      "planned": 4,
+      "valid_runs": 0,
+      "run_ids": [],
+      "consumed_fps": {
+        "values": [],
+        "median": null
+      },
+      "call_p50_ms": {
+        "values": [],
+        "median": null
+      },
+      "call_p95_ms": {
+        "values": [],
+        "median": null
+      },
+      "call_p99_ms": {
+        "values": [],
+        "median": null
+      },
+      "submit_p99_us": {
+        "values": [],
+        "median": null
+      }
+    },
+    "7": {
+      "planned": 4,
+      "valid_runs": 0,
+      "run_ids": [],
+      "consumed_fps": {
+        "values": [],
+        "median": null
+      },
+      "call_p50_ms": {
+        "values": [],
+        "median": null
+      },
+      "call_p95_ms": {
+        "values": [],
+        "median": null
+      },
+      "call_p99_ms": {
+        "values": [],
+        "median": null
+      },
+      "submit_p99_us": {
+        "values": [],
+        "median": null
+      }
+    }
+  },
+  "note": "Four live-camera runs per core; per-run metrics and workload variation remain material. No task 7.3 acceptance inference."
+}

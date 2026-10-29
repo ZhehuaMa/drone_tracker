@@ -1,0 +1,11 @@
+{
+  "shared_head_at_start": "e4f6f92ee43c7bc710a6e0e74cc243b8bf3d0f35",
+  "shared_head_now": "fd99bdfdfae23dc5be330d3447863f24082f1cf1",
+  "rebuilt": false,
+  "production_deployed": false,
+  "binary_input": "verified 2026-10-12 acceptance install copied on the SSH target",
+  "harness_input": "verified original 2026-10-12 ten-final scripts copied over ssh firefly-production",
+  "shared_worktree_used_for_build": false,
+  "harness_patch_sha256": "8f96a9d3a9c598855257881d288cdce5dbf4b94eabef3136078b56d52944c5e4",
+  "initial_other_agent_patch_sha256": "f126a73bb5776584bd72937a151072e89b5b3545d2f4fcedca0b4bc34beb0612"
+}

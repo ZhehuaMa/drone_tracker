@@ -1,0 +1,25 @@
+{
+  "capture_started": "2026-10-29T12:05:08.132006+08:00",
+  "capture_ended": "2026-10-29T12:05:08.800573+08:00",
+  "raw_bytes": 103680000,
+  "complete_frames": 30,
+  "selected_frame": 30,
+  "dimensions": [
+    1920,
+    1200
+  ],
+  "format": "NV12",
+  "bytes_per_line": 1920,
+  "full_range": true,
+  "decode": "Docker native FFmpeg raw NV12 to PNG; full input range; no cropping, rotation, retouching or settings change",
+  "hashes": {
+    "last-frame.nv12": "7623fe8b264e6c1eed65bd873666731edeffd5e87c3a6c3ab2c4fa1087f13e5c",
+    "last-frame.png": "547aac86bbd13d2908e9d5c6003a692f48bc4fa1e22c421bf36a853adec4cfe4"
+  },
+  "format_unchanged": true,
+  "controls_unchanged": false,
+  "protected_unchanged": true,
+  "services_unchanged": true,
+  "current_unchanged": true,
+  "visual_observation": "Balloon clearly visible near center-right; no model inference performed."
+}

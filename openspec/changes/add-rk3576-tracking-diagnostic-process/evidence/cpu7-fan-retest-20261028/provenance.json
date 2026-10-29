@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-28",
+  "agent": "/root/cpu7_cooled_retest",
+  "board_access": "ssh firefly-production only",
+  "rebuilt": false,
+  "production_upgrade": false,
+  "mutable_worktree_used_for_build": false,
+  "shared_head_at_metadata_capture": "fd99bdfdfae23dc5be330d3447863f24082f1cf1",
+  "candidate": "same hash-verified original 2026-10-12 acceptance binaries as CPU3 fan run",
+  "collector_cpu": 7,
+  "comparison_collector_cpu": 3,
+  "no_new_reboot_between_cpu3_and_cpu7": true,
+  "boot_id": "1a0efa8a-41e6-4a05-a088-7ce650cdb07a",
+  "board_root": "/home/hzhy/drone-diagnostic-cpu7-fan-20261028-batch01",
+  "local_raw_root": "/home/mzh/nickluo/drone_tracker/.docker-artifacts/diagnostic-cpu7-fan-20261028/raw-complete",
+  "archive": {
+    "bytes": 29360590,
+    "sha256": "57df4b45837f2fb357fe00a35af2620bf3526a45b5f754c988c214a65c42e0b9"
+  },
+  "clock_or_governor_modified": false
+}
