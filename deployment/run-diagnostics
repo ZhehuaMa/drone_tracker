@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 服务与直接入口共用同一 CPU 策略及普通调度。
+# Both entries validate the shared policy, then pin only the collector to CPU 6.
 set -euo pipefail
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 policy=/opt/drone_tracker/config/cpu-affinity.yaml

@@ -1,0 +1,14 @@
+{
+  "pid": 32811,
+  "start_ticks": "8022430",
+  "executable": "/home/hzhy/cpu6-cpu7-full-production-20261029/drone_tracker/lib/drone_tracker/rk3576_diagnostic_worker",
+  "threads": {
+    "32811": {
+      "affinity": [
+        6
+      ],
+      "scheduler": 0,
+      "status": "Name:\trk3576_diagnost\nUmask:\t0077\nState:\tS (sleeping)\nTgid:\t32811\nNgid:\t0\nPid:\t32811\nPPid:\t1\nTracerPid:\t0\nUid:\t0\t0\t0\t0\nGid:\t0\t0\t0\t0\nFDSize:\t256\nGroups:\t \nNStgid:\t32811\nNSpid:\t32811\nNSpgid:\t32811\nNSsid:\t32811\nVmPeak:\t    5652 kB\nVmSize:\t    5652 kB\nVmLck:\t       0 kB\nVmPin:\t       0 kB\nVmHWM:\t    3172 kB\nVmRSS:\t    3172 kB\nRssAnon:\t     608 kB\nRssFile:\t    2564 kB\nRssShmem:\t       0 kB\nVmData:\t     256 kB\nVmStk:\t     536 kB\nVmExe:\t      52 kB\nVmLib:\t    4476 kB\nVmPTE:\t      40 kB\nVmSwap:\t       0 kB\nHugetlbPages:\t       0 kB\nCoreDumping:\t0\nTHP_enabled:\t0\nThreads:\t1\nSigQ:\t0/13418\nSigPnd:\t0000000000000000\nShdPnd:\t0000000000000000\nSigBlk:\t0000000000000000\nSigIgn:\t0000000001001000\nSigCgt:\t0000000000004002\nCapInh:\t0000000000000000\nCapPrm:\t000001ffffffffff\nCapEff:\t000001ffffffffff\nCapBnd:\t000001ffffffffff\nCapAmb:\t0000000000000000\nNoNewPrivs:\t0\nSeccomp:\t0\nSeccomp_filters:\t0\nSpeculation_Store_Bypass:\tnot vulnerable\nSpeculationIndirectBranch:\tunknown\nCpus_allowed:\t40\nCpus_allowed_list:\t6\nMems_allowed:\t1\nMems_allowed_list:\t0\nvoluntary_ctxt_switches:\t11\nnonvoluntary_ctxt_switches:\t175\n"
+    }
+  }
+}

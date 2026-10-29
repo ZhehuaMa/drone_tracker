@@ -1,0 +1,30 @@
+{
+  "command": [
+    "python3",
+    "-B",
+    "/home/hzhy/pin-collector-cpu6-validation-20261029/validate_board.py",
+    "/home/hzhy/pin-collector-cpu6-validation-20261029/results",
+    "/home/hzhy/pin-collector-cpu6-validation-20261029/deployment",
+    "/home/hzhy/cpu6-cpu7-full-production-20261029/drone_tracker"
+  ],
+  "budget_seconds": 180.0,
+  "elapsed_seconds": 1.853684544999851,
+  "phase_budgets": {
+    "prepare": 0,
+    "warmup": 0,
+    "measurement": 165.0,
+    "cleanup": 15.0
+  },
+  "timeout": false,
+  "returncode": 1,
+  "observed_pids": [
+    32674,
+    32679,
+    32681,
+    32684
+  ],
+  "remaining_pids": [],
+  "unit_members": {},
+  "resources_recovered": true,
+  "passed": false
+}

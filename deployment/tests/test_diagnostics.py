@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,6 +21,35 @@ from diagnostic_entry_fixture import prepare
 
 
 class DiagnosticsTest(unittest.TestCase):
+    def test_collector_cpu6_launch_contract(self):
+        cases = (
+            ('success', '4,5,6,7', {6}, None),
+            ('excluded', '4,5,7', {6}, None),
+            ('set_error', '4,5,6,7', {6}, PermissionError('affinity injection')),
+            ('readback_error', '4,5,6,7', {6, 7}, None),
+        )
+        for name, allowed, actual, error in cases:
+            with self.subTest(name=name), \
+                    mock.patch.object(sys, 'argv', ['diagnostic-launch', str(DEPLOYMENT / 'diagnostics.yaml'), allowed]), \
+                    mock.patch.object(os, 'sched_setaffinity', side_effect=error) as setter, \
+                    mock.patch.object(os, 'sched_getaffinity', return_value=actual), \
+                    mock.patch.object(os, 'sched_setscheduler') as scheduler, \
+                    mock.patch.object(os, 'sched_getscheduler', return_value=os.SCHED_OTHER), \
+                    mock.patch.object(Path, 'mkdir'), mock.patch.object(os, 'execv') as execute:
+                status = LAUNCH.main()
+                if name == 'success':
+                    setter.assert_called_once_with(0, {6})
+                    self.assertEqual(scheduler.call_args.args[:2], (0, os.SCHED_OTHER))
+                    execute.assert_called_once()
+                else:
+                    self.assertEqual(status, 1)
+                    execute.assert_not_called()
+                    scheduler.assert_not_called()
+                    if name == 'excluded':
+                        setter.assert_not_called()
+                    else:
+                        setter.assert_called_once_with(0, {6})
+
     def test_configuration_and_package_programs(self):
         value = LAUNCH.parse(DEPLOYMENT / 'diagnostics.yaml')
         self.assertEqual(value['sync_ms'], 100)
@@ -59,25 +89,58 @@ class DiagnosticsTest(unittest.TestCase):
             binary.parent.mkdir(parents=True)
             binary.write_text("#!/usr/bin/env python3\nimport json,os,sys\nfrom pathlib import Path\nPath(os.environ['ENTRY_RESULT']).write_text(json.dumps({'argv':sys.argv,'affinity':sorted(os.sched_getaffinity(0)),'scheduler':os.sched_getscheduler(0)}))\n")
             binary.chmod(0o755)
-            cpus = sorted(os.sched_getaffinity(0))[:2]
+            cpus = sorted(set(os.sched_getaffinity(0)) | {6})
             policy = directory / 'cpu.yaml'
             policy.write_text('version: 1\nmode: inherit\nallowed_cpus: ' + str(cpus) + '\n')
             root, runtime, state = prepare(directory, DEPLOYMENT, installation, policy)
             output = directory / 'result.json'
-            env = dict(os.environ, ENTRY_RESULT=str(output))
+            env = dict(os.environ, ENTRY_RESULT=str(output),
+                       PATH=str(Path(sys.executable).parent) + os.pathsep + os.environ.get('PATH', ''))
+            ready = directory / 'bystander-ready'
+            bystander = subprocess.Popen([sys.executable, '-c',
+                "import pathlib,sys,threading,time\n"
+                "threading.Thread(target=time.sleep,args=(20,),daemon=True).start()\n"
+                "pathlib.Path(sys.argv[1]).touch()\ntime.sleep(20)\n", str(ready)])
+            self.addCleanup(bystander.wait, timeout=3)
+            self.addCleanup(bystander.terminate)
+            cutoff = time.monotonic() + 3
+            while not ready.exists() and time.monotonic() < cutoff:
+                time.sleep(0.01)
+            self.assertTrue(ready.exists())
+
+            def affinities(pid):
+                return {int(path.name): sorted(os.sched_getaffinity(int(path.name)))
+                        for path in Path(f'/proc/{pid}/task').iterdir()}
+
+            caller_before = affinities(os.getpid())
+            bystander_before = affinities(bystander.pid)
+            self.assertGreaterEqual(len(bystander_before), 2)
+
+            def unchanged():
+                self.assertEqual(affinities(os.getpid()), caller_before)
+                self.assertEqual(affinities(bystander.pid), bystander_before)
+                self.assertIsNone(bystander.poll())
+
+            availability = subprocess.run([sys.executable, '-c',
+                'import os; os.sched_setaffinity(0, {6})'], capture_output=True, text=True, timeout=3)
             result = subprocess.run([str(root / 'bin/run-diagnostics'), '--probe-token', 'exact-value'],
                                     env=env, capture_output=True, text=True, timeout=5)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            value = json.loads(output.read_text())
-            self.assertEqual(value['affinity'], cpus)
-            self.assertEqual(value['scheduler'], os.SCHED_OTHER)
-            self.assertEqual(value['argv'], [str(root / 'current/lib/drone_tracker/rk3576_diagnostic_worker'),
-                '--socket', str(runtime / 'diagnostics.sock'), '--directory', str(state),
-                '--sync-ms', '100', '--segment-bytes', '67108864', '--total-bytes', '1073741824',
-                '--minimum-free-bytes', '5368709120', '--probe-token', 'exact-value'])
-            self.assertIn('读回=', result.stdout)
-            self.assertTrue(runtime.is_dir() and state.is_dir())
-            output.unlink()
+            unchanged()
+            if availability.returncode == 0:
+                self.assertEqual(result.returncode, 0, result.stderr)
+                value = json.loads(output.read_text())
+                self.assertEqual(value['affinity'], [6])
+                self.assertEqual(value['scheduler'], os.SCHED_OTHER)
+                self.assertEqual(value['argv'], [str(root / 'current/lib/drone_tracker/rk3576_diagnostic_worker'),
+                    '--socket', str(runtime / 'diagnostics.sock'), '--directory', str(state),
+                    '--sync-ms', '100', '--segment-bytes', '67108864', '--total-bytes', '1073741824',
+                    '--minimum-free-bytes', '5368709120', '--probe-token', 'exact-value'])
+                self.assertIn('请求=[6] 读回=[6]', result.stdout)
+                self.assertTrue(runtime.is_dir() and state.is_dir())
+                output.unlink()
+            else:
+                self.assertNotEqual(result.returncode, 0, 'Unavailable CPU 6 must fail without fallback')
+                self.assertFalse(output.exists())
             hooks = directory / 'hooks'
             hooks.mkdir()
             (hooks / 'sitecustomize.py').write_text("import os\ndef reject(pid,cpus): raise PermissionError('affinity injection')\nos.sched_setaffinity=reject\n")
@@ -86,6 +149,28 @@ class DiagnosticsTest(unittest.TestCase):
             self.assertNotEqual(failed.returncode, 0)
             self.assertIn('诊断不可用', failed.stderr)
             self.assertFalse(output.exists(), '亲和性失败仍exec')
+            unchanged()
+            (hooks / 'sitecustomize.py').write_text(
+                "import os\nos.sched_setaffinity=lambda pid,cpus:None\n"
+                "os.sched_getaffinity=lambda pid:{6,7}\n")
+            mismatch = subprocess.run([str(root / 'bin/run-diagnostics')],
+                env=dict(env, PYTHONPATH=str(hooks)), capture_output=True, text=True, timeout=5)
+            self.assertNotEqual(mismatch.returncode, 0)
+            self.assertIn('CPU 读回不一致', mismatch.stderr)
+            self.assertFalse(output.exists())
+            unchanged()
+            excluded = dict(__import__('yaml').safe_load((root / 'config/cpu-affinity.yaml').read_text()))
+            excluded['allowed_cpus'] = [cpu for cpu in cpus if cpu != 6]
+            if excluded['allowed_cpus']:
+                (root / 'config/cpu-affinity.yaml').write_text(__import__('yaml').safe_dump(excluded))
+                policy_before = (root / 'config/cpu-affinity.yaml').read_bytes()
+                rejected = subprocess.run([str(root / 'bin/run-diagnostics')],
+                    env=env, capture_output=True, text=True, timeout=5)
+                self.assertNotEqual(rejected.returncode, 0)
+                self.assertIn('CPU 6 is not in the shared allowed CPU set', rejected.stderr)
+                self.assertFalse(output.exists())
+                self.assertEqual((root / 'config/cpu-affinity.yaml').read_bytes(), policy_before)
+                unchanged()
 
     @unittest.skipUnless(sys.platform == 'linux', '实际外部回收要求Linux')
     def test_detached_descendants_and_controller_kill(self):

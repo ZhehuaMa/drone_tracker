@@ -9,7 +9,7 @@
 1. 按 `AGENTS.local.md` 取得匹配目标平台的安装产物。保存节点、worker、inspect、视频、配置、模型与脚本的 SHA-256 指纹。SHA-256 是核对文件内容的摘要。修改诊断热路径后，必须用新二进制取得新批次证据，不能套用旧二进制结果。
 2. 在板端建立全新的独立目录。目录下准备 `drone_tracker/` 安装树、`fixed-balloon.avi`、空 `evidence/` 及本目录的四个 Python 文件：`board_acceptance.py`、`analyze_board_acceptance.py`、`ten_round_window.py`、`ten_round_restore_guard.py`。允许只读链接到已验证产物及固定视频；不得改变正式 `current`、配置、模型或系统 Runtime。
 3. 设置 `DRONE_DIAGNOSTIC_ACCEPTANCE_ROOT` 为该绝对目录。设置 `DRONE_DIAGNOSTIC_UNIT_PREFIX` 为本批独有的 systemd 单元前缀。每个新批次都使用新目录和新前缀，不复用旧 `armed` 或输出目录。
-4. 使用与实际测试服务相同的环境做短预检。先加载 `/opt/ros/humble/setup.bash`，再加载独立安装的 `share/drone_tracker/local_setup.bash`。业务必须设置 `DRONE_TRACKER_CPU_CONFIG=/opt/drone_tracker/config/cpu-affinity.yaml`。ROS 隔离环境固定为 `ROS_DOMAIN_ID=198`、`ROS_LOCALHOST_ONLY=1`。控制器与 bag 使用 CPU 0–3；业务和 worker 允许 CPU 4–7，业务继续使用既有职责映射。
+4. Use the same environment as the test services for preflight. Load `/opt/ros/humble/setup.bash`, then the isolated installation's `share/drone_tracker/local_setup.bash`. Set `DRONE_TRACKER_CPU_CONFIG=/opt/drone_tracker/config/cpu-affinity.yaml` for the business process, with `ROS_DOMAIN_ID=198` and `ROS_LOCALHOST_ONLY=1`. The controller and bag use CPU 0–3; the business keeps its CPU 4–7 role policy. The installed diagnostic entry requires CPU 6 in the shared policy and verifies collector affinity `{6}`. The separate experimental `board_acceptance.py` harness invokes the bare worker with its own explicit CPU range; record that range and do not present it as validation of the installed entry.
 5. 正式服务保持运行时，用隔离视频、HDMI 关闭的实际业务短预检。核对安装目录解析、模型加载、实际 ON/OFF、`CPU policy loaded mode=role-pinned` 和职责读回。协议版本查询提前返回，不能代替此预检。保存完整环境、实际 YAML 和运行输出。确认正式服务、HDMI、全部受保护文件及隔离残留无变化。
 
 ## 限时运行及恢复

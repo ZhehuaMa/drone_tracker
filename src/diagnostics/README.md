@@ -2,6 +2,8 @@
 
 本组件把检测、历史帧、恢复跟踪和发布调用连接成可核查的记录。业务线程提交固定 256 字节数值事件。独立程序 `rk3576_diagnostic_worker` 收集并保存事件。`rk3576_diagnostic_inspect` 只读检查记录，不加载模型，也不修改原件。
 
+The installed service and `/opt/drone_tracker/bin/run-diagnostics` pin only the collector to CPU 6. The shared CPU policy must allow CPU 6, and the launcher verifies exactly `{6}` before executing the worker with ordinary `SCHED_OTHER` scheduling. Failure stops diagnostic startup without a fallback core or changes to other processes or threads. CPU affinity limits where execution is allowed; CPU 6 remains shared with display work. Direct experimental execution of the bare worker binary retains its inherited affinity.
+
 ## 启动模式与身份
 
 `diagnostics.mode` 在启动后固定。`off` 表示关闭，既不连接服务也不创建诊断文件。`basic` 保存完整基础因果链。`detail` 额外保存原有模型处理阶段的耗时。生产模板默认 `basic`，其他 ROS 入口默认 `off`。Jetson 入口只能关闭诊断。运行期修改诊断参数被拒绝。

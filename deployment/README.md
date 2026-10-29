@@ -151,7 +151,7 @@ sudo systemctl stop drone-tracker.service   # 日志服务继续保存已提交�
 sudo systemctl stop drone-tracker-diagnostics.service
 ```
 
-直接启动先确认独立服务没有运行；不能同时启动同一路径的第二收集器。然后使用 `/opt/drone_tracker/bin/run-diagnostics`。该入口与服务读取同一 CPU 策略，设置并读回允许核心范围，使用普通调度，不改变业务线程职责或内核隔离。范围核对失败返回非零并报告不可用。
+Before direct startup, confirm the independent service is stopped; two collectors cannot share one socket. Run `/opt/drone_tracker/bin/run-diagnostics`. Both service and direct startup validate the installed shared CPU policy, which must allow CPU 6. The launcher pins only itself to CPU 6 and requires an exact `{6}` readback before replacing itself with the collector. It retains ordinary `SCHED_OTHER` scheduling. An excluded or unavailable CPU, setting failure, or readback mismatch returns nonzero without executing the collector or selecting another core. CPU 6 remains shared with HDMI display work. Other processes, threads, the shared allowed range, and business role assignments keep their existing settings. An outer `taskset` cannot select a different core for this installed entry.
 
 空间不足、写入失败或同步落后超过 500 ms 会使诊断退化。业务继续；满缓冲计入缺口。维护者应先备份原件，再用匹配的 `rk3576_diagnostic_inspect` 导出至新目录。100 ms 同步周期不保证固定最大掉电损失时间。
 

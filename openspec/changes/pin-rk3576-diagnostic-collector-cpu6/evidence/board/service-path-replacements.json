@@ -1,0 +1,6 @@
+{
+  "/opt/drone_tracker/bin/run-diagnostics": "/home/hzhy/pin-collector-cpu6-validation-20261029/results-v2/service/installation/bin/run-diagnostics",
+  "WorkingDirectory=/opt/drone_tracker": "WorkingDirectory=/home/hzhy/pin-collector-cpu6-validation-20261029/results-v2/service/installation",
+  "RuntimeDirectory=drone_tracker": "RuntimeDirectory=drone-diag-cpu6-validation",
+  "StateDirectory=drone_tracker/diagnostics": "StateDirectory=drone-diag-cpu6-validation/diagnostics"
+}

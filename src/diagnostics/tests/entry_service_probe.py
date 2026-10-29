@@ -28,7 +28,8 @@ def main():
     binary.chmod(0o755)
     direct = directory / 'direct'
     root, runtime, state = prepare(direct, deployment, installation, '/opt/drone_tracker/config/cpu-affinity.yaml')
-    expected = yaml.safe_load((root / 'config/cpu-affinity.yaml').read_text())['allowed_cpus']
+    assert 6 in yaml.safe_load((root / 'config/cpu-affinity.yaml').read_text())['allowed_cpus']
+    expected = [6]
     output = direct / 'result.json'
     completed = subprocess.run([str(root / 'bin/run-diagnostics'), '--probe-token', 'entry-chain'],
         env=dict(os.environ, ENTRY_RESULT=str(output)), capture_output=True, text=True, timeout=5)

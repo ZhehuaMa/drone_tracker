@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "formal_services_stopped": [],
+  "service_after_stop": "MainPID=0\nActiveState=inactive\n",
+  "remaining_worker_pids": [],
+  "formal_state_unchanged": true,
+  "runtime_removed": true,
+  "elapsed_seconds": 4.093374574993504
+}

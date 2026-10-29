@@ -81,7 +81,7 @@ def main():
         first_main, first_worker = pid(MAIN), pid(WORKER)
         assert first_main and first_worker and active(MAIN) and active(WORKER)
         case.result['service_initial_resources'] = {'main': resource(first_main), 'worker': resource(first_worker)}
-        assert os.sched_getaffinity(first_worker) == {int(cpu) for cpu in CPUS.split(',')}
+        assert os.sched_getaffinity(first_worker) == {6}
         assert os.sched_getscheduler(first_worker) == os.SCHED_OTHER
         case.command('ON')
         case.spin(3)
@@ -90,6 +90,8 @@ def main():
         case.spin(5)
         assert active(MAIN) and pid(MAIN) == first_main and active(WORKER) and pid(WORKER) != first_worker
         replacement = pid(WORKER)
+        assert os.sched_getaffinity(replacement) == {6}
+        assert os.sched_getscheduler(replacement) == os.SCHED_OTHER
         case.spin(6)
         # 第二消费者必须拒绝，不得夺取活跃端点。
         duplicate = subprocess.run([str(BIN / 'rk3576_diagnostic_worker'), '--socket', str(runtime / 'diagnostics.sock'),
@@ -109,6 +111,8 @@ def main():
         ctl('restart', WORKER)
         case.spin(6)
         assert active(MAIN) and pid(MAIN) == stable_main and active(WORKER)
+        assert os.sched_getaffinity(pid(WORKER)) == {6}
+        assert os.sched_getscheduler(pid(WORKER)) == os.SCHED_OTHER
         case.result['lifecycle'] = {'first_main': first_main, 'first_worker': first_worker,
             'replacement_worker': replacement, 'stable_main': stable_main, 'final_worker': pid(WORKER)}
         ctl('stop', MAIN)

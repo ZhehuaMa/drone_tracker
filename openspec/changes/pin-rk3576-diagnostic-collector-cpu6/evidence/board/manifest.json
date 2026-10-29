@@ -1,0 +1,94 @@
+{
+  "worker-service.json": {
+    "bytes": 1499,
+    "sha256": "858acac413010926ff5d4ac71210433283cb8a0ccb827d6b6cacc45555510839"
+  },
+  "observers-direct.json": {
+    "bytes": 49165,
+    "sha256": "c7ed5befac0c9c689563631293e5d1a310647fee8ae86c83f0a8cf841d2f7c11"
+  },
+  "observers-before.json": {
+    "bytes": 49165,
+    "sha256": "3e16385ea710babe2745f99effc1d83b81f3be25e5e72a42b934a51c1ae88011"
+  },
+  "bystander-ready": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "formal-before.json": {
+    "bytes": 2291,
+    "sha256": "f693c2a0568b5fdb9b265987ebd4c8d95617b44075fdc9a284a48fba319e55e4"
+  },
+  "service-entry-fixture.json": {
+    "bytes": 982,
+    "sha256": "a381a8fdeb8a29b377f9e270240e4b71ac5e65f267bd7ba7a6cd2291c339a625"
+  },
+  "worker-direct.json": {
+    "bytes": 1503,
+    "sha256": "3ae5a9e6f3939149116df8f8ea35cc251500a08224e310b155299b353c48b3a5"
+  },
+  "result.json": {
+    "bytes": 246,
+    "sha256": "d18f16acb4e2a3918198b5859fdd03428e371ceeef22cddd4b205bfa8e284e3c"
+  },
+  "drone-diag-cpu6-validation.service": {
+    "bytes": 645,
+    "sha256": "1f53211b0916a8413b5f82a84d5786856c8a3e1b41caf7c752786d527d0533f6"
+  },
+  "observers-restart.json": {
+    "bytes": 49166,
+    "sha256": "34496a6854d962915ccb523f8bb1ee5aa0b651e20271fa3ce2e3134769387c6e"
+  },
+  "direct-console.txt": {
+    "bytes": 52,
+    "sha256": "4ac477c34ad81af2ef4ac37e0cf203b1e80916f8708a63d355fac0c103c450e9"
+  },
+  "service-journal.txt": {
+    "bytes": 198,
+    "sha256": "7965bb04c95029ccebda9452a02ee93a7b76bfd2d8e9f68c3ac711d03a5af6e6"
+  },
+  "observers-direct-stopped.json": {
+    "bytes": 49165,
+    "sha256": "c47b415cebbffcffa0cfdc856b66b3d70c76c3fe512840a1469444bc4bb7864b"
+  },
+  "service-path-replacements.json": {
+    "bytes": 480,
+    "sha256": "97b963fd6b2550cca86fc05455b4edba182083173e33b0c751fda3095a13ce3c"
+  },
+  "observers-service.json": {
+    "bytes": 49166,
+    "sha256": "7a0d615ef2c1347d5b48e3f816818cfaad8ac3610730c0c5236cf49dd6610e35"
+  },
+  "worker-restart.json": {
+    "bytes": 1498,
+    "sha256": "9d1de66c3759d9aff9a348ca3df88fcecc1cbc285ed26ec5b97b96a9fd6c336a"
+  },
+  "window.json": {
+    "bytes": 783,
+    "sha256": "2541a411f826f29e1b30febbd18c32357569e2900a56ab89c72ee9476d80c21c"
+  },
+  "board.json": {
+    "bytes": 810,
+    "sha256": "66fb216fe9e873a3aeab98c18983b61203ee9cfa7ab72ff58f5dc9f37317d050"
+  },
+  "direct-entry-fixture.json": {
+    "bytes": 1017,
+    "sha256": "244e3f1505181daa131d3146b21345347ea5ae479df07fef1f0cf0b4ac06e76a"
+  },
+  "formal-after.json": {
+    "bytes": 2291,
+    "sha256": "f693c2a0568b5fdb9b265987ebd4c8d95617b44075fdc9a284a48fba319e55e4"
+  },
+  "attempt01/result.json": {
+    "bytes": 218,
+    "sha256": "0ebe903f976e833739009d1b432eaed5d49bec86e7c6c11232cf96189094eb0a"
+  },
+  "attempt01/direct-console.txt": {
+    "bytes": 80,
+    "sha256": "c053b55d7686585992b3314a8b1904df8877481364207bdbdeba4d8fa0b38bc9"
+  },
+  "attempt01/window.json": {
+    "bytes": 700,
+    "sha256": "f0a1f8487a8a0fe7add58da19b329cde31cc9a0f237476d327ec211d22aeec63"
+  }
+}

@@ -1,0 +1,16 @@
+test_collector_cpu6_launch_contract (test_diagnostics.DiagnosticsTest) ... 诊断 CPU 请求=[6] 读回=[6] 调度=SCHED_OTHER
+诊断不可用：CPU 6 is not in the shared allowed CPU set
+诊断不可用：affinity injection
+诊断不可用：CPU 读回不一致：请求 [6]，实际 [6, 7]
+ok
+test_configuration_and_package_programs (test_diagnostics.DiagnosticsTest) ... ok
+test_deadline_and_no_overwrite (test_diagnostics.DiagnosticsTest) ... ok
+test_detached_descendants_and_controller_kill (test_diagnostics.DiagnosticsTest) ... ok
+test_failed_recovery_is_not_parent_exit (test_diagnostics.DiagnosticsTest) ... ok
+test_independent_services_and_side_effect_boundary (test_diagnostics.DiagnosticsTest) ... ok
+test_real_installed_entry_chain (test_diagnostics.DiagnosticsTest) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 5.484s
+
+OK

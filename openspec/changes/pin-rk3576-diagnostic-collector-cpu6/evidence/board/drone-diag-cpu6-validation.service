@@ -1,0 +1,23 @@
+[Unit]
+Description=Drone tracker independent diagnostic collector
+After=local-fs.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/home/hzhy/pin-collector-cpu6-validation-20261029/results-v2/service/installation/bin/run-diagnostics
+WorkingDirectory=/home/hzhy/pin-collector-cpu6-validation-20261029/results-v2/service/installation
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGTERM
+KillMode=mixed
+TimeoutStopSec=3
+RuntimeDirectory=drone-diag-cpu6-validation
+RuntimeDirectoryMode=0700
+StateDirectory=drone-diag-cpu6-validation/diagnostics
+StateDirectoryMode=0700
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

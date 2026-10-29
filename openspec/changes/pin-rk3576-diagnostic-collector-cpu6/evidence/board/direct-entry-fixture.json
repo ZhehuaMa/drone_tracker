@@ -1,0 +1,21 @@
+{
+  "replacements": {
+    "/opt/drone_tracker": "/home/hzhy/pin-collector-cpu6-validation-20261029/results-v2/direct/installation",
+    "/run/drone_tracker": "/run/drone-diag-cpu6-direct",
+    "/var/lib/drone_tracker/diagnostics": "/home/hzhy/pin-collector-cpu6-validation-20261029/results-v2/direct/installation/var/lib/drone_tracker/diagnostics"
+  },
+  "scripts": {
+    "run-diagnostics": {
+      "source_sha256": "1087075ba81560d84d1467dff65855bad500ebb31a6b8719d2896392be227841",
+      "fixture_sha256": "18ead89b8850bbcd6693f3fec1bbc60c749a79c965a9252a9d6b888bae90090e"
+    },
+    "diagnostic-launch.py": {
+      "source_sha256": "fba5d662786c0042a79ec35b8aac8673591905601c73abd17adeed634cb006fb",
+      "fixture_sha256": "3a3bb61e079cf7d7ca22e78f717883696c98d44e4e858c0f42f6fc0582952cd7"
+    },
+    "cpu-policy.py": {
+      "source_sha256": "2074d01a0a3644e64f69db553794fa32bbe04ff217ef62116f28297b4567dad8",
+      "fixture_sha256": "2074d01a0a3644e64f69db553794fa32bbe04ff217ef62116f28297b4567dad8"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "command": [
+    "/usr/bin/python3",
+    "-B",
+    "deployment/tests/test_cpu_policy.py",
+    "/home/mzh/nickluo/drone_tracker"
+  ],
+  "returncode": 0,
+  "stdout": "",
+  "stderr": "",
+  "python": "3.10.12"
+}

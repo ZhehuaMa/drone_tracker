@@ -1,0 +1,29 @@
+test_collector_cpu6_launch_contract (deployment.tests.test_diagnostics.DiagnosticsTest) ... 诊断 CPU 请求=[6] 读回=[6] 调度=SCHED_OTHER
+诊断不可用：CPU 6 is not in the shared allowed CPU set
+诊断不可用：affinity injection
+诊断不可用：CPU 读回不一致：请求 [6]，实际 [6, 7]
+ok
+test_configuration_and_package_programs (deployment.tests.test_diagnostics.DiagnosticsTest) ... ok
+test_deadline_and_no_overwrite (deployment.tests.test_diagnostics.DiagnosticsTest) ... ok
+test_detached_descendants_and_controller_kill (deployment.tests.test_diagnostics.DiagnosticsTest) ... ok
+test_failed_recovery_is_not_parent_exit (deployment.tests.test_diagnostics.DiagnosticsTest) ... ok
+test_independent_services_and_side_effect_boundary (deployment.tests.test_diagnostics.DiagnosticsTest) ... ok
+test_real_installed_entry_chain (deployment.tests.test_diagnostics.DiagnosticsTest) ... ok
+test_archive_failure_leaves_no_success_name (deployment.tests.test_package.AtomicOutputTest) ... ok
+test_changed_input_leaves_no_archive (deployment.tests.test_package.AtomicOutputTest) ... ok
+test_defaults_and_explicit_overrides (deployment.tests.test_package.EntryTest) ... ok
+test_missing_inputs_fail_before_docker (deployment.tests.test_package.EntryTest) ... ok
+test_valid_and_unsafe_paths (deployment.tests.test_package.ModelMappingTest) ... ok
+test_failed_stop_aborts (deployment.tests.test_prepare_display.DisplayPreparationTests) ... ok
+test_occupied_timeout_aborts (deployment.tests.test_prepare_display.DisplayPreparationTests) ... ok
+test_prepare_orders_stop_before_release_check (deployment.tests.test_prepare_display.DisplayPreparationTests) ... 桌面已停止，显示启动前置检查通过。
+ok
+test_still_active_aborts (deployment.tests.test_prepare_display.DisplayPreparationTests) ... ok
+test_stop_is_synchronous_and_state_is_checked (deployment.tests.test_prepare_display.DisplayPreparationTests) ... ok
+test_unreadable_or_invalid_evidence_aborts (deployment.tests.test_prepare_display.DisplayPreparationTests) ... ok
+test_waits_for_release (deployment.tests.test_prepare_display.DisplayPreparationTests) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 5.539s
+
+OK

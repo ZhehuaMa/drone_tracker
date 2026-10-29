@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""核对配置和 CPU 允许范围，使用普通调度启动独立日志进程。"""
+"""Validate the shared CPU policy and launch only the collector on CPU 6."""
 import os
 from pathlib import Path
 import sys
@@ -28,7 +28,10 @@ def parse(path):
 def main():
     try:
         value = parse(sys.argv[1])
-        requested = {int(cpu) for cpu in sys.argv[2].split(',')}
+        allowed = {int(cpu) for cpu in sys.argv[2].split(',')}
+        requested = {6}
+        if not requested.issubset(allowed):
+            raise ValueError('CPU 6 is not in the shared allowed CPU set')
         os.sched_setaffinity(0, requested)
         actual = os.sched_getaffinity(0)
         if actual != requested:

@@ -1,0 +1,5 @@
+deployment/cpu-affinity.yaml: OK
+deployment/cpu-policy.py: OK
+deployment/run-camera: OK
+src/platform/cpu_affinity.cpp: OK
+src/platform/cpu_affinity.h: OK

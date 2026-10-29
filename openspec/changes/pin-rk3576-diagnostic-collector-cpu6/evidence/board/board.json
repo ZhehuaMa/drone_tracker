@@ -1,0 +1,11 @@
+{
+  "model": "HZ-RK3576_WuKong Board",
+  "platform": "Linux-6.1.141-rt36-aarch64-with-glibc2.35",
+  "machine_id": "1fe0a397f2ae4343896c7cf9d253a608",
+  "boot_id": "1a0efa8a-41e6-4a05-a088-7ce650cdb07a",
+  "worker": "/home/hzhy/cpu6-cpu7-full-production-20261029/drone_tracker/lib/drone_tracker/rk3576_diagnostic_worker",
+  "worker_sha256": "2359d64998a19d8390853a4e7c7feac00dce65f3d350b83b31ecc7cf42b1db7c",
+  "worker_file": "/home/hzhy/cpu6-cpu7-full-production-20261029/drone_tracker/lib/drone_tracker/rk3576_diagnostic_worker: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (GNU/Linux), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID[sha1]=3fee0e2a2925bac78201df708e3845430f7e5314, for GNU/Linux 3.7.0, not stripped\n",
+  "models_loaded": false,
+  "input": "no client sessions"
+}

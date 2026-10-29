@@ -1,0 +1,9 @@
+{
+  "passed": false,
+  "formal_services_stopped": [],
+  "error": "AssertionError()",
+  "remaining_worker_pids": [],
+  "formal_state_unchanged": true,
+  "runtime_removed": true,
+  "elapsed_seconds": 0.9604647590022068
+}
