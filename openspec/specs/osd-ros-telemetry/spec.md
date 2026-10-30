@@ -8,12 +8,12 @@
 
 ### Requirement: 外部遥测经已有消息类型输入
 
-系统 SHALL 使用下表话题和消息类型接收外部数据，并支持 ROS 话题重映射。遥测输入 SHALL 不改变本地帧、框和跟踪状态的进程内数据通路。
+话题指 ROS 中具名的消息通道。系统 SHALL 使用下表话题和消息类型接收外部数据，并支持话题重映射。遥测输入 SHALL 不改变本地帧、框和跟踪状态的进程内数据通路。
 
 | 话题 | 消息类型 | 用途 |
 |---|---|---|
 | `/mavros/imu/data` | `sensor_msgs/msg/Imu` | 航向、俯仰、横滚 |
-| `/mavros/state` | `mavros_msgs/msg/State` | 连接、模式、解锁与计时 |
+| `/mavros/state` | `mavros_msgs/msg/State` | 连接、模式、解锁、计时及通过 `guided` 确认 OFFBOARD |
 | `/mavros/extended_state` | `mavros_msgs/msg/ExtendedState` | 落地状态 |
 | `/mavros/rc/in` | `mavros_msgs/msg/RCIn` | 生产遥控接收链路质量百分比 |
 | `/mavros/battery` | `sensor_msgs/msg/BatteryState` | 电压、电流、电量 |
@@ -24,29 +24,36 @@
 | `/fpv/failsafe` | `std_msgs/msg/Bool` | 失效保护告警 |
 | `/fpv/radar_state` | `std_msgs/msg/Int8` | 独立雷达状态 |
 | `/fpv/low_level_feedback` | `quadrotor_msgs/msg/LowLevelFeedback` | 可选电池告警等级 |
+| `/fpv/mission_state` | `std_msgs/msg/Bool` | 拦截任务开始与结束事件 |
 
-系统 SHALL 复用现有 `/fpv/tracker_trigger` 的 `ON`、`OFF` 接收事件显示限时触发提示。收到 `frame_id="MISSION"` 时，系统 SHALL 按 `osd-presentation` 的任务状态栏要求显示 `ON MISSION`。这三种触发值 SHALL 沿用现有 `std_msgs/msg/Header` 消息类型，不增加独立控制通路。低层反馈适配未编译时 SHALL 隐藏依赖该输入的显示，其他遥测仍可工作。
+系统 SHALL 复用现有 `/fpv/tracker_trigger` 的 ON、OFF 事件显示限时触发提示。MISSION SHALL 仅表示请求，不作为 OFFBOARD 确认。任务显示 SHALL 使用现有任务与飞行消息，遵守 `osd-presentation`。OFF 和 DISMISS SHALL 取消任务显示。触发消息 SHALL 保持 `std_msgs/msg/Header` 类型。系统 MUST NOT 为取得显示状态新增控制话题或修改外部发布方。低层反馈适配未编译时 SHALL 隐藏依赖该输入的显示，其他遥测仍可工作。
 
 #### Scenario: 没有自定义消息包
 - **WHEN** 构建未启用低层反馈适配，标准电池与姿态话题正常到达
-- **THEN** 正常显示电池与姿态，低层反馈告警等级显示未知或隐藏，不阻止 OSD 启动
+- **THEN** 正常显示电池与姿态，低层反馈告警等级显示未知或隐藏，不阻止 OSD 启动；任务确认正常工作，不为此额外要求 quadrotor_msgs
 
 #### Scenario: 雷达正在跟踪而本地检测中
 - **WHEN** 外部雷达状态为 2，本地提交包状态为 Detecting
 - **THEN** 显示两者各自状态，不将本地框或跟踪状态改为 Tracking
 
 #### Scenario: 收到任务触发
-- **WHEN** `/fpv/tracker_trigger` 的 `frame_id` 为 `MISSION`
-- **THEN** HUD 状态栏显示 `ON MISSION`，不创建新的 ROS 话题或消息类型
+- **WHEN** `/fpv/tracker_trigger` 的 `frame_id` 为 MISSION，但活动任务事件与有效 OFFBOARD 确认未同时满足
+- **THEN** HUD 状态栏不因该请求显示 `ON MISSION`，不创建新的 ROS 话题或消息类型
 
 
 #### Scenario: 生产遥控输入允许丢包并支持重映射
 - **WHEN** `/mavros/rc/in` 被重映射到隔离测试话题，该话题以 best-effort 发布 `mavros_msgs/msg/RCIn`
 - **THEN** OSD 接收 RSSI，不改变本地跟踪状态或帧框配对
 
+#### Scenario: Existing OFFBOARD variant is reported
+- **WHEN** 收到任务 `true`，新鲜飞行状态为 `connected=true`、`armed=true`、`guided=true`，模式文字为 `OFFBOARD|ANGLE`
+- **THEN** 任务显示接受 OFFBOARD 确认，不要求模式字符串严格等于 `OFFBOARD`
+
 ### Requirement: 未知和过期数据不能显示为有效零值
 
-系统 SHALL 为每组遥测保留有效性与最近有效接收时间。接收时 SHALL 拒绝非有限值、无效姿态和消息定义的未知标记。新鲜度 SHALL 依据单调时钟计算，默认 `osd.telemetry_timeout_ms=2000`。未收到、非法或过期的数据 SHALL 显示 `--`、未知提示或隐藏相关图形，MUST NOT 默认为有效零测量。依赖多组输入的派生显示 SHALL 要求相关输入均有效且新鲜。
+系统 SHALL 为每组周期遥测保留有效性与最近有效接收时间。接收时 SHALL 拒绝非有限值、无效姿态和消息定义的未知标记。新鲜度 SHALL 依据单调时钟计算，即不受日历校时影响的经过时间，默认 `osd.telemetry_timeout_ms=2000`。未收到、非法或过期的数据 SHALL 显示 `--`、未知提示或隐藏相关图形，MUST NOT 默认为有效零测量。依赖多组输入的派生显示 SHALL 要求相关输入均有效且新鲜。
+
+任务状态是变化事件，正常任务在开始与结束之间可以不再发布消息。系统 SHALL 在本地记住收到的任务布尔值，不对其应用遥测超时。飞行状态的新鲜度 SHALL 继续限制任务显示。重复遥测快照 MUST NOT 刷新原飞行报告的接收时间。尚未收到任务事件时，任务状态 SHALL 保持未知，MUST NOT 仅凭 OFFBOARD 推断任务已开始。
 
 #### Scenario: 姿态过期
 - **WHEN** 姿态最后有效接收时间距今超过 2000 ms，其他遥测仍更新
@@ -55,6 +62,14 @@
 #### Scenario: 系统时钟跳变
 - **WHEN** 系统日历时间被校正而某遥测实际只中断 100 ms
 - **THEN** 不因日历时间跳变错误认定该遥测超时
+
+#### Scenario: A healthy mission is silent
+- **WHEN** 收到一次任务 `true`，之后 60 秒没有任务事件，而已连接、已解锁的 OFFBOARD 飞行报告持续在超时期限内到达
+- **THEN** 任务横幅在这 60 秒持续满足显示条件，不要求任务心跳或周期发布
+
+#### Scenario: Old flight status is repeatedly summarized
+- **WHEN** 只收到一次飞行报告，之后超过 2000 ms 仅有遥测汇总，没有新飞行报告
+- **THEN** 飞行状态按原始接收时间过期，不能继续维持 `ON MISSION` 的显示资格
 
 ### Requirement: 遥测转换符合输入字段语义
 
@@ -94,11 +109,11 @@
 
 ### Requirement: 告警和冻结提示同时可辨识
 
-系统 SHALL 按连接丢失、失效保护、电池严重、低电量的优先级显示当前有效告警。来源未知或过期时 SHALL 标明未知，不继续断言旧告警是当前状态。冻结/等待提示 SHALL 有独立显示区域，不被遥测告警覆盖。遥测快照 SHALL 以 10 Hz 汇总；OFF 后只要显示后端健康就 SHALL 继续更新。RK3576 正式 ROS 相机且 osd.enabled=true 的持续预览模式 SHALL 在 OFF 后保留实时视频，MUST NOT 附加输入停止冻结提示。跟踪关闭、启动或故障提示 SHALL 与告警和 MISSION 覆盖分别可辨认。ON/OFF 控制接收 MUST NOT 以推理或记录收尾等待阻塞遥测汇总。
+系统 SHALL 按连接丢失、失效保护、电池严重、低电量的优先级显示当前有效告警。来源未知或过期时 SHALL 标明未知，不继续断言旧告警是当前状态。冻结/等待提示 SHALL 有独立显示区域，不被遥测告警覆盖。遥测快照 SHALL 以 10 Hz 汇总；OFF 后只要显示后端健康就 SHALL 继续更新。RK3576 正式 ROS 相机且 osd.enabled=true 的持续预览模式 SHALL 在 OFF 后保留实时视频，MUST NOT 附加输入停止冻结提示。跟踪关闭、启动或故障提示 SHALL 与告警和已确认任务覆盖分别可辨认。OFF SHALL 清除任务显示，不等待新跟踪状态发布。ON/OFF 接收及任务与飞行显示更新 MUST NOT 等待推理或记录收尾。其他输入模式 SHALL 保持既有冻结行为。
 
 #### Scenario: 冻结时收到失效保护
 - **WHEN** 非持续预览模式视频因 OFF 冻结，而新鲜消息报告 failsafe=true 且连接正常
-- **THEN** 屏幕同时可见冻结提示和失效保护告警，不恢复旧目标框
+- **THEN** 屏幕同时可见冻结提示和失效保护告警，不恢复旧目标框或已取消的任务横幅
 
 #### Scenario: 实时预览与告警并存
 - **WHEN** 持续预览 OFF 后视频更新，新消息报告 failsafe=true 且连接正常
@@ -106,7 +121,7 @@
 
 #### Scenario: 任务覆盖期间停止
 - **WHEN** 持续预览已显示 ON MISSION，OFF 后继续收到电池数据但没有新的跟踪状态发布
-- **THEN** 任务文字按原规则保留，独立提示区域说明跟踪关闭，电池更新，不把任务文字当作跟踪仍在运行
+- **THEN** 健康显示链路在 500 ms 内清除任务文字，独立提示区域说明跟踪关闭，电池继续更新
 
 ### Requirement: 经纬度采用带符号的十进制度数
 
@@ -207,3 +222,29 @@ RSSI 在此表示飞控提供的遥控接收链路质量，不是视频链路强
 #### Scenario: 停止后接收和恢复
 - **WHEN** 跟踪停止或底图冻结后，隔离重映射话题继续发布 RSSI，并经历有效、过期及恢复
 - **THEN** 显示侧快照仍反映这些变化，不恢复旧框或改变停止状态
+
+### Requirement: Received mission and flight transitions remain effective
+
+显示侧 SHALL 按接收顺序处理每个任务布尔值及每次飞行授权变化。已收到的任务结束或 OFFBOARD 退出 MUST NOT 因下一次遥测汇总或屏幕刷新前又收到其他事件而被吞掉。跟踪器 SHALL 保持与现有发布方兼容的 reliable、volatile 订阅，分别表示可靠交付与不补发订阅前的历史事件。系统 MUST NOT 要求发布方修改 QoS，即消息传输的可靠性与保留策略。
+
+#### Scenario: Mission end and new start occur between summaries
+- **WHEN** 下一次 10 Hz 遥测汇总前依次收到任务 `true`、`false`、`true`
+- **THEN** `false` 终止前一次尝试，后续 `true` 作为需要飞行确认的新尝试
+- **THEN** 从未提交硬件的中间尝试不要求在屏幕上短暂闪现
+
+#### Scenario: Brief OFFBOARD exit is received
+- **WHEN** 已确认任务在下一次屏幕刷新前依次收到飞行 `guided=false` 和 `guided=true`
+- **THEN** OFFBOARD 退出使旧尝试失效，后续飞行报告本身不能恢复横幅
+
+### Requirement: Unobserved mission state stays unconfirmed
+
+跟踪器启动后，系统 SHALL 隐藏任务横幅，直到实际收到任务 `true` 和有效飞行确认。系统 MUST NOT 仅凭触发、目标锁定、模式文字或 OFFBOARD 状态推断遗漏的任务开始。文档 SHALL 说明：现有外部状态约定无法独立识别遗漏的任务事件，也无法在有效 OFFBOARD 持续报告时独立识别拦截器死亡。
+
+#### Scenario: Tracker restarts during an existing mission
+- **WHEN** 跟踪器在拦截器最后一次任务 `true` 发布后启动，只收到已解锁 OFFBOARD 飞行报告
+- **THEN** 横幅保持隐藏，直到实际收到任务开始
+
+#### Scenario: Interceptor stops without an end event
+- **WHEN** 跟踪器已确认任务，未收到任务 `false`，桥接持续发布新鲜、已连接且已解锁的 OFFBOARD 状态
+- **THEN** 这些输入本身不能证明任务结束，横幅可以继续显示
+- **THEN** 后续收到 OFFBOARD 退出、上锁、断连或飞行状态过期时仍清除横幅

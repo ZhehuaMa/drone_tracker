@@ -26,7 +26,7 @@
 
 ### Requirement: 无效框清除且状态含义不变
 
-系统 SHALL 在当前包无有效显示框时清除上一包目标框。首版 SHALL 只显示现有单目标跟踪结果。系统 MUST NOT 生成算法未提供的置信度或目标 ID。系统 SHALL 保留 Detecting=0、TargetFound=1、Tracking=2、TargetLost=3 的含义。系统 SHALL 分别以白、青、绿、红表达对应状态；有效 Tracking 框 SHALL 有可辨识的锁定样式。停止、等待和输入故障 MUST NOT 被改写为算法 TargetLost。预览 SHALL 显式表示没有算法结果，MUST NOT 用默认 0 伪装 Detecting。持续预览运行阶段 SHALL 使用 TRK OFF、TRK STARTING 或 TRK ERROR，MUST NOT 新增 ROS 状态数值。MISSION 覆盖状态栏时，运行阶段 SHALL 在独立提示区域可辨认。
+系统 SHALL 在当前包无有效显示框时清除上一包目标框。首版 SHALL 只显示现有单目标跟踪结果。系统 MUST NOT 生成算法未提供的置信度或目标 ID。系统 SHALL 保留 Detecting=0、TargetFound=1、Tracking=2、TargetLost=3 的含义。系统 SHALL 分别以白、青、绿、红表达对应状态；有效 Tracking 框 SHALL 有可辨识的锁定样式。停止、等待和输入故障 MUST NOT 被改写为算法 TargetLost。预览 SHALL 显式表示没有算法结果，MUST NOT 用默认 0 伪装 Detecting。持续预览运行阶段 SHALL 使用 TRK OFF、TRK STARTING 或 TRK ERROR，MUST NOT 新增 ROS 状态数值。已确认任务覆盖状态栏时，运行阶段 SHALL 在独立提示区域可辨认。OFF SHALL 清除任务横幅，不等待跟踪状态发布。
 
 #### Scenario: 有框切换为无框
 - **WHEN** 上一包有目标框，下一已消费包的显示框无效
@@ -37,8 +37,9 @@
 - **THEN** 显示框不出现伪造的置信度百分比或目标编号
 
 #### Scenario: 停止时保留任务文字
-- **WHEN** 持续预览已显示 Tracking 框及 MISSION 覆盖，随后 OFF
-- **THEN** 全部目标装饰清除，独立区域说明跟踪关闭，MISSION 仍按下一次实际状态发布解除
+- **WHEN** 持续预览已显示 Tracking 框及 `ON MISSION`，随后收到 OFF
+- **THEN** 全部目标装饰清除，独立区域说明跟踪关闭
+- **THEN** 健康显示链路在 500 ms 内移除 `ON MISSION`，不等待跟踪状态发布
 
 ### Requirement: 只读帧和有限缓冲保证资源安全
 
@@ -128,38 +129,64 @@ OSD SHALL 保持输入帧像素及采集时间不变。只读像素视图 SHALL 
 
 ### Requirement: 任务触发覆盖 HUD 跟踪状态文字
 
-HUD 状态栏 SHALL 在收到 `/fpv/tracker_trigger` 的 `frame_id="MISSION"` 后显示 `ON MISSION`。此处的任务触发表示开始执行拦截任务，不是 `TrackerState` 的新数值。系统 SHALL 持续显示 `ON MISSION`，直到本节点下一次向 `/fpv/tracker_state` 发布新的跟踪状态值；随后 SHALL 显示该值对应的跟踪状态文字。状态值 `3` SHALL 继续表示 `TargetLost`，MUST NOT 解释为任务阶段。
+HUD 指视频上的文字和图形叠加。状态栏 SHALL 仅在本节点收到 `/fpv/mission_state=true`，且新鲜 `/mavros/state` 同时满足 `connected=true`、`armed=true`、`guided=true` 时显示 `ON MISSION`。本系统的 `guided` 表示飞控已确认 OFFBOARD 控制，包括 `OFFBOARD|ANGLE`。单独的 `MISSION` 触发 MUST NOT 启动横幅。
 
-任务触发 SHALL 只覆盖状态栏文字，不得修改与视频帧配对的跟踪状态、目标框颜色和锁定样式。收到 `ON`、`OFF` 或其他非 `MISSION` 触发值 SHALL 不启动任务文字覆盖。两条 HDMI 渲染路径 SHALL 显示相同的任务文字。
+任务开始后，新鲜、已连接且已解锁的 `guided=false` SHALL 保持等待首次确认，期间仍显示跟踪文字。首次确认后，收到 `guided=false` SHALL 终止本次显示。任务 `false`、上锁、断连、飞行状态过期、OFF 或 DISMISS SHALL 终止等待或显示。尚未收到任何飞行状态时 SHALL 保持等待。
+
+跟踪状态发布 MUST NOT 决定横幅寿命。任务覆盖 SHALL 只改变状态栏文字，不改变配对跟踪状态、目标框颜色或锁定样式。值 `3` SHALL 仍表示 TargetLost。ON 或未知触发 MUST NOT 创建任务。DISMISS SHALL 保持跟踪运行。横幅移除后 SHALL 恢复当前跟踪结果或运行阶段文字。两条 HDMI 渲染路径 SHALL 遵守相同规则。
 
 #### Scenario: 跟踪期间进入任务
-- **WHEN** 状态栏显示 `TRK TRACKING`，随后收到 `frame_id="MISSION"`，且没有新的 `/fpv/tracker_state` 发布
-- **THEN** 状态栏持续显示 `ON MISSION`，即使两秒触发提示结束或后续视频帧到达
+- **WHEN** 状态栏显示 `TRK TRACKING`，随后收到任务 `true`，且新鲜飞行状态确认已连接、已解锁及 OFFBOARD
+- **THEN** 状态栏显示 `ON MISSION`，后续视频帧或两秒触发提示到期不终止横幅
 
 #### Scenario: 新跟踪状态结束任务覆盖
-- **WHEN** 状态栏显示 `ON MISSION`，随后本节点向 `/fpv/tracker_state` 发布 `3`
-- **THEN** 状态栏显示 `TARGET LOST`，目标丢失仍按状态 `3` 的既有红色规则绘制
+- **WHEN** 状态栏显示 `ON MISSION`，飞行确认持续有效，拦截器任务仍活动，且跟踪器发布状态 `3`
+- **THEN** 状态栏继续显示 `ON MISSION`，目标装饰仍按 TargetLost 的既有红色规则绘制
 
 #### Scenario: 非任务触发不覆盖状态栏
-- **WHEN** 已显示 `TRK TRACKING`，随后收到 `frame_id="ON"`、`frame_id="OFF"` 或其他字符串
+- **WHEN** 已显示 `TRK TRACKING`，未收到活动任务事件，随后收到 `frame_id="ON"`、`frame_id="OFF"` 或未知字符串
 - **THEN** 状态栏不因这些触发值显示 `ON MISSION`
+
+#### Scenario: Request alone is not confirmation
+- **WHEN** 收到 `MISSION`，飞行状态为已解锁 ACRO，但未收到任务 `true`
+- **THEN** 状态栏继续显示既有跟踪文字
+
+#### Scenario: Initial ACRO report does not cancel a pending start
+- **WHEN** 收到任务 `true`，新鲜飞行状态为已连接、已解锁、`guided=false`，随后收到同样连接和解锁条件下的 `guided=true`
+- **THEN** 状态栏先保持跟踪文字，再显示 `ON MISSION`
+
+#### Scenario: Mission finishes while its target remains tracked
+- **WHEN** 已显示 `ON MISSION` 且目标保持 Tracking=2，随后收到任务 `false`，没有跟踪状态变化
+- **THEN** 健康显示链路在 500 ms 内恢复 `TRK TRACKING`
+
+#### Scenario: Confirmed OFFBOARD is lost
+- **WHEN** 已显示 `ON MISSION`，尚未收到任务 `false`，新鲜飞行报告的 `guided` 从 true 变为 false
+- **THEN** 横幅清除，随后仅恢复 OFFBOARD 不会复活旧任务显示
+
+#### Scenario: Immediate mission completion during entry
+- **WHEN** 任务 `true` 和 `false` 相隔 30 ms 到达，期间没有 OFFBOARD 确认
+- **THEN** 本次任务显示终止，不出现未经确认的任务横幅
+
+#### Scenario: Dismissal preserves tracking
+- **WHEN** 已确认任务中收到 DISMISS，且仍有有效跟踪目标
+- **THEN** 横幅清除，目标跟踪及正常的帧框配对显示继续
 
 ### Requirement: HDMI 状态切换诊断日志
 
-系统 SHALL 在接收触发消息、发布变化后的跟踪状态、置位或解除任务覆盖，以及请求结束一轮跟踪或视频流时记录事件日志。任务覆盖指任务触发后，右上角暂以 `ON MISSION` 代替跟踪状态文字的既有行为。系统 SHALL 在 HDMI 成功提交的画面中，状态栏文字或显示状态发生变化时记录实际提交结果。
+系统 SHALL 在接收触发消息、发布变化后的跟踪状态、任务显示切换，以及请求结束跟踪轮次或视频流时记录事件日志。任务显示日志 SHALL 区分等待开始、确认显示、任务结束、OFFBOARD 丢失、上锁、断连、飞行状态过期及触发取消。系统 SHALL 在 HDMI 成功提交的画面中，状态栏文字或显示状态变化时记录实际结果。接收与策略判断 MUST NOT 被记录为已成功更新屏幕。
 
 目标框旁的标签已从可见画面移除。系统 SHALL 保留显示提交日志中的 `target_label` 字段，并 SHALL 始终将该字段输出为 `target_label=""`，表示没有可见目标标签。系统 MUST NOT 将输入的目标名称或回退跟踪状态记录为已显示的目标标签。系统 MUST NOT 仅因输入标签变化而新增显示切换日志。
 
-日志 SHALL 包含轮次及足以关联画面的帧序号。持续预览 SHALL 另记流身份、原图序号及包类型。停止日志 SHALL 区分跟踪关闭仍有视频与输入停止冻结，并报告清框结果。稳定视频帧 SHALL 不逐帧输出相同的诊断日志。
+日志 SHALL 包含轮次及足以关联画面的帧序号。持续预览 SHALL 另记流身份、原图序号及包类型。停止日志 SHALL 区分跟踪关闭仍有视频与输入停止冻结，并报告清框结果。稳定视频帧与重复未变的状态消息 MUST NOT 产生重复切换日志。任务显示修订号及单调时钟转换时间 SHALL 能关联取消决定与后续屏幕更新；单调时钟表示不受日历校时影响的经过时间。
 
 #### Scenario: 跟踪中收到任务触发
-- **WHEN** 跟踪中收到 `frame_id="MISSION"`
-- **THEN** 日志能区分触发到达、任务覆盖置位、状态发布解除覆盖和最终提交的右上角文字
+- **WHEN** 跟踪中收到 `frame_id="MISSION"`，随后收到任务 `true` 和 OFFBOARD 确认
+- **THEN** 日志能区分触发到达、任务等待、确认显示及成功提交 `ON MISSION` 的画面
 - **THEN** 显示提交日志的 `target_label` 字段保持为空
 
 #### Scenario: 跟踪中收到停止触发
 - **WHEN** 非持续预览模式跟踪中收到 `frame_id="OFF"`
-- **THEN** 日志能关联停止请求、显示状态变为 `Stopped`，以及最后视频底图冻结和目标框清除后的提交结果
+- **THEN** 日志能关联停止请求、任务取消、显示状态变为 `Stopped`，以及最后视频底图冻结和目标框清除后的提交结果
 - **THEN** 停止后的显示提交日志继续输出 `target_label=""`
 
 #### Scenario: 输入含标签但画面没有标签
@@ -172,4 +199,41 @@ HUD 状态栏 SHALL 在收到 `/fpv/tracker_trigger` 的 `frame_id="MISSION"` �
 
 #### Scenario: 持续预览停止日志
 - **WHEN** 持续预览 OFF 后新图像显示
-- **THEN** 日志区分请求接受、清框提交及清理完成，记录同一流与新序号，target_label 为空
+- **THEN** 日志区分取消接收、任务横幅移除、清框提交及清理完成，记录同一流与递增原图序号，target_label 为空
+
+#### Scenario: Mission completion is not confused with target loss
+- **WHEN** 任务 `false` 清除横幅，而目标保持 Tracking=2
+- **THEN** 日志以 `mission_false` 标明原因，不伪造跟踪状态发布
+
+### Requirement: Ended mission attempts require new authorization
+
+一次显示尝试指本节点观察到的任务开始及其后续终止。系统 SHALL 在取消或已确认飞行授权丢失时使该尝试失效。重复任务 `true`、后续 MISSION 触发或飞行模式恢复 MUST NOT 复活失效尝试。失效后系统 SHALL 收到任务 `false`，再收到后续 `true`，才能建立新尝试。
+
+#### Scenario: Old true repeats after OFFBOARD loss
+- **WHEN** 已确认尝试丢失 OFFBOARD，随后再次收到任务 `true` 和新鲜已解锁 OFFBOARD 状态
+- **THEN** `ON MISSION` 保持隐藏
+- **THEN** 收到任务 `false` 再收到后续 `true` 后，才允许按飞行确认规则建立新尝试
+
+#### Scenario: Cancellation arrives before a delayed start event
+- **WHEN** DISMISS 已使尝试失效，随后延迟的任务 `true` 才到达
+- **THEN** 该 `true` 不恢复横幅，系统等待后续任务 `false` 再到 `true`
+
+### Requirement: Mission visibility updates independently of video
+
+健康显示链路 SHALL 在收到终止事件后 500 ms 内移除 `ON MISSION`。飞行状态过期时，横幅 SHALL 最迟在最后一次飞行报告接收时间加 `osd.telemetry_timeout_ms + 500 ms` 后消失。更新 MUST NOT 等待新帧、跟踪状态发布、推理完成或录像收尾。取消后，已准备但过时的叠加层 MUST NOT 开始提交硬件。已经获得提交授权的硬件工作 SHALL 安全完成。
+
+#### Scenario: No new tracking results
+- **WHEN** `ON MISSION` 已显示，推理随后阻塞，并收到任务 `false`
+- **THEN** 500 ms 内在保留的视频底图上移除横幅，不等待推理
+
+#### Scenario: Flight reports stop
+- **WHEN** 已确认任务不再收到飞行报告，超时为默认 2000 ms
+- **THEN** 最后一次飞行报告接收后的 2500 ms 内横幅消失
+
+#### Scenario: Cancellation races with a prepared overlay
+- **WHEN** 含 `ON MISSION` 的叠加层已准备，随后取消被接受，而该叠加层尚未获得硬件提交授权
+- **THEN** 过时叠加层被拒绝，下一次接受的叠加层不含任务横幅
+
+#### Scenario: Banner removal does not invalidate video
+- **WHEN** 当前轮次的有效视频包正在等待显示，只有任务显示状态发生变化
+- **THEN** 视频包仍按既有帧与轮次规则有效，可配合最新叠加层显示
