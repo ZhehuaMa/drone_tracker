@@ -158,6 +158,33 @@ if(DRONE_TRACKER_BUILD_TESTS AND DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
     add_test(NAME deployment_diagnostics_tests COMMAND ${Python3_EXECUTABLE} -B -m unittest discover
         -s ${CMAKE_CURRENT_SOURCE_DIR}/deployment/tests -p test_diagnostics.py)
     set_tests_properties(deployment_diagnostics_tests PROPERTIES TIMEOUT 120)
+    add_executable(ros_transport_tests src/tests/ros_transport_test.cpp)
+    target_link_libraries(ros_transport_tests cpu_affinity)
+    ament_target_dependencies(ros_transport_tests rclcpp std_msgs)
+    set(ROS_TRANSPORT_TEST_PROGRAM "$<TARGET_FILE:ros_transport_tests>")
+    if(CMAKE_CROSSCOMPILING)
+        # Cross-process discovery does not work in the selected QEMU user runtime.
+        # Run identical OS/ROS assertions natively; retain the ARM probe for board checks.
+        include(ExternalProject)
+        set(ROS_TRANSPORT_NATIVE_DIR "${CMAKE_CURRENT_BINARY_DIR}/native-ros-transport")
+        ExternalProject_Add(ros_transport_native
+            SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/tests/ros_transport_native"
+            BINARY_DIR "${ROS_TRANSPORT_NATIVE_DIR}"
+            CMAKE_ARGS -DDRONE_REPO_ROOT=${CMAKE_CURRENT_SOURCE_DIR}
+                -DCMAKE_CXX_COMPILER=/usr/bin/c++ -DCMAKE_BUILD_TYPE=Release
+            INSTALL_COMMAND ""
+            BUILD_ALWAYS TRUE
+            BUILD_BYPRODUCTS "${ROS_TRANSPORT_NATIVE_DIR}/ros_transport_native_tests")
+        set(ROS_TRANSPORT_TEST_PROGRAM "${ROS_TRANSPORT_NATIVE_DIR}/ros_transport_native_tests")
+    endif()
+    add_test(NAME ros_transport_tests COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/run_ros_transport_test.py ${ROS_TRANSPORT_TEST_PROGRAM}
+        --samples 30 --period-ms 5 --negative-checks)
+    add_test(NAME ros_transport_contention_tests COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/run_ros_transport_test.py ${ROS_TRANSPORT_TEST_PROGRAM}
+        --samples 100 --period-ms 5 --contention)
+    set_tests_properties(ros_transport_tests ros_transport_contention_tests PROPERTIES TIMEOUT 60
+        RUN_SERIAL TRUE ENVIRONMENT "ROS_DOMAIN_ID=183;ROS_LOCALHOST_ONLY=1")
     add_executable(target_observation_tests src/tests/target_observation_test.cpp)
     target_link_libraries(target_observation_tests drone_tracker_ros)
     add_test(NAME target_observation_tests COMMAND target_observation_tests)
@@ -171,6 +198,11 @@ if(DRONE_TRACKER_BUILD_TESTS AND DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
     add_test(NAME ros_video_generate_fixtures COMMAND ros_video_fixture_generator "${ROS_VIDEO_FIXTURES}")
     set_tests_properties(ros_video_generate_fixtures PROPERTIES FIXTURES_SETUP ros_video_files)
     add_test(NAME ros_video_tests COMMAND ros_video_tests)
+    add_test(NAME ros_affinity_initialization_tests COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/run_ros_transport_test.py $<TARGET_FILE:ros_video_tests>
+        --node-initialization)
+    set_tests_properties(ros_affinity_initialization_tests PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE
+        ENVIRONMENT "ROS_DOMAIN_ID=184;ROS_LOCALHOST_ONLY=1")
     add_test(NAME ros_continuous_camera_tests COMMAND ros_video_tests --continuous-camera)
     set_tests_properties(ros_continuous_camera_tests PROPERTIES TIMEOUT 45
         ENVIRONMENT "ROS_DOMAIN_ID=189;ROS_LOCALHOST_ONLY=1")

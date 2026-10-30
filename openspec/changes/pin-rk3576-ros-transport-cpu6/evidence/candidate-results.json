@@ -1,0 +1,1053 @@
+{
+  "board": "HZ-RK3576_WuKong Board",
+  "serial": "a4649c048860c947",
+  "kernel": "6.1.141-rt36",
+  "original_release": "/opt/drone_tracker/releases/bundle-20261029T095519Z-4177",
+  "original_sha256": {
+    "/opt/drone_tracker/config/camera.yaml": "bd988d875d03cb88376ddb08fb1da019db818c515567ca13e780b604c70457b3",
+    "/opt/drone_tracker/config/cpu-affinity.yaml": "4f46293201355131c1e72c8a72cdfaafa2c3121eaa48fe0b5ad69ac442e4f01b",
+    "/usr/lib/librknnrt.so": "d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8"
+  },
+  "stopped_services": [
+    "drone-tracker.service"
+  ],
+  "candidate_pid": 3542,
+  "candidate_sha256": "fc204c68c751c57c50da3def08622772e92c642cac8cdf0e1fd7cef6cab8c994",
+  "states": [
+    {
+      "wall_ns": 1793355578246320375,
+      "state": 0
+    },
+    {
+      "wall_ns": 1793355578561537375,
+      "state": 1
+    },
+    {
+      "wall_ns": 1793355578620179675,
+      "state": 2
+    },
+    {
+      "wall_ns": 1793355585408040785,
+      "state": 0
+    },
+    {
+      "wall_ns": 1793355585651602735,
+      "state": 1
+    },
+    {
+      "wall_ns": 1793355585710190085,
+      "state": 2
+    }
+  ],
+  "snapshots": [
+    {
+      "stage": "preview",
+      "wall_ns": 1793355577769705000,
+      "pid": 3542,
+      "threads": [
+        {
+          "tid": 3542,
+          "nice": -19,
+          "affinity": [
+            4
+          ],
+          "identified_symbol": "rclcpp::Executor::wait_for_work(std::chrono::duration<long, std::ratio<1l, 1000000000l> >)"
+        },
+        {
+          "tid": 3554,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": null
+        },
+        {
+          "tid": 3555,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": null
+        },
+        {
+          "tid": 3556,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": "eprosima::fastdds::rtps::SharedMemWatchdog::run()"
+        },
+        {
+          "tid": 3557,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": "eprosima::fastrtps::rtps::ResourceEvent::event_service()"
+        },
+        {
+          "tid": 3558,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3559,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3560,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3561,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3562,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": "eprosima::fastdds::rtps::SharedMemChannelResource::perform_listen_operation(eprosima::fastrtps::rtps::Locator_t)"
+        },
+        {
+          "tid": 3563,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": "eprosima::fastdds::rtps::FlowControllerImpl<eprosima::fastdds::rtps::FlowControllerSyncPublishMode, eprosima::fastdds::rtps::FlowControllerFifoSchedule>::run()"
+        },
+        {
+          "tid": 3564,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": "rmw_fastrtps_shared_cpp::run_listener_thread(rmw_context_s*)"
+        },
+        {
+          "tid": 3565,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "identified_symbol": null
+        },
+        {
+          "tid": 3567,
+          "nice": -19,
+          "affinity": [
+            5
+          ],
+          "identified_symbol": null
+        },
+        {
+          "tid": 3570,
+          "nice": -19,
+          "affinity": [
+            7
+          ],
+          "identified_symbol": null
+        },
+        {
+          "tid": 3571,
+          "nice": -19,
+          "affinity": [
+            7
+          ],
+          "identified_symbol": null
+        },
+        {
+          "tid": 3572,
+          "nice": -19,
+          "affinity": [
+            4
+          ],
+          "identified_symbol": null
+        }
+      ]
+    },
+    {
+      "stage": "on1",
+      "wall_ns": 1793355581272811683,
+      "pid": 3542,
+      "threads": [
+        {
+          "tid": 3542,
+          "nice": -19,
+          "affinity": [
+            4
+          ],
+          "window_s": 3.501981083,
+          "runqueue_wait_ms": 0.119616,
+          "cpu_pct": 0.41956828582903,
+          "identified_symbol": "rclcpp::Executor::wait_for_work(std::chrono::duration<long, std::ratio<1l, 1000000000l> >)"
+        },
+        {
+          "tid": 3554,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.513778458,
+          "runqueue_wait_ms": 0.001649,
+          "cpu_pct": 0.0015874649089786183,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3555,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.518709333,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3556,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.521611683,
+          "runqueue_wait_ms": 0.009197,
+          "cpu_pct": 0.005444893340331413,
+          "identified_symbol": "eprosima::fastdds::rtps::SharedMemWatchdog::run()"
+        },
+        {
+          "tid": 3557,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.524278358,
+          "runqueue_wait_ms": 0.03588,
+          "cpu_pct": 0.011628252889552262,
+          "identified_symbol": "eprosima::fastrtps::rtps::ResourceEvent::event_service()"
+        },
+        {
+          "tid": 3558,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.525525308,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3559,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.530287408,
+          "runqueue_wait_ms": 0.031653,
+          "cpu_pct": 0.0025847187340391183,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3560,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.531175833,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.004110585449852335,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3561,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.531658759,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3562,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.531774459,
+          "runqueue_wait_ms": 0.029733,
+          "cpu_pct": 0.012960057481405551,
+          "identified_symbol": "eprosima::fastdds::rtps::SharedMemChannelResource::perform_listen_operation(eprosima::fastrtps::rtps::Locator_t)"
+        },
+        {
+          "tid": 3563,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.546676634,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::FlowControllerImpl<eprosima::fastdds::rtps::FlowControllerSyncPublishMode, eprosima::fastdds::rtps::FlowControllerFifoSchedule>::run()"
+        },
+        {
+          "tid": 3564,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.550550309,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "rmw_fastrtps_shared_cpp::run_listener_thread(rmw_context_s*)"
+        },
+        {
+          "tid": 3565,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.553194984,
+          "runqueue_wait_ms": 33.203279,
+          "cpu_pct": 9.112932373766967,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3567,
+          "nice": -19,
+          "affinity": [
+            5
+          ],
+          "window_s": 3.577025884,
+          "runqueue_wait_ms": 2.65861,
+          "cpu_pct": 13.531254866368197,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3570,
+          "nice": -19,
+          "affinity": [
+            7
+          ],
+          "window_s": 3.579081484,
+          "runqueue_wait_ms": 12.93246,
+          "cpu_pct": 9.10445541563423,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3571,
+          "nice": -19,
+          "affinity": [
+            7
+          ],
+          "window_s": 3.625370259,
+          "runqueue_wait_ms": 0.885904,
+          "cpu_pct": 0.3103609340885256,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3572,
+          "nice": -19,
+          "affinity": [
+            4
+          ],
+          "window_s": 3.635996884,
+          "runqueue_wait_ms": 87.848324,
+          "cpu_pct": 88.57331570254448,
+          "identified_symbol": null
+        }
+      ]
+    },
+    {
+      "stage": "off1",
+      "wall_ns": 1793355584843109510,
+      "pid": 3542,
+      "threads": [
+        {
+          "tid": 3542,
+          "nice": -19,
+          "affinity": [
+            4
+          ],
+          "window_s": 3.569299752,
+          "runqueue_wait_ms": 0.081313,
+          "cpu_pct": 0.36944994582231433,
+          "identified_symbol": "rclcpp::Executor::wait_for_work(std::chrono::duration<long, std::ratio<1l, 1000000000l> >)"
+        },
+        {
+          "tid": 3554,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.556177852,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3555,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.550729777,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3556,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.546021202,
+          "runqueue_wait_ms": 0.004746,
+          "cpu_pct": 0.0017477616875230403,
+          "identified_symbol": "eprosima::fastdds::rtps::SharedMemWatchdog::run()"
+        },
+        {
+          "tid": 3557,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.543170852,
+          "runqueue_wait_ms": 0.060425,
+          "cpu_pct": 0.017181502824126303,
+          "identified_symbol": "eprosima::fastrtps::rtps::ResourceEvent::event_service()"
+        },
+        {
+          "tid": 3558,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.541820227,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3559,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.536206802,
+          "runqueue_wait_ms": 0.032884,
+          "cpu_pct": 0.0027381317163135757,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3560,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.535737877,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0011839395751677777,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3561,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.534719676,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3562,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.534593626,
+          "runqueue_wait_ms": 0.028227,
+          "cpu_pct": 0.012288315035851309,
+          "identified_symbol": "eprosima::fastdds::rtps::SharedMemChannelResource::perform_listen_operation(eprosima::fastrtps::rtps::Locator_t)"
+        },
+        {
+          "tid": 3563,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.518836076,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::FlowControllerImpl<eprosima::fastdds::rtps::FlowControllerSyncPublishMode, eprosima::fastdds::rtps::FlowControllerFifoSchedule>::run()"
+        },
+        {
+          "tid": 3564,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.514427501,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "rmw_fastrtps_shared_cpp::run_listener_thread(rmw_context_s*)"
+        },
+        {
+          "tid": 3565,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.511527476,
+          "runqueue_wait_ms": 41.809622,
+          "cpu_pct": 17.755485049207685,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3567,
+          "nice": -19,
+          "affinity": [
+            5
+          ],
+          "window_s": 3.548333276,
+          "runqueue_wait_ms": 0.204969,
+          "cpu_pct": 0.8128087965996348,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3570,
+          "nice": -19,
+          "affinity": [
+            7
+          ],
+          "window_s": 3.545545626,
+          "runqueue_wait_ms": 9.518802,
+          "cpu_pct": 6.277868104918867,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3571,
+          "nice": -19,
+          "affinity": [
+            7
+          ],
+          "window_s": 3.538809076,
+          "runqueue_wait_ms": 0.688072,
+          "cpu_pct": 0.23415518673209146,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3572,
+          "nice": -19,
+          "affinity": [
+            4
+          ],
+          "window_s": 3.527298501,
+          "runqueue_wait_ms": 1.867644,
+          "cpu_pct": 1.0441975350132127,
+          "identified_symbol": null
+        }
+      ]
+    },
+    {
+      "stage": "on2",
+      "wall_ns": 1793355588413905590,
+      "pid": 3542,
+      "threads": [
+        {
+          "tid": 3542,
+          "nice": -19,
+          "affinity": [
+            4
+          ],
+          "window_s": 3.573238255,
+          "runqueue_wait_ms": 0.127441,
+          "cpu_pct": 0.42269960529122347,
+          "identified_symbol": "rclcpp::Executor::wait_for_work(std::chrono::duration<long, std::ratio<1l, 1000000000l> >)"
+        },
+        {
+          "tid": 3554,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.58825598,
+          "runqueue_wait_ms": 0.001484,
+          "cpu_pct": 0.0015808794109499402,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3555,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.59669343,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3556,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.603879931,
+          "runqueue_wait_ms": 0.012604,
+          "cpu_pct": 0.005829966703183154,
+          "identified_symbol": "eprosima::fastdds::rtps::SharedMemWatchdog::run()"
+        },
+        {
+          "tid": 3557,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.607518606,
+          "runqueue_wait_ms": 0.210495,
+          "cpu_pct": 0.06899737109768908,
+          "identified_symbol": "eprosima::fastrtps::rtps::ResourceEvent::event_service()"
+        },
+        {
+          "tid": 3558,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.610644006,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3559,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.618387906,
+          "runqueue_wait_ms": 0.027834,
+          "cpu_pct": 0.0025294413528254814,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3560,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.618703581,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.001976287872140031,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3561,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.620391706,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3562,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.622969631,
+          "runqueue_wait_ms": 0.035368,
+          "cpu_pct": 0.0172820935246752,
+          "identified_symbol": "eprosima::fastdds::rtps::SharedMemChannelResource::perform_listen_operation(eprosima::fastrtps::rtps::Locator_t)"
+        },
+        {
+          "tid": 3563,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.639113007,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::FlowControllerImpl<eprosima::fastdds::rtps::FlowControllerSyncPublishMode, eprosima::fastdds::rtps::FlowControllerFifoSchedule>::run()"
+        },
+        {
+          "tid": 3564,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.642653932,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "rmw_fastrtps_shared_cpp::run_listener_thread(rmw_context_s*)"
+        },
+        {
+          "tid": 3565,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.648209357,
+          "runqueue_wait_ms": 39.33857,
+          "cpu_pct": 9.419572381191061,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3567,
+          "nice": -19,
+          "affinity": [
+            5
+          ],
+          "window_s": 3.613087707,
+          "runqueue_wait_ms": 2.625629,
+          "cpu_pct": 14.378295024322806,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3570,
+          "nice": -19,
+          "affinity": [
+            7
+          ],
+          "window_s": 3.618620982,
+          "runqueue_wait_ms": 13.533115,
+          "cpu_pct": 8.16726298416185,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3571,
+          "nice": -19,
+          "affinity": [
+            7
+          ],
+          "window_s": 3.627720882,
+          "runqueue_wait_ms": 0.870658,
+          "cpu_pct": 0.31838331491568156,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3572,
+          "nice": -19,
+          "affinity": [
+            4
+          ],
+          "window_s": 3.643859682,
+          "runqueue_wait_ms": 89.623181,
+          "cpu_pct": 89.12508997101386,
+          "identified_symbol": null
+        }
+      ]
+    },
+    {
+      "stage": "off2",
+      "wall_ns": 1793355592013683398,
+      "pid": 3542,
+      "threads": [
+        {
+          "tid": 3542,
+          "nice": -19,
+          "affinity": [
+            4
+          ],
+          "window_s": 3.597296309,
+          "runqueue_wait_ms": 0.101317,
+          "cpu_pct": 0.3924504346411348,
+          "identified_symbol": "rclcpp::Executor::wait_for_work(std::chrono::duration<long, std::ratio<1l, 1000000000l> >)"
+        },
+        {
+          "tid": 3554,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.582882309,
+          "runqueue_wait_ms": 0.001246,
+          "cpu_pct": 0.0010470620233816897,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3555,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.575743634,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3556,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.568977233,
+          "runqueue_wait_ms": 0.009477,
+          "cpu_pct": 0.0029952838872592496,
+          "identified_symbol": "eprosima::fastdds::rtps::SharedMemWatchdog::run()"
+        },
+        {
+          "tid": 3557,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.565806958,
+          "runqueue_wait_ms": 0.144914,
+          "cpu_pct": 0.04555232571846925,
+          "identified_symbol": "eprosima::fastrtps::rtps::ResourceEvent::event_service()"
+        },
+        {
+          "tid": 3558,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.562620983,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3559,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.555023733,
+          "runqueue_wait_ms": 0.01468,
+          "cpu_pct": 0.0015787236377361197,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3560,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.554211758,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0012134054731805881,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3561,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.552510133,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::UDPChannelResource::Receive(unsigned char*, unsigned int, unsigned int&, eprosima::fastrtps::rtps::Locator_t&)"
+        },
+        {
+          "tid": 3562,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.550061883,
+          "runqueue_wait_ms": 0.038074,
+          "cpu_pct": 0.008156055008126177,
+          "identified_symbol": "eprosima::fastdds::rtps::SharedMemChannelResource::perform_listen_operation(eprosima::fastrtps::rtps::Locator_t)"
+        },
+        {
+          "tid": 3563,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.533900257,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "eprosima::fastdds::rtps::FlowControllerImpl<eprosima::fastdds::rtps::FlowControllerSyncPublishMode, eprosima::fastdds::rtps::FlowControllerFifoSchedule>::run()"
+        },
+        {
+          "tid": 3564,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.529745107,
+          "runqueue_wait_ms": 0.0,
+          "cpu_pct": 0.0,
+          "identified_symbol": "rmw_fastrtps_shared_cpp::run_listener_thread(rmw_context_s*)"
+        },
+        {
+          "tid": 3565,
+          "nice": 0,
+          "affinity": [
+            6
+          ],
+          "window_s": 3.524671932,
+          "runqueue_wait_ms": 57.292689,
+          "cpu_pct": 16.294462948048352,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3567,
+          "nice": -19,
+          "affinity": [
+            5
+          ],
+          "window_s": 3.498789757,
+          "runqueue_wait_ms": 0.276456,
+          "cpu_pct": 1.020913186582191,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3570,
+          "nice": -19,
+          "affinity": [
+            7
+          ],
+          "window_s": 3.493734482,
+          "runqueue_wait_ms": 9.606787,
+          "cpu_pct": 5.696466060181845,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3571,
+          "nice": -19,
+          "affinity": [
+            7
+          ],
+          "window_s": 3.484256282,
+          "runqueue_wait_ms": 0.740606,
+          "cpu_pct": 0.24941632579942352,
+          "identified_symbol": null
+        },
+        {
+          "tid": 3572,
+          "nice": -19,
+          "affinity": [
+            4
+          ],
+          "window_s": 3.469295457,
+          "runqueue_wait_ms": 1.816072,
+          "cpu_pct": 1.308055412473911,
+          "identified_symbol": null
+        }
+      ]
+    }
+  ],
+  "candidate_exit": 0,
+  "restored_sha256": {
+    "/opt/drone_tracker/config/camera.yaml": "bd988d875d03cb88376ddb08fb1da019db818c515567ca13e780b604c70457b3",
+    "/opt/drone_tracker/config/cpu-affinity.yaml": "4f46293201355131c1e72c8a72cdfaafa2c3121eaa48fe0b5ad69ac442e4f01b",
+    "/usr/lib/librknnrt.so": "d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8"
+  },
+  "restored_release": "/opt/drone_tracker/releases/bundle-20261029T095519Z-4177",
+  "services": {
+    "drone-tracker.service": [
+      "MainPID=3759",
+      "ActiveState=active",
+      "SubState=running"
+    ],
+    "drone-tracker-diagnostics.service": [
+      "MainPID=655",
+      "ActiveState=active",
+      "SubState=running"
+    ],
+    "apm-bridge.service": [
+      "MainPID=1414",
+      "ActiveState=active",
+      "SubState=running"
+    ],
+    "drone-interceptor.service": [
+      "MainPID=1307",
+      "ActiveState=active",
+      "SubState=running"
+    ]
+  },
+  "production_unchanged": true,
+  "managed_role_readbacks": [
+    {
+      "pid": "3542",
+      "tid": "3542",
+      "role": "ros_transport",
+      "requested": "6",
+      "actual": "6",
+      "round": "0"
+    },
+    {
+      "pid": "3542",
+      "tid": "3565",
+      "role": "display",
+      "requested": "6",
+      "actual": "6",
+      "round": "0"
+    },
+    {
+      "pid": "3542",
+      "tid": "3542",
+      "role": "control",
+      "requested": "4",
+      "actual": "4",
+      "round": "0"
+    },
+    {
+      "pid": "3542",
+      "tid": "3567",
+      "role": "yolo",
+      "requested": "5",
+      "actual": "5",
+      "round": "0"
+    },
+    {
+      "pid": "3542",
+      "tid": "3570",
+      "role": "capture",
+      "requested": "7",
+      "actual": "7",
+      "round": "1"
+    },
+    {
+      "pid": "3542",
+      "tid": "3571",
+      "role": "capture",
+      "requested": "7",
+      "actual": "7",
+      "round": "1"
+    },
+    {
+      "pid": "3542",
+      "tid": "3572",
+      "role": "tracking",
+      "requested": "4",
+      "actual": "4",
+      "round": "0"
+    }
+  ],
+  "diagnostic_reports": 16,
+  "display_failure": false
+}

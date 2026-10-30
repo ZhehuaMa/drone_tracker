@@ -1,0 +1,29 @@
+{
+  "host_raw_directory": "/tmp/ros-transport-evidence-20261030",
+  "board_raw_directory": "/tmp/ros-transport-candidate-20261030",
+  "raw_files": {
+    "candidate-result.json": {
+      "bytes": 58044,
+      "sha256": "9552da8e38f081bce573ab778cce8d736e5bea2223001585f6014d48e0f096c0"
+    },
+    "candidate-node.log": {
+      "bytes": 98597,
+      "sha256": "92f334835d10b3b97d146f0478e0b4a4c055424b3c811ad1d88c34e0f62de3eb"
+    },
+    "transport-contention.log": {
+      "bytes": 1799,
+      "sha256": "4aebcf22a27bdd432bf50ded9d09aa3847bb0980b0dfe6457f6406d4a557fcfd"
+    },
+    "transport-threads.jsonl": {
+      "bytes": 40751,
+      "sha256": "cbee83d8c309b42d8585fb10e71fce0a72eb369ad08d86743ce0a71b4e9836ab"
+    }
+  },
+  "build_log": "/tmp/ros-transport-build-test-final.log",
+  "previous_failed_emulator_log": "/tmp/ros-transport-build-test.log",
+  "final_ctest_console": "/home/mzh/nickluo/drone_tracker/.docker-artifacts/backends/amd64/log/test-console.log",
+  "native_resource_console": "/home/mzh/nickluo/drone_tracker/.docker-artifacts/backends/amd64/log/native-resource-test.log",
+  "image_id": "sha256:025d0aa88983b0646a1b7a4d25cbc13dc96a6206e0148475bbfd5fad15057421",
+  "arm64_node_sha256": "fc204c68c751c57c50da3def08622772e92c642cac8cdf0e1fd7cef6cab8c994",
+  "arm64_probe_sha256": "6e7ea97076a87e2c86525a33de602f929d33ce9c7c124b21b85adbb0da130894"
+}

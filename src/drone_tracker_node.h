@@ -29,6 +29,7 @@
 #include "hybrid_tracker.h"
 #include "rotation_history.h"
 #include "platform/platform_factory.h"
+#include "platform/cpu_affinity.h"
 #include "osd/presenter.h"
 #include "osd/ros_telemetry.h"
 
@@ -61,6 +62,27 @@ public:
         std::unique_ptr<osd::DisplayBackend> display_backend = {});
     ~DroneTrackerNode();
 
+    /** @brief Later endpoint creation uses the same transport boundary as startup. */
+    template<typename Message, typename... Args>
+    auto create_publisher(Args &&...args) {
+        using Result = decltype(rclcpp::Node::create_publisher<Message>(std::forward<Args>(args)...));
+        Result result{};
+        cpu_affinity::withRole(cpu_affinity::Role::RosTransport, [&] {
+            result = rclcpp::Node::create_publisher<Message>(std::forward<Args>(args)...);
+        });
+        return result;
+    }
+    template<typename Message, typename... Args>
+    auto create_subscription(Args &&...args) {
+        using Result = decltype(rclcpp::Node::create_subscription<Message>(std::forward<Args>(args)...));
+        Result result{};
+        cpu_affinity::withRole(cpu_affinity::Role::RosTransport, [&] {
+            result = rclcpp::Node::create_subscription<Message>(std::forward<Args>(args)...);
+        });
+        return result;
+    }
+
+
     void run();
     void run(const builtin_interfaces::msg::Time &stamp);
     void stop();
@@ -73,6 +95,10 @@ public:
 
 private:
     friend struct DroneTrackerNodeTestAccess;
+    DroneTrackerNode(cpu_affinity::Transition transition, const rclcpp::NodeOptions &options,
+        std::unique_ptr<PlatformFactory> factory, std::function<std::thread(std::function<void()>)> launcher,
+        std::function<void(const char *)> recording_hook, std::unique_ptr<osd::DisplayBackend> display_backend);
+    void setupRos();
     void declare_parameters() {
         this->declare_parameter<std::string>("video_source", "0");
         this->declare_parameter<bool>("need_save", false);

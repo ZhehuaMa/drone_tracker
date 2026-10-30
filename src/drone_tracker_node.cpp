@@ -34,14 +34,22 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
     std::unique_ptr<PlatformFactory> factory,
     std::function<std::thread(std::function<void()>)> launcher, std::function<void(const char *)> recording_hook,
     std::unique_ptr<osd::DisplayBackend> display_backend)
-    : Node("drone_tracker_node", options), recording_hook_{std::move(recording_hook)}, launcher_{std::move(launcher)} {
-    cpu_affinity::initializeControl();
-    if (!factory) { factory = CreatePlatformFactory(); }
+    : DroneTrackerNode(cpu_affinity::enter(cpu_affinity::Role::RosTransport), options,
+        std::move(factory), std::move(launcher), std::move(recording_hook), std::move(display_backend)) {}
+
+DroneTrackerNode::DroneTrackerNode(cpu_affinity::Transition transition, const rclcpp::NodeOptions &options,
+    std::unique_ptr<PlatformFactory> factory, std::function<std::thread(std::function<void()>)> launcher,
+    std::function<void(const char *)> recording_hook, std::unique_ptr<osd::DisplayBackend> display_backend)
+    try : Node("drone_tracker_node", options), recording_hook_{std::move(recording_hook)},
+        launcher_{std::move(launcher)} {
     if (!launcher_) {
         launcher_ = [](std::function<void()> work) { return std::thread{std::move(work)}; };
     }
     declare_parameters();
     setupDisplay(std::move(display_backend));
+    setupRos();
+    cpu_affinity::initializeControl();
+    if (!factory) { factory = CreatePlatformFactory(); }
     setup(*factory);
     const auto diagnostic_mode{get_parameter("diagnostics.mode").as_string()};
     if (diagnostic_mode != "off" && diagnostic_mode != "basic" && diagnostic_mode != "detail") {
@@ -148,6 +156,9 @@ DroneTrackerNode::DroneTrackerNode(const rclcpp::NodeOptions &options,
         }
         return result;
     });
+    transition.release();
+} catch (...) {
+    transition.restoreAfterFailure(std::current_exception());
 }
 
 DroneTrackerNode::~DroneTrackerNode() {
@@ -920,6 +931,9 @@ void DroneTrackerNode::setup(PlatformFactory &factory)
         throw std::runtime_error("Failed to initialize HybridTracker; check model contracts and target class");
     }
 
+}
+
+void DroneTrackerNode::setupRos() {
     gimbal_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
         TOPIC_GIMBAL,
 #ifdef DRONE_TRACKER_RK3576

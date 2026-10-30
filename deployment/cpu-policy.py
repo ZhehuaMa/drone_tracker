@@ -35,6 +35,10 @@ def parse(path):
             core = roles.get(role)
             if type(core) is not int or core not in allowed:
                 raise ValueError(f"CPU 策略职责 {role} 缺失或不在允许范围")
+        if "ros_transport" in roles:
+            core = roles["ros_transport"]
+            if type(core) is not int or core not in allowed:
+                raise ValueError("CPU 策略职责 ros_transport 无效或不在允许范围")
     return allowed
 
 def main():

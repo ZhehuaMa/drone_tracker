@@ -1,0 +1,35 @@
+{
+  "captured_wall_ns": 1793355245095186315,
+  "serial": "a4649c048860c947",
+  "board": "HZ-RK3576_WuKong Board",
+  "kernel": "6.1.141-rt36",
+  "release": "/opt/drone_tracker/releases/bundle-20261029T095519Z-4177",
+  "services": {
+    "drone-tracker.service": [
+      "MainPID=1319",
+      "ActiveState=active",
+      "SubState=running"
+    ],
+    "drone-tracker-diagnostics.service": [
+      "MainPID=655",
+      "ActiveState=active",
+      "SubState=running"
+    ],
+    "apm-bridge.service": [
+      "MainPID=1414",
+      "ActiveState=active",
+      "SubState=running"
+    ],
+    "drone-interceptor.service": [
+      "MainPID=1307",
+      "ActiveState=active",
+      "SubState=running"
+    ]
+  },
+  "sha256": {
+    "/opt/drone_tracker/config/cpu-affinity.yaml": "4f46293201355131c1e72c8a72cdfaafa2c3121eaa48fe0b5ad69ac442e4f01b",
+    "/opt/drone_tracker/config/camera.yaml": "bd988d875d03cb88376ddb08fb1da019db818c515567ca13e780b604c70457b3",
+    "/usr/lib/librknnrt.so": "d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8"
+  },
+  "fastdds": "\"2.6.12\""
+}

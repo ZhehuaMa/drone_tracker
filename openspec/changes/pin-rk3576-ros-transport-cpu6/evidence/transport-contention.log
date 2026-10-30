@@ -1,0 +1,21 @@
+{"event": "contention", "pid": 3265, "cpu": 4, "duty_cycle": 0.75, "nice": 0, "maximum_duration_s": 42.0}
+{"event":"ready","pid":3266,"publisher":0,"creation_mask":"6","execution_mask":"4"}
+{"event":"received","round":0,"samples":1100,"lost":0,"callback_mask":"4","callback_clock":"steady_clock_monotonic","dds_clock":"RMW_system_clock","callback":{"samples":1100,"p50_ms":0.265388,"p95_ms":0.554309,"max_ms":1.163095},"dds":{"samples":1100,"p50_ms":0.126472,"p95_ms":0.150662,"max_ms":0.700050}}
+{"event":"received","round":1,"samples":1100,"lost":0,"callback_mask":"4","callback_clock":"steady_clock_monotonic","dds_clock":"RMW_system_clock","callback":{"samples":1100,"p50_ms":0.278887,"p95_ms":0.465694,"max_ms":0.849415},"dds":{"samples":1100,"p50_ms":0.120069,"p95_ms":0.142729,"max_ms":0.708923}}
+CPU policy loaded mode=role-pinned
+CPU affinity pid=3266 tid=3266 role=ros_transport requested=6 actual=6 round=0
+CPU affinity pid=3266 tid=3266 role=control requested=4 actual=4 round=0
+CPU affinity pid=3266 tid=3266 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=4
+CPU affinity pid=3266 tid=3266 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=4
+{"event":"ready","pid":3278,"publisher":1,"creation_mask":"6","execution_mask":"6"}
+{"event":"published","round":0,"samples":1100}
+{"event":"published","round":1,"samples":1100}
+CPU policy loaded mode=role-pinned
+CPU affinity pid=3278 tid=3278 role=ros_transport requested=6 actual=6 round=0
+CPU affinity pid=3278 tid=3278 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=6
+CPU affinity pid=3278 tid=3278 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=6
+{"event": "case_passed", "threshold_failure": false, "loss_failure": false}

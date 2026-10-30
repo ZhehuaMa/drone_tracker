@@ -1,0 +1,59 @@
+CPU affinity pid=3542 tid=3542 role=ros_transport requested=6 actual=6 round=0
+CPU affinity pid=3542 tid=3542 role=ros_transport requested=6 actual=6 round=0
+CPU affinity pid=3542 tid=3565 role=display requested=6 actual=6 round=0
+CPU affinity pid=3542 tid=3542 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=6
+CPU affinity pid=3542 tid=3542 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=6
+CPU affinity pid=3542 tid=3542 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=6
+CPU affinity pid=3542 tid=3542 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=6
+CPU affinity pid=3542 tid=3542 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=6
+CPU affinity pid=3542 tid=3542 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=6
+CPU affinity pid=3542 tid=3542 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=6
+CPU affinity pid=3542 tid=3542 role=ros_transport requested=6 actual=6 round=0
+CPU affinity restored actual=6
+CPU affinity pid=3542 tid=3542 role=control requested=4 actual=4 round=0
+CPU affinity pid=3542 tid=3567 role=yolo requested=5 actual=5 round=0
+CPU affinity pid=3542 tid=3542 role=control requested=4 actual=4 round=0
+CPU affinity pid=3542 tid=3570 role=capture requested=7 actual=7 round=1
+CPU affinity pid=3542 tid=3571 role=capture requested=7 actual=7 round=1
+CPU affinity pid=3542 tid=3572 role=tracking requested=4 actual=4 round=0
+[INFO] [1793355575.595542103] [drone_tracker_node]: Camera service started stream=1 dispatcher_role=Capture tracking=OFF recording=OFF
+[INFO] [1793355575.602707874] [drone_tracker_node]: OSD display round=0 sequence=0 status=WaitingInput hud="TRK OFF" target_label="" boxes=0 has_video=0 new_video=0 mission=0 stream=1 source_sequence=0 kind=tracking overlay_revision=0 attempt=0 monotonic_us=978834345 control_version=2 control_to_display_us=20007
+[INFO] [1793355575.918733857] [drone_tracker_node]: OSD display round=0 sequence=1 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=1 mission=0 stream=1 source_sequence=1 kind=preview overlay_revision=0 attempt=0 monotonic_us=979150381 control_version=2 control_to_display_us=336043
+[INFO] [1793355576.582642254] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=23032871 synced_known=1 generated=0,52,0,1 written=0,51,0,1 synced=0,50,0,1 dropped=0,0,0,0
+[INFO] [1793355577.582644357] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=56675140 synced_known=1 generated=0,112,0,1 written=0,111,0,1 synced=0,108,0,1 dropped=0,0,0,0
+[INFO] [1793355578.227367310] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=0
+[INFO] [1793355578.264135871] [drone_tracker_node]: OSD display round=1 sequence=142 status=Live hud="TRK SCANNING" target_label="" boxes=0 has_video=1 new_video=1 mission=0 stream=1 source_sequence=142 kind=tracking overlay_revision=0 attempt=0 monotonic_us=981495782 control_version=4 control_to_display_us=20629
+[INFO] [1793355578.580193458] [drone_tracker_node]: OSD display round=1 sequence=146 status=Live hud="TRK FOUND" target_label="" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=146 kind=tracking overlay_revision=0 attempt=0 monotonic_us=981811837 control_version=4 control_to_display_us=336684
+[INFO] [1793355578.582672151] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=73514158 synced_known=1 generated=71,172,10,1 written=71,172,10,1 synced=58,167,10,1 dropped=0,0,0,0
+[INFO] [1793355578.630078991] [drone_tracker_node]: OSD display round=1 sequence=161 status=Live hud="TRK TRACKING" target_label="" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=161 kind=tracking overlay_revision=0 attempt=0 monotonic_us=981861722 control_version=4 control_to_display_us=386569
+[INFO] [1793355579.582677395] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=96687333 synced_known=1 generated=322,232,22,1 written=322,232,22,1 synced=290,226,20,1 dropped=0,0,0,0
+[INFO] [1793355580.582683755] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=0 synced_known=1 generated=577,292,34,1 written=577,292,34,1 synced=577,292,34,1 dropped=0,0,0,0
+[INFO] [1793355581.582699325] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=13222682 synced_known=1 generated=853,352,49,1 written=853,351,47,1 synced=839,350,47,1 dropped=0,0,0,0
+[INFO] [1793355581.842334631] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=1
+[INFO] [1793355581.857063346] [drone_tracker_node]: OSD display round=1 sequence=352 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=352 kind=tracking overlay_revision=1 attempt=0 monotonic_us=985088706 control_version=5 control_to_display_us=14524
+[INFO] [1793355581.906925674] [drone_tracker_node]: OSD display round=1 sequence=360 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=360 kind=preview overlay_revision=1 attempt=0 monotonic_us=985138572 control_version=6 control_to_display_us=25785
+[INFO] [1793355582.582653965] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=41488096 synced_known=1 generated=927,412,52,7 written=927,412,52,7 synced=927,409,52,7 dropped=0,0,0,0
+[INFO] [1793355583.582650284] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=75158637 synced_known=1 generated=927,472,52,7 written=927,472,52,7 synced=927,467,52,7 dropped=0,0,0,0
+[INFO] [1793355584.582659427] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=0 synced_known=1 generated=927,532,52,7 written=927,532,52,7 synced=927,532,52,7 dropped=0,0,0,0
+[INFO] [1793355585.390405425] [drone_tracker_node]: Tracker trigger received frame_id="ON" round=1
+[INFO] [1793355585.433308042] [drone_tracker_node]: OSD display round=2 sequence=572 status=Live hud="TRK SCANNING" target_label="" boxes=0 has_video=1 new_video=1 mission=0 stream=1 source_sequence=572 kind=tracking overlay_revision=1 attempt=0 monotonic_us=988664954 control_version=8 control_to_display_us=26528
+[INFO] [1793355585.582662861] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=47092641 synced_known=1 generated=972,592,62,7 written=972,592,62,7 synced=971,589,62,7 dropped=0,0,0,0
+[INFO] [1793355585.666194942] [drone_tracker_node]: OSD display round=2 sequence=575 status=Live hud="TRK FOUND" target_label="" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=575 kind=tracking overlay_revision=1 attempt=0 monotonic_us=988897838 control_version=8 control_to_display_us=259412
+[INFO] [1793355585.732738138] [drone_tracker_node]: OSD display round=2 sequence=586 status=Live hud="TRK TRACKING" target_label="" boxes=1 has_video=1 new_video=1 mission=0 stream=1 source_sequence=586 kind=tracking overlay_revision=1 attempt=0 monotonic_us=988964381 control_version=8 control_to_display_us=325956
+[INFO] [1793355586.582667768] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=58481707 synced_known=1 generated=1217,652,74,7 written=1217,652,72,7 synced=1204,648,71,7 dropped=0,0,0,0
+[INFO] [1793355587.582693120] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=76143755 synced_known=1 generated=1476,712,86,7 written=1476,712,86,7 synced=1456,707,84,7 dropped=0,0,0,0
+[INFO] [1793355588.582709254] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=93005667 synced_known=1 generated=1738,772,98,7 written=1738,772,98,7 synced=1704,766,98,7 dropped=0,0,0,0
+[INFO] [1793355589.013106539] [drone_tracker_node]: Tracker trigger received frame_id="OFF" round=2
+[INFO] [1793355589.026247316] [drone_tracker_node]: OSD display round=2 sequence=783 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=783 kind=tracking overlay_revision=1 attempt=0 monotonic_us=992257890 control_version=9 control_to_display_us=13008
+[INFO] [1793355589.076104474] [drone_tracker_node]: OSD display round=2 sequence=790 status=Live hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=790 kind=preview overlay_revision=1 attempt=0 monotonic_us=992307752 control_version=10 control_to_display_us=15072
+[INFO] [1793355589.582662158] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=10434982 synced_known=1 generated=1854,832,104,13 written=1854,832,104,13 synced=1854,831,104,13 dropped=0,0,0,0
+[INFO] [1793355590.582666411] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=44195354 synced_known=1 generated=1854,892,104,13 written=1854,892,104,13 synced=1854,889,104,13 dropped=0,0,0,0
+[INFO] [1793355591.582653095] [drone_tracker_node]: Diagnostics degraded=0 error=0 unsynced_age_ns=77747180 synced_known=1 generated=1854,952,104,13 written=1854,952,104,13 synced=1854,947,104,13 dropped=0,0,0,0
+[INFO] [1793355592.535930600] [drone_tracker_node]: OSD display round=2 sequence=998 status=Stopped hud="TRK OFF" target_label="" boxes=0 has_video=1 new_video=0 mission=0 stream=1 source_sequence=998 kind=preview overlay_revision=1 attempt=0 monotonic_us=995767577 control_version=11 control_to_display_us=3474897

@@ -22,9 +22,12 @@ Policy snapshot{};
 std::once_flag initialized{};
 constexpr Role roles[]{Role::Control, Role::Tracking, Role::Yolo, Role::Display, Role::Capture, Role::Recording};
 #ifdef DRONE_TRACKER_RK3576
-int readCore(const YAML::Node &node, const std::string &field) {
+int readCore(const YAML::Node &node, const std::string &field, bool strict = false) {
     if (!node || !node.IsScalar()) { throw std::invalid_argument("CPU policy missing " + field); }
     int value{};
+    if (strict && node.Tag() != "?" && node.Tag() != "tag:yaml.org,2002:int") {
+        throw std::invalid_argument("CPU policy invalid integer: " + field);
+    }
     try { value = node.as<int>(); }
     catch (const YAML::Exception &) { throw std::invalid_argument("CPU policy invalid " + field); }
     if (value < 0 || value >= CPU_SETSIZE) { throw std::invalid_argument("CPU policy core out of range: " + field); }
@@ -47,6 +50,7 @@ const char *name(Role role) noexcept {
     case Role::Display: return "display";
     case Role::Capture: return "capture";
     case Role::Recording: return "recording";
+    case Role::RosTransport: return "ros_transport";
     }
     return "unknown";
 }
@@ -58,6 +62,7 @@ int core(const Policy &p, Role role) noexcept {
     case Role::Display: return p.display;
     case Role::Capture: return p.capture;
     case Role::Recording: return p.recording;
+    case Role::RosTransport: return p.ros_transport < 0 ? p.control : p.ros_transport;
     }
     return -1;
 }
@@ -98,6 +103,13 @@ Policy load(const std::string &path) {
                 throw std::invalid_argument(std::string{"CPU policy role outside allowed_cpus: "} + name(roles[i]));
             }
             *targets[i] = value;
+        }
+        p.ros_transport = p.control;
+        if (map["ros_transport"].IsDefined()) {
+            p.ros_transport = readCore(map["ros_transport"], "ros_transport", true);
+            if (std::find(p.allowed_cpus.begin(), p.allowed_cpus.end(), p.ros_transport) == p.allowed_cpus.end()) {
+                throw std::invalid_argument("CPU policy role outside allowed_cpus: ros_transport");
+            }
         }
     }
     for (const int value : p.allowed_cpus) {
@@ -154,12 +166,57 @@ std::string apply(const Policy &p, Role role, std::uint64_t round) {
 }
 void apply(Role role, std::uint64_t round) { apply(current(), role, round); }
 void initializeControl() {
-    thread_local bool applied{};
-    if (!applied) {
-        apply(Role::Control);
-        applied = true;
-    }
+    apply(Role::Control);
 }
+void Transition::restore() {
+    if (!restore_) { return; }
+    auto restore{std::move(restore_)};
+    restore();
+}
+[[noreturn]] void Transition::restoreAfterFailure(std::exception_ptr failure) {
+    try { restore(); }
+    catch (const std::exception &error) {
+        std::string original{"unknown exception"};
+        try { std::rethrow_exception(failure); }
+        catch (const std::exception &work_error) { original = work_error.what(); }
+        catch (...) {}
+        throw std::runtime_error("CPU affinity restoration failed: " + std::string{error.what()}
+            + "; original failure: " + original);
+    }
+    std::rethrow_exception(failure);
+}
+Transition enter(const Policy &p, Role role) {
+    if (!p.configured || p.mode == Mode::Inherit) { return Transition{}; }
+#ifdef DRONE_TRACKER_RK3576
+    cpu_set_t original{};
+    if (::sched_getaffinity(0, sizeof(original), &original)) {
+        throw std::runtime_error("CPU affinity snapshot failed: " + std::string{std::strerror(errno)});
+    }
+    Transition transition{[original] {
+        if (::sched_setaffinity(0, sizeof(original), &original)) {
+            throw std::runtime_error("CPU affinity restore: " + std::string{std::strerror(errno)});
+        }
+        cpu_set_t actual{};
+        if (::sched_getaffinity(0, sizeof(actual), &actual) || !CPU_EQUAL(&original, &actual)) {
+            throw std::runtime_error("CPU affinity restore readback failed");
+        }
+        std::clog << "CPU affinity restored actual=" << maskText(actual) << '\n';
+    }};
+    try { apply(p, role); }
+    catch (...) { transition.restoreAfterFailure(std::current_exception()); }
+    return transition;
+#else
+    throw std::runtime_error("CPU affinity requires RK3576 build");
+#endif
+}
+Transition enter(Role role) { return enter(current(), role); }
+void withRole(const Policy &p, Role role, const std::function<void()> &work) {
+    auto transition{enter(p, role)};
+    try { work(); }
+    catch (...) { transition.restoreAfterFailure(std::current_exception()); }
+    transition.restore();
+}
+void withRole(Role role, const std::function<void()> &work) { withRole(current(), role, work); }
 std::thread start(const Policy &p, Role role, std::function<void()> work,
     std::function<std::thread(std::function<void()>)> launcher, std::uint64_t round) {
     if (!launcher) { launcher = [](std::function<void()> job) { return std::thread{std::move(job)}; }; }

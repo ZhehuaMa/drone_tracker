@@ -56,9 +56,40 @@ ARM64 input programs are now compiled by the default x86_64 image, or explicitly
 
 服务以 root 运行以访问相机、显示和录像目录。服务和手动运行都调用 `/opt/drone_tracker/bin/run-camera`。该入口读取同一份 `cpu-affinity.yaml`，用 `taskset` 设置总允许范围，并把策略路径传给节点。服务主进程就是节点，异常退出后由 systemd 尝试重启；一分钟失败五次后停止重试，可修复问题后执行 `sudo systemctl reset-failed drone-tracker.service` 再启动。
 
-策略中的 `allowed_cpus` 是总范围。`role-pinned` 模式按职责绑定：已验证的生产映射为控制与跟踪 CPU 4、YOLO 检测 CPU 5、HDMI 显示 CPU 6、相机采集与录像 CPU 7。辅助线程继承其创建者的核心。`inherit` 模式只设置总范围，不逐职责分配，也不保证负载均衡。修改文件后必须重启节点；每次 ON 创建的新线程使用启动时读取的同一快照。直接运行程序且未设置 `DRONE_TRACKER_CPU_CONFIG` 时，程序本身不改亲和性。
+The `allowed_cpus` list is the complete allowed range. In `role-pinned` mode the production template uses:
 
-日志中的 `CPU policy loaded` 只表示文件读取成功。每条 `CPU affinity pid=... tid=... role=... requested=... actual=... round=...` 才表示该职责在工作前绑定并读回成功。可用 `journalctl -u drone-tracker.service` 核对六个职责，再用下面的 `/proc` 掩码确认。
+| Role | CPU | Responsibility |
+|---|---:|---|
+| `ros_transport` | 6 | ROS initialization, node construction, and communication resource creation |
+| `control` | 4 | Model initialization and the single-threaded ROS callback executor |
+| `tracking` | 4 | Tracking worker |
+| `yolo` | 5 | Detection worker |
+| `display` | 6 | HDMI display |
+| `capture` | 7 | Camera capture and frame dispatch |
+| `recording` | 7 | Recording process and its helper threads |
+
+Version 1 policies without `ros_transport` use the `control` core for communication creation. An explicitly
+provided transport role must be an integer in the online allowed range; null, strings and booleans are invalid.
+`inherit` mode leaves individual threads unbound. Running the executable without `DRONE_TRACKER_CPU_CONFIG`
+also preserves inherited affinity. The policy is fixed at startup; restart the node after editing it.
+
+ROS communication is created before the inference models. The main entry binds the transport role before
+`rclcpp::init`. Direct `DroneTrackerNode` construction applies the same role before the ROS node base constructor.
+Application subscriptions and publishers are created on that core. The main thread then explicitly applies and
+reads back `control` before opening the input and initializing the models. This restoration is repeatable;
+an earlier control initialization cannot suppress it. Existing worker entries still apply their own roles.
+
+Later publisher/subscriber creation through `DroneTrackerNode` uses the same transport boundary and restores
+the calling thread's previous mask. Code that uses a plain `rclcpp::Node` reference must wrap new communication
+resource creation in `cpu_affinity::withRole(Role::RosTransport, ...)`. Creation failures restore the prior mask;
+restoration failures propagate as errors. The production path never scans and moves existing middleware threads.
+No priority or scheduling-policy changes are introduced. Flight mode and `ON MISSION` still require their existing
+confirmed flight-controller inputs.
+
+`CPU policy loaded` confirms only parsing. Each `CPU affinity pid=... tid=... role=... requested=... actual=...`
+entry confirms an application-controlled binding and readback. Middleware helper threads inherit their creator's
+mask; verify their actual masks separately. A configuration log alone does not establish that every Fast DDS
+thread has been checked.
 
 服务停止时先向主节点发送 SIGINT，让它完成录像收尾；30 秒后仍未退出的进程组由 systemd 清理。启动后可核对所有节点线程的实际核心限制：
 
@@ -206,3 +237,43 @@ existing behavior. Temporary validation binaries do not constitute a release.
 Keep the current release and configuration unchanged until a separate deployment
 is authorized. If services are stopped for validation, record their initial active
 states and restore those states when the work finishes.
+
+## Isolated ROS transport verification
+
+Build with `./build.sh --test`. For cross-compilation, cross-process ROS checks compile and run the same probe
+natively in a separate build directory. The selected QEMU user runtime fails cross-process discovery even though
+the identical native probe passes in the same offline container. The ARM64 probe remains built for actual board
+validation; native success does not count as ARM64 timing or transport acceptance. The `ros_transport_tests` and `ros_transport_contention_tests` CTests run separate
+receiver and publisher processes. The receiver creates two successive subscriptions after returning to the control
+core, which exercises discovery and later endpoint creation. `ros_affinity_initialization_tests` additionally
+constructs the actual tracker node with injected model components, checks model initialization on the control
+core, and checks cleanup after model and ROS-node-base construction failures.
+
+On the production board, copy the ARM64 test executable and `src/tests/run_ros_transport_test.py` to a temporary
+candidate directory. Use a ROS domain distinct from the online system, for example:
+
+```bash
+source /opt/ros/humble/setup.bash
+ROS_DOMAIN_ID=183 ROS_LOCALHOST_ONLY=1 python3 /tmp/candidate/run_ros_transport_test.py \
+  /tmp/candidate/ros_transport_tests --control 4 --transport 6 --samples 1100 --contention
+```
+
+This runs two message rounds and at least 22 seconds of bounded CPU 4 competition. The load helper uses a 75%
+duty cycle with ordinary inherited priority and always has a fixed deadline. The coordinator terminates all its
+children on completion or failure. It reports message counts, losses, P50/P95/maximum callback latency and DDS
+latency when middleware timestamps are available. Callback timing uses the shared host monotonic clock; DDS timing
+uses the middleware's system-clock source and receive timestamps. Either a lost message or a one-second callback
+or DDS delivery delay fails the check. `--negative-checks` deliberately omits one message and uses a zero latency
+threshold to prove those failures are detected.
+
+During the run, record `/proc/<receiver-pid>/task/*/status`, `stat` and `schedstat`. Identify communication threads
+using read-only stack samples and the installed Fast DDS/RMW symbols. Record unknown threads as unknown, rather
+than assuming all helper threads are DDS. Check the identified receive, discovery and event thread masks after
+startup and after the second endpoint appears. Thread IDs and counts are observations, never binding rules.
+
+Before a camera/HDMI candidate run, save the production release link, configuration fingerprints and active
+service states. Stop services as needed to avoid camera/display conflicts, then run the candidate in the isolated
+domain using a copy of the installed configuration and existing model files. Stop the candidate and all test
+publishers before restoring the original services. Do not overwrite the production release, policy or system RKNN
+library during this check. Report actual tracking and recording coverage separately from transport verification;
+synthetic CPU contention does not establish flight or target-tracking acceptance.

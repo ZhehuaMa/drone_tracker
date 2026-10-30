@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <future>
+#include <sched.h>
 #include <iostream>
 #include <rosbag2_cpp/reader.hpp>
 #include <rclcpp/serialization.hpp>
@@ -144,6 +145,13 @@ public:
     Factory(std::shared_ptr<Trace> trace, std::shared_ptr<SourceTrace> source, std::shared_ptr<ModelPaths> paths)
         : trace_{std::move(trace)}, source_{std::move(source)}, paths_{std::move(paths)} {}
     PlatformResult<std::unique_ptr<FrameSource>> createFrameSource(const FrameSourceConfig &config) override {
+        const auto &policy{cpu_affinity::current()};
+        if (policy.configured && policy.mode == cpu_affinity::Mode::RolePinned) {
+            cpu_set_t actual{};
+            require(::sched_getaffinity(0, sizeof(actual), &actual) == 0
+                && CPU_COUNT(&actual) == 1 && CPU_ISSET(policy.control, &actual),
+                "backend initialization left control CPU");
+        }
         require(!config.use_history_timestamp, "historical time leaked");
         source_->config = config;
         if (!source_->video.empty()) {
@@ -155,6 +163,13 @@ public:
     }
     PlatformResult<std::unique_ptr<FrameBuilder>> createFrameBuilder() override { return {std::make_unique<Builder>()}; }
     PlatformResult<TrackerComponents> createTrackerComponents(const ModelPaths &paths) override {
+        const auto &policy{cpu_affinity::current()};
+        if (policy.configured && policy.mode == cpu_affinity::Mode::RolePinned) {
+            cpu_set_t actual{};
+            require(::sched_getaffinity(0, sizeof(actual), &actual) == 0
+                && CPU_COUNT(&actual) == 1 && CPU_ISSET(policy.control, &actual),
+                "model initialization left control CPU");
+        }
         *paths_ = paths;
         ++trace_->assemblies;
         auto value{components(trace_)};
@@ -1417,12 +1432,60 @@ void continuousStartupFailures() {
     require(rejected, "Dispatcher thread launch failure was ignored");
     require(display->shutdowns == 1, "Partial startup did not close display");
 }
+void affinityInitialization() {
+    const auto &policy{cpu_affinity::current()};
+    require(policy.configured && policy.mode == cpu_affinity::Mode::RolePinned, "affinity policy required");
+    auto onControl{[&] {
+        cpu_set_t actual{};
+        require(::sched_getaffinity(0, sizeof(actual), &actual) == 0
+            && CPU_COUNT(&actual) == 1 && CPU_ISSET(policy.control, &actual), "control was not restored");
+    }};
+    cpu_affinity::initializeControl();
+    for (int round{}; round < 2; ++round) {
+        auto trace{std::make_shared<Trace>()};
+        auto source{std::make_shared<SourceTrace>()};
+        auto node{std::make_shared<DroneTrackerNode>(options(),
+            std::make_unique<Factory>(trace, source, std::make_shared<ModelPaths>()))};
+        onControl();
+        require(trace->assemblies == 1 && source->starts == 0, "construction started source or skipped model");
+        auto late{node->create_publisher<std_msgs::msg::Header>("/affinity_probe/late", 10)};
+        onControl();
+        node->shutdown();
+        node.reset();
+        onControl();
+        bool rejected{};
+        try {
+            auto failed{std::make_shared<DroneTrackerNode>(options({{"tracker.yolo_engine", ""}}),
+                std::make_unique<Factory>(trace, source, std::make_shared<ModelPaths>()))};
+        } catch (const std::exception &) { rejected = true; }
+        require(rejected && source->starts == 0, "model startup failure did not clean up");
+        onControl();
+    }
+    bool rejected{};
+    auto invalid{options()};
+    invalid.context(std::make_shared<rclcpp::Context>());
+    try {
+        auto failed{std::make_shared<DroneTrackerNode>(invalid,
+            std::make_unique<Factory>(std::make_shared<Trace>(), std::make_shared<SourceTrace>(),
+                std::make_shared<ModelPaths>()))};
+    } catch (const std::exception &) { rejected = true; }
+    require(rejected, "uninitialized node context accepted");
+    onControl();
+}
+
 } // namespace
 int main(int argc, char **argv) {
+    const bool affinity_only{argc == 2 && std::string{argv[1]} == "--affinity-initialization"};
     const bool diagnostic_only{argc == 2 && std::string{argv[1]} == "--diagnostic-boundaries"};
-    if (diagnostic_only) { argc = 1; }
+    if (diagnostic_only || affinity_only) { argc = 1; }
+    if (affinity_only) { cpu_affinity::apply(cpu_affinity::Role::RosTransport); }
     rclcpp::init(argc, argv);
     try {
+        if (affinity_only) {
+            affinityInitialization();
+            rclcpp::shutdown();
+            return 0;
+        }
         const bool continuous_only{argc > 1 && std::string{argv[1]} == "--continuous-camera"};
         if (continuous_only) {
             continuousDiagnosticBoundaries();

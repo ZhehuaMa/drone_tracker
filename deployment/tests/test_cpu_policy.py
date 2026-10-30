@@ -26,6 +26,12 @@ base = {
     "roles": {role: cpus[0] for role in ("control", "tracking", "yolo", "display", "capture", "recording")},
 }
 check(base, True)
+explicit = dict(base, roles=dict(base["roles"], ros_transport=cpus[-1]))
+check(explicit, cpus[-1] in base["allowed_cpus"])
+check(dict(base, roles=dict(base["roles"], ros_transport=cpus[0])), True)
+for value in (None, True, "0", 1.5, -1, max(cpus) + 1):
+    check(dict(base, roles=dict(base["roles"], ros_transport=value)), False)
+check(dict(base, mode="inherit", roles={"ros_transport": None}), True)
 for field, value in (("version", 2), ("mode", "invalid"), ("allowed_cpus", []),
                      ("allowed_cpus", [cpus[0], cpus[0]]), ("allowed_cpus", [-1])):
     changed = dict(base)
@@ -42,7 +48,7 @@ check(changed, True)
 template = yaml.safe_load((deployment / "cpu-affinity.yaml").read_text())
 assert template == {
     "version": 1, "mode": "role-pinned", "allowed_cpus": [4, 5, 6, 7],
-    "roles": {"control": 4, "tracking": 4, "yolo": 5, "display": 6, "capture": 7, "recording": 7},
+    "roles": {"ros_transport": 6, "control": 4, "tracking": 4, "yolo": 5, "display": 6, "capture": 7, "recording": 7},
 }
 service = (deployment / "drone-tracker.service").read_text()
 runner = (deployment / "run-camera").read_text()

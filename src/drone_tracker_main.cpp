@@ -18,9 +18,10 @@ int main(int argc, char *argv[]) {
         diagnostics::measurement = measurements.get();
     }
     try {
-        cpu_affinity::initializeControl();
+        cpu_affinity::apply(cpu_affinity::Role::RosTransport);
         rclcpp::init(argc, argv);
         auto node{std::make_shared<DroneTrackerNode>()};
+        cpu_affinity::initializeControl();
         node->startService();
         rclcpp::executors::SingleThreadedExecutor executor{};
         executor.add_node(node);

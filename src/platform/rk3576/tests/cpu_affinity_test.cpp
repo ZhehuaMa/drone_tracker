@@ -7,6 +7,7 @@
 #include <string>
 #include <thread>
 #include <sched.h>
+#include <sys/resource.h>
 #include <unistd.h>
 
 namespace {
@@ -57,6 +58,17 @@ int main() {
         + "\n  capture: " + std::to_string(first)
         + "\n  recording: " + std::to_string(second >= 0 ? second : first) + "\n")};
     Policy p{load(valid)};
+    std::ifstream legacy_input{valid};
+    const std::string legacy{std::istreambuf_iterator<char>{legacy_input}, {}};
+    assert(p.ros_transport == first);
+    for (const auto &invalid : {"null", "true", "1.5", "'0'", "-1", "99999"}) {
+        rejects(legacy + "  ros_transport: " + invalid + "\n");
+    }
+    const auto explicit_policy{writePolicy(legacy + "  ros_transport: "
+        + std::to_string(second >= 0 ? second : first) + "\n")};
+    const auto explicit_value{load(explicit_policy)};
+    ::unlink(explicit_policy.c_str());
+    assert(explicit_value.ros_transport == (second >= 0 ? second : first));
     ::unlink(valid.c_str());
     assert(p.configured && p.mode == Mode::RolePinned);
     rejects("version: 1\nmode: role-pinned\nallowed_cpus: [" + std::to_string(first)
@@ -64,6 +76,31 @@ int main() {
     if (second >= 0) {
         cpu_set_t one{}; CPU_ZERO(&one); CPU_SET(first, &one);
         assert(::sched_setaffinity(0, sizeof(one), &one) == 0);
+        p.ros_transport = second;
+        const int priority{::getpriority(PRIO_PROCESS, 0)};
+        withRole(p, Role::RosTransport, [&] {
+            const auto actual{mask()};
+            assert(CPU_COUNT(&actual) == 1 && CPU_ISSET(second, &actual));
+            withRole(p, Role::Control, [&] {
+                const auto nested{mask()}; assert(CPU_COUNT(&nested) == 1 && CPU_ISSET(first, &nested));
+            });
+            const auto restored{mask()}; assert(CPU_COUNT(&restored) == 1 && CPU_ISSET(second, &restored));
+        });
+        auto restored{mask()}; assert(CPU_COUNT(&restored) == 1 && CPU_ISSET(first, &restored));
+        bool work_failed{};
+        try { withRole(p, Role::RosTransport, [] { throw std::runtime_error("creation failed"); }); }
+        catch (const std::runtime_error &error) { work_failed = std::string{error.what()} == "creation failed"; }
+        assert(work_failed);
+        restored = mask(); assert(CPU_COUNT(&restored) == 1 && CPU_ISSET(first, &restored));
+        bool restore_failed{};
+        Transition failing{[] { throw std::runtime_error("injected restore failure"); }};
+        try { failing.restoreAfterFailure(std::make_exception_ptr(std::runtime_error{"creation failed"})); }
+        catch (const std::runtime_error &error) {
+            const std::string text{error.what()};
+            restore_failed = text.find("injected restore failure") != std::string::npos
+                && text.find("creation failed") != std::string::npos;
+        }
+        assert(restore_failed && ::getpriority(PRIO_PROCESS, 0) == priority);
         std::atomic<bool> worked{false};
         for (int i{}; i < 2; ++i) {
             auto thread{start(p, Role::Display, [&] {
