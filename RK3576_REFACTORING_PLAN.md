@@ -1,450 +1,86 @@
-# Jetson 到 RK3576 平台重构方案大纲
+# Jetson-to-RK3576 architecture and remaining validation
 
-## 1. 结论
+## Current implementation
 
-采用“公共算法核心 + 编译期平台后端”的方案。
+The repository uses one public tracking algorithm with a platform backend selected at build time. RK3576 camera input, ROS video input, HDMI display, original-camera recording, diagnostics, and deployment packaging are implemented. These capabilities have different configuration and acceptance boundaries; their presence does not establish full Jetson equivalence or flight readiness.
 
-公共算法核心保留 ROS 2 外部行为、跟踪状态机、检测与跟踪仲裁、模型后处理、DCF 和卡尔曼滤波。Jetson 与 RK3576 分别实现图像采集、图像预处理、设备内存管理和模型推理。
+The raw CMake default is `DRONE_TRACKER_PLATFORM=jetson`. The supported RK3576 entry point, `./build.sh`, explicitly selects `rk3576` and produces ARM64 binaries with a native x86_64 cross compiler. `--backend arm64` selects the ARM64-image fallback. Current build SDKs provide RKNN Runtime 2.3.2; the target compatibility baseline is Runtime 2.3.2 and RKNPU driver 0.9.8. See the [build guide](dockerfiles/README.amd64.md) and local environment instructions.
 
-不建议直接删除 Jetson 实现并在原位置改写为 RK3576 代码。直接替换会把平台迁移和算法修改混在一起，增加行为偏差的定位难度，也会失去可运行的 Jetson 对照实现。
+This document describes the current architecture and remaining work. Main specifications under `openspec/specs/` define approved behavior. Dated change reports retain the scope and limitations of their original measurements.
 
-## 2. 背景与现状
+## Responsibilities and dependency boundaries
 
-当前 `rk3576` 分支已提取公共边界，生产入口支持 Jetson 和 RK3576 本地视频：
-
-- `FrameContext` 和采集队列传递平台无关的 `FrameRef`，表示共享只读帧。
-- 公共跟踪器接受整套模型、预处理和帧兼容性检查对象，不再自行创建 Jetson 组件。
-- `PlatformFactory` 统一创建帧源、主机图像复制能力及整套跟踪依赖。
-- 公共算法目标只使用 OpenCV、线程库和公共模型/几何代码；Jetson 设备实现由平台目标链接。
-- 默认生产配置仍启用 CUDA 并使用 VPI、TensorRT、Jetson Multimedia API 和 Tegra 库。
-- `DRONE_TRACKER_PLATFORM=rk3576` 已接入 ROS 视频节点，共用已有 RKNN 模型后端与软件 MJPEG 帧源。独立相机帧源已实现并通过无设备测试及开发板 2 实机验收，ROS 相机接入仍待完成。硬件解码和 RGA 加速仍未实现。
-- ROS 视频接入已完成规定的 RK3576 实机验收，包括两种模型精度的基础集成、失败清理、同进程 20 轮启停及额外至少 30 分钟播放负载，详见 [ROS 视频接入验证记录](openspec/changes/integrate-rk3576-ros-video/validation.md)。这些结果不代表模型检测质量、部署性能或 Jetson 实机等价性通过；NPU（神经网络处理器）设备内存尚未测量，前序独立回放质量任务仍未完成。
-- `introduce-platform-factory` 的验证限定为公共构建、模拟测试与源码审查，不代表 Jetson 执行验证完成。
-
-因此，本次迁移不只是替换 `TrtEngine`。它至少涉及帧表示、预处理、推理运行时、设备资源生命周期和构建系统五个边界。
-
-## 3. 重构目标
-
-### 3.1 主要目标
-
-1. 在 RK3576 上完整复现 Jetson 版本的外部行为和算法语义。
-2. 隔离 CUDA、TensorRT、VPI、RKNN 和 RGA 等平台专属依赖。
-3. 允许 Jetson 与 RK3576 在编译期选择各自后端。
-4. 使同一份算法核心可以使用相同输入进行跨平台结果对比。
-5. 明确帧、设备缓冲区和异步任务的所有权及线程边界。
-
-### 3.2 非目标
-
-- 不重新训练或默认重新转换三个模型。
-- 不改变 ROS 话题名称、消息类型或时序语义。
-- 不改变 `TrackerState` 的数值语义。
-- 不在迁移阶段调整检测阈值、跟踪参数或仲裁规则。
-- 不为了统一接口而模拟所有 CUDA、VPI、RGA 或 RKNN 底层 API。
-- 不把大型模型二进制提交到普通源码仓库。
-
-## 4. 总体架构
-
-```text
-+----------------------------------------------------------+
-|                    ROS 2 编排层                          |
-| 参数、输入选择、触发器、话题发布、状态发布               |
-+-----------------------------+----------------------------+
-                              |
-                              v
-+----------------------------------------------------------+
-|                    公共算法核心                          |
-| HybridTracker 状态机                                     |
-| YOLO 异步调度、解码与 NMS                                |
-| NanoTrack 状态更新与输出解码                             |
-| DCF、卡尔曼滤波、补帧、跳变抑制、检测/跟踪仲裁           |
-+-----------------------------+----------------------------+
-                              |
-                     公共行为接口
-                              |
-              +---------------+---------------+
-              |                               |
-              v                               v
-+---------------------------+   +---------------------------+
-| Jetson 平台后端           |   | RK3576 平台后端           |
-| VPI 图像与预处理          |   | RGA/OpenCV 图像与预处理   |
-| TensorRT 推理             |   | RKNN Runtime 2.3.2 推理   |
-| CUDA 设备内存             |   | RKNPU 驱动 0.9.8          |
-| Jetson Multimedia API     |   | RK3576 采集与解码         |
-+---------------------------+   +---------------------------+
-```
-
-“公共行为接口”描述上层需要完成什么操作，不复刻各硬件 SDK 的具体调用方式。这样可以让两个平台分别采用零拷贝、融合预处理或其他专属优化。
-
-## 5. 建议的抽象边界
-
-### 5.1 平台无关帧
-
-用平台无关的 `Frame` 或 `FrameRef` 替代公共接口中的 `VPIImageWrapper`。
-
-公共元数据至少包括：
-
-- 图像宽度和高度。
-- 像素格式，例如灰度 `U8` 或 `BGR8`。
-- 行跨度，即一行图像数据实际占用的字节数。
-- 采集时间戳。
-- 共享所有权，确保异步检测和补帧期间帧不会提前释放。
-
-硬件原生句柄不得暴露给 ROS 编排层或算法状态机。平台后端可以在内部访问自身的 VPI、RGA 或 RKNN 缓冲区。
-
-DCF 和可视化需要访问主机端图像。公共帧接口应提供受生命周期约束的只读灰度视图，或者由平台后端提供显式的主机映射操作。“主机映射”指在 CPU 可以读取设备图像的期间创建一个临时视图，并在视图销毁时自动解除映射。
-
-### 5.2 图像预处理
-
-预处理接口负责：
-
-- ROI 裁剪。
-- 缩放。
-- letterbox 填充。letterbox 是在保持宽高比缩放后，用固定像素值补齐模型输入尺寸。
-- 灰度或颜色格式转换。
-- HWC/CHW 布局转换。
-- 数据类型转换、归一化和量化准备。
-
-预处理接口应以模型输入契约为依据，而不是提供 `cudaMemcpy` 或 `rga_blit` 一类底层调用的通用包装。
-
-平台实现可以把多个操作合并。例如，RK3576 后端可以通过 RGA 完成裁剪和缩放，再直接写入 RKNN 输入缓冲区。
-
-### 5.3 模型执行
-
-为三个模型提供统一的执行概念：
-
-- YOLO。
-- NanoTrackV3 Backbone。
-- NanoTrackV3 Head。
-
-模型执行接口至少表达：
-
-- 模型加载和释放。
-- 输入、输出张量数量和顺序。
-- 张量尺寸和布局。
-- 数据类型。
-- 量化比例和零点。
-- 单次推理。
-- 错误状态和可诊断信息。
-
-张量是模型输入或输出的多维数据。公共描述不应使用 `nvinfer1::Dims`、CUDA stream 或 `rknn_tensor_attr` 等平台类型。
-
-不建议只设计一个模糊的 `infer(void *)`。这种接口无法验证输入布局、量化参数和输出顺序，容易出现“模型能够加载，但结果不等价”的问题。
-
-### 5.4 模型级后端
-
-建议使用中等粒度的模型级后端，而不是抽象每一条设备 API：
-
-```text
-YoloBackend
-  prepare(frame, roi)
-  infer()
-  return raw_outputs + model_contract
-
-NanoTrackBackend
-  initialize(frame, bbox)
-  update(frame)
-  return raw_score_and_delta_outputs
-```
-
-原始输出的解码、YOLO NMS、NanoTrack 锚点计算和边界框计算应尽量保留在公共层。NMS 是非极大值抑制，用于去除多个高度重叠的重复检测框。
-
-### 5.5 平台工厂
-
-`CreatePlatformFactory()` 返回编译期选中的平台工厂。它提供三个公共入口：
-
-- `createFrameSource(config)`：创建相机或视频帧源，直接使用原采集队列。
-- `createFrameBuilder()`：提供 `copyFrom(image, timestamp_us)`，复制主机图像并保留微秒时间戳。
-- `createTrackerComponents(paths)`：成套创建 YOLO、NanoTrack 的模型与预处理器，以及帧兼容性检查对象。
-
-`TrackerComponents` 是只能转移所有权的集合。调用方把它交给公共 `HybridTracker`，组件就绪后才启动检测线程。创建失败不返回半套依赖，诊断包含平台、组件、路径及原因。
-
-`FrameCompatibility` 检查帧的真实资源类型，在跟踪状态变化前拒绝不兼容帧。兼容性不要求来自同一个工厂实例。模型执行和预处理边界仍保留资源检查，不能只靠工厂选择证明输入安全。
-
-默认平台为 `jetson`。`rk3576` 使用已有 RKNN 后端支持 ROS 视频；未知值在 CUDA 和硬件库发现前失败，不自动回退。新增调用方应显式链接公共算法和平台目标；完整示例见 [平台工厂接入说明](src/platform/README.md)。
-
-本阶段只验证公共代码和模拟依赖，并审查 Jetson 适配源码。它不证明 Jetson 可构建、实机行为等价或设备资源安全；后续硬件阶段仍需取得对应证据。
-
-## 6. 公共逻辑与平台逻辑划分
-
-| 模块或行为 | 公共层 | Jetson 后端 | RK3576 后端 |
-|---|---:|---:|---:|
-| ROS 参数及话题协议 | 是 | 否 | 否 |
-| `HybridTracker` 状态机 | 是 | 否 | 否 |
-| 补帧和检测/跟踪仲裁 | 是 | 否 | 否 |
-| DCF 和卡尔曼滤波 | 是 | 否 | 否 |
-| YOLO 解码及 NMS | 是 | 否 | 否 |
-| NanoTrack 输出数学处理 | 是 | 否 | 否 |
-| 相机采集与硬件解码 | 否 | 是 | 是 |
-| 帧设备内存所有权 | 否 | 是 | 是 |
-| 裁剪、缩放和格式转换 | 只定义契约 | VPI/CUDA | RGA/OpenCV |
-| 模型推理 | 只定义契约 | TensorRT | RKNN Runtime |
-| 设备同步和缓存维护 | 否 | CUDA/VPI | RKNN/RGA |
-
-如果某段逻辑影响检测框数值或跟踪状态，应优先保留在公共层。如果某段逻辑只管理设备句柄、内存或硬件任务，应放在平台后端。
-
-## 7. 建议的源码组织
-
-具体名称可在 OpenSpec 设计阶段确认。目录职责可以按以下方式划分：
-
-```text
-src/
-  drone_tracker_node.*
-  hybrid_tracker/
-    common/                 # 状态机、仲裁、后处理、DCF、KF
-    interfaces/             # Frame、预处理和模型执行契约
-  platform/
-    jetson/                 # VPI、CUDA、TensorRT、Jetson Multimedia API
-    rk3576/                 # RGA、RKNN Runtime、RK3576 采集与解码
-  mv_camera/                # 可逐步迁移到 platform 下，避免一次性大搬迁
-```
-
-第一阶段不必立即移动所有文件。可以先引入接口和适配器，待行为等价验证通过后再整理目录，从而减小单次变更规模。
-
-## 8. 构建方案
-
-使用编译期平台选择，不建议在一个进程中运行时切换平台。
-
-示例配置：
-
-```text
--DDRONE_TRACKER_PLATFORM=jetson
--DDRONE_TRACKER_PLATFORM=rk3576
-```
-
-构建系统应满足：
-
-1. RK3576 构建不查找或链接 CUDA、TensorRT、VPI 和 Tegra 库。
-2. Jetson 构建不查找或链接 RKNN Runtime 和 RGA。
-3. 公共算法库只能链接 OpenCV、线程库和必要的通用依赖。
-4. 平台后端分别声明自己的头文件、库和源文件。
-5. 配置失败时输出明确的平台、缺失依赖和预期版本。
-
-RK3576 后端以目标板 RKNN Runtime 2.3.2 和 RKNPU 驱动 0.9.8 为兼容性基线。本次沿用既有 2.3.0 构建 SDK，即编译所用的头文件与链接库；产物在 Runtime 2.3.2 上验证，不要求重建 SDK 镜像。
-
-## 9. 分阶段迁移计划
-
-### 阶段 0：建立 OpenSpec change
-
-- 编写 proposal，明确迁移目的、范围和外部行为不变要求。
-- 编写 design，确认抽象边界、所有权模型和构建选择方式。
-- 编写 delta specs，定义模型契约、平台选择和失败行为。
-- 编写 tasks，将接口提取、Jetson 适配、RK3576 实现和验证拆成独立任务。
-
-完成条件：实现工作所需的 proposal、design、specs 和 tasks 均已批准。
-
-### 阶段 1：冻结 Jetson 行为基线
-
-- 记录三个模型的输入和输出契约。
-- 准备固定输入图像、ROI、裁剪结果和模型原始输出样本。
-- 记录离线回放的边界框、状态变化和关键诊断数据。
-- 记录 Jetson 的资源释放、线程停止和错误路径行为。
-
-完成条件：同一输入可以重复产生可比较的基线结果。
-
-### 阶段 2：提取平台无关帧接口
-
-- 从 `FrameContext`、帧队列和补帧缓存中移除 VPI 类型。
-- 使用 Jetson 适配器包装现有 `VPIImageWrapper`。
-- 保持 Jetson 构建和回放输出不变。
-
-完成条件：公共头文件不再包含 VPI 类型，Jetson 行为基线仍通过。
-
-### 阶段 3：提取预处理与推理接口
-
-- 把 TensorRT 类型移出公共张量描述。
-- 将 YOLO 和 NanoTrack 中的 VPI/CUDA 预处理迁入 Jetson 后端。
-- 保留公共的异步调度、后处理和跟踪逻辑。
-- 先让 Jetson 后端通过所有原有验证。
-
-完成条件：公共算法库不直接依赖 CUDA、TensorRT 或 VPI。
-
-### 阶段 3 补充：统一平台装配
-
-`introduce-platform-factory` 已接入统一创建入口，并分离公共构建与 Jetson 目标。公共模拟测试覆盖完整跟踪入口、部分模型加载失败及检测线程生命周期。相机内部最小失败清理修复也已完成源码审查，详见该变更的验证记录；这里不把公共测试视作整个阶段的实机验收。
-
-### 阶段 4：实现 RK3576 后端
-
-`implement-rk3576-nanotrack-backend` 已完成三文件装配、通用模型会话和独立查询/灰度回放入口。2026-09-11 核验时重新构建成功，16/16 契约测试通过。沿用 2.3.0 构建 SDK 的产物在 Runtime 2.3.2、驱动 0.9.8 的开发板上已有以下证据：四精度组合查询成功，各完成 309 帧灰度回放；固定输入逐层对照每组 50 项比较的最大绝对差为 0；全 INT8 完成 20 轮与异步 YOLO 共存及停止检查；提取前后 YOLO 的 309 帧输出一致。
-
-早期 FP16 浮点张量携带 AFFINE 元数据时被误拒绝，现已修复。历史失败及复测结果见 [FP16 修复记录](openspec/changes/implement-rk3576-nanotrack-backend/fp16-fix.md)，当前状态和证据边界见 [NanoTrack 验证记录](openspec/changes/implement-rk3576-nanotrack-backend/validation.md)。独立入口完成不代表完整平台、采集或 ROS 装配完成，也不代表 Jetson 等价性通过。
-
-`implement-rk3576-yolo-backend` 已提供 `src/platform/rk3576` 独立 ARM64 入口。它只连接真实公共 YOLO 检测器，不开放完整平台选择。构建、模型替换、单类别配置和失败诊断见 [独立 YOLO 使用说明](src/platform/README.md)。例如，四类别模型使用 `--target 2`；替换为六类别兼容模型后重新查询并用 `--target 4` 启动。不得把该示例当作真实六类别模型的验收证据。
-
-该变更明确批准 `tracker.yolo_target_class_id` 从类别下限改为精确编号，默认值仍为 0。这是公共 YOLO 行为变化，适用于两个平台；其他参数和跟踪状态语义保持不变。已执行的常量、真实图像、同源 ONNX 数学转换和有限资源验证，以及官方原视频的重复回放证据，见 [实机验证记录](openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md)。未执行性能或完整跟踪验收。
-
-- 接入 RK3576 帧采集和解码。
-- 实现 RGA/OpenCV 预处理。
-- 接入目标板 RKNN Runtime 2.3.2。
-- 加载已有的三个 RKNN 模型。
-- 逐项核对输入布局、数据类型、量化参数和输出顺序。
-
-完成条件：三个模型均可在 RK3576 上稳定执行，并通过模型级契约测试。
-
-### 阶段 4 补充：独立完整跟踪回放
-
-`assemble-rk3576-tracker-replay` 接通 RK3576 统一帧与四文件模型装配，以及 `rk3576_tracker_replay CONFIG.yaml`。配置显式提供全部参数，输入边界执行彩色转灰度，真实公共跟踪器自动发现目标。顺序送帧不跳帧，末尾等待异步检测退出。报告保存配置与文件指纹、状态和分阶段计时。
-
-公共三字段 Jetson 模型路径调用继续兼容；RK3576 使用显式模板/搜索路径。该回放变更实施时，根目录未开放 RK3576 生产构建，独立工厂拒绝生产相机/视频帧源；视频限制由后续视频帧源变更放宽，见下节。为保证逐帧报告准确，只清空过期 NanoTrack 诊断值，不修改公共跟踪决策。
-
-已完成 ARM64 容器构建与无设备测试。2026-09-11 续做已完成纯 FP16、纯 INT8 的实机模型属性及回归输入核验。随后补齐 BIRD 原片和 AirSim 固定 30 FPS 副本，并执行三种输入各一轮纯 FP16、DCF 开启回放。均正常读完，但 AirSim 持续跟踪表现存在待诊断问题，完整验收仍未通过。当时资源负载及质量评估尚未完成，不能宣称阶段 5 等价性或部署性能达标。命令、测试与证据边界见 [完整回放验证记录](openspec/changes/assemble-rk3576-tracker-replay/validation.md)。
-
-后续按用户要求暂缓 FP16 场景验收，完成 INT8 九轮执行、带标注质量统计及两组真实退出/失败输入检查。AirSim 场景仍不能判定通过。资源负载已完成 FP16 96 轮及 30 分钟，INT8 只完成 8 轮，随后按用户时间限制主动暂停；不将部分负载记为整项完成。当时总进度 30/33，无运行中的验收进程。历史证据见 [后续实机记录](openspec/changes/assemble-rk3576-tracker-replay/continued-validation.md)。
-
-2026-09-14 续做完成 INT8 独立 95 轮、1809.974 秒资源负载，全部正常退出，未见进程资源持续累积或停止失败。历史暂停时间未计入，NPU 设备内存未测。两组资源任务 7.5 已完成，总进度更新为 31/33；AirSim 限制下的 7.2、7.3 仍未完成，无运行中的验收进程。详见 [资源补测记录](openspec/changes/assemble-rk3576-tracker-replay/resource-validation-20260914.md)。
-
-2026-09-14 随后使用真实户外 Anti-UAV 素材完成两种精度各三轮回放，并补齐 FP16 无目标三轮。户外六轮均未自动捕获；独立检测检查显示四个可见帧的类别 2 分数均低于现有阈值。剩余阻塞已从缺少合适视频转为当前检测管线未捕获该素材目标。7.2、7.3 仍未完成，总进度保持 31/33，见 [户外补测记录](openspec/changes/assemble-rk3576-tracker-replay/anti-uav-validation-20260914.md)。
-
-### 阶段 4 补充：持续 MJPEG 视频帧源
-
-`implement-rk3576-video-frame-source` 为独立 RK3576 工厂接通本地 MJPEG 视频。MJPEG 是每帧独立压缩为 JPEG 的视频。新增帧源输出原尺寸灰度，使用视频 PTS（显示时刻）推进播放，提供可中断等待、满队列丢新帧及每轮从头重启。原 `ReplayReader` 和完整跟踪回放仍按顺序逐帧处理，接口和配置不变。
-
-首轮完成约定 ARM64 容器构建、可控逻辑及生成素材测试，随后在 RK3576 补齐第 5 组实机验收。历史/实时模式各完成 20 轮启停，同进程完成 100 次新建销毁和 600.187 秒、318 轮重启/慢消费负载。未观察到资源持续增长或遗留线程，变更进度为 26/26。命令、像素对照、停止耗时与验证边界见 [视频帧源验证记录](openspec/changes/implement-rk3576-video-frame-source/validation.md)。这些证据不等于完整跟踪性能或模型质量达标。
-
-该视频帧源变更完成时，ROS 入口尚未开放。后续 `integrate-rk3576-ros-video` 已接通根目录 ROS 视频构建，详见下节。相机、硬件解码与 RGA 加速仍未提供。前序完整回放的 7.2、7.3 模型质量验收继续未完成，总进度仍为 31/33，本变更不改变该结论。
-
-### 阶段 4 补充：ROS 视频接入
-
-`integrate-rk3576-ros-video` 复用公共节点和 RKNN 后端，新增四文件模型配置、实际视频像素内参、只读帧源诊断和跨轮检测收尾。ON/OFF、EOF 后再启动均复用模型；记录器的创建、写入和关闭使用同一互斥锁。
-
-首版只接受实时系统时钟和本地 MJPEG 视频。`use_history_timestamp`、`use_sim_time` 必须为 false。图像使用原帧时间，检测框使用预测时间。内参必须对应实际视频尺寸，不按相机尺寸再次缩放。构建、参数文件、模型路径及 ON/OFF 命令见 [ROS 视频运行说明](src/platform/README.md#rk3576-ros-视频节点)。
-
-2026-09-14 首轮按用户要求未执行 RK3576 实机任务。2026-09-15 续做已补齐实机验收，并修复首次 ON 沿用已移走文件句柄的问题，当前进度 34/34。公共测试、ROS 可控模型测试、ARM64 构建与真实模型负载的证据分层记录，详见 [验证记录](openspec/changes/integrate-rk3576-ros-video/validation.md)。独立回放的 7.2、7.3 保持未完成。
-
-### 阶段 5：跨平台行为等价验证
-
-- 比较预处理结果。
-- 比较模型原始输出或经反量化后的输出。
-- 比较 YOLO 解码和 NMS 结果。
-- 比较 NanoTrack 输出框和置信度。
-- 使用相同录像比较完整跟踪状态序列。
-
-数值允许存在经确认的浮点或量化误差，但状态转移、目标类别、框坐标趋势和丢失恢复语义必须一致。
-
-完成条件：所有差异均能归因，并位于批准的容差范围内。
-
-### 阶段 6：RK3576 专属优化
-
-- 在等价性通过后评估零拷贝、RGA 融合操作和 RKNN 内存复用。
-- 测量端到端延迟、模型耗时、帧丢弃率和内存占用。
-- 每项优化单独验证，不同时调整算法阈值。
-
-完成条件：性能改善有测量数据支持，外部行为没有未经批准的变化。
-
-## 10. 验证计划
-
-### 10.1 主机端测试
-
-- `HybridTracker` 状态转换测试。
-- ROI、letterbox、YOLO 解码和 NMS 测试。
-- NanoTrack 输出解码测试。
-- DCF 和卡尔曼滤波测试。
-- 模拟后端测试，用固定张量验证公共逻辑不依赖硬件 SDK。
-
-### 10.2 模型契约测试
-
-每个模型至少验证：
-
-- 输入尺寸和输入数量。
-- 颜色或灰度格式。
-- HWC/CHW 布局。
-- `uint8`、`int8` 或浮点数据类型。
-- 归一化和量化参数。
-- 输出数量、形状和顺序。
-- 固定输入对应的输出范围与关键数值。
-
-### 10.3 并发和资源测试
-
-- YOLO 工作线程与主跟踪线程同时访问帧时不存在竞态。
-- 帧从队列淘汰后，异步任务仍可安全完成。
-- 停止、初始化失败和推理失败路径可以回收设备资源。
-- 长时间运行时，设备内存和主机内存没有持续增长。
-- 队列继续满足其生产者和消费者假设。
-
-### 10.4 实机测试
-
-- Jetson 参考硬件上构建并运行 Jetson 后端。
-- RK3576 目标硬件上构建并运行 RK3576 后端。
-- 使用相同模型语义和相同录制视频执行回放。
-- 使用真实相机验证时间戳、延迟、状态发布和停止流程。
-
-非目标主机上的交叉编译成功不能替代实机验证。
-
-## 11. 主要风险与控制措施
-
-| 风险 | 表现 | 控制措施 |
+| Boundary | Responsibility | Implementation |
 |---|---|---|
-| 模型契约不一致 | 模型能运行但检测框错误 | 固定输入逐层比较，显式记录量化和布局 |
-| 灰度与颜色语义变化 | 置信度或跟踪结果系统性偏移 | 保存预处理图像和像素统计作为基线 |
-| letterbox 舍入差异 | 框坐标出现固定偏差 | 固定缩放和填充计算顺序，测试奇数边距 |
-| 输出张量顺序错误 | 解码结果完全异常 | 按名称、索引和形状三重核对 |
-| 异步帧提前释放 | 随机崩溃或数据污染 | 使用共享所有权和 RAII，明确线程交接点 |
-| 设备缓存未同步 | 偶发旧数据或空结果 | 在后端内定义提交、同步和读取协议 |
-| 抽象粒度过低 | 接口复杂且阻碍优化 | 使用模型级行为接口，不复制 SDK API |
-| 抽象粒度过高 | YOLO/NanoTrack 逻辑被双份实现 | 保留公共调度、解码和状态算法 |
-| 双平台构建依赖泄漏 | RK3576 仍要求 CUDA/VPI | 为每个构建目标检查链接依赖和头文件 |
+| ROS orchestration | Parameters, input selection, tracking rounds, observations, recording sessions | `src/drone_tracker_node.*`, `src/drone_tracker_main.cpp` |
+| Public algorithm | Detection scheduling, tracking, history replay, arbitration, box decoding, center fusion and rotation compensation | `src/hybrid_tracker/` |
+| Public frame and platform interfaces | Shared read-only images, frame-source operations, component creation and compatibility checks | `src/frame/`, public headers under `src/platform/` |
+| Jetson backend | TensorRT inference, VPI/CUDA preprocessing and device resources | `src/platform/jetson/`, Jetson model/preprocessing adapters |
+| Jetson input | Camera/video capture, decoding and original input queues | `src/mv_camera/` |
+| RK3576 backend | V4L2 capture, software MJPEG decoding, RKNN sessions and CPU model preprocessing | `src/platform/rk3576/` |
+| Display and recording | Common display policy plus RK3576 DRM/RGA output; independent MPP recording worker | `src/osd/`, `src/platform/rk3576/osd/`, `src/platform/rk3576/recording/` |
 
-## 12. 验收标准
+V4L2 is the Linux camera interface. MJPEG stores each video frame as an independent JPEG image. DRM/KMS controls display planes, RGA performs display image operations, and MPP provides hardware video encoding. The current software video source does not use hardware decoding. RGA display support does not imply RGA preprocessing for inference.
 
-重构完成时应满足以下条件：
+Keep SDK types, native handles, memory synchronization, and device ownership inside platform implementations. Public interfaces describe the requested operation and its result. Public algorithms may depend on portable configuration and diagnostic support, but must not acquire a reverse dependency on the hardware backend.
 
-1. `rk3576` 构建不包含 CUDA、TensorRT、VPI、Jetson Multimedia API 或 Tegra 依赖。
-2. `jetson` 构建不包含 RKNN Runtime 或 RGA 依赖。
-3. 公共算法头文件不暴露任何平台 SDK 类型。
-4. ROS 输入输出话题、消息类型和状态数值保持不变。参数含义仅允许已批准 OpenSpec 的明确变更；当前 YOLO 目标编号按单类别精确规则解释。
-5. 三个 RKNN 模型的输入输出契约都有自动化或可重复验证记录。
-6. 固定录像上的检测、跟踪、目标丢失和恢复流程与 Jetson 基线等价。
-7. 异步检测、帧队列、图像访问和设备缓冲区通过压力测试。
-8. 进程停止及所有失败路径能够安全停止线程并释放资源。
-9. RK3576 实机上的延迟、吞吐量和内存占用达到项目确认的目标。
+## Frames, creation and shutdown
 
-## 13. 推荐决策记录
+`FrameRef` is a shared pointer to a read-only frame. It carries dimensions, format, row stride through its read view, and a microsecond timestamp. `FrameReadView` retains the lifetime of a host mapping or device lock; a borrowed `cv::Mat` must not outlive that view. A source or factory may be destroyed while independently owned returned frames remain valid.
 
-- **已推荐**：保留公共算法核心，为 Jetson 和 RK3576 分别实现平台后端。
-- **已推荐**：使用编译期平台选择，避免同一二进制链接两套硬件 SDK。
-- **已推荐**：先让现有 Jetson 实现适配新接口，再添加 RK3576 实现。
-- **已推荐**：先验证行为等价，再进行 RK3576 专属性能优化。
-- **已由 OpenSpec 明确**：`introduce-platform-factory` 使用 `src/platform/`、`PlatformFactory` 与 `DRONE_TRACKER_PLATFORM`；后续 `integrate-rk3576-ros-video` 已开放 RK3576 视频生产入口。
-- **已有局部实机证据**：当前四类别 YOLO 与 NanoTrack 四精度组合的张量契约，以及 Runtime 2.3.2、驱动 0.9.8 上的上述验证。历史构建 SDK 为 2.3.0，具体模型及输入范围见实机记录。
-- **待实机确认**：新增替换模型的语义兼容性、RGA 支持范围、完整平台行为和性能目标。
+`CreatePlatformFactory()` returns the selected platform implementation. It provides:
 
-## 2026-09-15 ROS 视频实机续做补充
+- `createFrameSource(config)` for camera or video input.
+- `createFrameBuilder()` for copying host images into compatible owned frames.
+- `createTrackerComponents(paths)` for complete model, preprocessing, and frame-compatibility dependencies.
 
-`integrate-rk3576-ros-video` 已完成独立部署、FP16/INT8 基础 ROS 集成与失败重试验收。首次启动文件消失问题已修复：初始化校验后关闭文件，每次 ON 都重新打开当前路径。当前进度 34/34。
+`TrackerComponents` transfers exclusive component ownership to `HybridTracker`. Failed assembly returns a diagnostic rather than a partially usable pipeline. Compatibility checks reject an incorrect frame implementation before changing tracking state. Model and preprocessing operations still validate their own inputs.
 
-最终固定 INT8 节点在同一进程完成 20 轮交替启停，再额外完成 181 轮、1801.933221 秒有效播放。四模型只加载一次，退出码 0，无残留进程。RSS 中途一次性增大后维持平台状波动；未测 NPU 设备内存。首次驱动交接失败的未完成负载不计入最终时长。详细证据见该变更的 [验证记录](openspec/changes/integrate-rk3576-ros-video/validation.md)。这些结果不改变前序模型质量任务结论。
+For example, an asynchronous detection can start on frame 100 and finish while tracking processes frame 104. Shared references keep frame 100 alive while the detector and history replay need it. Ending that round cancels unstarted work, waits for in-flight accesses, and clears old requests/results before the next round uses the same models.
 
-## 2026-09-15 独立相机帧源实施补充
+Keep each capture queue's single producer and single consumer. Continuous preview uses one persistent dispatcher as that consumer and retains at most one pending tracking task; new tasks may replace unstarted tasks. Display and tracking share read-only references rather than independently consuming the camera queue. Final destruction joins threads before releasing the resources they access. Unconfirmed device access must follow the specified fatal-error policy instead of freeing possibly active storage.
 
-`implement-rk3576-camera-frame-source` 已实现独立的 AR0234 连续灰度采集代码。它核验实际传感器及采集格式，按驱动行跨度复制有效像素，输出具有独立所有权的公共帧。相机缓冲在复制后立即归还，异步消费者持帧不会占用设备缓冲。
+## Model contracts and current execution
 
-新增设备故障注入测试、固定时钟偏移和出队时间回退、可唤醒停止、重启清队列及独立采集报告工具。出队时间回退表示使用取到驱动帧时的时间，不等同于曝光时刻。独立工厂须显式开启相机能力；正式 ROS 工厂继续拒绝相机。
+The three logical model roles are YOLO detection, NanoTrackV3 feature extraction, and NanoTrackV3 matching. Jetson uses three TensorRT engine files. RK3576 uses four RKNN files: YOLO, template Backbone, search Backbone, and Head. The Backbone extracts image features; the Head compares template and search features.
 
-首次实施按用户要求不执行开发板 2 的任何运行任务。无设备 ARM64 构建与测试使用合成像素和系统调用替身；测试替身用于模拟设备返回及失败，不能证明真实驱动已经兼容。用户随后确认执行实机验收，已完成真实拓扑确认、300 帧像素与时间核对、20 轮启停、100 次新建销毁及 600.063 秒慢消费负载。122 轮最大停止 60.961 ms，长时运行内存稳定，停止和销毁后线程及文件描述符回到基线。详细命令和证据边界见 [相机帧源验证记录](openspec/changes/implement-rk3576-camera-frame-source/validation.md)。
+Keep raw-output decoding and detection/tracking arbitration in the public algorithm. YOLO's configured target is one exact zero-based class ID. NMS, or non-maximum suppression, removes overlapping duplicate candidates. Parameter and model changes must retain the approved preprocessing, threshold, coordinate, and output semantics.
 
-此前章节中“相机仍未提供”描述的是对应历史阶段；当前已提供独立实现，并完成开发板 2 相机实机验收，变更进度 29/29。实拍画面偏暗且模糊，图像质量检查仍待后续完成。ROS 相机接入、硬件加速、曝光同步和模型质量结论没有改变。前序完整回放的 7.2、7.3 仍未完成。
+RK3576 NanoTrack prepares Float32 image inputs without an extra divide by 255. Template features use the host Float32 path. Search features pass from the search model to the Head through shared device memory. The native search output and Head input must agree on FP16 type, grouped channel layout, stride, and safe capacity. Bindings are refreshed for each execution; incompatible attributes or missing shared-memory support fail explicitly. There is no automatic fallback to the old CPU transfer. Final classification and location outputs return as Float32 values to the public tracker.
 
+Model replacement requires validation of dimensions, color/grayscale semantics, tensor order and layout, type, quantization, normalization, crop/letterbox behavior, and output meaning. Loading succeeds only for supported contracts; it is not proof of numerical or tracking equivalence. Do not retrain or convert existing models as a default migration step.
 
-## 2026-09-15 ROS 相机软件接入补充
+## Input, preview and output lifecycles
 
-内参后续确认：用户允许正式标定前使用模拟值，1920×1200 相机配置已填入 `fx=fy=1000.0、cx=960.0、cy=600.0` 像素。后续接入测试可继续，须保留模拟来源；正式标定后替换四值并重启。该决定不代表旋转补偿精度或正式跟踪质量通过。
+RK3576 ROS input supports local MJPEG files and explicit AR0234 or SC233HGS camera configuration. AR0234 supports continuous capture and periodic software triggering. SC233HGS uses continuous capture and validates startup timestamps before delivering qualified frames. Device mappings and camera calibration must be supplied for the actual board.
 
-最新续做：用户确认增加控制读回超时后，初始化设置和恢复均采用每项 100 ms 期限、5 ms 重读间隔。ARM64 ROS/公共测试 12/12、独立相机/公共测试 14/14 通过。开发板 2 单次触发与 20 Hz 各三轮成功，控制恢复通过，最大停止耗时 534.776 ms，原立即读回阻塞已解除。ROS 缺失依赖已补齐，内参及其他完整验收仍未完成。新增任务 2.5 已完成，当前进度 **28/38**；下文保留此前 27/37 阶段的调查历史，最新证据见验证记录顶部。
+For a camera with `osd.enabled=true`, service startup begins capture and HDMI preview after initialization. ON creates a tracking round and explicitly enabled recording sessions. OFF rejects further old-round results, clears target decoration, and resumes fresh preview while model/recording cleanup completes. It does not reopen or stop the camera. Camera failure ends the service with a nonzero result; safe service shutdown releases the devices. Finite video, cameras without OSD, independent input tools, and Jetson retain their specified ON/OFF and EOF lifecycles.
 
-`integrate-rk3576-ros-camera` 已接通正式 ROS 相机入口、连续及周期软件触发模式。设备帧率与命令频率分别配置；20 Hz 仍是历史短测候选，不作为新实现验收结论。直接控制、可停止周期等待、采集就绪握手和统一资源清理已实现。命令线程不操作图像队列，原尺寸灰度复制与时间换算保持不变。
+`need_save` controls RK3576 ROS bag recording. Bags contain the configured non-image observation and attitude topics; `/fpv/tracker_image` is never recorded. `visualized_result` independently enables live debug images for consumed tracking frames. `recording.enabled` controls SC233HGS original-camera H.264/TS video in an independent process; its failure does not stop otherwise healthy tracking or display.
 
-本轮只在开发板 2 读取并复制用户指定的历史触发日志，未运行新相机程序、模型或部署。历史成功命令证实软件模式取值，30/60 Hz 数量差仍未归因。软件构建使用既有 ARM64 临时容器；ROS/公共测试 12/12、独立相机测试 14/14 通过，安装树包含专用启动与参数文件。动态依赖和公共头文件检查未发现新增 Jetson SDK 依赖。
+RK3576 bbox and LOS observations share one reference timestamp. LOS means the camera-to-target direction and its rotation-compensated angular rates. Default `publish_prediction=false` uses capture time; prediction mode selects an eligible pose time or falls back to capture time. Preserve the separate image capture timestamp, floating observation precision, validity rules, and QoS. Tracking states remain `Detecting=0`, `TargetFound=1`, `Tracking=2`, and `TargetLost=3`; preview does not create another algorithm state.
 
-控制恢复失败保留未恢复项和错误；本次恢复尝试结束后释放句柄，再次停止可重新打开控制节点重试。相机初始化拒绝 `need_save=true`。原话题、状态数值和模型跨轮复用保持不变；相关证据见 [ROS 相机实施记录](openspec/changes/integrate-rk3576-ros-camera/validation.md)。
+The `ON MISSION` display requires a received mission-start event and fresh connected, armed, guided flight status. Tracking-state publications do not determine its lifetime. Follow the current mission policy and [HDMI guide](docs/RK3576_HDMI_OSD.md) for cancellation and reauthorization.
 
-进度为 27/37。首次软件实施时，任务 1.2 及 6.3–6.6、7.1–7.5 按要求暂缓。2026-09-15 再次 apply 后已开始开发板 2 验收：读回单次触发帧数为 1，新工具无触发用例正常结束，后续单次用例在创建验证的控制恢复阶段报 `readback mismatch trigger_src`。退出后控制值恢复为 0/1/60，无设备占用，但尚未解决该失败。ROS 部署另缺 vision_msgs 动态库。后续矩阵及负载暂停，任务仍为 27/37，不归档，详情见验证记录顶部。本次不改变模型质量、曝光同步、Jetson 等价性或前序完整回放 7.2、7.3 未完成结论。前文关于 ROS 相机尚未提供的描述属于历史阶段，以本节更新为准。
+## Verification already recorded
 
+The following are historical evidence sources, not claims that the current checkout was rerun on hardware:
 
-## 2026-09-15 ROS 相机完整实机验收完成
+| Area | Recorded scope |
+|---|---|
+| Public factory | [Factory verification](openspec/changes/archive/2026-09-10-introduce-platform-factory/verification.md): portable contracts and source review; no Jetson execution claim |
+| RKNN model backends | [YOLO board validation](openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md), [NanoTrack validation](openspec/changes/archive/2026-09-11-implement-rk3576-nanotrack-backend/validation.md), and [shared-feature adoption](openspec/changes/archive/2026-09-22-adopt-nanotrack-search-direct-handoff/validation.md) |
+| Software video and ROS video | [Video-source validation](openspec/changes/archive/2026-09-14-implement-rk3576-video-frame-source/validation.md) and [ROS-video validation](openspec/changes/archive/2026-09-15-integrate-rk3576-ros-video/validation.md) |
+| Camera and ROS integration | [Camera-source validation](openspec/changes/archive/2026-09-15-implement-rk3576-camera-frame-source/validation.md) and [ROS-camera final board validation](openspec/changes/archive/2026-09-15-integrate-rk3576-ros-camera/final-board-validation.md); both changes are archived |
+| HDMI, recording and preview | [HDMI final validation](openspec/changes/archive/2026-09-23-integrate-rk3576-hdmi-osd/final-validation.md), [recording final validation](openspec/changes/archive/2026-09-24-add-rk3576-camera-recording/final-validation.md), and [continuous-preview validation](openspec/changes/archive/2026-10-13-decouple-rk3576-hdmi-stream-from-tracker-trigger/validation.md) |
 
-`integrate-rk3576-ros-camera` 当前 **38/38**，尚未归档。开发板 2 已完成新实现的有限触发矩阵、20 轮软件启停、100 次新建销毁、601 秒慢消费及连续模式 20 轮像素/时间回归。20 Hz 的三轮有限计数均为 120 次命令/120 帧；30/60 Hz 仍不满足一触发一帧，原因未归因。
+Read each report's board, program, model, input, timing, and failure boundaries before reusing a conclusion. An old SDK version or completed earlier run does not define the current build or prove acceptance of a changed binary. Raw outputs under `.docker-artifacts/` and `/tmp` may have been deleted. Preserve required acceptance evidence in an explicitly retained location outside disposable build caches.
 
-同一 YOLO 与纯 FP16/INT8 NanoTrack 配置完成两种采集模式和图像开关基础检查，以及启动路径缺失、一次受控出队错误及恢复。固定 INT8 软件模式在同一进程完成 20 轮，再额外运行 1806.044 秒；命令与读取均为 36124，消费 36123，错误与两类丢帧计数为零。主机内存约 150 秒后稳定，模型跨轮复用，最终退出后无设备占用，控制恢复为 0/1/60。
+## Remaining validation and change process
 
-验收端曾把 ROS 延迟交付的旧消息归入新轮，现已保留原始计数证据，并用每轮独立接收窗口完成连续模式 30 轮复核。生产消息 QoS 与算法未因此更改。详细证据见 [最终实机记录](openspec/changes/integrate-rk3576-ros-camera/final-board-validation.md)。
+- The active [complete-replay task list](openspec/changes/assemble-rk3576-tracker-replay/tasks.md) retains incomplete FP16/INT8 automatic-capture and required-scene acceptance. Existing resource and integration evidence does not turn an unsuccessful detection-quality run into a pass.
+- The active [diagnostic task list](openspec/changes/add-rk3576-tracking-diagnostic-process/tasks.md) retains its independent basic-mode overhead acceptance. Recorded diagnostic or regression runs do not substitute for that prescribed paired measurement.
+- Jetson hardware build/runtime equivalence, NPU device-memory accounting where not measured, physical camera timestamp/exposure synchronization, calibrated angular accuracy, and flight behavior require their own evidence. Synthetic intrinsics and unannotated footage cannot establish these properties.
+- Scope each future platform optimization through OpenSpec. Freeze program, model, input, configuration, board, and workload identities; compare observable results before claiming a performance benefit. Follow each change's actual deadlines and acceptance conditions instead of combining unrelated historical tests.
 
-模拟内参仍为 1000/1000/960/600，正式标定后替换；当前画面昏暗且失焦。NPU 设备内存、曝光同步、模型质量和 Jetson 等价性未验收。前序完整回放 7.2、7.3 不因本变更完成而改变结论。前文的 27/37、28/38 和相关阻塞均为历史阶段。
+For future changes: inspect the existing change, complete or revise its planning artifacts, implement its tasks, verify code and specifications together, then synchronize or archive. Keep the system Runtime unchanged during application deployment and use the [deployment guide](deployment/README.md) for selected installation paths, service ownership, and rollback.

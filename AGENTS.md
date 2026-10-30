@@ -1,57 +1,55 @@
-# drone_tracker 仓库工作约定
+# drone_tracker repository instructions
 
-## 分支与迁移目标
+## Branches and compatibility
 
-- 将 `rk3576` 视为主要开发分支，目标是在 Rockchip RK3576 上完整复现现有无人机跟踪程序。除非任务明确要求，不要在 `jetson` 分支上开发新功能。
-- 将 `jetson` 视为可在 Jetson 硬件上运行的完整参考实现。移植或排查行为差异时，使用 `git show jetson:<path>` 或分支间 diff 核对源实现，不要凭印象重写算法。
-- 优先保持外部行为和算法语义一致，再做 RK3576 专属优化。未经对应 OpenSpec 变更，不要改变 ROS 话题、参数含义、跟踪状态或模型前后处理结果。
-- 识别并隔离 Jetson 专属边界。当前源码和构建文件直接依赖 CUDA、TensorRT、VPI、Jetson Multimedia API、Tegra 库及 CUDA 架构 87；这些是迁移源实现，不是 RK3576 的目标依赖。
-- 处理 Jetson 到 RK3576 的平台重构时，先阅读 [RK3576_REFACTORING_PLAN.md](RK3576_REFACTORING_PLAN.md)，并以其公共算法核心、平台后端边界和分阶段验证方案为重构指导。文档中标注“待 OpenSpec 确认”或“待实机确认”的内容不是已批准结论；具体实现仍以已批准的 OpenSpec、代码和实机证据为准。
+- Develop on `rk3576` unless the task explicitly selects another branch. Use `jetson` as the reference implementation; compare with `git show jetson:<path>` or a branch diff when investigating behavior differences.
+- Preserve externally visible behavior and algorithm semantics unless an approved OpenSpec change authorizes a difference. Read [RK3576_REFACTORING_PLAN.md](RK3576_REFACTORING_PLAN.md) before changing platform boundaries. Proposed designs and unverified hardware assumptions are not acceptance evidence.
+- Keep hardware-specific dependencies inside their platform boundaries. CUDA, TensorRT, VPI, Jetson Multimedia API, Tegra libraries, and CUDA architecture 87 belong to the Jetson build. The RK3576 build selects RKNN and its own camera/display/recording dependencies.
 
-## 架构与术语
+## Architecture and terminology
 
-- `src/drone_tracker_node.*` 是 ROS 2 编排层：读取参数，选择相机或视频输入，驱动跟踪器，并发布检测框、图像和状态。
-- `src/mv_camera/` 是采集、解码和帧缓冲层。Jetson 实现以 `VPIImageWrapper` 传递图像，并使用 Jetson Multimedia API；移植时把平台资源管理留在该边界内。
-- `src/hybrid_tracker/` 是算法管线：异步 YOLO 检测、NanoTrackV3 跟踪、可选 DCF 融合，以及带相机旋转补偿的卡尔曼滤波。`ALGORITHM_REVIEW.md` 可作算法说明，但以代码和已批准的 OpenSpec 为准。
-- “三个模型”固定指 YOLO、NanoTrackV3 Backbone 和 NanoTrackV3 Head。Jetson 使用 TensorRT `.engine`，三者均已有对应的 RKNN 平台版本。
-- `launch/` 和 `parameters/` 定义运行入口与实机参数；`models/` 安装到 ROS 包的 share 目录，模型路径由节点在运行时拼接。
+- `src/drone_tracker_node.*` orchestrates ROS 2 parameters, inputs, tracking rounds, observations, and recording. `src/drone_tracker_main.cpp` owns process startup and the ROS executor.
+- `src/hybrid_tracker/` contains asynchronous YOLO detection, NanoTrackV3 tracking, optional DCF center fusion, and a rotation-compensated Kalman filter. DCF is the grayscale correlation filter; disabling it retains the separate center Kalman filter. [ALGORITHM_REVIEW.md](src/hybrid_tracker/ALGORITHM_REVIEW.md) explains the algorithm; code and approved specifications remain authoritative.
+- `src/frame/` and the public interfaces under `src/platform/` describe shared read-only frames and complete tracker components. Keep hardware SDK types out of these interfaces and the algorithm state machine.
+- Jetson capture and decoding use `src/mv_camera/`; Jetson adapters live under `src/platform/jetson/`. RK3576 capture, software video decoding, model sessions, display, and recording live under `src/platform/rk3576/`.
+- The three logical model roles are YOLO, NanoTrackV3 Backbone, and NanoTrackV3 Head. Jetson uses three TensorRT `.engine` files. RK3576 uses four `.rknn` files because template and search Backbone inputs require separate files.
+- `launch/` and `parameters/` define runtime entry points. Absolute model paths are used directly; relative model paths resolve under the installed package's `share/drone_tracker/models/` directory. Do not commit large model binaries without an explicit request.
 
-## RKNN 移植约束
+## RK3576 model and resource constraints
 
-- 目标 RK3576 平台固定使用 RKNN Runtime 2.3.2 和 RKNPU 驱动 0.9.8。引入或升级 RKNN 相关依赖时，以这两个版本为兼容性基线。
-- 使用已有 RKNN 模型，不要把重新训练或重新转换模型作为默认前置任务。模型文件未作为普通源码纳入仓库；未经明确要求，不要提交大型模型二进制。
-- 替换推理后端时逐项验证模型契约：输入尺寸、颜色或灰度格式、HWC/CHW 布局、数据类型、量化参数、归一化、letterbox/裁剪规则、输出张量顺序，以及 YOLO 解码与 NMS。二进制能加载不等于行为等价。
-- 保持 `HybridTracker` 的平台无关状态机和检测/跟踪仲裁逻辑稳定。优先在图像封装、预处理和推理引擎层引入 RK3576 实现，避免把 RKNN 细节扩散到 ROS 编排层。
-- 资源生命周期和并发是高风险区域。修改异步 YOLO、帧队列、图像锁或设备缓冲区时，明确所有权与线程边界，并执行对应的竞态、压力或回放验证。
+- Keep RKNN Runtime 2.3.2 and RKNPU driver 0.9.8 as the compatibility baseline. Use existing models; retraining or conversion is not a default prerequisite.
+- Verify the complete model contract when replacing inference code: input dimensions, grayscale/color format, tensor layout, type, quantization, normalization, letterbox/crop rules, output ordering, YOLO decoding, and NMS. NMS removes overlapping duplicate detections. Successful model loading alone does not establish equivalent results.
+- The production NanoTrack search feature passes through shared device memory. Check native FP16 layout, stride, capacity, and binding compatibility; incompatible models fail loading rather than silently falling back to a host transfer. Template features and final Head outputs retain their Float32 host path.
+- Keep the platform-independent `HybridTracker` state machine and detection/tracking arbitration stable. Introduce platform work through frame, preprocessing, and model boundaries.
+- For asynchronous detection, queues, read views, or device buffers, make ownership and thread boundaries explicit. Run the relevant concurrency, stress, or replay checks. Release buffers only after their device and thread users have stopped.
 
-## OpenSpec 工作流
+## OpenSpec and documentation
 
-- 在 `rk3576` 分支进行功能、架构、接口或可观察行为变更前，先检查 `openspec/changes/`，继续匹配的现有 change；需要新 change 时，先完成相应 OpenSpec 提案、设计、规格和任务，再实施代码。
-- 实现时以 change 的 `tasks.md` 为执行清单。完成后验证实现与 proposal、design 和 delta specs 一致，再同步或归档；不要只改代码而让规格失真。
-- 遵守 `openspec/config.yaml`：所有 OpenSpec 工件使用简体中文，并写成无需依赖对话上下文即可理解的独立文档。首次出现的专业术语要说明其当前含义和作用。
+- Before a feature, architecture, interface, or observable behavior change on `rk3576`, inspect `openspec/changes/` and continue a matching change. If a new change is needed, complete its proposal, design, specifications, and tasks before implementation.
+- Implement against the change's `tasks.md`. Verify code against all planning artifacts before synchronization or archival. Keep specifications consistent with the final implementation.
+- Follow `openspec/config.yaml`: write new or revised artifacts in English. Make each artifact understandable without the chat, explain technical terms on first meaningful use, and preserve exact identifiers and normative keywords.
+- Treat `.docker-artifacts/` and temporary directories as disposable output. They may be cleared regularly. Copy evidence needed for durable acceptance to an explicitly retained location before cleanup; a historical path does not guarantee that its files still exist.
 
-## 构建与验证
+## Build and verification
 
-- 本项目是 C++17 的 ROS 2 `ament_cmake` 包。保留相邻代码风格，避免顺手格式化无关代码。
-- 开始开发或构建前，若仓库根目录存在 `AGENTS.local.md`，先读取其中的本地工具、路径和容器约定，并读取父目录的 `AGENTS.local.md`。本地系统专属信息只写入该文件，不要写入本文件。
-- For RK3576, use `./build.sh` or `./build.sh --test`. The default x86_64 image cross-compiles ARM64 output; `--backend arm64` explicitly selects the ARM64-image fallback. ARM64 target restrictions do not require an ARM64 container. Read `AGENTS.local.md` and `dockerfiles/README.amd64.md` for SDK paths, separate caches, portable native checks and packaging boundaries.
-- Jetson 参考实现应在匹配的 Jetson 硬件和 SDK 环境中构建。常规入口同样是 `colcon build --packages-select drone_tracker --cmake-args -DCMAKE_BUILD_TYPE=Release`；当前 Jetson 源实现还要求 ROS 2 依赖、OpenCV、CUDA、TensorRT、VPI、FFmpeg 和 Jetson Multimedia API。
-- 需要测试目标时增加 `-DDRONE_TRACKER_BUILD_TESTS=ON`。`hybrid_tracker_tests` 覆盖算法级逻辑；`vpi_race_repro` 依赖 VPI/CUDA；`hybrid_tracker_stress` 和 `replay_harness` 需要真实模型，回放测试还需要录制视频。
-- 不要用非目标主机上的编译结果代替实机验证。交付时说明使用的平台、模型和输入数据，并明确列出因缺少 RK3576/Jetson 硬件、SDK、模型或录像而未运行的检查。
+- This is a C++17 ROS 2 `ament_cmake` package. Preserve neighboring code style and avoid unrelated formatting. Read applicable language norms under `~/.codex/language_norms/` before editing that language.
+- Before development or builds, read repository and parent `AGENTS.local.md` files when present. Put machine-specific paths and access details in the local file.
+- Use `./build.sh` or `./build.sh --test` for RK3576. The default x86_64 compiler image produces ARM64 output. `--backend arm64` explicitly selects the ARM64-image fallback; failures must not trigger an automatic backend switch. See [dockerfiles/README.amd64.md](dockerfiles/README.amd64.md) for SDK paths, separate caches, and packaging boundaries.
+- Build the Jetson reference on matching Jetson hardware and SDKs. Its entry point is `colcon build --packages-select drone_tracker --cmake-args -DCMAKE_BUILD_TYPE=Release`; it requires ROS 2, OpenCV, CUDA, TensorRT, VPI, FFmpeg, and Jetson Multimedia API.
+- Manual configurations enable checks with `-DDRONE_TRACKER_BUILD_TESTS=ON`. Jetson-only race/stress/replay targets require the corresponding SDKs, and model/replay checks require actual models and recordings.
+- Report the actual platform, model identities, and input data used for validation. State checks not run because hardware, SDKs, models, or recordings were unavailable. Host or emulated results do not replace target-board acceptance.
 
-## RK3576 生产开发板
+## Production boards
 
-- 所有生产环境正式开发板均为 `HZ-RK3576_WuKong Board`，运行 Ubuntu 22.04.5 LTS ARM64 和 `6.1.141-rt36` 内核。硬件为 RK3576、4×Cortex-A72 加 4×Cortex-A53、3.8 GiB 系统可见内存和 58.2 GiB eMMC。
-- NPU 使用 RKNPU 驱动 `0.9.8`，RKNN Runtime 为 `2.3.2`。系统库固定为 `/usr/lib/librknnrt.so`，`/lib/librknnrt.so` 指向同一文件；库文件 SHA-256 为 `d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8`。部署程序必须使用系统库，不要用容器内的 Runtime 覆盖它。
-- NPU 渲染节点为 `/dev/dri/renderD128` 和 `/dev/dri/renderD129`。`rknn_server` 会启动前台常驻服务；查询 Runtime 信息时不要直接运行它。
-- 板端提供 ROS 2 Humble、`rclcpp`、`sensor_msgs` 和 `mavros_msgs`。每个非交互 SSH 命令先执行 `source /opt/ros/humble/setup.bash`。
-- 工具链为 GCC/G++ 11.4.0、CMake 3.22.1 和 Python 3.10.12。目标板构建或部署验证必须在匹配的生产板环境完成，不能以开发容器或其他开发板的结果替代。
-- 相机链路提供 Rockchip `rkcif` 和 `rkisp` V4L2 节点，设备访问需要 `video` 组权限。开始采集前执行 `v4l2-ctl --list-devices` 和 `media-ctl -p`，复核当前接入设备的节点映射和格式。
-- 生产板是独立的验收目标。每份部署、相机或负载测试记录必须标明具体板卡，不能以开发板 1 或开发板 2 的结果替代。
+- Production acceptance targets `HZ-RK3576_WuKong Board`, Ubuntu 22.04.5 LTS ARM64, kernel `6.1.141-rt36`, and an RK3576 with four Cortex-A72 and four Cortex-A53 cores. Record board identity, available memory, storage, and device topology for each run; memory capacity is not universal across boards.
+- Use the board's system `/usr/lib/librknnrt.so`; `/lib/librknnrt.so` refers to the same file on the documented system. Runtime 2.3.2 has SHA-256 `d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8`. Never overwrite it with a container library.
+- Recheck NPU/render devices and camera topology on the actual board. Documented render nodes are `/dev/dri/renderD128` and `/dev/dri/renderD129`. Do not run `rknn_server` merely to query a version: it starts a foreground service.
+- Source `/opt/ros/humble/setup.bash` in each non-interactive board command. The documented toolchain is GCC/G++ 11.4.0, CMake 3.22.1, and Python 3.10.12.
+- Before capture, run `v4l2-ctl --list-devices` and `media-ctl -p`; verify the sensor, node, format, and access permissions. Development board 1/2 results do not substitute for production-board acceptance.
 
-## 兼容性与评审重点
+## ROS and review constraints
 
-- 默认保持 `/fpv/gimbal`、`/fpv/odom`、`/fpv/tracker_trigger` 输入，以及 `/fpv/target_bbox`、`/fpv/tracker_image`、`/fpv/tracker_state` 输出的名称、消息类型和时序语义。
-- 保持 `TrackerState` 数值语义：`Detecting=0`、`TargetFound=1`、`Tracking=2`、`TargetLost=3`。参数默认值或单位发生变化时，同步检查头文件、两个 YAML 配置和 launch 覆盖项。
-- 将 `readerwriterqueue.h`、`threadpool.h` 等第三方或内嵌依赖视为外部代码；除非任务直接要求，不要对其进行风格重构。
-- 仓库未提供可见的 CI 配置。评审时重点检查跨平台依赖是否泄漏、模型契约是否一致、设备资源是否释放、队列是否仍符合其生产者/消费者假设，以及失败路径能否安全停止线程。
+- Preserve existing `/fpv/gimbal`, `/fpv/odom`, `/fpv/tracker_trigger`, `/fpv/target_bbox`, `/fpv/tracker_image`, and `/fpv/tracker_state` contracts except for approved changes. RK3576 also publishes paired floating bbox/LOS observations through `/fpv/target_los` and records `/mavros/imu/data`; follow `target-observations` for timestamps, validity, QoS, and bag contents.
+- Preserve `TrackerState`: `Detecting=0`, `TargetFound=1`, `Tracking=2`, `TargetLost=3`. Preview is a separate lifecycle and must not invent tracking states. Update all affected parameter templates and launch overrides when defaults or units change.
+- For RK3576 camera input with `osd.enabled=true`, service startup begins preview and OFF leaves capture running. Models remain shared across tracking rounds; final service shutdown owns device release. Other input modes retain their specified lifecycle.
+- Treat `readerwriterqueue.h`, `threadpool.h`, and other embedded dependencies as external code unless directly in scope. Review cross-platform dependency isolation, model compatibility, failure cleanup, and producer/consumer assumptions. The repository has no CI workflow configuration.

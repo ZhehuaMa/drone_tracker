@@ -1,231 +1,227 @@
-# platform-factory 规格
+# platform-factory Specification
 
 ## Purpose
 
-为采集、离线回放与跟踪提供一致的平台创建入口，使帧、预处理及模型执行组件能够安全协作。明确构建选择、部分创建失败和资源释放的行为，避免公共调用方依赖硬件类型，并保持现有输入、录像和跟踪结果。
-
-本变更的验证范围为源码与构建配置静态审查、平台无关编译和模拟依赖测试。下列生产行为场景描述应保持的契约，不要求在本变更中安排 Jetson 编译、运行或测试，也不把这些范围外检查作为完成前置条件。静态审查及模拟测试结果不得表述为 Jetson 实机验证通过。
+Create compatible capture, frame, preprocessing, and inference resources for one selected platform. Keep hardware SDK types behind platform boundaries and define ownership, partial-failure cleanup, and the single camera-queue consumer used by continuous preview.
 
 ## Requirements
 
-### Requirement: 构建明确选择一个已实现平台
+### Requirement: Builds select one implemented platform explicitly
 
-平台后端是适配特定硬件的采集、图像处理和模型执行实现。系统 SHALL 通过构建选项 `DRONE_TRACKER_PLATFORM` 选择生产后端。未指定该选项时 SHALL 使用 `jetson`。生产构建 SHALL 支持 `jetson` 和 `rk3576`。系统 SHALL 在启用硬件编译语言或查找硬件开发库之前拒绝未知选项值。失败诊断 SHALL 包含请求值及当前支持值。系统 MUST NOT 自动回退到另一后端。
+A platform backend adapts capture, image preparation, and inference to hardware. `DRONE_TRACKER_PLATFORM` SHALL select `jetson` or `rk3576`. Raw CMake SHALL default to `jetson`; the repository RK3576 build entry SHALL explicitly select `rk3576`. Unknown values SHALL fail before hardware language or SDK discovery, with the requested and supported values. The system MUST NOT switch backends after failure.
 
-RK3576 生产节点 SHALL 无需 CUDA、TensorRT、VPI、Jetson Multimedia API 或 Tegra 依赖即可构建。Jetson 生产节点 SHALL 不因本变更要求 RKNN 或 RGA。RK3576 构建的缺失依赖诊断 SHALL 说明所选平台和缺失项。RKNN 依赖诊断 SHALL 说明目标 Runtime 2.3.2 与驱动 0.9.8 基线。
+#### Scenario: Existing Jetson configuration
+- **WHEN** raw CMake is configured without a platform option in a matching Jetson SDK environment
+- **THEN** it selects Jetson without adding a runtime platform parameter
 
-#### Scenario: 使用既有构建入口
-- **WHEN** 未设置平台选项并在满足依赖的 Jetson 环境配置生产构建
-- **THEN** 选择 Jetson 后端，既有运行参数无需增加平台参数
+#### Scenario: RK3576 configuration
+- **WHEN** `DRONE_TRACKER_PLATFORM=rk3576` is configured with matching ARM64 target ROS and RKNN dependencies
+- **THEN** the ROS node builds and installs without CUDA, TensorRT, VPI, Jetson Multimedia API, or Tegra discovery, whether the compiler runs natively or cross-compiles
 
-#### Scenario: 请求 RK3576
-- **WHEN** 在满足 ROS、通用依赖及 RKNN SDK 的 ARM64 环境设置 `DRONE_TRACKER_PLATFORM=rk3576`
-- **THEN** 可以构建和安装 ROS 节点，不查找 Jetson 硬件库
+#### Scenario: Unsupported platform
+- **WHEN** `DRONE_TRACKER_PLATFORM=other` is requested
+- **THEN** the first platform error reports `other` and `jetson/rk3576`, rather than a missing CUDA dependency
 
-#### Scenario: 请求尚未实现的平台
-- **WHEN** 设置 `DRONE_TRACKER_PLATFORM=other`
-- **THEN** 首先报告请求值不受支持及支持值 jetson/rk3576，不以缺少 CUDA 作为失败原因
+#### Scenario: Missing RKNN dependency
+- **WHEN** RK3576 headers or target libraries are missing
+- **THEN** configuration names the platform and missing dependency, states Runtime 2.3.2/driver 0.9.8 compatibility, and does not fall back to Jetson
 
-#### Scenario: RKNN 依赖缺失
-- **WHEN** 选择 RK3576 但编译所需 RKNN 头文件或库不存在
-- **THEN** 配置明确报告 RK3576、缺失项和目标版本基线，不回退 Jetson
+### Requirement: Production factories provide matching components
 
-### Requirement: 生产入口获得匹配的组件
+Preprocessing prepares image data for a model; a model backend executes inference. The selected platform factory SHALL provide compatible frame sources, host-frame creation, YOLO, NanoTrack, and preprocessing components. Callers MUST NOT independently mix component platforms within one production pipeline. Failed assembly SHALL return a platform/component/path diagnostic without partial usable tracking dependencies.
 
-预处理负责把帧转换为模型要求的输入；模型后端负责运行模型。系统 SHALL 从选中平台的创建入口提供帧源、主机图像帧创建能力，以及匹配的 YOLO 和 NanoTrack 预处理与模型后端。公共调用方 MUST NOT 为同一生产管线分别选择这些组件的平台。成套模型依赖创建失败时 SHALL 不返回部分可用的跟踪依赖。
+#### Scenario: Camera and replay use the same selected platform
+- **WHEN** production-camera and replay callers create Jetson pipelines
+- **THEN** both obtain internally compatible Jetson resources without choosing hardware types in the caller
 
-#### Scenario: 相机和回放使用一致平台
-- **WHEN** 分别从生产相机入口和离线回放入口创建 Jetson 管线
-- **THEN** 两个入口各自获得可协作的 Jetson 帧和模型组件，无需在调用方选择具体硬件类型
+#### Scenario: Third model cannot load
+- **WHEN** YOLO and NanoTrack Backbone resources exist but Head is unreadable
+- **THEN** complete assembly fails with platform, component, and path, without returning a detection-only pipeline
 
-#### Scenario: 第三个模型加载失败
-- **WHEN** YOLO 与 NanoTrack Backbone 已创建，但 NanoTrack Head 文件不可读取
-- **THEN** 整套跟踪依赖创建失败，诊断包含平台、失败组件及模型路径，不返回仅能检测的半套跟踪依赖
+### Requirement: Frame creation preserves pixels and independent ownership
 
-### Requirement: 帧创建保留内容与所有权
+A host image is CPU-readable pixel storage. The factory SHALL deep-copy valid Gray8 and BGR8 images into selected-platform frames. It SHALL preserve dimensions, pixel format, effective pixels, and microsecond timestamps. Modifying or freeing the source MUST NOT change the frame. Frames and read views SHALL retain storage independently of their factory. Invalid input SHALL return a diagnostic without a partial frame.
 
-主机图像是 CPU 可以直接读取的像素数据；共享帧引用延长帧资源的有效期。系统 SHALL 提供复制主机图像生成所选平台帧的能力。支持的输入 SHALL 包含现有八位灰度和三通道 BGR 图像。复制成功的帧 SHALL 保留输入尺寸、像素格式、像素值和微秒采集时间戳。原图在返回后被修改或释放 MUST NOT 改变已生成帧。无效输入或创建失败 SHALL 返回无有效帧的可诊断结果。
+#### Scenario: Original image changes after copying
+- **WHEN** a grayscale image is copied with timestamp 1000000 and the original pixels are overwritten
+- **THEN** the frame retains the original pixels and timestamp 1000000
 
-#### Scenario: 复制后修改原图
-- **WHEN** 从灰度图及时间戳 1000000 创建帧后覆盖原图像素
-- **THEN** 生成帧仍保存复制时的像素和时间戳 1000000
+#### Scenario: Input has row padding
+- **WHEN** a legal grayscale or BGR subimage has a non-contiguous row stride
+- **THEN** copying respects that stride and excludes row padding from image pixels
 
-#### Scenario: 非连续主机图像
-- **WHEN** 从每行存在额外跨度的合法灰度图或 BGR 子图创建帧
-- **THEN** 帧像素按输入的实际行跨度正确复制，不把行间填充当作像素
+#### Scenario: Image format is unsupported
+- **WHEN** the input is empty or has four channels
+- **THEN** creation fails diagnostically without exposing a partially initialized frame
 
-#### Scenario: 不支持的图像输入
-- **WHEN** 请求从空图或四通道图创建帧
-- **THEN** 返回失败诊断，不暴露部分初始化帧
+### Requirement: Frame sources preserve one capture-queue consumer
 
-### Requirement: 公共帧源保持现有采集与录像行为
+A frame source supplies camera or video frames through a queue. Its public interface SHALL expose start, stop, running state, dimensions, and frame retrieval without hardware SDK types. The source queue SHALL keep one producer and one consumer. Continuous preview SHALL use one persistent dispatcher as that consumer, with at most one pending tracking task. Display and tracking MUST NOT compete for source frames or open another camera.
 
-帧源是提供图像队列的相机或视频读取器。系统 SHALL 通过不含硬件开发库类型的接口提供启动、停止、运行状态、尺寸查询及取帧能力。Jetson SHALL 保留现有输入选择、尺寸查询值、队列容量、满队列处理、采集时间戳和历史时间戳行为。RK3576 视频 SHALL 按 rk3576-video-frame-source 规格提供原尺寸灰度帧、视频时间及从头重启行为，沿用现有视频队列分配配置和满队列处理。RK3576 AR0234 相机 SHALL 遵守 rk3576-camera-frame-source 的两种采集模式、时间与队列契约。SC233HGS 相机 SHALL 遵守 rk3576-sc233hgs-camera-frame-source 的连续采集、时间和队列契约。系统 MUST NOT 为适配原有取帧接口增加额外图像队列或采集转发线程；软件触发可以使用独立执行上下文，但 MUST NOT 成为第二个图像队列生产者。
+#### Scenario: Jetson camera recording starts
+- **WHEN** a Jetson camera receives ON with `need_save=true`
+- **THEN** existing camera-image recording, directory/prefix, ROS bag, queue, timestamp, and input-selection behavior remain intact
 
-`need_save` SHALL 在 RK3576 节点中仅控制 ROS bag，不得作为相机帧源录像请求。Jetson 相机 SHALL 沿用现有图像录像行为及 ROS bag 行为。视频文件输入 SHALL 保留不启动相机图像录像的行为。RK3576 相机 SHALL 接受 `need_save=true`，且不因此改变采集队列或相机视频录像状态。SC233HGS SHALL 另行接受 `recording.enabled` 指定的独立原画面录像，通过不暴露硬件开发库类型的配置与状态边界提供该能力。该独立支路 SHALL 允许新增有界录像队列和录像工作进程，但 MUST NOT 改变公共取帧队列的单消费者规则。RK3576 AR0234 SHALL 明确报告独立视频录像不可用，同时允许健康跟踪初始化与运行。
+#### Scenario: RK3576 video recording request
+- **WHEN** a local RK3576 video receives ON with `need_save=true`
+- **THEN** it starts no camera-image recording and independently attempts ROS bag creation under `rk3576-ros-video`
 
-#### Scenario: 相机启动录像
-- **WHEN** Jetson 相机输入收到 ON 触发且 `need_save=true`
-- **THEN** 相机使用现有目录与前缀配置录像，节点继续记录原有 ROS bag 话题，无需转换为具体相机类型
+#### Scenario: Jetson capture restarts
+- **WHEN** one Jetson input receives ON, OFF, then ON
+- **THEN** no old capture thread or additional queue consumer remains, and existing queue allocation, full-queue, timestamp, and history-time rules remain intact
 
-#### Scenario: 视频文件启动
-- **WHEN** RK3576 视频文件输入收到 ON 触发且 `need_save=true`
-- **THEN** 不启动相机图像录像，节点按 `rk3576-ros-video` 的记录和故障隔离规则尝试 ROS bag
+#### Scenario: RK3576 video restarts
+- **WHEN** video and prior consumption stop, then the source starts again
+- **THEN** playback starts from the beginning without old queued frames; realtime mode establishes a new base and history mode retains recording time
 
-#### Scenario: 采集停止后再次启动
-- **WHEN** 同一 Jetson 输入依次收到 ON、OFF、ON
-- **THEN** 不遗留上一轮采集线程，不增加队列消费者，时间戳及队列处理沿用现有输入语义
+#### Scenario: RK3576 camera accepts message recording
+- **WHEN** a camera is configured with `need_save=true`
+- **THEN** initialization succeeds, tracking/recording wait for ON, continuous preview can already run, and the node attempts bag creation without forwarding the legacy camera-recording request
 
-#### Scenario: RK3576 视频重新启动
-- **WHEN** 调用方停止 RK3576 视频和上一轮消费，再次调用启动
-- **THEN** 视频从头播放，旧队列不进入新轮，实时模式建立新基准而历史模式保留录像时间
+#### Scenario: SC233HGS independent recording
+- **WHEN** enabled recording receives qualified SC233HGS frames during an ON session
+- **THEN** its bounded branch receives only frames that passed final camera checks; staged pixels stay unavailable to the encoder until publish, and the public camera queue still has one consumer
 
-#### Scenario: RK3576 相机记录请求
-- **WHEN** RK3576 相机配置 need_save=true
-- **THEN** 节点完成初始化并等待 ON；相机帧源不接收旧录像请求，ON 后由节点独立尝试建立 ROS bag
+#### Scenario: Independent recording is disabled
+- **WHEN** `recording.enabled=false`
+- **THEN** no recording pixel copy, recording queue, or recording worker is created; Jetson, AR0234, and video keep their input contracts
 
-#### Scenario: SC233HGS 独立录像
-- **WHEN** 公共节点为 SC233HGS 提交独立录像配置并启动相机
-- **THEN** 平台后端装配原画面录像支路，两支路仅接收相机最终确认有效的合格帧，录像暂存帧在最终检查前不得发布给编码器，公共节点不依赖编码器硬件类型，算法队列仍只有原消费者
+#### Scenario: Warmup is independent of recording
+- **WHEN** an SC233HGS stream starts with recording disabled
+- **THEN** normal warmup still runs and the public frame interface supplies no unqualified warmup pixels
 
-#### Scenario: 关闭新录像
-- **WHEN** 未启用独立录像配置
-- **THEN** 无新增录像图像复制、队列或工作进程，Jetson、AR0234 和视频的原有行为保持不变
+#### Scenario: Recording is requested for an unsupported input
+- **WHEN** RK3576 AR0234 or video receives ON with `recording.enabled=true`
+- **THEN** independent video recording is reported unavailable, `need_save` still governs bag creation, and healthy tracking continues
 
-#### Scenario: 相机预热与录像配置独立
-- **WHEN** SC233HGS 关闭独立录像后启动
-- **THEN** 相机仍按自身契约预热，公共取帧接口在预热期间没有图像可取，不通过录像开关绕过预热
+#### Scenario: Continuous preview dispatches while tracking is busy
+- **WHEN** tracking processes A while source frames B and C arrive
+- **THEN** the sole dispatcher keeps at most C pending, releases replaced B safely, and preserves A until its users finish; this dispatch is permitted by `rk3576-continuous-hdmi-stream`
 
-#### Scenario: RK3576 不支持视频录像的输入
-- **WHEN** RK3576 AR0234 或视频文件输入配置 `recording.enabled=true` 并收到 ON
-- **THEN** 节点明确报告独立视频录像不可用，仍按 `need_save` 的值尝试 ROS bag，健康跟踪继续
+### Requirement: Creation and final destruction respect active resources
 
-### Requirement: 创建和最终释放具有完整资源边界
+The system SHALL start detection only after complete assembly and executable static contract checks succeed. Ordinary initialization failure SHALL reclaim acquired resources without active capture/detection threads. Factory destruction MUST NOT invalidate retained frames, views, or prepared inputs. Final destruction SHALL wait for resource users before release. Models SHALL survive OFF/ON. Unconfirmed device stop SHALL use the existing fatal boundary.
 
-初始化线程指检测或采集的后台执行线程。系统 SHALL 在成套模型依赖创建及可执行的静态契约检查成功后才启动检测线程。契约是模型要求的输入数量、尺寸、类型等约定。普通初始化失败 SHALL 回收本次已取得的资源。失败后的管线 SHALL 不保留活动采集或检测线程。创建器销毁 MUST NOT 使仍由消费者持有的帧、视图或模型输入结果失效。
+#### Scenario: Component loading fails partway
+- **WHEN** the second or third model fails during assembly
+- **THEN** acquired resources are released exactly once, detection never starts, and the created frame source can be destroyed safely
 
-最终销毁管线时，系统 SHALL 在释放被访问资源前停止并等待相关线程结束。用户 OFF 后再次 ON SHALL 继续复用已加载模型。设备提交后无法确认设备停止访问存储时，系统 SHALL 沿用既有模型执行规格的致命终止行为，不进行不安全的资源回收。
+#### Scenario: Detection thread cannot start
+- **WHEN** complete components exist but detection thread creation fails
+- **THEN** initialization fails, components remain safely reclaimable, and capture has not started
 
-#### Scenario: 模型创建中途失败
-- **WHEN** 成套依赖创建在第二或第三个模型失败
-- **THEN** 已创建资源恰好释放一次，检测线程未启动，系统可以安全释放已创建的帧源
+#### Scenario: Factory is destroyed before retained frame
+- **WHEN** factory and builder are destroyed while a consumer retains a frame or view
+- **THEN** pixels remain readable until their final owner releases storage
 
-#### Scenario: 检测线程启动失败
-- **WHEN** 组件创建完成但检测线程启动失败
-- **THEN** 初始化返回失败，已创建组件可被安全回收，采集没有开始
+#### Scenario: Exit occurs during detection
+- **WHEN** shutdown finds active detection and cached frames
+- **THEN** it waits for those accesses before releasing storage, with no early or duplicate release
 
-#### Scenario: 创建器先于帧销毁
-- **WHEN** 工厂及帧创建器被销毁，但消费者保留帧或只读视图
-- **THEN** 消费者仍能读取有效数据，最后一个资源所有者释放后才回收底层存储
+#### Scenario: Model creation fails before capture starts
+- **WHEN** a camera has acquired device/buffer resources but model creation fails before capture
+- **THEN** destroying the source still releases those resources despite capture never having started
 
-#### Scenario: 正在检测时退出
-- **WHEN** 进程关闭时存在正在运行的异步检测和缓存帧
-- **THEN** 等待相关线程停止后释放其使用的资源，不发生提前释放或重复释放
+#### Scenario: Camera initialization or thread creation is partial
+- **WHEN** construction throws or only some camera threads start
+- **THEN** cleanup joins created threads before reclaiming resources, repeated cleanup is safe, and no usable source is returned
 
+### Requirement: Common algorithms build without hardware SDKs
 
-#### Scenario: 相机尚未采集时模型创建失败
-- **WHEN** 相机已打开设备并分配缓冲区，但后续模型创建失败且尚未开始采集
-- **THEN** 销毁帧源仍关闭设备并释放缓冲区，清理不得因未采集而跳过
+Common algorithms and factory interfaces SHALL compile without CUDA, VPI, TensorRT, RKNN, RGA, or Jetson Multimedia API headers. Common targets MUST NOT directly or transitively link platform implementations. Final programs SHALL explicitly combine common algorithms with the selected backend. Software-only tests SHALL execute real common algorithms with injectable dependencies.
 
-#### Scenario: 相机部分初始化或线程启动失败
-- **WHEN** 相机只取得部分资源、构造发生异常，或只启动了部分采集线程后失败
-- **THEN** 系统先停止并等待已创建的线程，再回收已经取得的资源；重复清理不重复释放，初始化失败不返回可用相机帧源
+#### Scenario: Portable common build
+- **WHEN** only C++17, OpenCV, and threads are available
+- **THEN** common tests build without hardware SDK discovery and exercise compatibility using injected components
 
-### Requirement: 公共算法可以独立于硬件开发库构建
+#### Scenario: Production dependency declarations are reviewed
+- **WHEN** Jetson CMake declarations are reviewed without configuring or running Jetson
+- **THEN** its platform target owns Jetson dependencies, common targets do not link back to it, and Jetson configuration does not require RKNN or RGA; review is not hardware acceptance
 
-硬件开发库包括 CUDA、VPI、TensorRT、RKNN、RGA 和 Jetson Multimedia API。公共算法及公共创建接口 SHALL 无需上述头文件即可编译。公共算法构建目标 SHALL 不直接或传递链接平台实现。最终生产程序 SHALL 显式组合公共算法与选中的平台实现。无硬件测试 SHALL 使用真实公共算法及可注入的模拟依赖运行。
+### Requirement: RK3576 factories expose video and explicit camera capability
 
-#### Scenario: 无硬件开发库的公共测试
-- **WHEN** 在仅具备通用编译器、OpenCV 和线程库的环境构建公共算法测试
-- **THEN** 不查找硬件开发库，真实跟踪入口可以接受模拟组件并执行兼容性验证
+A legal local MJPEG request SHALL return a real unstarted source. MJPEG stores each video frame as JPEG. Explicitly camera-enabled standalone factories and the production factory SHALL accept valid camera requests. Other standalone factories SHALL reject camera requests. Root production builds SHALL support both ROS camera and video. Sources SHALL not require models or Jetson SDKs. Video SHALL return its actual dimensions and ignore camera-only image settings.
 
-#### Scenario: 静态审查生产依赖声明
-- **WHEN** 读取 CMake 源码检查生产目标的依赖声明，不配置或编译 Jetson 目标
-- **THEN** 平台目标声明 Jetson 依赖，公共算法目标不反向依赖平台目标，生产配置不要求 RKNN 或 RGA
+#### Scenario: Video source is created
+- **WHEN** a factory receives a legal MJPEG path and arbitrary camera output dimensions
+- **THEN** it returns an unstarted source reporting video dimensions that can subsequently start and supply frames
 
-### Requirement: RK3576 独立工厂提供视频但保留生产构建边界
+#### Scenario: Root camera and video entries are available
+- **WHEN** a root RK3576 build requests a legal camera and a legal MJPEG file
+- **THEN** both return unstarted, startable sources under their respective contracts
 
-RK3576 工厂 SHALL 对合法本地 MJPEG 视频请求返回可用公共帧源，不在创建时启动生产线程。创建失败 SHALL 包含平台、输入路径和原因。独立工厂显式开启相机能力后 SHALL 接受符合 `rk3576-camera-frame-source` 的相机请求。未开启时 SHALL 继续明确返回不支持。正式 ROS 工厂 SHALL 显式开启相机能力，并接受符合 rk3576-ros-camera 的请求。
+#### Scenario: Software video dependencies stay isolated
+- **WHEN** independent video-source tests build and run
+- **THEN** they need no Jetson libraries, real models, or NPU inference
 
-视频帧源 SHALL 忽略相机专属尺寸、fps、翻转、镜像配置，并返回实际视频尺寸。根目录生产构建 SHALL 支持 RK3576 的 ROS 视频与相机入口。独立视频及相机目标 SHALL 不引入 CUDA、TensorRT、VPI 或 Tegra 依赖。视频及相机帧源自身 SHALL 不要求加载模型。
+#### Scenario: Standalone camera capability is enabled
+- **WHEN** a standalone caller explicitly enables camera support and supplies a valid configuration
+- **THEN** the returned source supports dimension queries, start, retrieval, and stop
 
-#### Scenario: 工厂创建视频
-- **WHEN** 通过 RK3576 工厂提交合法 MJPEG 视频路径及任意相机输出尺寸
-- **THEN** 返回未启动的真实帧源，尺寸查询为原视频尺寸，可通过公共接口启动及取帧
+#### Scenario: Standalone camera capability is omitted
+- **WHEN** an existing standalone caller omits camera enablement
+- **THEN** camera remains rejected while video and model assembly retain their behavior
 
-#### Scenario: 相机和根目录入口仍不开放
-- 保留历史场景标识；本次更新后的行为为正式入口同时开放合法相机与视频。
-- **WHEN** 从根目录构建 RK3576 节点后分别请求相机和合法 MJPEG 文件
-- **THEN** 合法相机请求和视频请求均返回未启动但可启动的帧源
+### Requirement: Source status explains termination without consuming frames
 
-#### Scenario: 软件视频目标依赖隔离
-- **WHEN** 构建和运行独立视频帧源测试
-- **THEN** 不链接 Jetson 设备库，也不需要加载真实模型或提交 NPU 推理
+The system SHALL expose a thread-safe hardware-neutral status snapshot. RK3576 video SHALL distinguish ready, running, stopped, EOF, and failure. Diagnostics SHALL include relevant path, cause, sequence, and read/enqueue/drop counts. Snapshots MUST NOT consume queued frames. Ordinary timeout MUST NOT mean EOF. Stop SHALL retain established termination evidence; restart SHALL establish fresh state and counts. Other platforms can report unknown detail.
 
-#### Scenario: 独立相机显式开启
-- **WHEN** 独立调用方开启相机能力并提交合法设备配置
-- **THEN** 返回未启动的相机帧源，公共接口可查询尺寸及执行启停取帧
+#### Scenario: Video has a long interframe interval
+- **WHEN** the next video frame is ten seconds away and retrieval times out
+- **THEN** status still reports running instead of EOF or failure
 
-#### Scenario: 默认调用保持原行为
-- **WHEN** 既有独立调用未指定新增相机能力选项
-- **THEN** 相机仍被拒绝，视频及模型装配行为不变
+#### Scenario: Decode failure survives cleanup
+- **WHEN** an intermediate JPEG fails to decode and the source is stopped
+- **THEN** status retains the path, failure cause, and corresponding sequence
 
-### Requirement: 公共帧源可查询终止原因
+#### Scenario: Query does not consume the final queued frame
+- **WHEN** EOF has occurred but the queue contains a tail frame and status is queried repeatedly
+- **THEN** status reports EOF and the original consumer can still retrieve the frame
 
-系统 SHALL 提供不含硬件类型的帧源状态快照。快照表示查询时的状态，不消费帧或改变队列。RK3576 视频快照 SHALL 区分就绪、运行、主动停止、正常结尾和失败。适用的诊断 SHALL 包含路径、原因、帧序号和本轮读取、入队、满队列丢弃计数。查询 SHALL 可以与生产线程并发执行。未提供详细状态的平台 SHALL 返回未知，保持其既有取帧行为。
+### Requirement: Reused models isolate consecutive tracking rounds
 
-布尔取帧接口 SHALL 保留。普通超时 MUST NOT 被记录为正常结尾。EOF 表示文件正常结束。停止清理 SHALL 保留本轮已确定的 EOF 或错误原因；重新启动 SHALL 建立新一轮状态和统计。
+A round is one interval of tracking input acceptance. With no concurrent tracker update, round cleanup SHALL cancel unstarted detection requests, wait for executing detection/frame access, and clear unread results and retained old requests. It SHALL retain loaded models. A new round MUST NOT consume old results, even when frame numbers repeat. Cleanup MUST NOT change normal scheduling, thresholds, or arbitration. Final destruction SHALL join detection safely.
 
-#### Scenario: 长间隔仍在运行
-- **WHEN** 后续视频帧尚需等待十秒且本次取帧超时
-- **THEN** 查询仍报告运行，不误报结尾或错误
+#### Scenario: Round ends during inference
+- **WHEN** the caller stops supplying old-round frames and requests cleanup during detection
+- **THEN** cleanup waits for access to end, clears old results, and retains models for the next round
 
-#### Scenario: 失败后清理
-- **WHEN** 中间 JPEG 解码失败，随后执行停止清理并查询
-- **THEN** 仍能获得本轮失败原因及对应路径和帧序号
+#### Scenario: Detection request has not started
+- **WHEN** cleanup finds a pending old request
+- **THEN** it cancels that request and releases its frame without executing it in a later round
 
-#### Scenario: 状态查询不吃掉尾帧
-- **WHEN** 视频已到结尾而队列仍保留尾帧，多次查询状态后再消费
-- **THEN** 查询报告结尾，尾帧仍可被原消费者读取
+#### Scenario: Frame numbers repeat across rounds
+- **WHEN** old frame 1 has a ready result and the next round also begins at frame 1
+- **THEN** only the new round's own result can produce its box
 
-### Requirement: 复用模型时隔离不同运行轮次
+### Requirement: Camera implementation follows explicit sensor selection
 
-运行轮次指一次开始送帧到停止送帧的期间。系统 SHALL 在没有并发跟踪更新时提供轮次收尾能力。收尾 SHALL 撤销尚未执行的检测请求。收尾 SHALL 等待正在执行的检测及其帧访问结束。收尾返回前 SHALL 清除旧结果和旧请求持有的帧。收尾 SHALL 保留已加载模型供下一轮使用。新轮 MUST NOT 使用旧轮检测结果，即使两轮帧号相同。
+RK3576 camera configuration SHALL select `ar0234` or `sc233hgs`, defaulting to `ar0234` for existing callers. Unknown values SHALL fail with the requested and supported values. A selected sensor's missing controls, ISP preparation, or other dependencies MUST NOT trigger automatic fallback to another sensor implementation.
 
-轮次清理 MUST NOT 改变正常运行期间的检测调度、阈值或仲裁规则。最终销毁 SHALL 等待检测线程退出后释放其资源。设备无法确认停止访问时 SHALL 遵守既有致命失败契约，不强制释放在用内存。
+#### Scenario: SC233HGS is selected
+- **WHEN** a camera request sets `sensor_model=sc233hgs`
+- **THEN** the factory returns the SC233HGS source without AR0234 trigger-control initialization
 
-#### Scenario: 正在推理时结束一轮
-- **WHEN** 旧轮检测已开始但尚未完成，调用方停止送帧并请求收尾
-- **THEN** 收尾等待检测和帧访问结束，返回后无可供新轮获取的旧结果，模型仍可复用
+#### Scenario: Sensor selection is omitted
+- **WHEN** a camera request supplies no sensor model
+- **THEN** AR0234 remains selected with its existing behavior
 
-#### Scenario: 尚未执行的请求
-- **WHEN** 一个旧请求尚未开始执行且调用方请求收尾
-- **THEN** 请求被撤销，所持帧释放，不在新轮执行
+#### Scenario: Sensor selection is unknown
+- **WHEN** a requested model is neither `ar0234` nor `sc233hgs`
+- **THEN** creation fails with the unsupported value and supported choices, without attempting either sensor
 
-#### Scenario: 已就绪结果与重复帧号
-- **WHEN** 旧轮帧号 1 的检测结果已就绪，收尾后新轮也从帧号 1 开始
-- **THEN** 新轮只能使用其自身的检测结果，不发布旧轮的框
+### Requirement: Sensor implementations retain independent capture contracts
 
-### Requirement: RK3576 相机按显式传感器型号选择具体实现
+AR0234 SHALL obey `rk3576-camera-frame-source` and its two capture modes. SC233HGS SHALL obey `rk3576-sc233hgs-camera-frame-source` and continuous capture. Shared capture-resource code MUST NOT change either sensor's pixel, timestamp, queue-drop, or start/stop contract. Continuous-preview lifecycle exceptions SHALL follow `rk3576-continuous-hdmi-stream`.
 
-系统 SHALL 通过公共采集配置（`FrameSourceConfig`）的传感器型号字段在创建 RK3576 相机帧源时选择对应的具体实现，取值为 `ar0234` 或 `sc233hgs`，未显式提供时默认 `ar0234` 以保持现有开发板 1、2 的既有行为不变。未知或不受支持的取值 SHALL 拒绝创建，诊断 SHALL 包含请求值与当前受支持的取值列表。系统 MUST NOT 在所选型号的运行依赖不可用时（例如 ISP 链路未就绪、传感器控制项读写失败）自动切换或回退到另一型号。
+#### Scenario: AR0234 remains stable when SC233HGS support is present
+- **WHEN** a production binary supports both sensors but selects AR0234
+- **THEN** AR0234 preserves its pixels, timestamp policy, queue handling, and applicable lifecycle without acquiring SC233HGS-specific behavior
 
-#### Scenario: 请求 SC233HGS 相机
-- **WHEN** 提交 RK3576 相机创建请求且传感器型号字段为 `sc233hgs`
-- **THEN** 返回遵守 `rk3576-sc233hgs-camera-frame-source` 规格的帧源，不查找或初始化 AR0234 专属的触发控制项
+### Requirement: Message recording and original-camera recording stay separate
 
-#### Scenario: 未提供型号字段
-- **WHEN** 提交 RK3576 相机创建请求且未显式设置传感器型号字段
-- **THEN** 按 `ar0234` 处理，行为与新增该字段之前完全一致
+RK3576 `need_save` SHALL control only ROS bag recording. SC233HGS `recording.enabled` SHALL independently control original NV12 video through a bounded recording branch. Recording configuration/status MUST NOT expose encoder SDK types to the ROS caller. Continuous preview alone SHALL start neither recording session. ON SHALL attempt enabled sessions independently; recording faults SHALL preserve healthy capture/tracking/display under their existing contracts.
 
-#### Scenario: 未知型号取值
-- **WHEN** 传感器型号字段取值既不是 `ar0234` 也不是 `sc233hgs`
-- **THEN** 创建失败并报告请求值及受支持列表，不尝试按任一已知型号继续初始化
-
-### Requirement: 两种传感器型号各自独立遵守其采集规格
-
-AR0234 相机帧源 SHALL 继续完整遵守 `rk3576-camera-frame-source` 规格描述的采集模式、时间与队列契约，其行为不因新增传感器型号选择能力而改变。SC233HGS 相机帧源 SHALL 遵守 `rk3576-sc233hgs-camera-frame-source` 规格描述的连续采集、时间与队列契约。两种实现共享的采集缓冲区管理逻辑不得使其中一种实现的可观察行为（像素内容、时间语义、队列丢帧规则、启停耗时）发生变化。
-
-#### Scenario: AR0234 行为不受影响
-- **WHEN** 同一生产二进制新增了对 SC233HGS 的支持后，仍以 `ar0234` 型号创建相机帧源
-- **THEN** 采集到的像素、时间戳策略、队列丢帧规则和启停行为与新增 SC233HGS 支持之前完全一致
+#### Scenario: Recording and bag are both enabled
+- **WHEN** a healthy continuous-preview SC233HGS service receives ON with both options enabled
+- **THEN** bag and original-video sessions start independently, while the existing dispatcher remains the sole source-queue consumer

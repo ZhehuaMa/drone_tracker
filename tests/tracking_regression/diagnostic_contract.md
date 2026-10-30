@@ -1,4 +1,4 @@
-# Diagnostic contract for fixed regression, formats 1 and 2
+# Diagnostic contract for configurable regression, formats 1 and 2
 
 The current dependency is `src/diagnostics/event.h` format 2. The collector also supports historical format-1 records. An event is a fixed 256-byte record. Its exact identity is `(run_id, producer_id, producer_seq)`. `round_id` identifies the ON/OFF round; `update_id` identifies the tracker call. Requests and results use `request_id`, `source_update_id`, and `source_tracker_frame_id`. Times are integer `mono_ns` (monotonic nanoseconds), `frame_time_us` and `prediction_us` (system microseconds). The fixture supplies an exact `E0 + relative_us` mapping to `fixture_frame_id`. Camera driver identities remain unknown for the synthetic source; original driver sequences are provenance only.
 
@@ -152,3 +152,7 @@ snapshots preserve the legal preparation range. A scan that crosses registration
 start time rather than the scan's later completion time. Wrong masks at or after registration still
 fail, as do invalid sample times. Older snapshots without the field use their existing snapshot time;
 historical failed records remain unchanged.
+
+## Evidence retention
+
+The integrity contract applies to the complete retained run tree. `.docker-artifacts` and `/tmp` are disposable storage locations and may be cleared. Preserve required raw segments, exports and checksum manifests in an explicitly retained location; historical path names alone do not establish continued availability.

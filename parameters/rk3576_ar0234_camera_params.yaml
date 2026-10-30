@@ -1,34 +1,34 @@
-# AR0234 软件触发相机模板：启动后等待 ON；必须先填写模型路径。
-# camera 内参是模拟值，并非镜头实测标定；部署前须用 v4l2-ctl --list-devices
-# 和 media-ctl -p 复核目标板的 /dev 设备、传感器实体及采集格式。
+# AR0234 software-trigger template: waits for ON; fill all model paths first.
+# Camera intrinsics are simulated, not measured lens calibration. Before deployment, use
+# v4l2-ctl --list-devices and media-ctl -p to verify device topology, sensor and format.
 drone_tracker_node:
   ros__parameters:
     diagnostics:
       mode: "off"
       socket: /run/drone_tracker/diagnostics.sock
-    # ROS bag（按话题保存消息）开关；支持 RK3576 相机和视频，故障只影响本轮 bag。
+    # ROS bag switch for RK3576 camera/video; a failure affects only this round's bag.
     need_save: false
-    # 每轮 bag 在此目录下新建独立子目录；不会覆盖已有目录。生产启用前确认可写和剩余空间。
+    # Each round creates a new child directory; verify write access and free space first.
     save_path: "/tmp/drone-recordings"
-    # 调试图像输出；生产保持 false，bag 中也不注册 /fpv/tracker_image。
+    # Live debug image switch. RK3576 bags exclude /fpv/tracker_image in every setting.
     visualized_result: false
     publish_prediction: false
     los.rate_filter_tau: 0.12
-    # SC233HGS 独立 H.264/TS 录像；与 need_save/ROS bag、ROS 图像及 HDMI 开关独立。
-    # 生产启用示例：复核本地 ext4 挂载及目录权限，使用 SC233HGS 连续模式后设 enabled: true。
+    # Independent SC233HGS H.264/TS recording; separate from need_save, ROS images and HDMI.
+    # Enable only for SC233HGS continuous capture after verifying a local ext4 directory.
     recording:
       enabled: false
       directory: /var/lib/drone_tracker/recordings
       bitrate_bps: 12000000
       segment_seconds: 60
-      sync_interval_ms: 1000  # 仅允许 500、1000、2000；不是掉电损失上限。
-      max_total_bytes: 21474836480  # 20 GiB，包含未完成会话与附属文件。
-      min_free_bytes: 5368709120  # 5 GiB；达到保护线停止录像，不删除历史内容。
-    # HDMI 显示独立于 ROS 调试图像；全部 osd 参数只在启动时生效。
+      sync_interval_ms: 1000  # Only 500, 1000 or 2000; this is not a maximum power-loss window.
+      max_total_bytes: 21474836480  # 20 GiB including incomplete sessions and sidecars.
+      min_free_bytes: 5368709120  # 5 GiB reserve; stop recording at the limit without deleting history.
+    # HDMI is independent of ROS debug images. All osd parameters are startup-only.
     osd:
-      render_path: cached-overlay # 回退示例：render_path: legacy（修改后重启节点）。
+      render_path: cached-overlay # Set legacy and restart to select the renderer fallback.
       enabled: false
-      timing_enabled: false  # 显示分段计时，仅启动时生效；关闭后重启可回退
+      timing_enabled: false  # Display-stage timing; restart after changing this value.
       drm_device: "/dev/dri/card0"
       connector: "HDMI-A-1"
       width: 720
@@ -37,68 +37,68 @@ drone_tracker_node:
       frame_stale_ms: 1000
       telemetry_timeout_ms: 2000
       craft_name: "FPV"
-      battery_cells: 0  # 0 表示未知，不根据电压猜测节数。
+      battery_cells: 0  # Zero means unknown; do not infer cell count from voltage.
     use_history_timestamp: false
     use_sim_time: false
-    # 2026-09-15 用户确认：1920×1200 图像暂用模拟内参，单位为像素。
-    # fx/fy=1000 是人为选定的测试值；cx/cy 暂取图像中心，不是实测标定。
-    # 仅用于集成测试，不据此验收旋转补偿精度；正式标定后替换以下四值并重启节点。
+    # Simulated intrinsics for 1920x1200 input, in source pixels.
+    # fx/fy=1333.3 are chosen integration values; cx/cy are the image center.
+    # These values do not establish calibration or rotation accuracy. Replace after calibration.
     camera:
       fx: 1333.3
       fy: 1333.3
       cx: 960.0
       cy: 600.0
     tracker:
-      # 四文件必须显式填写；绝对路径直接使用，相对路径基于包 share/models。
+      # Supply four explicit files; relative paths resolve below package share/models.
       yolo_engine: ""
-      nano_backbone: ""  # RK3576 共享 Backbone 字段必须为空。
-      nano_template_backbone: ""  # 模板图像特征提取模型。
-      nano_search_backbone: ""  # 搜索图像特征提取模型。
-      nano_head: ""  # 模板与搜索特征匹配模型。
-      # 单个精确目标类别编号：仅接受 cid == yolo_target_class_id（从 0 开始）
+      nano_backbone: ""  # The shared Backbone field must be empty on RK3576.
+      nano_template_backbone: ""  # Template image feature model.
+      nano_search_backbone: ""  # Search image feature model.
+      nano_head: ""  # Template/search feature matching model.
+      # One exact zero-based target class: only cid == yolo_target_class_id.
       yolo_target_class_id: 0
-      # 检测器阈值保持实机调参值；其余为 hybrid tracker 算法行为参数，
-      # 与 airsim_tracker launch.py 对齐（语义已随移植改变）
+      # Detector thresholds retain the configured board tuning. Remaining values control
+      # the public hybrid tracker; consult its current algorithm review for semantics.
       yolo_conf_threshold: 0.5
       yolo_nms_threshold: 0.45
       yolo_interval: 4
-      yolo_recall_relax_ratio: 1.0   # 1.0 = 关闭（Python 端无此放宽机制）
-      iou_reset_threshold: 0.4       # IoU 低于此值时重置跟踪器
-      iou_calibrate_threshold: 0.8   # IoU 高于此值时视为 YOLO 确认，不干预
-      max_position_jump: 150.0       # 像素（绝对值；原 1536x960 调参，960x960 下可适当调小）
+      yolo_recall_relax_ratio: 1.0   # ROI confidence multiplier; 1.0 leaves the threshold unchanged.
+      iou_reset_threshold: 0.4       # Re-anchor when overlap is below this threshold.
+      iou_calibrate_threshold: 0.8   # YOLO agreement threshold; confirmation does not overwrite the track.
+      max_position_jump: 150.0       # Absolute center-jump threshold in input pixels.
       max_size_jump_ratio: 2.0
       max_box_area_ratio: 0.8
       tracking_roi_scale_factor: 2.0
-      lost_max_count: 5              # 连续未确认判定上限：无检测 / 低IoU重初始化 / 未确认跳变均计数，
-                                     # x yolo_interval(4) ≈ 20 帧 (~0.67s)；持续误检不会再无限重初始化
+      lost_max_count: 5              # Consecutive unconfirmed results: no target, low-IoU recovery or unaccepted jumps.
+                                     # Counts detector results, not a guaranteed frame count or wall-clock duration.
       frame_buffer_size: 30
       jump_tolerance: 3
-      enable_dcf: false              # DCF 融合开关（A/B 对比用）；false 时由 kf_r_pos/kf_q_a
-                                     # 驱动的中心平滑 KF 承担稳心角色
+      enable_dcf: false              # False uses the center Kalman filter; true enables grayscale DCF fusion.
+                                     # The center filter uses kf_r_pos/kf_q_a; rotation-KF output remains separate.
       dcf_fixed_template: true
       dcf_learning_rate: 0.01
       dcf_lambda: 0.0001
       dcf_psr_thresh: 5.0
-      dcf_max_div_factor: 0.5        # 中心发散重锚定门限（DCF 与 KF 路径共用）
-      # KF 噪声（旋转补偿回溯卡尔曼滤波；r_pos/q_a 同时用于 enable_dcf=false 时的
-      # 跟踪器内中心平滑 KF）
+      dcf_max_div_factor: 0.5        # Center divergence threshold shared by DCF and center-filter paths.
+      # Rotation-compensated Kalman noise. r_pos/q_a also configure center smoothing
+      # when enable_dcf=false.
       kf_r_pos: 4.0
       kf_r_size: 4.0
       kf_q_a: 50000.0
       kf_q_size: 1000.0
     mv_camera:
-      # 以下设备拓扑和尺寸须在部署时复核，不是自动发现结果。
-      # sensor_model 可选 ar0234（默认）或 sc233hgs。SC233HGS 仅支持 continuous。
+      # Verify this topology and image size at deployment; these are explicit inputs.
+      # Choose ar0234 or sc233hgs. SC233HGS supports continuous mode only.
       sensor_model: ar0234
       capture_mode: software_trigger
-      trigger_rate_hz: 20.0  # 软件触发频率与设备 fps 独立；连续模式必须为 0。
+      trigger_rate_hz: 20.0  # Software command rate, independent of device fps; continuous requires zero.
       media_device: /dev/media0
-      sensor_entity: "m00_b_mvcam 4-003b"  # 必须替换为 media-ctl -p 显示的实体名称。
-      # SC233HGS 示例：path 使用已由 ISP/3A 准备好的 rkisp_mainpath 节点，
-      # media_device 和 sensor_entity 仅作诊断标识，不会驱动 media-ctl 配置。
-      # 生产板（2026-09-22 已核实）：video_source=/dev/video22，
-      # media_device=/dev/media0，sensor_entity="m00_b_sc233hgs 0-0030"。
-      # /dev/video22 实际为 1920x1200、NV12、单平面，Y 行跨度为 1920 字节。
+      sensor_entity: "m00_b_mvcam 4-003b"  # Replace with the entity reported by media-ctl -p.
+      # For SC233HGS, use an rkisp_mainpath node already prepared by ISP/3A.
+      # media_device and sensor_entity identify the configuration; they do not configure media-ctl.
+      # Use the dedicated rk3576_sc233hgs_production_params.yaml template for that sensor.
+      # Recheck its current device paths rather than copying historical mappings.
+      # A historical /dev/video22 setup used 1920x1200 single-plane NV12, Y stride 1920.
       # sensor_model: sc233hgs
       # capture_mode: continuous
       # trigger_rate_hz: 0.0
@@ -107,10 +107,10 @@ drone_tracker_node:
       buffer_count: 4
       width_px: 1920
       height_px: 1200
-      fps: 60  # 设备帧率，与软件命令频率独立。
-      output_width_px: 0  # 0 表示保持实际输入尺寸。
+      fps: 60  # Device frame rate, independent of software command rate.
+      output_width_px: 0  # Zero keeps the actual input size.
       output_height_px: 0
       flip: false
       mirror: false
-      pixel_size_um: 3.0  # RK3576 不据此推导 camera 内参。
+      pixel_size_um: 3.0  # RK3576 does not derive camera intrinsics from this field.
       focal_length_mm: 4.0

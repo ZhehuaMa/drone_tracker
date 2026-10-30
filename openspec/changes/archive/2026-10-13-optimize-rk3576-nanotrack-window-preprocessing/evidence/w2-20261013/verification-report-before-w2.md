@@ -1,130 +1,130 @@
-# 独立验收报告：optimize-rk3576-nanotrack-window-preprocessing
+# Independent acceptance: optimize-rk3576-nanotrack-window-preprocessing
 
-验收日期：2026-10-12（开发机日期）。生产板墙钟仍为 2026-08-11，不能用板端文件日期推断本轮真实日期。
+Acceptance date: 2026-10-12, using the development host's date. Production-board calendar time was still 2026-08-11, so board file dates do not identify this run's actual date.
 
-本报告使用 `openspec-verify-change` 流程，独立检查规划工件、未提交实现、原始记录和板端结果。指定重建输入的新旧数值、模型工作量和性能门槛通过。未发现缺失生产实现。但存在两项 WARNING（应处理的问题），并有未验证项，因此不声明全部检查通过或已经具备无条件归档结论。
+This historical report used `openspec-verify-change` to independently inspect planning artifacts, uncommitted implementation, raw records, and board results. Old/new numerical results, model work, and performance thresholds passed for the specified reconstructed input. No missing production implementation was found. Two WARNING issues and unverified scope remained, so this was not an all-checks-passed or unconditional-archive conclusion. Later W2 fixes do not change the findings recorded at this stage.
 
-## 范围和依据
+## Scope and basis
 
-OpenSpec root 经 `openspec list --json` 确认为本 worktree：`/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker`。使用 change `optimize-rk3576-nanotrack-window-preprocessing`，schema 为 `spec-driven`。复核读取 `proposal.md`、`design.md`、`tasks.md`、`specs/model-input-preprocessing/spec.md`、`validation.md`，以及 `evidence/production-20261012/` 中原始记录。切换其他 change 可使用 `$openspec-verify-change <change-name>`。
+`openspec list --json` confirmed worktree root `/Users/mazhehua/.codex/worktrees/nanotrack-window-preprocessing/drone_tracker`. Selected change was `optimize-rk3576-nanotrack-window-preprocessing`, schema `spec-driven`. Inspection read `proposal.md`, `design.md`, `tasks.md`, `specs/model-input-preprocessing/spec.md`, `validation.md`, and raw `evidence/production-20261012/` records. `$openspec-verify-change <change-name>` selects another change.
 
-检查遵循 worktree `AGENTS.md`、`openspec/config.yaml`、C++ 规范和原仓库 `AGENTS.local.md` 的工具约定。板端只通过 adb 设备 `5ceb49407502303d` 访问，没有使用 SSH/scp。验收没有修改实施代码、规格或任务，没有提交、同步规格、归档或切换部署。仅新增本报告及三个验收佐证文件。
+Checks followed worktree `AGENTS.md`, `openspec/config.yaml`, C++ norms, and original-repository `AGENTS.local.md` tools. Board access used only ADB serial `5ceb49407502303d`, without SSH/scp. Acceptance changed no implementation, specifications, tasks, commit, sync, archive, or deployment. It added only this report and three supporting evidence files.
 
-实施基点为 `ea9cd822b9717b2759ece8e251bb977c3f88449b`。检查对象包含 `git diff` 及未跟踪测试、诊断源文件。不能把 HEAD 单独视为验收实现。
+Implementation base was `ea9cd822b9717b2759ece8e251bb977c3f88449b`. Scope included `git diff` and untracked test/diagnostic source; HEAD alone did not identify the accepted implementation.
 
-## 三维评分表
+## Three-dimensional scorecard
 
-| 维度 | 实际结果 |
+| Dimension | Observed result |
 |---|---|
-| 完整性 Completeness | 任务勾选 20/20，剩余 0；逐项有实现或证据。8/8 ADDED 要求发现实现；MODIFIED、REMOVED、RENAMED 均为 0。环境标准内存一致性未验证，见 W1。 |
-| 正确性 Correctness | 8/8 要求完成代码映射。23/23 场景有代码或报告处理；22/23 有对应测试、实测或原始记录支持；“收益未达标”场景仅部分验证，缺性能失败负例，见 W2。实际输入精确对照、逐帧输出、工作量与性能门槛通过。 |
-| 一致性 Coherence | 6/6 主要设计决策符合；代码模式检查已执行，未发现显著偏离。C++ 静态工具检查未验证：容器没有 clang-tidy/clangd，仓库没有相应检查命令。 |
+| Completeness | 20/20 tasks checked, 0 remaining, each with implementation/evidence. Implementation found for 8/8 ADDED requirements; MODIFIED, REMOVED, RENAMED all 0. Standard-memory environment remained partly unverified: W1 |
+| Correctness | Code mapped for 8/8 requirements. All 23/23 scenarios had code/report treatment; 22/23 had corresponding tests/measurements/raw evidence. The insufficient-benefit scenario lacked a performance-failure control: W2. Actual-input equality, per-frame results, workload, and thresholds passed |
+| Coherence | 6/6 major design decisions matched. Code-pattern inspection found no significant departure. C++ static-tool checks were unverified because the image lacked clang-tidy/clangd and the repository had no command |
 
-适用的六项核心检查均已执行：任务完成、规格覆盖、要求实现映射、场景覆盖、设计遵循、代码模式一致性。其中场景覆盖为部分验证，按技能规则计入最终未验证项。没有因可选工件缺失产生的问题。
+All six applicable core checks ran: task completion, spec coverage, implementation mapping, scenario coverage, design adherence, code-pattern consistency. Scenario coverage remained partial and is listed as unverified under the skill rules. Missing optional artifacts created no issue.
 
-## 原始记录独立复算
+## Independent raw-record recomputation
 
-没有把 `analysis.json` 或实施报告中的结论作为复算输入。使用 conda base Python 的标准库直接解析 `frames.csv`、`intervals.csv`、原输入身份、清单和源码指纹。复算输出保存于 [verification-independent-analysis.json](evidence/production-20261012/verification-independent-analysis.json)。
+Neither `analysis.json` nor implementation-report verdicts supplied calculation inputs. Conda-base Python standard-library code parsed `frames.csv`, `intervals.csv`, original input identities, manifests, and source fingerprints directly. Output is [verification-independent-analysis.json](../production-20261012/verification-independent-analysis.json).
 
-| 指标 | 旧路径 | 新路径 | 判定 |
+| Metric | Old path | New path | Verdict |
 |---|---:|---:|---|
-| 预处理批次中位数 | 367.115402 ms | 7.278238 ms | 新/旧为 1.9825477%，低于 20% |
-| 预处理 P95 | 373.372192 ms | 7.426194 ms | 分项结果保留 |
-| 整批恢复中位数 | 573.712983 ms | 193.3046045 ms | 降低 |
-| 整批恢复 P95 | 580.295609 ms | 197.284198 ms | 没有增加 |
+| Preprocessing batch median | 367.115402 ms | 7.278238 ms | New/old 1.9825477%, below 20% |
+| Preprocessing P95 | 373.372192 ms | 7.426194 ms | Retained component observation |
+| Complete recovery-batch median | 573.712983 ms | 193.3046045 ms | Decreased |
+| Complete recovery-batch P95 | 580.295609 ms | 197.284198 ms | Did not increase |
 
-中位数按偶数样本取中间两项均值。P95 按排序后第 `ceil(0.95×N)` 项取值，本轮每路径正式样本为 10 批，因此为其中最大值。没有把父子阶段相加充当恢复总耗时。
+Even-sample medians average the central two. P95 selects sorted item `ceil(0.95×N)`; with 10 formal batches per path it is the maximum. Parent and child intervals were not summed to invent total recovery time.
 
-独立检查确认：
+Independent checks confirmed:
 
-- 24 批共 600 帧。每路径两批预热、十批正式测量，12 对交替先后顺序。所有预热批次排除于正式统计。
-- 11256 个计时区间属于 600 次帧操作，区间编号没有重复，起止合法、完整，子区间位于父区间内。逐帧 `preprocess_ns` 和 `image_prepare_ns` 与原始区间重新求和一致。
-- 从实际 `run` 区间及祖先重新识别 1176 次 NPU 执行。每批模板 1 次、搜索 24 次、Head 24 次，与每帧记录一致。搜索直通分支中的 Run 直接属于 Inference，模板和 Head 有对应模型祖先。生产后端源码支持此归属，不能用缺少的 SearchBackbone 外层计数推定失败或人为补数。
-- 12 对批次逐帧时间戳、成功标记、初始化状态、框及分数相同。记录以 9 位有效数字写出 Float32；工具内同时执行直接浮点精确比较。
-- 25 条输入清单的顺序、视频索引 4146～4170、时间戳、路径和像素指纹，与 `fixture-original.csv` 及 `input-identity-original.json` 一致。没有按帧率生成时间戳。板端 `--check-inputs` 再次实际解码并校验全部 25 张图像通过。
-- 289 个当前源码、头文件、CMake 及模板文件指纹与保存的板端源码指纹相同。旧整帧参考还原类名、命名空间和 FloatInput 引用后，与源提交 `.cpp` 逐字节相同。
-- `exact-inputs.txt` 记录 25 个实际轨迹输入、4730187 个元素精确一致。元素数独立计算为 `3×127×127+24×3×255×255`。精确检查器在真实恢复中对每个生产输入和旧参考的向量执行直接相等判断，随后模型消费生产输入；此检查在性能计时之外。没有保存完整浮点数组，因此不能离线再次比较每个原始元素，但代码身份、运行记录和板端数值测试共同支持通过结论。
-- 其他窗口原始记录共 192 条，八种边长均记录精确一致。2048 边长新路径较慢，报告没有把小窗口比例推广到大窗口。
+- 24 batches, 600 frames: two warmup and ten formal batches per path, 12 pairs with alternating order. All warmups excluded from formal statistics.
+- 11256 timing intervals belong to 600 frame operations, with unique IDs, valid/complete boundaries, and children inside parents. Per-frame `preprocess_ns` and `image_prepare_ns` match sums from raw intervals.
+- Actual `run` intervals and ancestry identify 1176 NPU executions. Every batch has 1 template, 24 search, and 24 Head calls, matching frame records. Search-direct Run belongs directly to Inference; template/Head retain model ancestors. Production source supports this attribution. Missing SearchBackbone parent counts neither prove failure nor justify invented calls.
+- All 12 pairs match per-frame timestamps, success, initialization, boxes, and scores. Float32 records use 9 significant digits; the tool also performs direct exact floating comparison internally.
+- All 25 manifest entries match `fixture-original.csv`/`input-identity-original.json` in order, video indices 4146–4170, timestamps, paths, and pixel hashes. Timestamps were not generated from FPS. Board `--check-inputs` decoded/checked all 25 again successfully.
+- All 289 current source/header/CMake/template fingerprints match retained board identities. Restoring class/namespace/FloatInput references makes the old full-frame reference byte-identical to the original commit's `.cpp`.
+- `exact-inputs.txt` records exact equality for 25 trajectory inputs and 4730187 elements, independently counted as `3×127×127+24×3×255×255`. During real recovery, the equality checker compares each production vector to old reference before the model consumes production input, outside performance timing. Full float arrays were not saved, so offline elementwise recomparison is unavailable. Code identity, records, and board numeric checks jointly support the result.
+- The other-window dataset has 192 records; all eight side lengths report equality. New processing is slower at side 2048, and the report does not generalize small-window ratios to large windows.
 
-## 要求及场景逐条映射
+## Requirement and scenario mapping
 
-以下路径均相对上述 worktree。场景名称对应增量规格中的原文。数值测试入口为 `src/platform/rk3576/tests/nanotrack_preprocess_test.cpp`；生产板复验运行其 `baseline_nanotrack_preprocess_tests` 目标。
+Paths below are relative to the historical worktree. Scenario descriptions are translated from the delta specification; the original specification identifiers are unchanged. Numerical entry is `src/platform/rk3576/tests/nanotrack_preprocess_test.cpp`; board reruns used `baseline_nanotrack_preprocess_tests`.
 
-| 要求/规格位置 | 场景 | 实现、测试与证据 | 结果 |
+| Requirement/location | Scenario description | Implementation/test/evidence | Result |
 |---|---|---|---|
-| 局部转换/补边，spec.md:5 | 小窗口位于大图内部 | `nanotrack_preprocessor.cpp:56`～90 仅对交集转换；实际 1920×1200 恢复输入及窗口测量 | 通过 |
-| 同上 | 左侧部分越界 | 宽整数交集和目的偏移、完整均值填充；数值矩阵四侧及四角 | 通过；字面 154 场景以同一几何分支和其他窗口交叉支持 |
-| 同上 | 初始化保留全图均值 | `TargetMean::initialize` 未改变；`reuseAndFailures()` 修改窗外像素对照 | 通过 |
-| 数值一致，spec.md:21 | 插值结果包含小数 | `cv::resize` 继续处理 Float32；`numeric()` 检查 fractional 及旧路径精确一致 | 通过 |
-| 同上 | 奇偶尺寸与分数中心 | 固定 5/6 边长、中心 `(2.25,1.75)`；独立裁剪原点 | 通过 |
-| 同上 | 模型输入契约保持一致 | 原契约校验和三平面复制保留；数值测试检查形状、三通道及独立误差 | 通过；极小浮点尾差仍按旧路径保留 |
-| 完整覆盖，spec.md:37 | 图内窗口切换为越界窗口 | `window_.setTo` 填满越界窗口；同尺寸复用测试和新旧直接比较 | 通过 |
-| 同上 | 完全在图像外 | 固定 `(20,18,5,5)` 等全图外案例；空交集不建立 Rect，仍映射 | 通过 |
-| 同上 | 窗口大于原图 | 固定 257 边长及原点 `(-126,-127)`，并测 2048 边长 | 通过 |
-| 行跨度/映射，spec.md:53 | 图像行含填充字节 | 7×5、11 字节行跨度、行末不同值；内部和边缘窗口矩阵 | 通过 |
-| 同上 | 窗口为空交集但映射非法 | `reuseAndFailures()` 全图外+错误跨度，检查 PlatformTypeMismatch 和视图释放 | 通过 |
-| 同上 | 结果不依赖源映射存活 | 样例弱引用失效、映射计数归零、输入继续读取 | 通过 |
-| 租约/均值，spec.md:69 | 保留搜索结果后再次准备 | 搜索 InputBusy 与旧结果保护测试；`ReusableInput::acquire` 未改变 | 通过 |
-| 同上 | 新模板被缓存占用阻塞 | 模板先 reset，InputBusy 后搜索 ContractMismatch；释放租约后成功 | 通过 |
-| 同上 | 搜索失败后恢复 | 映射失败与后续合法搜索对照，搜索不 reset 已提交均值 | 通过 |
-| 同上 | 销毁预处理器但结果仍存活 | 源帧释放、reset 两次、销毁实例后读取 shared_ptr 结果 | 通过 |
-| 恢复工作量，spec.md:89 | 一次初始化和二十四帧补跟踪 | 真实 NanoDcfTracker；原始 600 帧/1176 Run；受控测试 | 通过 |
-| 同上 | 中间历史帧更新失败 | `recovery_regression_test.cpp:133` 使用真实 HybridTracker/检测线程，新旧路径均继续后续帧 | 通过 |
-| 同条件实测，spec.md:101 | 正式对照区分预热与测量 | `recover()` 分配/reset 在计时外；加载/解码/写盘在外；plan 与原始标签独立复核 | 通过 |
-| 同上 | 输入身份与模型身份可追溯 | 25 原记录、像素复验、三模型指纹、代码身份、实际系统 Runtime | 通过；标准内存差异见 W1 |
-| 数值与性能，spec.md:113 | 阶段变快且恢复整体受益 | 独立中位数/P95、输入和工作量复算全部满足门槛 | 指定实测环境通过 |
-| 同上 | 收益未达标 | `main.cpp:243` 判定失败并于 256～257 写失败/返回 1；输出差异负例存在 | 部分验证：性能失败负例缺失，见 W2 |
-| 同上 | 对其他窗口及历史现场说明边界 | 192 条其他窗口记录，validation.md 明确 2048 退化与重建边界 | 通过 |
+| Local conversion/padding, spec.md:5 | Small window inside large image | `nanotrack_preprocessor.cpp:56`–90 converts only intersection; actual 1920×1200 recovery inputs/windows | Passed |
+| Same | Partly beyond left boundary | Wide-integer intersection/destination offsets, full mean padding, four-side/corner matrix | Passed; literal side-154 scenario cross-supported by same branch/other windows |
+| Same | Initialization retains full-image mean | Unchanged `TargetMean::initialize`; `reuseAndFailures()` changes outside-window pixels | Passed |
+| Numerical equality, spec.md:21 | Fractional interpolation | `cv::resize` still consumes Float32; `numeric()` checks fractions/exact old equality | Passed |
+| Same | Odd/even sizes and fractional center | Fixed side 5/6, center `(2.25,1.75)`, independent crop origin | Passed |
+| Same | Same model-input contract | Existing validation/three-plane copy; shape/channel/independent-error tests | Passed; old tiny floating tail differences retained |
+| Full coverage, spec.md:37 | Inside window changes to outside window | `window_.setTo` fills outside window; same-size reuse/direct comparison | Passed |
+| Same | Entirely outside image | Fixed `(20,18,5,5)` and other cases; no Rect for empty intersection, still maps | Passed |
+| Same | Window larger than source | Fixed side 257/origin `(-126,-127)` and measured side 2048 | Passed |
+| Stride/mapping, spec.md:53 | Padded image rows | 7×5 image, stride 11 bytes, distinct padding, interior/edge matrix | Passed |
+| Same | Empty intersection with invalid mapping | `reuseAndFailures()` outside image/wrong stride, PlatformTypeMismatch/view release | Passed |
+| Same | Result outlives source mapping | Expired weak source, zero mapping count, retained readable input | Passed |
+| Lease/mean, spec.md:69 | Search result retained during another preparation | Search InputBusy/result protection; unchanged `ReusableInput::acquire` | Passed |
+| Same | New template blocked by occupied cache | Template resets first, InputBusy then search ContractMismatch; succeeds after release | Passed |
+| Same | Recover after search failure | Failed mapping then legal search; committed mean retained | Passed |
+| Same | Result survives preprocessor destruction | Source release, two resets, destruction, retained shared_ptr read | Passed |
+| Recovery work, spec.md:89 | One initialization plus twenty-four catch-up frames | Real NanoDcfTracker; raw 600 frames/1176 Run; controlled tests | Passed |
+| Same | Middle historical-frame update fails | `recovery_regression_test.cpp:133`, real HybridTracker/detection thread, both paths continue | Passed |
+| Same-condition measurement, spec.md:101 | Warmup separate from formal measurement | `recover()` allocation/reset outside; loading/decoding/writes outside; independent plan/tag audit | Passed |
+| Same | Traceable input/model identity | 25 originals, pixel rerun, three hashes, code/system Runtime identity | Passed for measured board; standard-memory discrepancy W1 |
+| Numerical/performance, spec.md:113 | Faster stage benefits complete recovery | Independent median/P95/input/work recomputation meets all limits | Passed in measured environment |
+| Same | Insufficient benefit | `main.cpp:243` rejects, 256–257 writes failure/returns 1; output-difference control exists | Partial: performance-failure control missing, W2 |
+| Same | Limits for other windows/historical field result | 192 other-window records; validation.md states 2048 regression/reconstruction limits | Passed |
 
-数值矩阵为 18 种固定几何×4 种图案×模板/搜索，另保留既有样例。旧参考精确比较与不调用生产几何/resize 的双精度四邻点检查分别执行，后者门槛保持 `5e-4`。实施报告明确记录曾尝试但未保留的 511 随机图及 257 边长 0/255 棋盘格会使旧路径也超出理想参考门槛。本验收不把较低反差棋盘格的通过扩大为任意高反差、大尺寸的理想误差保证。
+The numerical matrix has 18 fixed geometries × 4 patterns × template/search, plus existing cases. Exact old-reference comparison and independent double-precision four-neighbor checks run separately. The latter uses neither production geometry nor resize and retains `5e-4`. The implementation report discloses attempted but unretained side-511 random input and side-257 0/255 checkerboard where the old path also exceeds ideal-reference tolerance. Low-contrast checkerboard success does not guarantee arbitrary high-contrast/large-window ideal error.
 
-## 设计、隔离和资源边界
+## Design, isolation and resource boundaries
 
-六项决策均有实现依据：原几何求局部交集；局部 Float32 后原线性缩放；串行复用独立工作区；旧参考与独立插值双重验证；真实恢复而不改补帧；生产板同条件 A/B。
+All six decisions map to code: existing geometry/local intersection; local Float32 then original linear resize; separate serial workspace reuse; old-reference plus independent interpolation checks; real recovery without changing replay; same-condition board A/B.
 
-生产实现只有 RK3576 预处理 `.cpp/.h` 的语义修改。公共跟踪算法、RKNN 提交、阈值、模型、队列、ROS、生产配置和 Jetson 实现没有变更。整帧均值仍保留。交集使用 int64_t，非空交集各边界受源尺寸/窗口限制，建立 Rect 前不会把空交集变成负尺寸。
+Production semantics changed only in RK3576 preprocessing `.cpp/.h`. Public tracking, RKNN submission, thresholds, models, queues, ROS, production configuration, and Jetson were unchanged. Whole-image mean remains. Intersection uses int64_t and nonempty boundaries stay within source/window dimensions. Empty intersection is not converted into a negative Rect.
 
-映射对象通过局部作用域在 resize 前释放。局部工作区不借给消费者。模板、搜索输出仍使用各自 shared_ptr 缓存；消费者的最后一个引用释放前不重写。异常和返回路径释放映射与局部缓存引用。模板均值只有完整成功后 commit；模板失败保持失效，搜索失败保留已提交均值。同一实例仍须串行调用，未新增并发语义。
+Local scope releases mappings before resize. Consumers never borrow workspace. Template/search outputs retain separate shared_ptr caches and are not overwritten before the last reference releases. Exceptions/returns release mappings/workspace references. Template mean commits only on complete success; failed template stays invalid and search failure preserves committed mean. Calls remain serial; no new concurrency semantics.
 
-旧参考只进入 `nanotrack_window_support` 和测试。新诊断目标没有 install 规则，生产节点的保存链接命令没有旧参考或窗口支持库。父 CMake 增加诊断构建，但没有把它链接到生产节点。baseline 的修改只有复用测试源及把新未跟踪目录纳入源码身份，未扩大其 MJPEG/纯 NanoTrack 运行范围。文件名、目录、头文件守卫、现代所有权与相邻模式一致；没有修改外部队列代码。
+Old reference links only into `nanotrack_window_support` and tests. The new diagnostic target has no install rule, and the retained production-node link command contains neither reference nor window-support library. Parent CMake builds diagnostics without linking them into production. Baseline changes only reuse test source and include the new untracked directory in code identity; MJPEG/pure-NanoTrack scope is unchanged. Naming, guards, ownership, and neighboring patterns match. External queue code was untouched.
 
-## 测试、失败记录及复验解释
+## Tests, failures and rerun interpretation
 
-本次独立 adb 复验 `nanotrack_window_tests`、`nanotrack_window_help`、`recovery_regression_tests`、`baseline_nanotrack_preprocess_tests`，4/4 通过。25 帧只读身份检查通过。日志见 [verification-board-readonly.txt](evidence/production-20261012/verification-board-readonly.txt)。这些复验不执行 NPU 性能批次，未干扰原正式测量数据。
+Independent ADB reran `nanotrack_window_tests`, `nanotrack_window_help`, `recovery_regression_tests`, `baseline_nanotrack_preprocess_tests`: 4/4 passed. The 25-frame read-only identity check passed. See [verification-board-readonly.txt](../production-20261012/verification-board-readonly.txt). These did not run NPU performance batches or disturb original measured data.
 
-已有完整 ARM64 容器日志最终为 47/47 CTest 通过。生产板原生首次为 19/20，源码身份增量测试失败；不得改写成一次 20/20。板端墙钟落后使系统依赖时间在未来，导致无改动构建重编译。`immutable-system-make` 的 `--assume-old` 只列出 `/usr/include` 系统依赖，不屏蔽源码和身份文件；递归 Make 包装复验 1/1 通过，原修改/增加/删除/暂存/提交/Git 失败断言保留。该复验说明特定隔离参数下通过，不证明当前墙钟环境下无条件增量测试通过。
+Existing full ARM64-container logs ended at 47/47. Initial native-board identity suite was 19/20, with one incremental-source-identity failure; it must not become a first-attempt 20/20. Lagging board calendar made system dependencies appear in the future, triggering rebuilding without source changes. `immutable-system-make --assume-old` lists only `/usr/include` dependencies, not source/identity files. Recursive Make wrapper rerun passed 1/1 while retaining modify/add/delete/stage/commit/Git-failure assertions. This proves the explicitly isolated rerun, not unconditional incremental success under the wrong clock.
 
-首轮 `failed-run-01` 因把缺失的搜索外层阶段当模型次数而报告失败。输入精确检查和首对输出保留，但失败轮不进入本次十对统计。诊断修复有实际 Run 及无上下文 Run 拒绝测试，最终程序指纹与独立 adb 检查一致。第二轮完整测量的 Run 事件已重新核对，不采用首轮诊断错误的推定次数。
+Initial `failed-run-01` mistakenly counted the absent search parent stage as model calls and failed. Its exact-input/first-pair outputs remain, but it contributes none of the final ten pairs. The diagnostic fix checks actual Run and rejects context-free Run. Final binary identity matches independent ADB inspection. Final second-run events were recomputed without reusing the first diagnostic's inferred counts.
 
-`openspec validate optimize-rk3576-nanotrack-window-preprocessing --strict` 和 `git diff --check` 在本次再次通过。没有为通过验收修改断言或实施代码。
+`openspec validate optimize-rk3576-nanotrack-window-preprocessing --strict` and `git diff --check` passed again. No assertions or implementation changed to obtain this verdict.
 
-## 问题及可执行建议
+## Issues and actionable recommendations
 
-### CRITICAL（归档前必须修复）
+### CRITICAL — required before archival
 
-0 项。没有发现未实现要求、未完成任务或禁止范围内的算法修改。
+0 issues. No unimplemented requirement, unchecked task, or prohibited algorithm change was found.
 
-### WARNING（应处理）
+### WARNING — should be addressed
 
-1. **W1：生产标准内存身份部分未验证。** adb 确认板名 `HZ-RK3576_WuKong Board`、内核 `6.1.141-rt36`、Runtime 指纹、驱动 `0.9.8` 及正式部署身份匹配，但 `MemTotal=8112044 kB`，约 7.74 GiB，与 `AGENTS.md` 的 3.8 GiB 不符。`validation.md:30` 已如实说明。现有结果可归于指定 adb 实测板，不可推定覆盖 3.8 GiB 标准生产配置。建议核对设备采购/资产规格和系统保留内存配置；若实测板并非标准配置，在规定的 3.8 GiB 生产板重复数值和 A/B 验收。若标准文档过时，由维护者依据硬件证据另行修正规格。本次不猜测原因、不修改标准。
-2. **W2：性能失败分支缺独立负例。** `window_preprocess/main.cpp:243`～257 有正确的失败判定与退出路径，但 `window_preprocess/tests/recovery_test.cpp` 只覆盖统计、输出差异、工作量差异等，没有直接覆盖预处理比例 30% 和恢复 P95 升高。建议为同一生产判定函数增加固定统计负例：比例 0.30、恢复中位数不降低、P95 升高均应拒绝；验证报告和退出状态不能写通过。不得通过真实跳帧或修改模型制造收益。当前该场景仅完成代码检查和部分失败测试，不按完整测试通过计分。
+1. **W1: standard production memory partly unverified.** ADB confirmed board `HZ-RK3576_WuKong Board`, kernel `6.1.141-rt36`, Runtime fingerprint, driver `0.9.8`, and deployed identity, but `MemTotal=8112044 kB` is about 7.74 GiB rather than the then-documented 3.8 GiB in `AGENTS.md`. `validation.md:30` disclosed this. Results belong to the identified ADB board and do not establish the 3.8 GiB standard configuration. Check procurement/asset specifications and reserved-memory configuration. If this was nonstandard, repeat numerical/A/B acceptance on the specified 3.8 GiB board; if documentation was stale, maintainers should correct it separately from hardware evidence. This verification neither guessed the cause nor changed the standard.
+2. **W2: missing independent performance-failure control.** `window_preprocess/main.cpp:243`–257 had correct failure/exit logic, but `window_preprocess/tests/recovery_test.cpp` covered statistics/output/work differences without directly testing 30% preprocessing ratio or rising recovery P95. Add fixed-statistic negative controls to the same production verdict: ratio 0.30, nondecreasing recovery median, and increased P95 must reject. Reports/exit status cannot claim success. Do not manufacture benefit through frame skipping or changed models. This scenario had code inspection and partial failure testing, not full test coverage.
 
-### SUGGESTION（可选改进）
+### SUGGESTION — optional improvement
 
-0 项。未把相邻代码的历史风格或本次范围外工作列成新的阻碍。
+0 issues. Historical neighboring style and out-of-scope work were not added as blockers.
 
-## 未验证与不适用边界
+## Unverified and inapplicable scope
 
-- **部分未验证：场景覆盖。** 23 个场景中 1 个缺性能失败负例，原因和补齐方式见 W2。
-- **未验证：标准内存环境一致性。** 实测值与标准不符，原因未解释，见 W1。
-- **未验证：C++ 静态工具检查。** 已有镜像没有 clang-tidy/clangd，仓库没有项目批准命令。代码人工审查和编译不能等同于工具检查。
-- **未运行：墙钟正常后的无条件板端增量身份复验。** 本轮未修改系统时间，只有明确限定系统依赖的隔离复验结果。
-- **未重新运行：完整十对 NPU A/B。** 现有原始数据、源码和程序身份足以复算本轮结果，独立验收仅重跑输入及相关数值/流程测试。没有把本次复验冒称为另一轮性能采样。
-- **本变更不适用：** Jetson 硬件运行、原始未压缩相机输入和历史完整负载复现、现场约 388 ms 分项重现、长期压力、NPU 设备内存测量、正式部署。它们没有作为本次小窗优化任务前置条件，不能用容器或重建回放声称通过。
-- 所有合法输入的穷举逐元素验证及任意高反差图的理想双精度误差保证未执行；已测矩阵与真实轨迹不代表穷举证明。
+- **Partly unverified scenario coverage:** 1 of 23 lacked performance-failure controls; see W2.
+- **Unverified standard-memory consistency:** measured/documented values differ without explained cause; see W1.
+- **Unverified C++ static tools:** image lacks clang-tidy/clangd and no project-approved command exists. Manual review/builds do not replace them.
+- **Unexecuted unconditional board incremental rerun after clock repair:** system time was unchanged; only isolated system-dependency results exist.
+- **No fresh complete ten-pair NPU A/B:** original raw/source/binary evidence supports independent recomputation. Verification reran only inputs and relevant numeric/flow tests, not another performance sample.
+- **Inapplicable to this change:** Jetson execution, original uncompressed camera input/full historical workload, field approximately 388 ms decomposition, long stress, NPU device memory, production deployment. They were not prerequisites for this small-window change and are not passed by containers/reconstructed replay.
+- No exhaustive elementwise proof for all legal inputs or ideal double-precision error guarantee for arbitrary high-contrast images. The measured matrix/trajectory is not an exhaustive proof.
 
-## 正式服务收尾和最终评估
+## Production restoration and final assessment
 
-本次验收期间正式服务保持运行，未启动性能测量或相机采集。按本轮收尾要求，通过 adb 重启原 `drone-tracker.service`，最终为 **active/running，MainPID=6107**。current 仍为 `/opt/drone_tracker/releases/bundle-20260927T075028Z-3213`。正式节点、配置和系统 Runtime 指纹与原证据一致。见 [verification-service-final.txt](evidence/production-20261012/verification-service-final.txt)。没有切换优化二进制。
+Production remained running during verification; no performance measurement or camera capture started. Required cleanup restarted original `drone-tracker.service` through ADB, ending **active/running, MainPID=6107**. current remained `/opt/drone_tracker/releases/bundle-20260927T075028Z-3213`. Production binary/config/system Runtime fingerprints matched original evidence. See [verification-service-final.txt](../production-20261012/verification-service-final.txt). No optimized binary was deployed.
 
-已执行检查未发现 CRITICAL；有 2 项 WARNING，0 项 SUGGESTION。指定重建输入在本轮实测板达到数值、工作量和性能条件。场景覆盖中的性能失败负例、标准内存一致性和静态工具检查未完整验证，因此不声明“所有检查通过”或“可无条件归档”。验收止于本报告，没有归档、同步或提交。
+Checks found CRITICAL 0, WARNING 2, SUGGESTION 0. Specified reconstructed input on this measured board met numerical, workload, and performance conditions. Performance-failure scenario coverage, standard memory, and static-tool checks remained incomplete. This is neither “all checks passed” nor “unconditional archival ready.” Verification ended at the report without archival, synchronization, or commit.

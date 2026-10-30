@@ -1,188 +1,50 @@
-# 平台工厂接入说明
+# Platform factory and RK3576 operation
 
-`PlatformFactory` 是生产程序统一创建平台资源的入口。它创建帧源、帧创建器和整套跟踪依赖。公共算法只使用接口，不链接硬件实现。
+`PlatformFactory` creates frame sources, host-image frame builders, and a complete set of model and preprocessing components. The shared tracker uses these interfaces without including hardware SDK types. A frame reference shares immutable image storage so asynchronous detection can safely outlive its caller.
 
-The raw CMake default is `DRONE_TRACKER_PLATFORM=jetson`. The supported RK3576 repository entry point `./build.sh` explicitly selects `rk3576`, including local MJPEG video and camera nodes. 未知值在硬件依赖发现前拒绝。RK3576 相机支持连续及软件触发；硬件解码和 RGA 图像加速仍未提供。可控模型仅在测试中注入，生产程序没有假模型选项。
+The raw CMake default is `DRONE_TRACKER_PLATFORM=jetson`. The supported RK3576 entry point, `./build.sh`, explicitly selects `rk3576`. Unknown platform values fail before hardware dependency discovery. Jetson uses CUDA, VPI, TensorRT, and Jetson Multimedia API behind its platform boundary. RK3576 uses the RKNN backend, software MJPEG decoding, and V4L2 camera capture. HDMI rendering uses RGA; model image preprocessing remains separate from that display acceleration.
 
-## Current container and output architectures
+## Build and output architectures
 
-Use `./build.sh --test` in the tracker root. It defaults to the x86_64 image and cross-compiles complete ARM64 RK3576 outputs, including recording, OSD and diagnostics. Use `--backend arm64` for the preserved ARM64-image fallback. Neither image supplies physical devices. Read `../../dockerfiles/README.amd64.md` and `../../AGENTS.local.md` for exact container commands and target SDK paths.
+Run from the repository root:
 
-Portable OSD, preprocessing and camera-only targets can instead be compiled and tested as native x86_64 programs. Full RKNN and HDMI output still requires ARM64 target libraries. A native camera-only test does not validate a real sensor. The standalone SDK examples below use native ARM64 SDK paths; when cross-compiling them in the x86_64 image, add `-DCMAKE_TOOLCHAIN_FILE=/opt/toolchains/aarch64-humble.cmake` and use the SDK paths under `/opt/arm64-sysroot`. Run resulting ARM tests through the selected QEMU launcher, or on the target board. Keep output directories outside source.
-
-## RK3576 SC233HGS 独立录像
-
-录像默认关闭，仅支持 SC233HGS 连续采集。启用后从相机采集边界复制完整 NV12 画面，使用 Rockchip MPP 硬件编码 H.264，并写入独立的 MPEG-TS 分段。NV12 包含亮度和色度平面；录像保存两者，不从带框的 ROS 图像或 HDMI 画面取图。画面不增加裁剪、缩放、翻转或业务叠加。H.264 是有损压缩，解码像素不等同于算法编码前的原始像素。
-
-在生产板匹配 SDK 的构建中增加 `-DDRONE_TRACKER_BUILD_RECORDING=ON`。该选项安装 `rk3576_recording_worker` 和 `rk3576_recording_inspect`；MPP 与 FFmpeg 封装库只链接录像程序。工作程序必须与 `drone_tracker_node` 安装在同一目录。不要替换系统 RKNN Runtime。仅需独立构建录像工具时使用：
-
-```sh
-cmake -S src/platform/rk3576/recording -B build/recording -DCMAKE_BUILD_TYPE=Release
-cmake --build build/recording -j1
+```bash
+./build.sh --test
+# Explicit ARM64-image fallback:
+bash tests/tracking_regression/prepare_test_tools.sh --backend arm64
+./build.sh --backend arm64 --test
 ```
 
-先为节点运行账号创建持久目录并授予写权限。目录必须是绝对路径，且实际挂载为本地 ext4；不能使用 tmpfs、ramfs 或网络文件系统。程序复核内核挂载信息，不能只凭路径名判断。目录父级必须已经存在；不要在启动、安装或升级脚本中清空历史录像。
+The default x86_64 image cross-compiles ARM64 node, recording, diagnostic, and benchmark programs. The fallback runs an ARM64 compiler image. Neither image provides physical RK3576 devices. See [the image guide](../../dockerfiles/README.amd64.md) and `AGENTS.local.md` for SDK paths, isolated caches, test launchers, and packaging.
 
-生产相机 YAML 的启用示例（其余模型、相机与 OSD 参数沿用已核验的生产配置）：
+Portable OSD, preprocessing, and camera-only checks can run as native x86_64 programs. Full RKNN targets need genuine ARM64 SDK libraries. When adapting a standalone ARM64 SDK command to the x86_64 image, pass `-DCMAKE_TOOLCHAIN_FILE=/opt/toolchains/aarch64-humble.cmake` and select target dependencies under `/opt/arm64-sysroot`. Execute ARM programs on a matching board or through the selected QEMU launcher. Use separate native and ARM build directories outside read-only source mounts.
 
-```yaml
-drone_tracker_node:
-  ros__parameters:
-    need_save: false
-    recording:
-      enabled: true
-      directory: /var/lib/drone_tracker/recordings
-      bitrate_bps: 12000000
-      segment_seconds: 60
-      sync_interval_ms: 1000
-      max_total_bytes: 21474836480
-      min_free_bytes: 5368709120
-```
+The compatibility baseline is RKNN Runtime 2.3.2 with RKNPU driver 0.9.8. Production programs use the board's system Runtime; do not replace it with a container library. Historical reports using an older SDK describe only their dated builds. `.docker-artifacts` and `/tmp` are disposable locations and may be cleared at any time. A path in a report records provenance, not assured evidence availability. Copy needed evidence to separately managed storage.
 
-`bitrate_bps` 单位为位/秒；默认 12 Mbps 约产生每小时 5.4 GB 视频，实际值还受编码内容及封装开销影响。`segment_seconds` 可取 10–600 秒，到期后在下一张 IDR 帧切段。IDR 是不依赖前面图像的解码起点，各段独立保存必要参数。`sync_interval_ms` 只允许 500、1000 或 2000 毫秒，表示向文件系统发起数据同步的周期。它不是掉电损失上限。
+## Integrating a caller
 
-`max_total_bytes` 默认 20 GiB，统计完成、未完成及附属文件；`min_free_bytes` 默认保留 5 GiB 磁盘空间。达到任一保护线时停止本轮录像并保留历史文件。系统不循环覆盖，也不会自动删除旧会话。操作人员应在任务间导出、核对并按自己的保留策略清理。
+Link the final program to `hybrid_tracker` and `platform_${DRONE_TRACKER_PLATFORM}`. Include `platform/platform_factory.h` and `hybrid_tracker.h`; platform-specific image or SDK headers are unnecessary.
 
-所有 `recording.*` 都是启动参数，运行期修改会被拒绝。`recording.enabled` 只控制 SC233HGS 原画面录像；`need_save` 只控制 ROS bag。两项可以同时启用，均不要求发现目标。RK3576 视频输入或 AR0234 设置 `recording.enabled=true` 时，节点仍会初始化，并在 ON 后报告独立录像不可用。无效的 SC233HGS 录像专属参数也在 ON 后报告，不阻止健康跟踪。Jetson 仍拒绝该独立录像开关。
+1. Call `CreatePlatformFactory()`.
+2. Create an input with `createFrameSource(config)`, or a host-image builder with `createFrameBuilder()`.
+3. Supply explicit model roles to `createTrackerComponents(paths)` and check its result.
+4. Move the complete component collection into `HybridTracker::CreateInstance(settings, ...)`, then call `init()`.
+5. Start capture and processing only after initialization succeeds.
+6. Stop consumers and capture before destroying the tracker. Its final cleanup waits for asynchronous detection before releasing accessed resources.
 
-ON 准备新会话，只有相机启动预热通过并完成驱动缓冲归还的合格帧才进入录像。预热观察帧不会补录。首个被录像接受的帧 PTS 为零；PTS 是视频中的显示时间，后续间隔来自真实采集时间，录像掉帧不会压缩时间轴。OFF 停止接收并排空已接受内容，正常退出会保存完成标记。预热中取消或失败保存零帧原因，不创建占位 `.ts`。关闭录像不会禁用相机预热。
+Jetson requires three model files: YOLO, a shared Backbone, and Head. RK3576 requires four files: YOLO, template Backbone, search Backbone, and Head. A Backbone extracts image features; Head compares template and search features. The RK3576 shared `backbone` field must remain empty. Mixed shared/split paths are rejected before loading, and roles are never inferred from filenames.
 
-每轮建立排他创建的 `session-…` 目录，包含以下证据：
-
-- `session.json`：程序、模型、配置、板卡及实际图像格式身份。
-- `000001.ts` 等：原始分段视频。
-- `000001.frames.jsonl` 等：一行一个帧记录，关联采集身份、PTS、编码时刻和完整视频帧的结束字节位置。
-- `events.jsonl`：驱动缺口、跟踪队列丢弃和录像支路丢弃，分别保留分类及序号区间。
-- `commits.jsonl`：已同步视频和附属时间记录的提交边界。
-- `camera.json`：预热、合格帧及终止统计。
-- 段级和会话级 `complete.json`：已完成收尾的结果。会话仍须检查 `outcome` 与 `video_success`；零帧取消不表示存在有效视频。
-
-缺少完成标记表示未完成，不能仅凭文件存在推断视频成功。`.pending` 是未完成发布的元数据，保留为故障证据。同步水位表示最后成功同步到文件系统的位置；尚未建立时日志显示未知。默认同步周期下，最新合格输入比水位落后超过两秒会报告退化。持续五秒没有同步进展或实际同步超时会结束本轮录像。录像故障通过日志与状态文本报告，不结束仍健康的跟踪；旧进程尚未回收时禁止下一轮复用其缓冲。
-
-重启后可独立运行以下只读检查，报告路径必须尚不存在。检查与相机 ON 无依赖，可以单独安排执行：
-
-```sh
-rk3576_recording_inspect /var/lib/drone_tracker/recordings /var/lib/drone_tracker/inspection-001.jsonl
-```
-
-检查器保留原件，报告缺失或损坏的元数据、最后可解析提交及完整 TS 包前缀，并限制单行、文件数量、内存和报告大小。TS 包结构完整不代表成功解码；检查器不会解码、转换或重写视频。解析出提交记录也不能证明突然掉电前的同步调用已成功返回。通用解码验证属于独立验收，不改变生产回放入口。
-
-回滚时先 OFF 并等待停止日志，正常退出节点，然后设置 `recording.enabled=false` 并重启。保留已有会话供检查。本功能不包含离线转换、回放解码扩展或循环覆盖。非断电测试不能承诺真实掉电的数据损失上限，也不能承诺硬件损坏后恢复。
-
-## RK3576 独立 YOLO 使用
-
-Standalone YOLO requires C++17, OpenCV (core/imgproc/dnn/video/imgcodecs/videoio), threads and the genuine ARM64 RKNN SDK. Current images provide Runtime 2.3.2 headers and library; target driver compatibility remains 0.9.8. Historical 2.3.0-SDK validation is retained in dated reports and is not the current image version. No ROS, CUDA, TensorRT or VPI is needed for this standalone entry point. The following example is for a native ARM64 SDK environment; use the cross-toolchain and sysroot paths described above on x86_64.
-
-```sh
-cmake -S src/platform/rk3576 -B build/rk3576-yolo \
-  -DRKNN_INCLUDE_DIR=/usr/include \
-  -DRKNN_LIBRARY=/usr/lib/librknnrt.so -DCMAKE_BUILD_TYPE=Release
-cmake --build build/rk3576-yolo -j4
-ctest --test-dir build/rk3576-yolo --output-on-failure
-```
-
-模型必须是固定 640×640 灰度三通道输入、六输出的兼容 YOLO。三个尺度按 80、40、20 排列，每个尺度先输出 64 通道框分布，再输出 C 通道类别原始分数。C 是模型类别数。模型原生输入支持 INT8（八位整数）或 FP16（十六位浮点），布局均为 NHWC，即批次、高、宽、通道顺序。INT8 必须采用 AFFINE 仿射量化，零点 -128、比例 1/255。FP16 接受 NONE 或 AFFINE 标记，不套用整数 scale/zp 限制。
-
-两类模型都必须采用 mean=0/std=255，即像素减零后除以 255。普通属性查询不能证明该配置，须由转换记录或模型元数据确认，并用固定输入数值对照验证。Float32 原生输入及任意 mean/std 配置不在支持范围。
-
-程序始终提交 UINT8 NHWC `[1,640,640,3]`，共 1,228,800 字节，`pass_through=0` 表示由 Runtime 按模型配置转换。应用不提前除以 255、减 128 或改存 FP16。例如像素 150 仍提交为字节 150，模型需要的数值含义约为 150/255。FP16 属性报告的 2,457,600 字节是模型原生存储大小，不是提交缓冲大小。输出使用 `want_float=1` 请求 Float32，不重复反量化。
-
-模型提供者须确认上述数值语义；形状查询不能判断输出是否已经执行 Sigmoid（将原始分数转为概率）。不兼容的九输出或已输出概率的变体不在支持范围内。模型文件由部署者管理，不提交到源码。
-
-四类别模型中无人机编号为 2 时，完整使用顺序如下。`sample.jpg` 和 `clip.mp4` 是部署者提供的真实图像与录像。
-
-```sh
-build/rk3576-yolo/rk3576_yolo_probe --model models/four_classes.rknn --mode query
-build/rk3576-yolo/rk3576_yolo_probe --model models/four_classes.rknn \
-  --mode detect --target 2 --image sample.jpg
-build/rk3576-yolo/rk3576_yolo_probe --model models/four_classes.rknn \
-  --mode detect --target 2 --video clip.mp4
-mkdir -p results
-build/rk3576-yolo/rk3576_yolo_probe --model models/four_classes.rknn \
-  --mode region --image sample.jpg --dump results/sample
-```
-
-查询输出包含 Runtime、驱动、C 和全部张量属性。检测输出包含帧号、是否命中，以及命中时的类别、分数和原图框。工具在输入边界显式将彩色图像转灰度。检测使用真实异步 ROI、全图、切片级联；可用 `--roi x y width height` 指定优先区域。区域模式导出 `.input.u8`、六份 `.output0.f32`～`.output5.f32` 和 `.prediction.f32`，便于逐层数值对照。也可用 `--constant 0`、`114` 或 `255` 代替图像执行区域模式。
-
-更换为六类别兼容模型且无人机编号为 4 时，结束旧进程，查询新模型，再重新启动：
-
-```sh
-build/rk3576-yolo/rk3576_yolo_probe --model models/six_classes.rknn --mode query
-build/rk3576-yolo/rk3576_yolo_probe --model models/six_classes.rknn \
-  --mode detect --target 4 --image sample.jpg
-```
-
-预期查询报告 C=6，命中时只报告 class=4；六类别示例不表示已取得真实六类别模型验收证据。无需改代码，不依据文件名推断类别。公共参数 `tracker.yolo_target_class_id` 同样改为单个精确编号，默认值仍为 0。以前把 0 当作“接受所有类别”的部署必须重新配置。候选直接使用目标类分数，其他类别不参与 NMS（去除高度重叠的重复框）。该规则也适用于 Jetson。
-
-失败诊断与处理：
-
-| 诊断 | 检查与处理 |
-| --- | --- |
-| 找不到 RKNN | 检查 `RKNN_INCLUDE_DIR`、`RKNN_LIBRARY` 和 ARM64 库版本 |
-| 模型或张量契约不匹配 | 按模型路径及张量身份核对形状、类型、顺序和量化参数；不改宽容差绕过 |
-| 目标编号越界 | 按查询的 C 设置 0～C-1；失败时不启动检测线程 |
-| 图像、区域或输入存储错误 | 修正输入；区域缓存仍被持有时释放旧结果后再准备新区域 |
-| Runtime 执行失败 | context 失效后重新初始化，不消费部分结果 |
-| 无法确认设备停止 | 按致命错误契约终止进程；保留日志检查 SDK/驱动，不继续复用设备存储 |
-
-验证范围和未完成项目见 [本次实机记录](../../openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md)。独立检测运行不代表完整跟踪平台、Jetson 等价性或性能验收通过。
-
-## RK3576 独立 NanoTrack 使用
-
-与上面的 YOLO 入口使用同一独立 CMake 构建，生成 `rk3576_nanotrack_probe`。目标兼容性基线为 Runtime 2.3.2、驱动 0.9.8；2026-09-11 按用户要求先测试既有 Runtime 2.3.0 构建产物，未重建 SDK 镜像。
-
-Backbone 从图像提取特征，Head 比较模板与搜索特征。分别指定模板 Backbone、搜索 Backbone 和 Head 三个文件。例如在上述构建目录中执行：
-
-```sh
-build/rk3576-yolo/rk3576_nanotrack_probe \
-  --template-model models/template_backbone.rknn \
-  --search-model models/search_backbone.rknn \
-  --head-model models/head.rknn --mode query
-build/rk3576-yolo/rk3576_nanotrack_probe \
-  --template-model models/template_backbone.rknn \
-  --search-model models/search_backbone.rknn \
-  --head-model models/head.rknn --mode replay \
-  --video clip.mp4 --bbox 100,80,40,30
-```
-
-`--bbox` 是首帧目标的左上角 x、y 与宽、高，单位为像素。回放明确将彩色帧转为 Gray8（每像素一个灰度字节），再调用公共 `NanoTracker`。输出包含帧号、成功标记、框、置信度和毫秒耗时；初始化帧没有置信度，失败帧不输出成功框。
-
-公共裁剪输入为 Float32（32 位浮点）、0～255，先转浮点再缩放，不额外除以 255。NCHW 表示批次、通道、高、宽，NHWC 表示批次、高、宽、通道。平台内部支持这两种排列，并将以下形状统一解释为 NCHW：
-
-| 模型 | 输入 | 输出 |
-| --- | --- | --- |
-| 模板 Backbone | `[1,3,127,127]` | `[1,96,8,8]` |
-| 搜索 Backbone | `[1,3,255,255]` | `[1,96,16,16]` |
-| Head | 上述两份特征 | 分类 `[1,2,15,15]`、位置 `[1,4,15,15]` |
-
-角色按唯一形状匹配实际索引，不依赖张量名称。分类必须是未转概率的原值，位置按左、上、右、下距离解释。模型提供方负责保证灰度三通道、归一化及特征的含义兼容；形状检查不能证明这些语义，仍需固定浮点输入对照。
-
-设计支持 FP16（16 位浮点）、Float32 和逐张量仿射 INT8。仿射量化用 scale 和 zp 将整数还原为实数，INT8 要求有效正比例及合法零点。四种 Backbone/Head 精度组合使用 Float32 特征交接；SDK 返回浮点后不再次反量化。FP16/Float32 携带 AFFINE 标记时仍按浮点类型处理，不使用 scale/zp 修改数值或套用 INT8 参数取值限制。旧程序对此误报 `Unsupported NanoTrack quantization` 的检查已移除；未支持的量化形式、类型和布局仍会被拒绝。修复已通过 ARM64 构建与 16 项契约测试，四组合实机查询和回放也已通过，四组合固定输入逐层数值对照也已通过。
-
-契约兼容的权重无需重新编译；结束旧进程后用新的三个路径重新创建后端即可。不设置文件名、哈希或版本白名单，不支持运行中热替换。查询及回放的实机结果、阻塞和未执行项见 [NanoTrack 验证记录](../../openspec/changes/implement-rk3576-nanotrack-backend/validation.md)。
-
-当前全 INT8 在 309 帧标注视频上的 308 次搜索均返回有效框，平均 IoU 为 0.316，平均中心误差为 2.35 像素。IoU 是预测框与标注框的交并比，返回有效框不代表框准确。四精度同条件比较已完成：本序列上 FP16 Backbone + INT8 Head 的平均 IoU 为 0.620。独立数值对照已通过，但不能据单序列结果确定最终部署精度。
-
-## 新增调用方
-
-最终程序显式链接 `hybrid_tracker` 和 `platform_jetson`。包含 `platform/platform_factory.h` 与 `hybrid_tracker.h`，无需包含 VPI、TensorRT 或具体相机头文件。
-
-按以下顺序创建管线：
-
-1. 调用 `CreatePlatformFactory()`。
-2. 相机或视频输入调用 `createFrameSource(config)`。查询帧源尺寸后，计算现有相机内参。
-3. 回放或合成输入调用 `createFrameBuilder()`，用 `copyFrom(image, timestamp_us)` 复制主机图像。时间戳单位为微秒。
-4. 将三个完整模型路径交给 `createTrackerComponents(paths)`。失败结果只含诊断，不提供半套依赖。
-5. 把 `components.value` 移交 `HybridTracker::CreateInstance(settings, std::move(components.value))`，然后调用 `init()`。
-6. 初始化成功后才启动业务和采集。停止采集与节点工作线程后再销毁跟踪器。
-
-例如，回放已得到灰度图 `gray`，模型路径已填入 `settings`：
+For an RK3576 caller with a prepared `TrackerSettings settings` and a Gray8 `cv::Mat gray`:
 
 ```cpp
 auto factory{CreatePlatformFactory()};
 auto builder{factory->createFrameBuilder()};
-auto components{factory->createTrackerComponents({settings.yolo_engine_path,
-    settings.nanotrack_backbone_path, settings.nanotrack_head_path})};
+ModelPaths paths{};
+paths.yolo = "/models/yolo.rknn";
+paths.template_backbone = "/models/template_backbone.rknn";
+paths.search_backbone = "/models/search_backbone.rknn";
+paths.head = "/models/head.rknn";
+auto components{factory->createTrackerComponents(paths)};
 if (!builder || !components) {
     throw std::runtime_error((!builder ? builder.error : components.error).describe());
 }
@@ -196,255 +58,182 @@ context.now_us = 1000000;
 auto output{tracker->update(context)};
 ```
 
-`TrackerComponents` 只能移动，表示调用后依赖的独占所有权交给跟踪器。它包含两个模型后端、两个预处理器和一个帧兼容性检查对象。NanoTrack 后端内部持有 Backbone 与 Head 两个模型。组件和已返回的帧不借用工厂对象，可以比工厂存活更久。
+`TrackerComponents` is movable, with exclusive ownership transferred into the tracker. Components and returned frames do not borrow the factory's lifetime. `FrameCompatibility` checks the actual frame implementation, allowing compatible frames from another factory instance. Incompatible input is rejected before algorithm time, frame count, or detection submission changes; `TrackerOutput::consumed` is false and `info` explains the cause.
 
-`FrameCompatibility` 检查帧的真实实现类型。另一个创建器产生的兼容帧仍可使用。错误类型在更新时间戳、帧计数和检测提交前被拒绝，`TrackerOutput::consumed` 为 `false`，`info` 含原因。预处理和推理边界继续执行自身的资源检查。
+`waitForLatestFrame(source, frame, timeout)` waits for one frame and drains older queued frames through the same consumer. There must be only one consumer of the original queue. Continuous ROS preview uses a dispatcher as that consumer, with at most one pending tracking task. It shares immutable frames with display and tracking; neither opens a second camera or independently drains capture.
 
-## 帧源与停止
+`finishRound()` must run after updates stop. It cancels pending detection, waits for in-flight frame access, and clears unread results. `reset()` starts fresh algorithm state while preserving loaded models. Old requests/results cannot enter the next round. Jetson retains its frame-source recording boundary; RK3576 uses `need_save` for ROS bags and `recording.*` for independent SC233HGS video recording.
 
-帧源保留原采集队列。包含 `platform/frame_source_ops.h` 后，调用 `waitForLatestFrame(source, frame, 1s)`，由公共函数先等待首帧，再排空积压取得最新帧。可选回调在收到首帧后、排空前执行，节点用它记录处理计时起点。只能有一个消费者，不应再添加转发消费者。相机与视频队列的构造参数分别为 10 和 30；底层按块分配，因此这些数字不代表严格容量。满队列时丢弃新帧，不覆盖旧帧。
+## Standalone YOLO
 
-Jetson 节点在启动前调用 `configureFrameSourceRecording(source, {need_save, directory, prefix})`，保留旧相机图像录像行为。RK3576 节点不把 `need_save` 传给帧源；相机和视频输入均由节点独立尝试 ROS bag。SC233HGS 原画面录像只接受 `recording.*` 配置。帧源仍由原单一消费者取帧。
-
-OFF/ON 继续使用既有停止和 `reset()` 流程，模型不卸载。最终销毁时，跟踪器先等待检测线程结束，再释放缓存、模型和预处理资源。`DetectionThreadLauncher` 是可替换的线程启动函数，仅用于验证启动失败；默认值创建普通 `std::thread`。
-
-## 公共验证
-
-在有 C++17 编译器、OpenCV 和线程库的环境执行：
-
-```sh
-cmake -S src/hybrid_tracker -B build/platform-contracts \
-  -DDRONE_TRACKER_PREPROCESS_TESTS_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
-cmake --build build/platform-contracts -j4
-ctest --test-dir build/platform-contracts --output-on-failure
-```
-
-此入口编译真实公共跟踪器及可替换加载器的实际装配函数，不发现硬件开发库。测试没有真实模型或采集输入。平台选项测试检查默认 Jetson、未知值提前拒绝及 RK3576 缺失 RKNN 依赖的诊断；不执行 Jetson 编译。
-
-此前 `introduce-platform-factory` 变更只提供公共测试和 Jetson 源码审查证据，详见 [平台工厂验证报告](../../openspec/changes/archive/2026-09-10-introduce-platform-factory/verification.md)。该阶段未配置、编译或运行 Jetson 程序，也未验证真实像素、设备资源安全或跟踪行为等价。
-
-当前 `implement-rk3576-yolo-backend` 已补充 RK3576 真实模型、图像、录像和有限资源生命周期验证，详见 [实机记录](../../openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md) 和 [独立验证报告](../../openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/verification.md)。这些结果不代表 Jetson 实机等价性或完整跟踪平台验收通过。
-
-## RK3576 完整跟踪录像回放
-
-新增独立入口 `rk3576_tracker_replay` 通过统一工厂创建四个模型文件对应的组件，并运行真实公共 `HybridTracker`。它从自动检测开始，无需人工首帧框。四文件分别为 YOLO、模板 Backbone、搜索 Backbone 和 Head；两个 Backbone 分别提取模板和搜索图像的特征，Head 比较两者。原有两个 probe 继续保留。
-
-This entry point uses the ARM64-target standalone build above, through either the x86_64 cross compiler or a native ARM SDK. It additionally needs target OpenSSL Crypto for SHA-256 file fingerprints. 公共算法和旧 probe 不链接 Crypto。根目录生产构建现已支持 Jetson 和 RK3576 ROS 视频；独立 RK3576 工厂拒绝相机请求，视频请求按下文的 MJPEG 帧源契约提供。原录像回放工具继续使用单独的同步解码器，不提供 ROS、相机采集或 RGA 加速。
-
-### 单文件配置与调用
-
-完整示例见 [纯 FP16 配置](../../parameters/replay_fp16.yaml) 和 [纯 INT8 配置](../../parameters/replay_int8.yaml)。FP16 是十六位浮点，INT8 是八位整数模型编码。复制示例后，填写实际的四模型文件、录像路径、帧率、相机内参及新的输出目录。示例中的相机数值只是格式展示，不能作为真实标定。
-
-每次运行恰好传入一份配置：
-
-```sh
-build/rk3576-yolo/rk3576_tracker_replay parameters/replay_fp16.yaml
-build/rk3576-yolo/rk3576_tracker_replay parameters/replay_int8.yaml
-```
-
-模型、录像、相机和算法设置全部来自这一个文件。程序不读取 ROS YAML，不读取环境覆盖，也不接受额外命令选项。相对路径以配置所在目录为基准。例如 `parameters/run.yaml` 中的 `models/yolo.rknn` 指向 `parameters/models/yolo.rknn`，与启动工作目录无关。
-
-配置使用 OpenCV 支持的 YAML 1.0 子集，保留 `%YAML:1.0` 标头。所有字段必填，布尔值仅用整数 `0`/`1`。未知键、重复键、多文档、非有限数、错误类型及越界值均在模型加载前拒绝。整数以十进制书写，范围受有符号 32 位字段限制；帧号和时间记录另用 64 位整数。`max_frames: 0` 表示读到结束，正值表示主动限制帧数。输出目录必须尚不存在；重复运行先在配置中指定新的目录。
-
-`camera.fx/fy/cx/cy` 的单位是像素，必须对应解码图像尺寸。程序不会缩放图像或相机参数。`tracking_roi_scale_factor` 对应公共 `roi_scale_factor`，决定围绕预测位置的搜索区域大小。`yolo_target_class_id` 是精确类别编号，加载后还会确认它小于模型类别数。`enable_dcf` 控制灰度相关滤波辅助跟踪。概率、IoU（框交并比）、倍率及噪声的合法范围见本变更设计，示例列出了全部字段及单位说明。
-
-### 输入时间与送帧规则
-
-使用者必须提供固定帧率录像。程序不能凭平均帧率证明输入不是变帧率录像。Gray8 是单通道八位灰度，BGR8 是三通道八位彩色；彩色帧在回放边界只转一次灰度。其他格式、尺寸中途变化或有效录像帧率与配置冲突都会失败。
-
-第 `i` 帧的时间为 `1000000 + round(i * 1000000 / fps)` 微秒。30 FPS 的前三帧为 1000000、1033333、1066667。预测时间等于该帧时间，旋转矩阵固定为单位阵。帧时间必须严格递增且不能溢出。
-
-送帧使用单调墙钟。下一次更新至少在前次更新结束一个帧周期之后开始。30 FPS 的一次更新若耗时 60 ms，下一次更新还要再等待约 33.333 ms。解码慢时继续顺延，不跳帧、不连续补发追赶。真实 YOLO 保持异步；该节奏和 `update_ms` 都不能作为总模型吞吐量指标。
-
-### 输出解释与结束状态
-
-每次运行产生三个文件：
-
-| 文件 | 内容 |
-| --- | --- |
-| `frames.csv` | 每次 `update` 的输入帧号、采集/预测时间、接受标记、跟踪状态、框与有效性、NanoTrack 分数、文本和计时 |
-| `run.json` | 完整解析配置、绝对路径、程序/配置/四模型/录像 SHA-256、构建提交及修改标记、同次加载的模型张量和 Runtime/驱动属性、输入统计、状态切换、计时和结束原因 |
-| `diagnostics.log` | 模型、算法及主流程诊断；包括 C/C++ 标准输出和错误输出，与 CSV 分开 |
-
-CSV 的 `display_*` 与 `realtime_*` 使用中心坐标 `cx/cy/width/height`；`nano_*` 使用左上角 `x/y/width/height`。无效框坐标留空，非有限分数留空；负 NanoTrack 分数表示该帧没有有效推断。`consumed=false` 的行仍保存，但不计入接受帧数。`Detecting=0`、`TargetFound=1`、`Tracking=2`、`TargetLost=3` 分别表示检测中、发现目标、跟踪中和目标丢失。
-
-CSV 整数直接写入，JSON 的计数与帧号均保存为十进制字符串，解析时转为任意精度或 64 位整数，避免经过双精度浮点丢失精度。模型属性按行保存在 `model_runtime_attributes` 数组中，包含实际查询的 Runtime/驱动和张量描述；不为生成报告再次加载模型。`git_dirty_at_build` 表示构建配置时工作区是否修改，不代表后续仓库状态。
-
-`decode_ms` 为解码时间，`convert_copy_ms` 为转灰度及帧复制时间，`update_ms` 为公共更新调用耗时，`wait_ms` 为调度等待时间。`submit_ns` 为相对本次送帧起点的单调墙钟纳秒数；`interval_ms` 为相邻提交间隔，`lag_ms` 为相对录像时间轴的落后量。汇总给出均值与 P95；P95 取排序后第 `ceil(0.95*N)` 个样本，空样本为 JSON `null`。仅保留计时与状态切换样本，图像及完整 CSV 行不累计在内存中。
-
-`run.json` 先写 `running`，最终汇总通过临时文件替换。写入、刷新或关闭失败会返回失败。普通中断在主线程清理，先停止送帧，再等待检测线程退出；末尾不增加虚拟帧。每个进程只处理一段录像。
-
-| 原因 | 退出码 | 含义 |
-| --- | --- | --- |
-| `eof` | 0 | 停止解码时已达到声明帧数；不证明文件无损 |
-| `frame_limit` | 0 | 达到配置帧上限 |
-| 配置/命令错误 | 2 | 初始化前拒绝；不创建运行目录 |
-| `decode_error` | 1 | 声明帧数未达到、运行中的格式或尺寸错误、解码异常 |
-| `end_unverified` | 1 | 无可信总帧数，无法确认完整结束 |
-| `initialization_error` / `runtime_error` | 1 | 普通初始化或运行失败 |
-| `interrupted` | 130 | SIGINT 已由主流程安全处理 |
-
-不可写目录可能导致完全没有报告。SIGKILL、断电或设备致命失败不能保证最终汇总；已有 `running` 文件可显示未正常结束。普通模型推理失败仍由原算法处理，未发现目标不能单独证明设备故障。成功退出也不代表找到目标或质量合格。
-
-### Historical assembly verification scope
-
-本次新增实机矩阵仅包含纯 FP16 和纯 INT8；每组模板、搜索、Head 必须采用同一精度。两组使用相同 YOLO、录像和算法参数。已有混合精度后端支持保持不变，但不作为本次新增实机前置条件。
-
-待实机验收时，每组重复三次并覆盖 DCF 开/关，分别检查自动捕获、离开返回、无目标、至少 20 轮实例创建销毁、至少 30 分钟资源负载和失败退出。真实异步运行比较状态切换帧差异，不要求 CSV 字节相同。缺少场景素材或标注时保留未覆盖，不用持续跟踪录像替代丢失恢复验收。
-
-The original assembly snapshot used an ARM64 container and controlled no-device tests. This historical scope is recorded in [assembly validation](../../openspec/changes/assemble-rk3576-tracker-replay/validation.md), including later board follow-up. It does not define the current default compiler image or establish current hardware acceptance. Use the current architecture section above and the dated reports for their respective evidence.
-
-## RK3576 持续视频帧源
-
-`createFactory(...)->createFrameSource(config)` 现在支持 `FrameSourceType::Video`。创建时打开文件并检查首帧，随后关闭文件，返回对象尚未启动。`getImageSize()` 在启动前即可查询实际尺寸。每次 `start()`（包括第一次）重新打开当前路径并从首帧播放；文件被移走、不可读或尺寸变化时启动失败，恢复后可重试。视频忽略相机尺寸、fps、翻转和镜像设置；提交录像配置不会创建录像目录或输出文件。
-
-| 入口 | 输入与用途 | 消费较慢时 |
-| --- | --- | --- |
-| `ReplayReader` / `rk3576_tracker_replay CONFIG.yaml` | 原有顺序算法回放，接口和配置不变 | 整体放慢，逐帧处理 |
-| 工厂创建的 `FrameSource` | 本地 MJPEG 文件，验证持续供帧和队列行为 | 生产按视频时间推进，消费者可取最新帧并跳过积压 |
-
-MJPEG 是每帧独立压缩为 JPEG 的视频。帧源使用 FFmpeg 读取容器，再使用 JPEG 库解码亮度。只接受本地普通文件，首个视频流必须为 MJPEG，音频等其他流会跳过。支持八位灰度和 YCbCr 的 4:2:0、4:2:2、4:4:4 采样；YCbCr 的 Y 分量表示亮度。输出为原尺寸 Gray8（每像素一个八位灰度值），不转彩色、不拉伸亮度范围，也不暴露 JPEG 边缘填充。其他颜色编码、位深或采样会明确失败。
-
-`use_history_timestamp=false` 时，每次启动取当前系统微秒时间作为基准。开启历史模式时，严格读取容器 `Artist` 字段的正十进制 int64 微秒基准；名称不区分大小写，但重复、缺失或非法值均失败。帧时间等于基准加 PTS，PTS 是帧在视频中的显示时刻，先按视频时间基换算为微秒。换算按最近微秒取整，半微秒向上。首帧非零偏移保留，后续换算值必须严格递增，缺失、负值、重复或溢出均失败。
-
-例如，历史基准 `1700000000000000` 加首帧 PTS `100000`，得到 `1700000000100000` 微秒。该帧在启动后约 100 ms 供给。播放使用单调时钟，即不受系统校时影响的时钟；解码已落后时立即继续，不重写帧时间。
-
-调用顺序如下：
-
-1. 创建视频帧源，查询尺寸，按需提交录像配置。
-2. 在没有取帧调用进行时调用 `start()`，随后由单个消费者取帧。运行中再次启动返回 false。
-3. 调用 `stop()` 停止生产。它可以与该消费者并发，并能打断尚未到期的播放等待。`waitFrame()` 自身仍可能等到调用方指定的超时。
-4. 等消费者退出取帧调用后，才可再次 `start()`。每轮从头打开文件并重建队列，上一轮未消费帧不会混入新轮。重新打开时尺寸变化会启动失败。
-5. 析构前先结束消费者。析构会回收生产线程，包括已自然结束但尚未回收的线程。
-
-`stop()` 不清空队列，正常 EOF 后仍可读取尾帧。EOF 表示容器报告读完，不证明所有截断均可被识别。`isRunning()==false` 只表示生产结束，不表示队列为空。限时或非阻塞取帧返回 false 时输出引用清空；这个布尔值不能区分超时、正常结尾和运行错误。
-
-实时模式重启会取新的系统时间基准。历史模式每轮重用录像时间，因此跨轮时间会重复。需要重复运行跟踪器的调用方必须另行处理算法状态复位；帧源只保证队列不混轮。消费者持有的帧及只读视图均独立于解码缓冲区、帧源和工厂存活。
-
-### 无模型测试入口
-
-独立构建额外需要 JPEG、libavformat、libavcodec 和 libavutil 开发库。这些依赖由 `rk3576_video` 目标声明，不反向链接 RKNN 或公共算法。The complete standalone configuration needs ARM64/RKNN target SDK files, which the default x86_64 image supplies through its cross toolchain. The separate camera-only configuration supports native x86_64 video tests without RKNN. The tests below do not load models or perform NPU inference. NPU 是开发板的神经网络计算设备。
-
-构建启用测试后，运行以下命令。`BUILD` 表示独立 CMake 构建目录，例如容器内 `/work/ros2_ws/build/video-source`：
-
-```sh
-BUILD=/work/ros2_ws/build/video-source
-ctest --test-dir "$BUILD" --output-on-failure
-"$BUILD/video_fixture_generator" "$BUILD/video-fixtures"
-"$BUILD/video_source_driver" "$BUILD/video-fixtures/slow.mov" 1 60 2
-```
-
-驱动的四个参数依次为文件、历史模式（0/1）、每次消费后等待毫秒数、播放轮数。示例通过真实工厂和 `waitForLatestFrame()` 播放两轮，每次消费后等待 60 ms。输出包含轮次、帧微秒时间、像素摘要和结束统计；像素摘要是便于重复比较的 FNV-1a 校验值。该驱动用于视频边界验证，不改变原有完整跟踪回放命令。
-
-Linux 实机另提供 `video_board_validation FIXTURE_DIRECTORY 600`。它先检查两种时间模式各 20 轮重启、错误输入和满队列，再执行同进程 100 次创建销毁及至少 600 秒重启/慢消费负载。输出包含停止耗时及进程内存、线程、文件句柄采样；不自动加入普通 CTest，以免每次回归都运行十分钟。使用前先通过上述生成器准备素材目录。
-
-平台内部 `diagnostic()` 提供线程安全快照。`VideoState` 值依次为 Ready=0、Running=1、Stopped=2、Eof=3、Failed=4，与公共跟踪器的 `TrackerState` 无关。诊断包含路径、从 1 开始的帧序号、原始 PTS、原因和本轮统计。`read` 统计成功读取并进入处理的帧，`enqueued` 统计入队帧，`dropped` 统计队列满而丢弃的新帧。读取或解码失败会标明尝试读取的下一帧序号。默认日志在状态切换时输出，可注入诊断回调供测试使用；回调异常不会终止生产线程。
-
-本地容器测试与实机验收分开记录，见 [视频帧源验证记录](../../openspec/changes/implement-rk3576-video-frame-source/validation.md)。RK3576 已通过两种时间模式的慢消费与各 20 轮启停、同进程 100 次创建销毁，以及 600.187 秒内 318 轮重启/慢消费资源检查。未执行 Jetson、ROS、相机或模型质量验收。
-
-## RK3576 ROS 视频节点
-
-For current development, use `./build.sh --test` in the tracker root. It defaults to the x86_64 image and cross-compiles the ARM64 ROS node. Select `--backend arm64` for the preserved ARM64-image fallback. The following manual example assumes a native ARM64 ROS 2 Humble SDK environment; it is not the default host workflow:
+The standalone build needs C++17, OpenCV core/imgproc/dnn/video/imgcodecs/videoio, threads, and the ARM64 RKNN SDK. It does not require ROS or Jetson SDKs. A native ARM64 SDK example is:
 
 ```bash
-colcon build --packages-select drone_tracker --cmake-args \
-  -DCMAKE_BUILD_TYPE=Release -DDRONE_TRACKER_PLATFORM=rk3576 \
-  -DDRONE_TRACKER_BUILD_TESTS=ON
-source install/setup.bash
-# 运行时库目录必须指向当前机器安装的 RKNN Runtime；开发板应使用 2.3.2。
-export LD_LIBRARY_PATH=/path/to/rknn-runtime/lib:${LD_LIBRARY_PATH}
-ctest --test-dir build/drone_tracker --output-on-failure
+cmake -S src/platform/rk3576 -B build/rk3576-yolo \
+  -DRKNN_INCLUDE_DIR=/usr/include \
+  -DRKNN_LIBRARY=/usr/lib/librknnrt.so -DCMAKE_BUILD_TYPE=Release
+cmake --build build/rk3576-yolo -j4
+ctest --test-dir build/rk3576-yolo --output-on-failure
 ```
 
-节点沿用 `vision_msgs`、`mavros_msgs`、`cv_bridge` 和 `rosbag2_cpp` 等 ROS 依赖。RKNN 编译依赖默认位于 `/opt/rknn-runtime/include` 和 `/opt/rknn-runtime/lib/librknnrt.so`，可用 `RKNN_INCLUDE_DIR`、`RKNN_LIBRARY` 显式覆盖。Current images provide the Runtime 2.3.2 target SDK; the board compatibility baseline remains driver 0.9.8. The x86_64 image stores target SDK files under `/opt/arm64-sysroot`; use the cross toolchain rather than substituting native libraries. Historical 2.3.0 SDK results remain dated evidence. Read `AGENTS.local.md` for current host commands.
+The accepted YOLO contract is 640×640 grayscale replicated into three channels, with six outputs. Scales are 80, 40, and 20; each has a 64-channel box-distribution output followed by C raw class-score channels. Native input is INT8 or FP16 NHWC. NHWC orders batch, height, width, and channels. INT8 uses affine quantization with zero point -128 and scale 1/255. Floating input attributes may carry NONE or AFFINE metadata without integer rescaling rules.
 
-先复制安装目录中的 `parameters/rk3576_video_params.yaml`，填写四个模型角色和视频内参。示例保留空模型路径和无效内参，以免误用后静默启动：
+The application always submits UINT8 NHWC `[1,640,640,3]`, 1,228,800 bytes, with `pass_through=0`. The model conversion must encode mean=0/std=255. Pixel 150 is submitted as byte 150; Runtime performs the configured conversion. The application does not divide by 255, subtract 128, or store FP16 in advance. Output is requested as Float32 and is not dequantized twice. Model metadata and fixed-input comparison must establish numerical meaning; shape queries alone cannot prove normalization or whether class scores already contain Sigmoid probabilities.
 
-- `tracker.yolo_engine`：YOLO 检测模型。
-- `tracker.nano_template_backbone`：模板图像特征提取模型。
-- `tracker.nano_search_backbone`：搜索图像特征提取模型。
-- `tracker.nano_head`：两组特征的匹配模型。
-- `tracker.nano_backbone`：在 RK3576 必须为空。Jetson 继续使用原三路径默认值。
-
-模型绝对路径直接使用；相对路径基于安装包的 `share/drone_tracker/models/`。无需复制大模型进仓库。目标类别从零开始，必须落在模型类别范围内。
-
-`camera.fx/fy/cx/cy` 是实际视频像素坐标中的焦距和主点，用于旋转补偿和预测。四值必须有限，fx/fy 必须大于零。例如，某段 640×480 视频的标定可能为 `800.0/810.0/320.0/240.0`；这只是格式示例，必须替换成该录像对应的标定。节点不按 `mv_camera.*` 再缩放这组值。
+Examples, using an existing compatible model and user-supplied input:
 
 ```bash
-ros2 launch drone_tracker rk3576_video.launch.py \
-  params_file:=/absolute/path/video_params.yaml \
-  video_source:=/absolute/path/recording.mov
-ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header "{frame_id: ON}"
-ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header "{frame_id: OFF}"
+build/rk3576-yolo/rk3576_yolo_probe --model /models/yolo.rknn --mode query
+build/rk3576-yolo/rk3576_yolo_probe --model /models/yolo.rknn \
+  --mode detect --target 2 --image /inputs/sample.jpg
+build/rk3576-yolo/rk3576_yolo_probe --model /models/yolo.rknn \
+  --mode detect --target 2 --video /inputs/clip.mov
+mkdir -p results
+build/rk3576-yolo/rk3576_yolo_probe --model /models/yolo.rknn \
+  --mode region --image /inputs/sample.jpg --dump results/sample
 ```
 
-视频必须显式提供。相对视频路径基于启动进程的工作目录，因此推荐绝对路径。只接受本地 MJPEG，即逐帧 JPEG 编码的视频。节点初始化后等待 ON；ON 从头播放，重复 ON 不增开线程。OFF 主动停止，EOF（文件正常结束）自动收尾。收尾后可再次 ON，四模型复用，旧检测请求和结果清空。SIGINT 退出进程时等待设备不再访问帧后释放资源。
+`--target` is one exact zero-based class ID, also exposed as `tracker.yolo_target_class_id` in ROS. A target of 0 means class 0. It does not accept every class. Class bounds are checked before detection starts. `--roi x y width height` supplies a preferred image region. Detection runs the real asynchronous region/full-image/tile cascade. The first successful stage supplies its highest-scoring target; other classes do not participate in NMS, the removal of highly overlapping duplicate boxes.
 
-`use_history_timestamp` 和 `use_sim_time` 都必须为 false。帧时间采用系统起点加 PTS（视频帧显示时刻），等待采用单调时钟。输出图像保留帧时间，检测框使用当前预测时间。运行中普通超时继续等待，不会把长帧间隔误判为 EOF。历史姿态同步不在本阶段范围内；独立顺序回放和独立视频帧源的历史模式继续可用。
+Region mode exports `.input.u8`, six `.output0.f32` through `.output5.f32` files, and `.prediction.f32`. `--constant 0`, `114`, or `255` can replace an image for numerical checks. Nine-output variants, precomputed-probability variants, and arbitrary normalization contracts are not accepted. See the dated [YOLO validation](../../openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md) and [FP16 input change](../../openspec/changes/archive/2026-09-20-support-rk3576-yolo-fp16-input/validation.md) for their actual evidence and limitations.
 
-启动后不能修改输入、模型、内参、算法、记录或时钟配置。修改参数文件后重启节点。launch 只覆盖视频路径，不覆盖 DCF 等算法参数。DCF 是用于辅助跟踪的相关滤波器。
+## Standalone NanoTrack
 
-`need_save=true` 时，每轮在 `save_path` 下按触发时间创建独立 ROS bag（ROS 消息记录文件）。写入线程独占文件写入器，回调和跟踪线程只提交消息到最多 256 条、64 MiB 的队列。队列满时拒收当前消息、计数并把 bag 标记为不完整。目录碰撞、打开、写入或关闭失败只使本轮 bag 失败；健康的跟踪、HDMI 和独立录像继续。姿态、里程计、检测框及开启的图像输出保留原话题和时间戳。`visualized_result=false` 时不注册 `/fpv/tracker_image`。OFF、EOF 和普通输入错误均收尾本轮 bag；恢复文件或目录后可重试，不覆盖旧目录。
+The same standalone build produces `rk3576_nanotrack_probe`:
 
-ROS 视频接入已完成规定的 RK3576 实机验收，包括纯 FP16 和纯 INT8 模型配置的基础集成、失败清理，以及固定 INT8 配置下同进程 20 轮启停和额外至少 30 分钟播放负载。验证证据与缺口见 [ROS 视频接入验证记录](../../openspec/changes/integrate-rk3576-ros-video/validation.md)。这些结果不代表模型检测质量、部署性能或 Jetson 实机等价性通过；NPU 设备内存尚未测量。前序完整回放的 7.2、7.3 仍未完成。
-
-## RK3576 独立原生灰度相机源
-
-`implement-rk3576-camera-frame-source` 提供 AR0234 连续采集的独立入口。输出为原尺寸 `Gray8`，即每个像素一个八位灰度值。它通过 V4L2（Linux 视频设备接口）采集，不加载模型，不使用显示链。后续 ROS 相机变更已增加周期软件触发和正式入口，见下节。
-
-### 配置与接口
-
-必须显式提供采集节点、媒体设备、传感器实体、宽高和整数帧率。传感器实体是媒体拓扑中标识传感器的名称。下面的路径和实体名仅展示配置格式，使用前必须根据当前连接的相机替换：
-
-```cpp
-#include "platform/rk3576/platform_factory.h"
-
-FrameSourceConfig config{};
-config.type = FrameSourceType::Camera;
-config.path = "/dev/videoX";                     // 当前采集节点
-config.camera_media_device = "/dev/mediaX";     // 当前媒体设备
-config.camera_sensor_entity = "actual sensor"; // 当前传感器实体
-config.width = 1920;
-config.height = 1200;
-config.fps = 60;
-config.trigger_mode = false;                   // 连续采集；软件触发改为 true
-config.camera_trigger_rate_hz = 0;              // 软件触发须显式填写 1..fps 的频率
-config.output_width = 0;                       // 0 表示保留原尺寸
-config.output_height = 0;
-config.camera_buffer_count = 4;                // 允许 2–32
-
-rk3576::FactoryOptions options{};
-options.enable_camera = true;
-auto factory = rk3576::createFactory({}, options);
-auto result = factory->createFrameSource(config);
-// 检查 result；失败时 result.error.describe() 给出平台、设备路径和原因。
-// 成功时通过 result.value 的 start()/waitFrame()/stop() 操作。
+```bash
+build/rk3576-yolo/rk3576_nanotrack_probe \
+  --template-model /models/template_backbone.rknn \
+  --search-model /models/search_backbone.rknn \
+  --head-model /models/head.rknn --mode query
+build/rk3576-yolo/rk3576_nanotrack_probe \
+  --template-model /models/template_backbone.rknn \
+  --search-model /models/search_backbone.rknn \
+  --head-model /models/head.rknn --mode replay \
+  --video /inputs/mjpeg.mov --bbox 100,80,40,30
 ```
 
-输出尺寸也可显式填为输入尺寸。外部引脚触发、缩放、翻转、镜像和历史时间均被拒绝。实体名不能包含引号或控制字符。`configureRecording(true, ...)` 抛出 `std::invalid_argument`，表示不支持录像；禁用录像安全接受。工具保存的少量静态快照不属于录像功能。
+The probe's replay reader requires local MJPEG video and decodes luminance as Gray8, one byte per pixel. `--bbox` is the first-frame left/top/width/height in pixels. Query mode loads and validates the same production backend, including its shared-memory contract.
 
-工厂创建阶段只设置传感器并核验设备格式，随后恢复本次修改的控制项并关闭设备。此时不申请采集缓冲、不启动线程。每次 `start()` 重新打开设备，并核对实际的灰度格式、尺寸、帧间隔和行跨度。行跨度是相邻两行起点之间的字节数。例如输入宽 1920、行跨度 2048 时，每行只复制前 1920 字节，输出不含 128 字节填充。
+| Model role | Logical input | Logical output |
+|---|---|---|
+| Template Backbone | `[1,3,127,127]` | `[1,96,8,8]` |
+| Search Backbone | `[1,3,255,255]` | `[1,96,16,16]` |
+| Head | Template and search features above | Classification `[1,2,15,15]`; position `[1,4,15,15]` |
 
-每个输出帧都有独立像素存储。设备缓冲在复制后立即归还。消费者持有的帧及只读视图在源停止或销毁后仍有效。缓冲索引、平面数量、偏移、使用长度和错误标志不合法时，本轮失败，不交付该帧。
+Logical shapes are interpreted as NCHW: batch, channels, height, width. Roles match unique shapes rather than export names or enumeration order. Classification values are raw scores; position values are left/top/right/bottom distances. Crop preprocessing converts to Float32 before resizing, replicates grayscale across three channels, and preserves the 0–255 range without an extra division by 255.
 
-### 启停、队列和时间
+Production `loadNanoTrack` uses shared device memory for the search Backbone-to-Head transfer. The native tensor, meaning the device's actual storage arrangement, must be compatible FP16 NC1HWC2 on both sides, including channel groups, spatial dimensions, stride, and capacity. NC1HWC2 splits channels into storage groups; the validated search shape includes `[1,12,16,16,8]`. Search features are not read, copied, or converted by the CPU. Template features and final Head outputs still use Float32 host transfers.
 
-调用方须串行执行 `start()`、`stop()`。启动和销毁前，消费者必须停止取帧；`stop()` 可以与一个消费者并发执行。队列仍为 `BlockingReaderWriterQueue<FrameRef>(30)`，使用不扩容的 `try_enqueue()`；实际容量由该队列实现决定。满队列丢弃新帧，生产线程不取走旧帧。
+Each search input submission is followed by rebinding the search output. After that model completes, template input is submitted to Head and its shared search input is rebound before execution. The next search cannot overwrite storage while Head reads it. Incompatible native storage or missing shared-memory support rejects backend creation; there is no automatic host-transfer fallback. A private `loadNanoTrackCpuReference` remains available for explicit numerical-reference work.
 
-`tryFrame()` 非阻塞取帧；`waitFrame()` 限时等待。返回 false 时，两者都会清空输出引用。需要最新帧时，可用已有 `waitForLatestFrame()` 排空旧帧。停止保留本轮已入队的尾帧；下一次启动清除旧队列。`isRunning()==false` 不代表队列为空，应结合 `status()` 查询结束原因。相机不会返回文件 `Eof` 状态。
+Logical FP16/Float32 and supported affine INT8 attributes are still validated. A model's precision label alone does not establish that its search edge satisfies the native FP16 requirement. Historical four-precision results describe the former host-transfer implementation; see [original backend validation](../../openspec/changes/archive/2026-09-11-implement-rk3576-nanotrack-backend/validation.md) and [production adoption](../../openspec/changes/archive/2026-09-22-adopt-nanotrack-search-direct-handoff/validation.md). They do not establish current compatibility for an arbitrary replacement model.
 
-停止事件通过 `eventfd` 唤醒 `poll`。前者是可被等待线程检测到的事件句柄，后者是等待设备可读的系统调用。连续两秒没有成功出队帧会报告采集超时。停流失败时先关闭采集设备，再解除映射；错误在清理后保留。无设备测试的停止上限是 250 ms，实机要求是 1 秒；开发板 2 本次 122 轮最大停止为 60.961 ms。
+Failures before device execution return diagnostics. A recoverable search failure follows the shared tracker's existing failure path. If device access cannot be confirmed stopped, or shared-memory release fails, the established fatal policy terminates the process rather than releasing storage that might still be in use. Reset invalidates the template without reallocating shared search storage; destruction releases the consumer import before the producer allocation.
 
-每轮用单调时钟的前后两个样本夹取系统时间，以中点计算固定偏移。单调时钟不随系统校时跳变。本轮不会重新计算偏移：
+## Complete sequential tracker replay
 
-- `driver_monotonic`：驱动明确声明时间属于单调时钟，输出时间为驱动时间加固定偏移。
-- `dequeue_fallback`：驱动没有声明时钟域，或使用 COPY 标志。输出采用成功出队时采样的单调时间加固定偏移，仅代表出队时刻。
+`rk3576_tracker_replay CONFIG.yaml` creates four-model components through the factory and runs the real `HybridTracker`, starting with automatic detection. It requires no manual first-frame box. The standalone build additionally uses OpenSSL Crypto for file fingerprints. This tool has its own synchronous decoder and does not provide ROS, camera capture, or display acceleration.
 
-例如，驱动时间为 `10000000` 微秒，偏移为 `1700000000000000` 微秒，输出为 `1700000010000000` 微秒。重复、倒退、溢出、非法原始时间或轮内策略变化均使本轮失败，不人工增加时间。原始 flags 和时间会保留；SOE 表示驱动声明曝光开始，EOF 表示帧结束，本次没有验证它们与真实曝光的同步精度。
+Copy [the FP16 configuration](../../parameters/replay_fp16.yaml) or [the INT8 configuration](../../parameters/replay_int8.yaml), then supply actual files, compatible model contracts, fixed video FPS, intrinsics, and a new output directory. Historical precision examples remain subject to the current native search-edge validation.
 
-### 不依赖设备 SDK 的构建
+```bash
+build/rk3576-yolo/rk3576_tracker_replay /absolute/path/run.yaml
+```
 
-在 Linux 环境、仓库根目录执行：
+Exactly one configuration is accepted. It supplies models, video, camera, algorithm, and output; there are no additional runtime options, ROS YAML imports, or environment overrides. Relative paths resolve from that configuration's directory. Keep the OpenCV `%YAML:1.0` header. Fields are required, booleans use integer 0/1, and unknown/duplicate keys, multiple documents, invalid numbers, and existing output directories are rejected before loading models.
+
+Intrinsics `fx/fy/cx/cy` are pixels in the decoded image. No image or intrinsics scaling is added. Fixed-rate frame i has time `1000000 + round(i * 1000000 / fps)` microseconds: at 30 FPS, the first three are 1000000, 1033333, and 1066667. Prediction time equals frame time, with identity camera rotation. Color input is converted once to grayscale. Unsupported formats, size changes, and a valid reported FPS conflicting with the configuration fail.
+
+Replay waits one frame period after the previous update completes. A 60 ms update at 30 FPS is followed by approximately 33.333 ms waiting. It does not skip frames or burst to catch up. This differs from a real-time queue and cannot measure total model throughput.
+
+| Output | Meaning |
+|---|---|
+| `frames.csv` | Every update, including unconsumed input, with times, state, boxes, score, and duration |
+| `run.json` | Resolved configuration, file fingerprints, build identity, queried model/Runtime attributes, input statistics, state transitions, durations, and end reason |
+| `diagnostics.log` | Model, algorithm, and process diagnostics, separate from CSV |
+
+CSV `display_*`/`realtime_*` boxes use center-x/center-y/width/height; `nano_*` uses left/top/width/height. Invalid coordinates and non-finite scores are blank. Negative NanoTrack score indicates no valid inference. JSON counts and frame IDs use decimal strings to preserve integer precision. Durations distinguish decoding, conversion/copy, update, and waiting; parent and nested durations must not be added twice. P95 selects sorted item `ceil(0.95*N)`; empty samples are null.
+
+| End reason | Exit code |
+|---|---:|
+| `eof`, after reaching the declared frame count | 0 |
+| `frame_limit` | 0 |
+| Configuration or argument error | 2 |
+| `decode_error`, `end_unverified`, `initialization_error`, `runtime_error` | 1 |
+| `interrupted`, after safe SIGINT cleanup | 130 |
+
+The initial report state is `running`; ordinary completion replaces it with the final report. Write/flush/close failures are failures. Cleanup stops input and waits for detection without adding a fictitious final frame. SIGKILL, power loss, or fatal device failure cannot guarantee a final report. A normal exit does not establish that a target was found or that tracking was accurate. Historical integration, quality gaps, and resource checks remain in the [assembly records](../../openspec/changes/assemble-rk3576-tracker-replay/validation.md).
+
+## Continuous MJPEG frame source
+
+Factory `FrameSourceType::Video` accepts a local ordinary file whose first video stream is MJPEG. Audio and other streams are skipped. Eight-bit grayscale and YCbCr 4:2:0, 4:2:2, or 4:4:4 decode directly to original-size Gray8, without color round trips or luminance stretching. Unsupported depth, sampling, or color encoding fails.
+
+Creation opens the file to verify the first frame, then closes it. Each `start()` reopens the configured path from the beginning, including the first start; a missing file or changed dimensions fails startup. Video ignores camera dimensions, nominal FPS, flipping, and mirroring. Its recording configuration does not create camera output.
+
+Real-time mode takes a new system-time origin per start. History mode strictly reads a positive decimal int64 microsecond origin from the container's case-insensitive `Artist` field; missing, duplicate, or invalid values fail. Output time is origin plus PTS, the video's presentation timestamp, rounded to the nearest microsecond with halves upward. Negative, missing, repeated, backward, and overflowing times fail. A first-frame offset is preserved. Playback waits on a monotonic clock, which is unaffected by calendar correction, and processes immediately when behind.
+
+One consumer may run while `stop()` wakes producer waits. Stop preserves queued tail frames and a determined EOF/failure reason. `isRunning()==false` does not imply an empty queue. Finish consumer calls before restarting or destroying the source. A restart clears the old queue; history timestamps can repeat across starts, so callers must also reset algorithm rounds. Frames and read views outlive the decoder, source, and factory.
+
+The `video_source_driver FILE HISTORY SLOW_MS ROUNDS` tool exercises the real factory and latest-frame consumer. `video_board_validation FIXTURE_DIRECTORY 600` performs its dated restart/lifetime/slow-consumer protocol. Prepare fixtures with `video_fixture_generator`. These tools do not load models. See [video-source validation](../../openspec/changes/archive/2026-09-14-implement-rk3576-video-frame-source/validation.md) for the actual board and measured scope.
+
+## Camera sources and configuration
+
+Production RK3576 factories enable camera support. Independent factories must set `rk3576::FactoryOptions::enable_camera=true`; the default independent factory rejects camera requests. Sources use V4L2, the Linux capture interface. AR0234 provides original-size grayscale continuous capture or periodic software triggering. SC233HGS accepts continuous capture through an already prepared ISP/3A chain and produces Gray8 for tracking from NV12 input. Device paths depend on the actual wiring and driver topology.
+
+Copy the appropriate parameter file and fill actual model paths and camera values:
+
+| Configuration | Runtime defaults |
+|---|---|
+| [AR0234](../../parameters/rk3576_ar0234_camera_params.yaml) | Software trigger 20 Hz; device 60 FPS; OSD, timing, recording, and bag disabled; model paths empty |
+| [SC233HGS production](../../parameters/rk3576_sc233hgs_production_params.yaml) | Continuous 60 FPS; OSD, timing, independent recording, and bag enabled; explicit target-board model paths |
+| [MJPEG video](../../parameters/rk3576_video_params.yaml) | OSD, timing, independent recording, and bag disabled; explicit video/models required |
+
+These are template settings, separate from C++ declaration defaults. Intrinsics in both camera templates are simulated; they do not establish measured lens calibration or rotation-compensation accuracy. Absolute model paths are used directly; relative ROS model paths resolve below the installed package's `share/drone_tracker/models/`. RK3576 needs `tracker.yolo_engine`, `nano_template_backbone`, `nano_search_backbone`, and `nano_head`, with `nano_backbone` empty.
+
+Before capture, inspect `v4l2-ctl --list-devices`, `media-ctl -p`, and existing device users. Then start with an explicit input:
+
+```bash
+ros2 launch drone_tracker rk3576_camera.launch.py \
+  params_file:=/absolute/path/camera.yaml video_source:=/dev/video22
+ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: ON}'
+ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: OFF}'
+```
+
+The example node is not universal. The launch accepts `/dev/video10` and shorthand `video10`, and overrides only the input path. Its default parameter template is AR0234. Models, mode, and algorithm values come from the selected file.
+
+| Field | Constraint |
+|---|---|
+| `mv_camera.sensor_model` | `ar0234` or `sc233hgs`; unspecified defaults to AR0234 |
+| `capture_mode` | `continuous` or `software_trigger`; SC233HGS requires continuous |
+| `fps` | Positive integer device rate |
+| `trigger_rate_hz` | Finite 1..fps in software mode; 0 in continuous mode |
+| `media_device`, `sensor_entity` | Explicit current topology; SC233HGS uses these as diagnostic identity |
+| `buffer_count` | 2..32; default 4 |
+| `width_px`, `height_px` | Actual captured pixel dimensions |
+| `output_width_px`, `output_height_px` | Same as input or 0 to retain size |
+| `use_sim_time`, `use_history_timestamp` | false for production RK3576 camera/video nodes |
+| `need_save` | Independent ROS bag switch; true is accepted for camera and video |
+
+Capture configuration, models, intrinsics, algorithm, clocks, recording, and OSD options are fixed at startup; changing them requires restart. SC233HGS does not silently switch to AR0234 or software triggering on failure.
+
+A camera copies only valid pixels from each driver row. For a 1920-byte gray row with 2048-byte stride, its 128 padding bytes are excluded. Driver buffers are returned before frames are delivered. Consumer frames and views retain their own storage after source cleanup. Bad indices, lengths, planes, offsets, or error flags fail the stream. Queues discard newly arriving frames when full; the producer does not remove older frames to make space.
+
+AR0234 saves sensor controls before configuration and restores changed controls on cleanup. Each control write is followed by up to 100 ms of readback, at 5 ms intervals, without repeated writes. Software triggers call V4L2 directly from a separate command thread, which never produces image-queue entries. Missed periods are skipped rather than burst-replayed. Counts distinguish commands, received frames, driver gaps, queue drops, and consumed frames. A successful command does not prove exposure or a one-command/one-frame relationship.
+
+Per stream, a fixed offset maps monotonic driver times into system microseconds. `driver_monotonic` means the driver declared that clock domain. `dequeue_fallback` uses host dequeue time when the domain is absent or COPY is reported; it describes retrieval, not exposure. The offset is never recomputed midstream. Invalid, repeated/backward post-warmup time, clock-policy changes, and overflow fail instead of manufacturing timestamps. Capture timeout is two seconds without a successful dequeue. Stop wakes the wait, joins command/capture threads, stops the device, restores applicable controls, and then releases resources. Blocking driver calls still require actual board validation.
+
+### SC233HGS timestamp warmup
+
+Each new SC233HGS stream observes timestamps before delivering pixels. The fixed bounds are two seconds after successful stream start and at most 120 successfully dequeued buffers. Eight strictly increasing timestamps make the eighth frame eligible. Equal times reset the streak to one; earlier observations are returned to the driver without tracking/recording pixels. A deadline takes precedence over readiness. Buffer 120 may succeed within the deadline; no buffer 121 is examined.
+
+Backward/invalid/overflowing timestamps, changed clock policy, and duplicate/backward driver sequence remain fatal during warmup. Forward sequence gaps are counted separately. A real capture stop cancels warmup. In continuous preview, ON/OFF does not restart or cancel that stream warmup. AR0234 has no such observation phase. Warmup establishes timestamp progression, not exposure synchronization, focus, or image quality.
+
+Capture diagnostics distinguish `dequeued_total`, `warmup_discarded`, `terminal_discarded`, qualified `read`, queue `enqueued`/`dropped`, and driver gaps. After cleanup, `dequeued_total = warmup_discarded + read + terminal_discarded`, and `read = enqueued + dropped`. `resources_reclaimed=false` means release has not been confirmed even if counts balance.
+
+### Independent camera tools
+
+Camera-only builds require Linux, C++17, OpenCV, threads, JPEG, and FFmpeg development libraries; they do not discover RKNN, ROS, RGA, DRM, or Jetson SDKs:
 
 ```bash
 cmake -S src/platform/rk3576 -B build/camera-only \
@@ -454,389 +243,68 @@ cmake --build build/camera-only -j4
 ctest --test-dir build/camera-only --output-on-failure
 ```
 
-该入口需要 C++17、线程库、OpenCV，以及 JPEG、libavformat、libavcodec、libavutil 开发库。保留视频依赖是为了复用同一个公共平台工厂及其视频功能。该入口不查找 RKNN、ROS、RGA、DRM 或 Jetson SDK。运行相机时还需要 `media-ctl` 配置工具、可用驱动，以及对显式配置设备的访问权限。构建完整 RK3576 后端仍使用原入口，不添加 `DRONE_TRACKER_CAMERA_ONLY`。
-
-The camera-only configuration above supports native x86_64 compilation and software tests in the default x86_64 image. Its native `ar0234_camera_source_driver` is an x86_64 executable. The full repository build cross-compiles an ARM64 driver, which instead needs an ARM64 system or QEMU. These are separate build directories and neither no-device test accesses a real camera.
-
-### 独立工具与实机验收命令
-
-以下命令用于连接相机后的实机验收。开发板 2 已完成短采集、20 轮启停、100 次新建销毁和 600 秒慢消费负载，详见 [实机验收记录](../../openspec/changes/implement-rk3576-camera-frame-source/board2-validation.md)。先核对实际拓扑和设备占用，再填写参数。不要根据历史节点编号自动猜测设备，不要停止其他占用程序。
-
-```bash
-v4l2-ctl --list-devices
-# 用实际媒体设备替换以下值，再查看其中的传感器实体。
-MEDIA_DEVICE=/dev/mediaX
-media-ctl -d "$MEDIA_DEVICE" -p
-VIDEO_DEVICE=/dev/videoX
-SENSOR_ENTITY='actual sensor'
-fuser "$VIDEO_DEVICE"
-```
-
-短采集示例使用原尺寸连续灰度配置，保存三张无损 PGM 快照。PGM 是可直接保存原始八位灰度的图像格式。`--compare-pixels` 在同一个驱动缓冲仍由本进程持有时，逐行比较输出副本和原始有效像素；不比较两次独立采集的动态画面。
-
-```bash
-./ar0234_camera_source_driver \
-  --video-device "$VIDEO_DEVICE" --media-device "$MEDIA_DEVICE" \
-  --sensor-entity "$SENSOR_ENTITY" --width 1920 --height 1200 --fps 60 \
-  --buffers 4 --frames 300 --snapshots 3 --compare-pixels \
-  --output camera-short-new
-```
-
-输出目录必须不存在，其父目录必须已存在。参数错误返回退出码 2；设备、报告写入、像素对照、无帧或停止超时失败返回 1；成功返回 0。SIGINT/SIGTERM 会请求停止并释放资源，随后以非零状态退出。工具不会覆盖旧结果，写入失败也不会报成功。
-
-重复与负载验收可复用上述设备参数，分别选择以下参数组合，并为每次运行使用新输出目录：
-
-| 目的 | 参数组合 |
-|---|---|
-| 同一个源至少 20 轮启停 | `--rounds 20 --frames 300 --snapshots 0` |
-| 同进程至少 100 次新建销毁 | `--instances 100 --frames 10 --snapshots 0` |
-| 连续至少 10 分钟 | `--seconds 600 --snapshots 0` |
-| 慢消费者负载 | `--seconds 600 --slow-ms 60 --snapshots 0` |
-
-`--frames` 限制消费者取得的帧数。`--seconds` 限制每轮时长，两者都给出时先达到者生效。`--slow-ms` 在每次消费尝试后等待指定毫秒数，不改变采集帧率。多轮时每轮都应用这些限制。
-
-报告内容：
-
-- `config.txt`：完整请求配置、时间含义及资源统计口径。
-- `frames.csv`：所有成功复制并归还的帧，包括被队列丢弃的新帧。包含原始时间、sequence（驱动序号）、flags、时间策略、固定偏移及采样跨度、实际宽高和行跨度、复制耗时、像素对照结果及两类丢帧统计。
-- `rounds.csv`：每轮消费/采集数量、以整个轮次耗时计算的实测吞吐量、停止和设备清理耗时、状态及原因。帧率是测量值，不沿用历史 60 FPS。
-- `resources.csv`：创建前、运行中约每秒、停止后和销毁后的主机内存、线程与文件描述符数量。文件描述符是进程打开资源的句柄；统计包含报告文件和查询本身，不包含 NPU 设备内存。
-- `frame-*.pgm`：每轮开头的少量无损灰度快照，数量由 `--snapshots` 决定。
-
-`Ar0234CameraDependencies::observe` 在生产线程同步接收逐帧报告，回调抛异常会使本轮失败。报告与快照写入会影响测得吞吐量，评估时应保留对应配置。`diagnostic()` 只读快照另外提供停止及清理耗时；`status()` 提供公共状态和队列统计，不消费帧。
-
-无设备测试、构建及已完成的开发板 2 实机验收见 [相机帧源验证记录](../../openspec/changes/implement-rk3576-camera-frame-source/validation.md)。这些结果不代表 ROS 相机、模型质量、曝光同步、Jetson 等价性或部署性能达标。实拍画面偏暗、模糊，仍需另行检查图像质量。
-
-
-## RK3576 ROS 相机节点与软件触发
-
-正式入口复用独立相机后端。连续模式由相机自行出帧；软件触发模式由独立线程周期发送拍摄命令。命令线程不读取图像，图像队列仍只有一个采集生产者。ROS 的 ON 表示开始整轮运行，不是单次拍照；OFF 结束本轮，随后 ON 复用已加载模型。
-
-### 填写配置并启动
-
-1. AR0234 软件触发入口复制 `parameters/rk3576_ar0234_camera_params.yaml`；SC233HGS 连续采集入口复制 `parameters/rk3576_sc233hgs_production_params.yaml`。通用 `rk3576_camera.launch.py` 未指定 `params_file` 时只默认选择 AR0234 模板；仍须显式提供 `video_source`。生产部署包默认选择 SC233HGS 模板。
-2. 根据 `media-ctl -p` 核对媒体设备、传感器实体、采集设备与尺寸。示例实体来自历史连接，重新接线后须复核。
-3. 在所选配置中填写四个模型文件路径：YOLO、模板 Backbone、搜索 Backbone、Head。Backbone 提取图像特征，Head 匹配模板和搜索特征。共享 `nano_backbone` 留空。本机打包时，配置路径写目标板的 `/opt/drone_tracker/models/<相对路径>`，本地 `--model-root` 下放相同的相对路径；例如 `fp16/head.rknn`。SC233HGS 生产模板已填写当前生产模型路径，打包前仍须核对本地模型文件和指纹。
-4. 核对 `camera.fx/fy/cx/cy`，分别为像素焦距和主点坐标。两份相机模板当前均使用模拟内参，具体数值以各自文件为准，不代表镜头实测标定或旋转补偿精度通过。正式标定后替换四值并重启节点。节点不会再次缩放这些值；缺失或 `.nan` 仍会被拒绝。
-5. 在已构建和加载 ROS 包环境的目标系统执行以下命令。首次启动完成初始化后等待 ON。
-
-```bash
-ros2 launch drone_tracker rk3576_camera.launch.py \
-  params_file:=/absolute/path/camera.yaml video_source:=video0
-ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: ON}'
-ros2 topic pub --once /fpv/tracker_trigger std_msgs/msg/Header '{frame_id: OFF}'
-```
-
-选择 SC233HGS 时，将 `params_file` 指向已核对的生产模板副本，并把 `video_source` 设为当前板上实际采集节点。例如：
-
-```bash
-ros2 launch drone_tracker rk3576_camera.launch.py \
-  params_file:=/absolute/path/sc233hgs-camera.yaml video_source:=/dev/video22
-```
-
-`video_source` 支持 `video10` 等多位设备号和 `/dev/video10` 等绝对设备路径。launch 只覆盖输入路径，算法与模式来自参数文件。初始化核验采集能力；设备恢复后，再次 ON 会重新打开和核验设备。
-
-| 参数 | 约束 |
-|---|---|
-| `mv_camera.capture_mode` | 必填 `continuous` 或 `software_trigger` |
-| `mv_camera.fps` | 正整数设备帧率，独立于命令频率 |
-| `mv_camera.trigger_rate_hz` | 软件模式为有限的 1 至 fps；连续模式为 0.0 |
-| `mv_camera.media_device`、`sensor_entity` | 显式媒体节点及其传感器实体 |
-| `mv_camera.buffer_count` | 2–32，默认 4 |
-| `mv_camera.width_px/height_px` | 实际输入像素尺寸 |
-| `mv_camera.output_width_px/output_height_px` | 与输入相同或为 0，0 表示不缩放 |
-| `need_save`、`use_sim_time`、`use_history_timestamp` | 均为 false |
-
-20 Hz 已在开发板 2 通过新实现的三轮有限计数、20 轮启停、100 次新建销毁、10 分钟慢消费，以及同一 ROS 节点 20 轮启停后额外 30 分钟负载。该结论针对本次设备和配置，不代表相机硬件最高频率。30/60 Hz 新实现测试的命令数与帧数仍不一致，未归因，不能宣称支持一触发一帧。完整环境、模型和限制见 [最终实机记录](../../openspec/changes/integrate-rk3576-ros-camera/final-board-validation.md)。代码不会因推理慢或缺帧自动降低频率。改为连续模式时必须同时设置 `trigger_rate_hz: 0.0`。运行期修改模式、频率、内参、模型等启动配置会被拒绝，修改文件后须重启节点。
-
-### 独立有限触发工具
-
-After building the driver for ARM64 with either compiler image, use `ar0234_camera_source_driver` on the board without loading a model. 下面的命令只作为后续实机步骤，本次未执行：
-
-```bash
-./ar0234_camera_source_driver \
-  --video-device /dev/video0 --media-device /dev/media0 \
-  --sensor-entity 'm00_b_mvcam 4-003b' --width 1920 --height 1200 --fps 60 \
-  --mode software_trigger --trigger-hz 20 --commands 60 --tail-ms 500 \
-  --snapshots 0 --output camera-trigger-new
-```
-
-`--commands 0` 验证无触发，`--commands 1` 验证单发；其余正整数为每轮最多发送的命令数。达到命令上限后停止发送，采集继续等待 `--tail-ms` 毫秒尾帧，再关闭设备。尾帧等待范围为 0–1500 ms，避免与两秒无帧故障阈值冲突。`--seconds` 在有限模式下还可指定整轮工具超时；未完成时超时明确失败。输出目录必须不存在。原连续工具调用仍可使用，不传 `--mode` 时为连续模式。
-
-`triggers.csv` 独立记录每次命令调用前后单调时间、调用成功与错误。`frames.csv` 保留驱动时间、主机出队时间、固定系统时间偏移和独立图像帧时间。`clock_offset_delta_us` 记录当前系统时钟偏移与本轮固定偏移的差，可用于发现校时跳变，不据此重标帧时间。这些时间不代表已证明的曝光时刻，也不按先后顺序强行配对。例如 120 个成功命令只返回 60 帧时，报告数量差 60，不据此判定是相机拒绝还是传输损失。
-
-`rounds.csv` 分别记录调用错误、计划周期跳过、驱动序号缺口、队列丢新帧及消费数量。还包含停止发送时帧数、尾帧数、停止发送及关闭时未确认请求数、工具超时和控制恢复结果。连续模式的命令数为零，命令与帧数差异不用于评价连续模式。有限计数验收须结合原始逐帧报告，区分起始帧、稳定阶段和尾部；零退出码本身不证明一触发一帧。
-
-### 故障与恢复
-
-每轮先保存 `trigger_mode`、`trigger_src`、`frame_rate` 的可读原值，再配置设备。读取失败时不修改控制。初始化验证结束、部分失败及正常停止均尝试恢复；恢复错误保留控制名称及原因，未恢复项可以在再次停止时重试。恢复仅针对本次控制项，不代表整个媒体拓扑已恢复。
-
-设置和恢复控制值后，每项最多等待 100 毫秒，每隔 5 毫秒读回一次，首次一致即继续。等待期间不会重复写入。超时仍不一致时报告设备、控制名、预期值、实际读回值和等待耗时；系统调用本身报错仍按设备错误处理。该时间限制不保证能中断阻塞的驱动调用。
-
-软件命令使用已核实控制接口，直接调用 V4L2，不为每帧启动 shell。周期按本轮起点安排，落后时跳过过期周期，不突发补发。For independent tools and cameras without OSD, OFF or worker failure wakes the wait and stops capture.
-In continuous ROS preview, OFF closes tracking/recording reception; only service exit or camera failure stops capture.
-The capture owner joins command/capture threads before stopping, restoring and closing the device. 驱动调用若无法返回，不能保证停止期限，须判为实机失败，不能强制关闭在途句柄。
-
-首帧或后续连续两秒无成功出队为采集故障，短暂等待不等于文件结束。ROS 每秒最多输出一次常规采集汇总，终态另输出完整统计。相机停止耗时与包含模型等待的节点停止耗时分别报告。输入故障和 OFF 不伪造算法的 TargetLost 状态。
-
-相机 `need_save=true` 可完成初始化并等待 ON；ON 后独立尝试 bag，不请求相机帧源执行旧录像。视频输入同样可记录 bag，Jetson 的旧相机录像边界保持不变。图像使用原帧时间，预测框使用当前预测时间；六个原有输入输出话题及状态数值保持不变。
-
-本变更的构建、无设备测试及暂缓实机项目见 [ROS 相机实施记录](../../openspec/changes/integrate-rk3576-ros-camera/validation.md)。历史连续相机和 shell 触发记录不能替代新实现验收；模型质量、曝光同步、Jetson 等价性及前序回放 7.2、7.3 的结论保持不变。
-
-### SC233HGS 启动时间戳预热
-
-SC233HGS 每次成功开流后，先观察驱动时间，再交付图像。固定规则为：
-
-- 开流后的单调时钟期限为 2 秒，最多检查 120 个成功出队缓冲。
-- 连续 8 帧时间严格递增才开始输出。第 8 帧就是首个合格帧。
-- 预热时允许相等时间，但会将连续计数重置为 1。此前观察帧归还驱动，不复制灰度图像，也不进入跟踪队列。
-- 到期优先于就绪；第 120 帧若在期限内达到连续条件，允许成功。否则归还后失败，不读取第 121 个观察帧。
-- A real capture stop wakes the wait and takes priority. A new stream resets warmup time/counters.
-  Continuous-preview ON/OFF retains one stream and warmup; other inputs keep OFF mapped to capture stop.
-  Models are reused across tracking rounds.
-
-例如时间为 `100,100,117,117,134,151,168,185,202,219,236` 微秒时，前十帧被丢弃，第十一帧输出 `236 + 本轮固定偏移`。预热结束不重新采样偏移，不按帧率补时间，也不对重复时间人工加一。未知时钟域继续使用既有 `dequeue_fallback`：时间仅表示主机取得帧的时刻。AR0234 不启用此观察期。
-
-预热只判断时间连续递增，不证明曝光、亮度、对焦或驱动内部问题已经修复。正常输出阶段的重复，以及任意阶段的倒退、非法时间、溢出、时钟策略改变、序号重复或倒退，仍终止本轮。向前序号缺口单独计数，不重置连续计数。错误区分采集无帧超时、预热时间超限、预热检查量超限和致命元数据错误。
-
-节点每秒最多一次输出常规汇总，阶段转换和结束另行报告。`first=unknown` 表示尚未交付首帧。首帧延迟从成功开流后的单调时刻计量，不含模型初始化和开流前配置时间。`CameraCaptureStatus` 是普通 C++ 诊断快照，其中：
-
-- `dequeued_total` 是全部成功出队，`warmup_examined` 是预热检查量。
-- `warmup_discarded` 是已成功归还的观察帧，`terminal_discarded` 是因失败或取消未交付的出队帧。
-- `read` 是合格帧，`enqueued` 是成功入队，`dropped` 是队列满丢弃。序号缺口不属于出队量。
-- 清理后应满足 `dequeued_total = warmup_discarded + read + terminal_discarded`，以及 `read = enqueued + dropped`。
-- `resources_reclaimed=false` 表示清理尚未确认成功，不能只凭计数对账宣称设备已释放。
-
-独立工具保留原名称 `ar0234_camera_source_driver`，通过 `--sensor-model sc233hgs` 选择型号。它经公共帧源接口采集，不依赖模型或显示。新增 `warmup.csv` 保存每轮最多 120 条原始元数据，在轮次结束后统一导出；新增 `capture.csv` 保存预热汇总、首帧身份和资源回收状态。没有首帧时使用 `unknown`。原 `frames.csv` 仅保存合格帧，包含队列满丢弃帧。
-
-先按本地约定复核设备和占用，再使用实际节点运行。例如本次生产板确认的节点为 `/dev/video22`：
+The driver keeps its name `ar0234_camera_source_driver` for both sensors. For a verified SC233HGS topology, an example is:
 
 ```bash
 ./ar0234_camera_source_driver --sensor-model sc233hgs \
   --video-device /dev/video22 --media-device /dev/media2 \
   --sensor-entity 'm00_b_sc233hgs 0-0030' \
   --width 1920 --height 1200 --fps 60 \
-  --frames 60 --rounds 20 --output warmup-rounds
+  --frames 60 --rounds 20 --output /external/warmup-rounds-new
 ```
 
-不要用启动短测替代 100 次新建销毁、20 分钟持续采集或正式模型 ROS 验收。此变更不实施录像；未来录像分流只能位于同一预热合格边界之后。部署与回滚范围是应用程序，系统 RKNN Runtime 保持不变；回滚旧程序仍会恢复其启动重复时间失败限制。
+AR0234 finite software triggering additionally accepts `--mode software_trigger --trigger-hz 20 --commands 60 --tail-ms 500`. Zero commands test no-trigger behavior; one tests a single request. Tail waiting is 0..1500 ms. `--frames`, `--seconds`, `--rounds`, `--instances`, `--slow-ms`, `--snapshots`, and `--compare-pixels` select bounded observations. Output must not exist, and its parent must exist. Check tool configuration before a device run; long historical protocols are not default permission to occupy a production board.
 
-### HDMI 显示分段计时
+Reports retain frame times/stride/pixel checks, trigger attempts, round results, process resources, and optional PGM snapshots. SC233HGS also exports bounded `warmup.csv` and `capture.csv`. Host memory excludes unmeasured device-internal memory. Trace callbacks and snapshots can affect throughput. Dated [camera-source validation](../../openspec/changes/archive/2026-09-15-implement-rk3576-camera-frame-source/validation.md) and [ROS camera validation](../../openspec/changes/archive/2026-09-15-integrate-rk3576-ros-camera/final-board-validation.md) identify their actual board, inputs, trigger-rate limitations, and missing quality checks.
 
-启动参数 `osd.timing_enabled` 默认 `false`。在相机或视频 YAML 的 `osd:` 下设为
-`timing_enabled: true` 并重启，才会采集并输出计时；运行时修改会被拒绝。
-`osd.enabled=false` 时不会因计时开关而创建显示资源。关闭计时并重启即可回退。
+## ROS video and continuous HDMI camera service
 
-计时全部使用 `steady_clock`（不受系统校时影响的单调时钟）。每秒由独立遥测回调
-取走固定容量快照，释放提交锁后写日志。新轮前也会冲刷，避免积累无界轮次；
-在途旧轮的结果仍归入旧轮。退出及故障保留尾部窗口，SIGKILL 和断电除外。
-计数按事件发生窗口归属；跨窗口提交的帧可能在下一窗口才显示。
+For finite video, use `rk3576_video.launch.py params_file:=/absolute/video.yaml video_source:=/absolute/mjpeg.mov`. The production video reader requires local MJPEG. Initialization waits for ON; every ON starts from the first frame, duplicate ON is idempotent, OFF stops input, and EOF finishes the round without automatic looping. Models are reused. After safe cleanup another ON can retry a restored input. See [the dated ROS video validation](../../openspec/changes/archive/2026-09-15-integrate-rk3576-ros-video/validation.md).
 
-| 指标 | 测量范围 |
-|---|---|
-| source_copy | 源帧映射、输入分配、缓存同步和逐行复制 |
-| scale_convert | 显示几何、目标清理、缩放及颜色转换 |
-| layout | 全部文字、遥测和框图层绘制 |
-| compose | 图层复制、缓存同步、视频复制及 RGA 硬件混合 |
-| commit | 构造显示请求、授权检查和设备提交 |
-| flip_wait | 等待显示完成事件；不是屏幕实际发光时刻 |
-| render_total | 取包后至显示处理完成的父区间，包含上述子阶段 |
-| other | 父区间减已测子阶段，含调度和其余处理；不要重复相加 |
-| pending_wait | 被实际取出的包从接受到取出，替换掉的包不采样 |
-| submit_to_display | 成功新视频从接受到显示完成；不是相机到屏幕完整延迟 |
-| new_frame_interval | 同一连续段内两次新视频成功完成的间隔 |
+For an RK3576 camera with `osd.enabled=true`, service startup opens capture and HDMI after parameters, models, ROS interfaces, and display initialize. Before the first qualified frame the screen is black with waiting status and available telemetry. Healthy preview continues before ON and after OFF. ON starts tracking plus explicitly enabled recording/bag sessions. OFF closes result reception and clears target decorations immediately, while model and recording cleanup finish independently. Stop the service to release camera and HDMI devices.
 
-停止、EOF、输入失败、新轮或进入过期等待会断开间隔链。重复冻结底图不增加新视频计数。
-每轮首个新视频处理标记 `first_frames=1`，首次分配保留在耗时内。
-日志分别列出 `new_video`、`repeat` 和 `success`、`rejected`、`failure`。
-未执行阶段 `count=0`，不伪造零耗时或分位数；失败阶段包含抛异常前的耗时。
-`submitted/replaced/displayed/rejected/commits` 是窗口增量，其中 `commits` 为成功完成的显示更新。
+One persistent dispatcher drains capture. During Starting, Stopping, and idle phases it submits fresh unboxed preview. During Running, HDMI receives only images actually consumed by the tracker with their own `display_box`. A 60 FPS camera with 25 consumed frames per second can produce 25 new paired HDMI images per second. Repeated refresh of one image is separate. A stalled Running inference can enter stale-frame waiting; OFF resumes preview without waiting for that inference.
 
-日志示例（数值仅演示格式）：
+The lifecycle applies to both `cached-overlay` and `legacy`. Cameras with OSD disabled, Jetson, finite video, and independent tools retain their ON/start and OFF/stop behavior. Preview does not publish bbox, LOS, state, or `/fpv/tracker_image`. Duplicate ON keeps the active round. While old model access finishes, only the latest desired ON/OFF state is retained. New rounds begin beyond a new dispatch boundary and never accept old tasks or results.
 
-```text
-OSD timing round=1 window_id=3 window_us=1000123 submitted=35 replaced=33 displayed=2 rejected=0 commits=2 unit=us quantiles=approx_pow2
-  new_video result=success count=2 first_frames=0 ... layout{count=2,mean=400000,max=410000,p95_approx=524288,p99_approx=524288} ...
-  new_video result=failure count=0 first_frames=0 samples=none
-```
+Camera startup/runtime failure ends continuous service with a nonzero result for the existing service restart policy. ON cannot reopen that failed stream. A tracking exception ends only its round; healthy preview continues and another ON may retry after cleanup. Recording, bag, and runtime display failures remain isolated. A failed display does not automatically reconnect and does not stop healthy tracking.
 
-均值和最大值使用原始微秒值。P95/P99 分别是覆盖 95%/99% 样本的近似耗时界限。
-直方图上界为 1、2、4、8…67108864 微秒；分位数取桶上界，可能接近真实值的两倍。
-超出末桶报告 `>67108864`。样本少时不能据此推断稳定的长尾分布。
-`buckets` 按上述顺序输出 28 个冒号分隔的计数，最后一项为溢出桶。
-跨窗口统计须先逐桶相加，再计算分位数；不要平均各窗口 P95。
-用实际 `window_us` 计算速率，不假定回调恰好每秒一次。
-RGA 阶段包含 CPU 调度和同步等待，不能称为纯硬件执行耗时。
+`TRIG ON/OFF` shows the last control event for two seconds. Mission display requires an actually received `/fpv/mission_state=true` plus fresh connected, armed, guided `/mavros/state`. Tracking-state changes do not determine its lifetime. A MISSION trigger alone is insufficient. Mission end, flight-authorization loss/expiry, OFF, or DISMISS clears it; an invalidated attempt requires a later false then true mission event. DISMISS preserves tracking. See [the HDMI guide](../../docs/RK3576_HDMI_OSD.md) for timing, visible fields, and restart limitations.
 
-### 缓存式 HDMI 覆盖层与启动回退
-
-`osd.render_path` 选择显示实现，合法值只有 `cached-overlay` 和 `legacy`。
-这是启动参数，运行期修改会被拒绝。生产板规定验收已通过，
-参数声明与两个 RK3576 参数文件均默认使用 `cached-overlay`，保留 `legacy` 供回退。
-
-优化路径使用两个显示平面。主平面只保存视频，覆盖平面保存带透明度的文字和目标框。
-两者各有两个缓冲，只有对应的翻页事件确认后，后备缓冲才变为已显示缓冲。
-Telemetry-only refreshes and non-continuous OFF freezes reuse the current primary plane.
-Continuous-camera OFF accepts fresh preview video and clears target overlays.
-超时意味着设备状态未知；后端停止显示并同步释放设备，不能继续覆盖可能仍在扫描的缓冲。
-
-布局使用持久画布和字形缓存。字段变化时恢复旧、新区域，再重画受影响字段；
-几何尺寸、跟踪轮次或主题变化时完整重建。兼容 BGR 输入以一次同步 RGA 操作写入主平面。
-灰度输入先写亮度，再从中性色度缓冲转换到主平面，共两次操作。
-RGA 的行步长以整数像素表示。例如 1280 像素 BGR 的 4096 字节步长不能直接表示，
-后端会把每行 3840 个有效字节重排到复用缓冲。兼容输入不会执行这次复制。
-源读视图始终保留到同步硬件处理完成，缓冲归还不早于硬件读取结束。
-
-启动前确认使用 HZ-RK3576_WuKong Board、系统 Runtime 2.3.2 和驱动 0.9.8，
-目标 HDMI 模式存在，且显示设备由本进程独占。先停止占用 DRM 的现有节点或桌面服务，
-不要同时启动两个显示进程。构建需启用 `DRONE_TRACKER_BUILD_OSD=ON`，并提供 libdrm、librga。
-
-先加载 ROS 与构建安装环境，再使用已经填写模型、内参和输入的配置启动。例如：
-
-```bash
-source /opt/ros/humble/setup.bash
-source /path/to/install/setup.bash
-ros2 run drone_tracker drone_tracker_node --ros-args \
-  --params-file /path/to/validated-video.yaml \
-  -p osd.enabled:=true -p osd.render_path:=cached-overlay -p osd.timing_enabled:=true
-```
-
-The video-file example waits for ON. A camera input with OSD begins preview at service startup.
-To select the legacy renderer, exit this node and repeat the command,
-仅将 `osd.render_path:=cached-overlay` 改成 `osd.render_path:=legacy`。
-模型、话题、输入和系统调度设置保持原值。`osd.enabled:=false` 则完全不建立显示后端。
-
-优化路径报告 `source_prepare`（源校验、导入和必要重排）、`scale_convert`、`layout`、
-`overlay_upload`、`commit`、`flip_wait`、`render_total`、`pending_wait`、
-`submit_to_display`、`new_frame_interval`。旧路径保留 `source_copy` 和 `compose`。
-未执行的阶段不伪造样本；零复制的源准备仍是有效样本。关闭 `osd.timing_enabled` 后不采样。
-
-同板三轮性能门槛、20 轮冻结恢复、10 分钟完整跟踪负载和故障验证记录见
-[本变更验证记录](../../openspec/changes/optimize-rk3576-hdmi-osd-pipeline/validation.md)。
-`osd_pipeline_probe` 是需独占 HDMI 的板端验证工具，不注册为无设备 CTest。
-它检查翻页确认后的扫描缓冲、源内存复用、颜色与步长、覆盖配对及冻结索引；
-该结果不能替代带真实模型的性能和持续负载验收。
-
-### Continuous HDMI camera service
-
-The RK3576 ROS camera uses continuous preview when `osd.enabled=true`. The main
-entry starts capture after parameters, models, ROS interfaces and display are
-initialized. Before its first qualified frame, HDMI shows a black waiting image
-and available telemetry. A healthy stream then shows preview even before ON.
-ON starts tracking and the explicitly enabled recording sessions. OFF stops new
-tracking output and recording reception while capture and preview continue.
-Stop the service to release camera and HDMI devices.
-
-For example: start the camera launch → see preview → send ON → see same-frame
-tracking images → send OFF → see fresh images without targets. During Starting
-and Stopping, preview continues. In Running, HDMI displays only images actually
-consumed by the tracker, paired with their own `display_box`. A camera capturing
-60 fps and a tracker consuming 25 fps can produce 25 new HDMI images per second.
-HDMI refreshes of the same image are measured separately. A stalled Running
-inference can cause the existing stale-frame wait; OFF resumes preview before
-that inference has finished.
-
-This lifecycle applies to both `cached-overlay` and `legacy`. The rendering path
-selects pixel processing, not capture lifetime. Cameras with OSD disabled, finite
-MJPEG video files, Jetson and independent camera tools retain their original
-ON/start, OFF/stop and EOF behavior. Continuous preview does not publish ROS
-tracking images or detection/state messages. `visualized_result` still controls
-only consumed tracking image output. Original image time and predicted-box time
-retain their distinct meanings.
-
-ON/OFF messages are requests, not completion acknowledgements. Duplicate ON
-keeps the active round. While old model accesses are finishing, only the latest
-desired ON/OFF is retained. ON → OFF → ON during this wait creates at most one
-next round, after the old accesses end. OFF closes the publication boundary and
-requests target clearing immediately. Model and recording cleanup run separately.
-Messages already handed to ROS middleware can still arrive late; receiving clients
-retain their existing drain/discard rules.
-
-`TRIG ON/OFF` indicates the last control event for two seconds. `ON MISSION` is
-the mission text overlay and remains until the next actual tracking state
-publication. Neither implies that tracking is running. Preview displays `TRK OFF`,
-`TRK STARTING` or `TRK ERROR` in a separate hint area, including while MISSION is
-visible. Algorithm values remain Detecting=0, TargetFound=1, Tracking=2,
-TargetLost=3. Preview has no algorithm result and does not report Detecting.
-
-Diagnostics use monotonic time, which does not jump when wall-clock time changes.
-`stream` and `source_sequence` identify one real camera open and its images across
-ON/OFF. `round` identifies a tracking run. `Stream counters` reports cumulative
-dispatch/replacement and preview/paired submissions, plus camera window differences.
-`Tracking OFF accepted` records control handoff; `OSD display` records successful
-clear/mode submissions; `Tracking cleanup complete` records model/bag wait, and
-camera recording reports its separate prepare/stop times. Display completion is
-not a measurement of light reaching the physical screen.
-
-A camera startup or runtime failure terminates the service with a nonzero result
-so the existing service restart policy can recover. ON does not reopen a failed
-stream. Tracking exceptions end only that round and show error preview; after
-safe cleanup, another ON can retry. Recording/bag and display failures retain
-isolated error reports. Display failure makes HDMI unavailable without stopping
-healthy tracking or automatically reconnecting the display.
+Diagnostics use a stream ID and source sequence across ON/OFF, plus separate tracking-round IDs. Counters distinguish capture, dispatch, task replacement, actual consumption, and preview/paired submissions. Control acceptance, display completion, model/bag cleanup, and recording close have distinct timestamps. Display completion does not measure light reaching the screen. Messages already handed to ROS middleware may still arrive after OFF; clients retain their existing drain/discard behavior.
 
 ## RK3576 paired target observations
 
-RK3576 publishes a floating `vision_msgs/msg/Detection2D` on `/fpv/target_bbox`
-and `geometry_msgs/msg/TwistStamped` on `/fpv/target_los`. The pair has the same
-nanosecond timestamp. Valid frame IDs are `camera_frame` and `camera_flu`.
-An empty frame ID means invalid data. A valid box can coexist with invalid LOS
-when `/fpv/gimbal` has no valid camera orientation. `/mavros/imu/data` is recorded
-as received and never substitutes for camera orientation.
+RK3576 publishes floating `vision_msgs/msg/Detection2D` on `/fpv/target_bbox` and `geometry_msgs/msg/TwistStamped` on `/fpv/target_los`. A constructed pair shares its nanosecond reference timestamp. Valid frame IDs are `camera_frame` and `camera_flu`; an empty ID means invalid. FLU means forward/left/up camera coordinates. A valid bbox may coexist with invalid LOS when camera orientation is unavailable. `/mavros/imu/data` is recorded as received and never substitutes for `/fpv/gimbal` camera orientation.
 
-`TwistStamped.linear.y` is downward-positive pitch and `linear.z` is left-positive
-yaw, both in radians. `angular.y/z` are the respective rotation-compensated rates
-in radians per second. The remaining components are zero. These fields are angles,
-not linear velocity. Independent ROS topics do not guarantee atomic network
-reception. Pair received messages by their identical header timestamp.
+LOS is the line of sight from the camera to the target. `linear.y/z` store downward-positive pitch and left-positive yaw in radians. `angular.y/z` store rotation-compensated rates in radians per second. Other components are zero. These fields are angles, not linear velocity. Two independent ROS topics do not guarantee atomic network receipt; consumers pair messages by timestamp.
 
-Set these startup values in the selected RK3576 `params_file`:
+`publish_prediction=false` is the default and describes capture time. When true, a latest pose qualifies only if `frame <= pose <= node_now` and its age is at most 300000 microseconds. Otherwise the reference falls back to capture time and the existing nearest capture pose. For frame 10.000 s, pose 10.030 s, and now 10.050 s, default messages use 10.000 s; prediction mode uses 10.030 s. Images always retain capture time. This does not add a freshness guarantee to nearest-pose lookup.
 
-```yaml
-publish_prediction: false
-los.rate_filter_tau: 0.12
-camera.fx: 1333.3
-camera.fy: 1300.0
-camera.cx: 960.0
-camera.cy: 600.0
-```
+`camera.fx/fy/cx/cy` are explicit input-pixel intrinsics; HDMI sizing does not rescale them. `los.rate_filter_tau` defaults to 0.12 seconds, must be finite/nonnegative, and is fixed at startup. Zero disables rate smoothing. First samples and gaps over 0.3 seconds start at zero angular rate. Invalid target/orientation or successful reanchoring resets rate history. Duplicate/backward observation timestamps suppress the pair independently of state/debug-image publication. A pose-clock rollback resets pose/rate history while retaining the round's publication guard. After system-clock correction, OFF then ON after cleanup establishes a new time base without synthetic times.
 
-`publish_prediction=false` describes capture time. When true, prediction uses the
-latest camera pose only if `frame <= pose <= node_now` and its age is at most
-300000 microseconds. Otherwise it falls back to capture time and the existing
-nearest capture pose. For capture 10.000 s, pose 10.030 s and node-now 10.050 s,
-the default pair is stamped 10.000 s; prediction mode stamps it 10.030 s.
-Actual publication happens later and is measured separately. Images always keep
-capture time. The 300 ms rule does not impose a new freshness guarantee on the
-nearest capture pose. Intrinsics are explicit pixels in the actual input image;
-HDMI resizing does not rescale them. Unequal `fx` and `fy` are supported.
+OFF attempts one invalid pair for an established round before sealing its bag; repeated OFF is deduplicated. Old frame results cannot publish valid observations afterward. An OFF notification is a control event, not an input frame or a TargetLost transition.
 
-Tau must be finite and nonnegative. Zero disables rate smoothing. Both new
-parameters are fixed at startup. A runtime change is rejected with a restart
-instruction. Duplicate or backward observation times suppress the whole pair;
-state changes and debug images still follow their own rules. Camera pose clock
-rollback resets pose/rate history but preserves the active round's message time
-guard. After system clock correction, send OFF and then ON once old work has
-finished to establish a new time base. No synthetic capture times are generated.
-OFF attempts one invalid pair before sealing the bag; repeated OFF is deduplicated.
-
-The image topic is best-effort/depth 1. For example:
+BBox/LOS use reliable depth 10. Gimbal uses best-effort depth 10, MAVROS IMU best-effort depth 100, and debug images best-effort depth 1. For live image inspection:
 
 ```bash
 ros2 topic echo /fpv/tracker_image --qos-reliability best_effort
 ```
 
-BBox and LOS use reliable/depth 10. Gimbal uses best-effort/depth 10; MAVROS IMU
-uses best-effort/depth 100. ROS debug images require `visualized_result=true` and
-an active tracking round. HDMI preview continues through OFF using the existing
-single frame consumer. There is no additional preview switch.
+Debug images require `visualized_result=true` and an active round that actually consumes input. `need_save` controls an independent asynchronous ROS bag containing gimbal, odometry, bbox, LOS, and MAVROS IMU. Bags never register or write `/fpv/tracker_image`, for either visualization setting. Independent original-camera video uses `recording.enabled`.
 
-`need_save` controls the asynchronous ROS bag. Its topic table is always gimbal,
-odom, bbox, LOS and MAVROS IMU. Debug images and their topic metadata are removed
-from bags even when `visualized_result=true`. Use live best-effort subscriptions
-for debug images, or `recording.enabled` for the independent original camera
-video. Each observation pair consumes two of the 256 message slots and checks
-the combined byte cost against 64 MiB. Queue rejection drops both messages and
-marks the bag incomplete. A disk error during writing can leave half a pair;
-that bag is failed, not a complete transaction. Recording failure does not stop
-healthy tracking, HDMI or independent camera video.
+Bag admission is bounded to 256 messages and 64 MiB. A bbox/LOS pair consumes two slots and is admitted together or rejected together; rejection marks the bag incomplete. A disk error can still leave half a pair written and fails the bag. Open/write/close/collision failures leave healthy tracking, HDMI, and independent camera recording running. Per-round bag directories never overwrite earlier sessions.
+
+## Independent SC233HGS recording
+
+See [the recording guide](rk3576/recording/README.md) for hardware encoding, runtime settings, session evidence, and inspection. The production build enables recording support, while `recording.enabled` controls whether ON actually starts a session. This is independent of ROS bags, debug images, and HDMI. Original NV12 frames are copied only after capture's final accepted boundary; video has no tracking/OSD overlay.
+
+## HDMI display stage timing
+
+See [the HDMI guide](../../docs/RK3576_HDMI_OSD.md#display-stage-timing) for renderer selection, stage boundaries, counter interpretation, and rollback. `osd.timing_enabled` is startup-only and defaults to false in C++; the production camera template explicitly enables it. Set false and restart to disable measurement.
+
+## Verification boundaries
+
+Portable algorithm checks can be built with `cmake -S src/hybrid_tracker -B build/platform-contracts -DDRONE_TRACKER_PREPROCESS_TESTS_ONLY=ON`, followed by build and CTest. They use the real shared tracker with injected dependencies and do not load physical devices or real models. [Factory validation](../../openspec/changes/archive/2026-09-10-introduce-platform-factory/verification.md) records that original scope.
+
+The algorithm states remain Detecting=0, TargetFound=1, Tracking=2, TargetLost=3. Interface/integration results do not prove target accuracy, physical angle accuracy, exposure synchronization, Jetson equivalence, or flight suitability. A new binary or workload requires its own relevant acceptance evidence. Preserve concrete board, model, input, software, and configuration identities with each measured result.

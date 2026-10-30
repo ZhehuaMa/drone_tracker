@@ -1,110 +1,143 @@
-# NanoTrackV3 FP16 性能基线
+# NanoTrackV3 FP16 benchmark
 
-本程序仅运行公共 NanoTracker 和 RK3576 后端。输入为本地 MJPEG 录像，即每帧独立 JPEG 编码的视频。解码直接得到原尺寸八位亮度，不经过彩色往返转换。程序不启动 ROS，不加载 YOLO，也不运行 DCF 或卡尔曼滤波。
+`nanotrackv3_baseline` runs the public NanoTracker and RK3576 model backend on a local
+MJPEG file. MJPEG stores each frame as an independent JPEG image. Decode yields the
+original eight-bit luminance without a color round trip. The program does not start
+ROS, load YOLO, or run DCF/center Kalman filtering. It does not convert or train models.
 
-FP16 指导出模型采用 16 位浮点精度。主机前处理和模型之间交接仍使用 Float32，即 32 位浮点。程序不会转换或重新训练模型。
+The executable name is historical. Its current default `loadNanoTrack` backend uses
+shared device memory for the search-backbone-to-head feature transfer. Template
+features and final head outputs still pass through Float32 host storage. FP16 means
+16-bit floating model precision; Float32 means 32-bit floating application data.
+The search edge must also meet the native FP16 NC1HWC2 layout contract. NC1HWC2 groups
+channels for device storage. Unsupported native layout, import or binding fails rather
+than falling back to a CPU feature transfer.
 
-## 构建
+Older baseline records measured the former Float32 host-transfer backend. Their lack
+of `benchmark_variant` described that old implementation; it is not proof that a newly
+built executable uses the same path. Preserve and inspect source snapshots, executable
+hashes, actual model descriptions and recorded spans before making any comparison.
+The historical comparison reader interprets an absent variant as the old CPU path and
+can reject current default-backend records. A fresh CPU-versus-shared-memory experiment
+requires an explicitly identified CPU reference; running both current executable names
+alone does not establish that comparison. See the [search-direct guide](../search_direct/README.md).
 
-Use `./build.sh --test`, which defaults to the x86_64 compiler image and produces ARM64 output. The installed benchmark is `.docker-artifacts/backends/amd64/install/drone_tracker/lib/drone_tracker/nanotrackv3_baseline`. Select `--backend arm64` explicitly for the ARM64-image fallback and its separate `backends/arm64` tree. Read `../../../dockerfiles/README.amd64.md` for cross-toolchain/test-launcher details; real NPU measurements still require the board.
+## Build
 
-也可在具有 OpenCV、FFmpeg、JPEG、OpenSSL 和 RKNN SDK 的 ARM64 环境独立构建，不需要 ROS：
+```bash
+./build.sh --test
+```
 
-The standalone commands below use a native ARM64 SDK environment. In the x86_64 image, add `-DCMAKE_TOOLCHAIN_FILE=/opt/toolchains/aarch64-humble.cmake`, set RKNN headers/library under `/opt/arm64-sysroot/opt/rknn-runtime`, and run ARM tests with the target QEMU launcher. Prefer the repository entry point to receive the configured launchers and native fixture tools automatically. When using a container, put standalone build directories outside its read-only source mount.
+The default x86_64 image cross-compiles ARM64 output. The installed program is
+`.docker-artifacts/backends/amd64/install/drone_tracker/lib/drone_tracker/nanotrackv3_baseline`.
+`--backend arm64` explicitly selects the ARM64-image fallback and separate cache.
+See the [image guide](../../../dockerfiles/README.amd64.md).
 
-```sh
+A native ARM64 SDK with OpenCV, FFmpeg, JPEG, OpenSSL and RKNN can build independently:
+
+```bash
 cmake -S tests/nanotracev3_performance_benchmarks/baseline -B build-baseline \
   -DCMAKE_BUILD_TYPE=Release -DDRONE_TRACKER_BUILD_TESTS=ON \
   -DRKNN_INCLUDE_DIR=/opt/rknn-runtime/include \
   -DRKNN_LIBRARY=/opt/rknn-runtime/lib/librknnrt.so
 cmake --build build-baseline -j4
 LD_LIBRARY_PATH=/opt/rknn-runtime/lib ctest --test-dir build-baseline --output-on-failure
-build-baseline/nanotrackv3_baseline --help
 ```
 
-每次构建基准程序前会检查提交号和源码差异，生成嵌入程序的身份快照。源码身份内容不变时不会重写头文件，也不会因此重新编译。此过程需要可读取的 Git 仓库；Git 查询失败会使构建失败。构建期间应保持源码和 Git 状态稳定，避免一边修改一边编译。仓库入口和独立入口共用此机制。
+In the x86_64 image add `-DCMAKE_TOOLCHAIN_FILE=/opt/toolchains/aarch64-humble.cmake`
+and select SDK paths below `/opt/arm64-sysroot`. Run ARM tests through the selected
+QEMU launcher. Keep generated output outside read-only source mounts. Each build embeds
+Git commit/diff identity; inaccessible Git metadata fails the build. Keep source/Git
+state stable during compilation. Use the board's system Runtime 2.3.2 and driver 0.9.8
+for measurements; never overwrite its Runtime with an SDK library.
 
-将程序放入开发板专用目录，使用板端系统的 Runtime 2.3.2 和驱动 0.9.8。不要用构建 SDK 的库覆盖系统库。容器测试不能代替实机验证。
+## Inputs and precision evidence
 
-## 准备输入和精度证据
-
-1. 准备本地普通 MJPEG 文件及首帧框。框为原图像素坐标 `[x, y, width, height]`，x/y 是左上角。宽高必须为正。部分越界按生产跟踪器原有裁剪和填充规则处理。
-2. 准备模板 backbone、搜索 backbone 和 head 三份 FP16 模型。Backbone 提取特征；head 比较模板与搜索特征。必须保存导出记录，不能仅凭文件名宣称 FP16。
-3. 为每份模型准备一个导出证据索引。下面例子中的 SHA-256 是文件内容指纹，必须替换成真实值。`source_record` 指向已有原始转换日志或清单；索引应由这些记录整理，不能凭运行时接口类型补造精度声明。
+1. Provide a local regular MJPEG file and first-frame box `[x,y,width,height]` in source
+   pixels. The top-left is x/y, width/height are positive, and partial out-of-bounds
+   boxes retain the production crop/padding rules.
+2. Provide template backbone, search backbone and head FP16 models. Backbones extract
+   features; the head compares them. Retain original export evidence, not filename
+   assertions about precision.
+3. Create a per-model evidence index pointing to the original export record:
 
 ```yaml
 %YAML:1.0
 ---
 role: "template_backbone"
-model_sha256: "实际模型的64位十六进制SHA-256"
+model_sha256: "REPLACE_WITH_MODEL_SHA256"
 precision: "FP16"
 status: "success"
 source_record: "original-export-record.json"
-source_record_sha256: "原始记录的SHA-256"
+source_record_sha256: "REPLACE_WITH_RECORD_SHA256"
 ```
 
-原始记录必须能追溯模型导出所用精度及实际文件身份。索引是对已有证据的整理，不是内部算子精度的运行时探测。INT8、混合精度、指纹不符、缺失或矛盾证据都不能作为本基线模型。程序额外检查实际接口为浮点；浮点属性中附带的 AFFINE 元数据不会单独导致拒绝。
+The index summarizes existing evidence; it does not probe internal operator precision.
+Missing/conflicting export records, hash mismatches, INT8 or mixed-precision exports
+cannot establish this FP16 benchmark. Actual interfaces must be floating. AFFINE
+metadata on floating tensors is not independently a rejection reason.
 
-4. 创建 `evidence/models.yaml`，三项角色分别为 `template_backbone`、`search_backbone`、`head`：
+4. Create an OpenCV YAML manifest with `schema_version: 1` and a `models` sequence.
+   Each of `template_backbone`, `search_backbone`, `head` requires `role`, `sha256`,
+   `precision: FP16`, `export_record` and `export_record_sha256`.
+5. Copy [config.example.yaml](config.example.yaml), fill actual paths, board identity
+   and initial box. Relative paths resolve against their containing config/evidence
+   file. No shell/environment/tilde expansion occurs. Preserve `%YAML:1.0` headers.
 
-```yaml
-%YAML:1.0
----
-schema_version: 1
-models:
-  - { role: "template_backbone", sha256: "模型指纹", precision: "FP16", export_record: "template.yaml", export_record_sha256: "索引指纹" }
-  - { role: "search_backbone", sha256: "模型指纹", precision: "FP16", export_record: "search.yaml", export_record_sha256: "索引指纹" }
-  - { role: "head", sha256: "模型指纹", precision: "FP16", export_record: "head.yaml", export_record_sha256: "索引指纹" }
-```
+## Run and outputs
 
-5. 复制 `config.example.yaml` 并设置真实路径、板号和首帧框。所有相对路径相对于其所在配置或证据文件解析；不展开 `~`、环境变量或 shell 表达式。OpenCV YAML 文件必须保留 `%YAML:1.0` 头。
-
-## 运行与对照
-
-```sh
+```bash
 ./nanotrackv3_baseline config.yaml
 ```
 
-输出目录必须不存在，父目录必须已存在。默认先初始化并预热 30 次更新，再从录像首帧开始运行三轮。每轮重新建立模板，模型会话复用。`max_updates: 0` 表示读到文件结束，正整数表示每轮更新上限。预热不足会失败，不会自动减少预热数。
+Output must be new and its parent must exist. Defaults initialize and warm up for 30
+updates, then process three rounds from the first frame. Each round rebuilds its template
+but reuses model sessions. `max_updates: 0` reads to EOF. Insufficient warmup fails.
+Frames run sequentially without playback-rate sleeps or score-based resets/skips.
+Initialization has no prediction score. Slow/failed frames and warmup remain recorded.
 
-每帧按顺序处理，不按录像帧率休眠，也不因为低分重置或跳帧。首帧只初始化模板，不输出预测分数。预热帧、早期更新、慢帧和失败记录均保留。
+Use a second configuration with `detailed_observation: 0` and a new output directory
+for total-only timing. Keep models, input, warmup and rounds identical. Compare boxes
+within `1e-4` pixels per component and scores within `1e-6`, and report observation
+cost without subtracting it from raw measurements.
 
-使用第二份配置，将 `detailed_observation` 改为 0，并使用新的输出目录，可关闭细分观测、保留总计时。两组均执行相同预热和至少三轮正式测试。对齐帧号比较框与分数；实机框各分量绝对误差不得超过 1e-4 像素，分数不得超过 1e-6。另比较两组延迟分布，观测开销不从原始数据中扣除。
+| File | Contents |
+|---|---|
+| manifest.json | Configuration, input/model/program/source hashes, actual attributes, Runtime/driver, board/environment and final state. Export evidence is copied separately. |
+| code_snapshot.txt | Build-time commit, differences and additional source identity. |
+| frames.csv | Round/phase/operation/frame, PTS, box, score, total duration and error. PTS means presentation timestamp; absent PTS has `pts_valid=0`. Initial box is `bbox_kind=input`, updates are prediction. |
+| spans.csv | Interval/parent IDs, model role, integer monotonic nanoseconds and completion. `residual_ns` subtracts direct child intervals. |
+| environment.csv | Temperature, CPU/NPU frequencies and policies sampled outside timing; inaccessible values retain reasons. |
+| summary.json / report.md | Statistics computed from stored CSV. The current generated Markdown report is Chinese. |
+| diagnostics.log | Preparation/runtime diagnostics; retain SDK console output separately. |
 
-## 数据格式版本 1
+Blank CSV cells mean no executed/valid value, not zero. JSON stores original 64-bit times
+and nanosecond statistics as decimal strings. Floating results retain round-trip precision.
+Failed frames do not enter successful-update distributions.
 
-- `manifest.json`：完整配置、输入/模型/程序指纹、代码快照指纹、实际模型属性及 Runtime/驱动、板号、环境身份和最终状态。源码差异与新增文件保存在 `code_snapshot.txt`。导出证据及原始记录另存副本。
-- `frames.csv`：运行/轮次/阶段/操作/帧号、原始 PTS、框、分数、顶层耗时和错误。PTS 是录像显示时刻，时间单位见 manifest；缺失时 `pts_valid=0`。初始化框的 `bbox_kind=input`，更新框为 `prediction`。
-- `spans.csv`：区间 ID、父区间、模型角色、相对进程启动时单调时钟起点的整数纳秒和完成状态。`residual_ns` 是父区间扣除直接子区间后的剩余时间。
-- `environment.csv`：计时外采样的温度、CPU/NPU 频率和策略。不能读取时记录原因，不提权、不修改频率。
-- `summary.json` 和 `report.md`：由落盘 CSV 计算的统计，分别面向程序和中文阅读。
-- `diagnostics.log`：准备和运行诊断。SDK 自身日志也可能出现在标准错误流，部署时应另保存控制台日志。
+`decode_to_result` starts at actual JPEG decode and ends when init/update returns,
+including the first frame decoded during reader construction. Model loading, demuxing,
+record writes and environment samples lie outside it. Do not add nested intervals twice;
+`other_ns` subtracts mutually exclusive top-level intervals. P50/P90/P95/P99 use sorted
+`ceil(p*N)`; population standard deviation divides by N. Empty samples are null.
+Processing rate is successful updates divided by summed latency: 20 ms plus 30 ms gives
+40 Hz. It excludes file I/O and playback waiting.
 
-本基线程序的记录不包含 `benchmark_variant` 字段，表示使用普通 Float32 特征交接。同格式的其他测试入口可以增加该字段标明自己的执行路径，例如 [`nanotrackv3_search_direct`](../search_direct/README.md) 写入 `benchmark_variant=search_direct`，并在 `spans.csv` 增加 `io_mem_bind` 阶段。读取工具遇到缺少该字段的记录时按普通路径处理，基线原有字段的含义和数据格式不变。
+Normal EOF/frame-limit completion with successful formal updates and complete output
+returns 0 and state complete. Configuration error returns 2; runtime/write error 1;
+handled SIGINT/SIGTERM returns 130 and interrupted. SIGKILL, fatal device failures or
+power loss may leave running/incomplete output. An intact row is not a complete run.
 
-CSV 的空单元格表示未执行或无有效值；初始化分数与后处理为空。JSON 中原始 64 位时间及纳秒统计用十进制字符串表示，避免读取端精度丢失。浮点结果保存可往返精度。状态失败的帧不混入成功更新分布。
+`baseline_verify_records DIRECTORY [SECOND_DIRECTORY]` independently recomputes CSV
+statistics and compares optional per-frame outputs. It validates the historical variant's
+expected stage set. In particular, an unlabelled historical CPU record requires output
+retrieval for every model and no binding, while search_direct requires shared binding and
+no search-output retrieval. Apply the current-backend compatibility limitation above.
+SDK spans include host scheduling, waiting and conversion; they are not pure NPU time.
+Latency or numerical equivalence does not establish tracking accuracy.
 
-唯一端到端指标 `decode_to_result` 从实际 JPEG 解码入口开始，到 `init()` 或 `update()` 返回结束。构造读取器时提前解码的首帧也计入。模型加载、解封装、记录写盘和环境采样在外部完成。父子耗时不能重复相加，`other_ns` 为总区间减去互斥顶层区间。
+## Retention
 
-统计按每轮及合并样本区分初始化、更新和失败。P50/P90/P95/P99 使用排序后第 `ceil(p*N)` 项，总体标准差使用 N 作分母。空样本为 null。解码至结果处理速率等于有效更新数除以其累计延迟；两帧耗时 20 ms、30 ms 时为 40 帧/秒。该速率不包含读盘、写盘和等待。
-
-## 退出与恢复边界
-
-运行中状态为 `running`。正常 EOF 或帧上限且存在有效正式更新，数据和报告完整时，状态为 `complete`、退出码为 0。配置错误退出 2；运行或写盘失败退出 1；处理到 SIGINT/SIGTERM 后状态为 `interrupted`、退出 130。
-
-每帧使用固定容量的内存区间缓冲，帧结束后同步排空。可处理的异常尽力保留失败帧和部分报告。输出介质故障时以标准错误流报告，不能保证还能在该介质生成总结。SIGKILL、设备致命退出或断电可能留下 `running` 和不完整尾部；完整 CSV 行可用于诊断，不应直接认定为完整基线。
-
-性能基线不代表跟踪质量验收。即使取得低延迟，没有合适标注或质量分析也不能宣称质量达标。
-
-## 独立重算与数值核对
-
-启用测试构建后提供 `baseline_verify_records`。它读取 CSV，独立计算均值、总体标准差、分位数和处理速率，并检查父子区间、顶层时间、模型调用次数和报告样本数。第二个可选目录用于逐帧比较框和分数。
-
-```sh
-./baseline_verify_records baseline-run-001
-./baseline_verify_records baseline-run-001 total-only-run-001
-```
-
-成功时输出 JSON，包含检查数量和最大框/分数误差，以及被检查记录的 `benchmark_variant`。工具会按变体核对每个模型记录到的阶段是否合法：普通路径要求每个模型都有输出取回且不出现共享内存绑定；搜索直连路径要求搜索模型没有输出取回、两端都有绑定区间。任一项不符返回非零。报告生成与核对工具不共享分布计算函数。SDK 调用阶段记录的是主机耗时，包含等待和转换，不称为纯 NPU 运算时间。
-
-比较两条路径的延迟分布时使用 `nanotrackv3_benchmark_compare`，它会先核对板号、录像、模型指纹和跑法是否一致，详见 [搜索直连说明](../search_direct/README.md)。
+`.docker-artifacts` and `/tmp` are disposable and may be cleared routinely. Preserve
+required raw results, identities, export evidence and input locators in an explicitly
+retained external location. Historical paths do not guarantee surviving files.

@@ -1,56 +1,95 @@
-# RK3576 独立编码验证
+# RK3576 camera recording and encoder tools
 
-此目录目前提供硬件编码实验入口，已接入相机最终确认边界及四槽缓冲，尚未提供正式录像工作进程或 ROS 录像配置。默认生产构建不启用它。MPP 是 Rockchip 硬件编码接口；libavformat 是后续 MPEG-TS 文件封装所需库。
+This directory contains the production SC233HGS recording worker, session management, MPEG-TS storage, read-only inspector, and independent encoder probes. MPP is Rockchip's hardware video encoding interface. FFmpeg's libavformat packages encoded H.264 into MPEG-TS, a segmented video container. Production recording is integrated with the ROS node through the platform camera boundary.
 
-在安装匹配开发包的生产板上独立构建：
+## Build and enable
+
+The repository's `./build.sh` enables `DRONE_TRACKER_BUILD_RECORDING=ON` and produces ARM64 output. Manual root CMake builds can select that option for RK3576; Jetson rejects it. The installed `rk3576_recording_worker` and `rk3576_recording_inspect` live beside `drone_tracker_node`. The worker must remain in that directory. MPP and container libraries are private recording-program dependencies, not shared algorithm dependencies.
+
+For a standalone native ARM64 SDK build:
 
 ```bash
 cmake -S src/platform/rk3576/recording -B build-recording -DCMAKE_BUILD_TYPE=Release
 cmake --build build-recording -j4
-./build-recording/rk3576_recording_probe /持久目录/新文件.h264 60 12000000 600
 ```
 
-参数依次为排他创建的输出路径、帧率、目标码率（bit/s）、帧数。示例生成 600 帧 1920×1200 NV12 合成图像；它测量尽快送入编码器的吞吐，不按真实相机节奏等待。输出为裸 H.264 流，尚无 MPEG-TS 时间戳或附属帧记录，不能当作生产录像文件。
+Cross-compiling this standalone directory requires the toolchain and target paths in [the image guide](../../../../dockerfiles/README.amd64.md). It needs matching MPP, FFmpeg, OpenCV, threads, and YAML development dependencies.
 
-正式 RK3576 根目录构建可选 `-DDRONE_TRACKER_BUILD_RECORDING=ON` 来编译同一入口。该开关不启用节点录像。Jetson 拒绝该构建开关。MPP 与 libavformat 只作为独立程序的私有链接依赖，不传入公共算法目标。
+Build support alone does not start recording. `recording.enabled` controls the SC233HGS original-camera video branch; `need_save` independently controls ROS bags, and `visualized_result` controls live debug images. The production SC233HGS template enables both recording and bag. AR0234/video templates disable recording. Enabling it for AR0234 or video reports independent recording unavailable on ON while healthy tracking can continue.
 
-程序核验主要参数读回，配置为 H.264 Baseline、Level 5.0、全范围、未指定色彩矩阵、无 B 帧，并按输入时间每秒请求 IDR。IDR 是不依赖前一幅图像即可开始解码的关键帧。输入缓冲保留至完整编码包返回；分片输出明确拒绝。输出文件已存在时不覆盖。
+Example ROS parameters, keeping the remaining validated camera/models/OSD settings:
 
-真实相机验证使用同一程序，并显式提供采集节点、媒体设备和传感器实体：
+```yaml
+drone_tracker_node:
+  ros__parameters:
+    recording:
+      enabled: true
+      directory: /var/lib/drone_tracker/recordings
+      bitrate_bps: 12000000
+      segment_seconds: 60
+      sync_interval_ms: 1000
+      max_total_bytes: 21474836480
+      min_free_bytes: 5368709120
+```
+
+All recording parameters are startup-only. Directory must be absolute, writable by the runtime user, and on local ext4 as verified from mount information. Its parent must exist. Do not clear historical sessions in startup, install, or upgrade scripts. At 12 Mbps, video is roughly 5.4 GB/hour before content/container variation. Segment duration is 10..600 seconds; cutting waits for the next IDR, a frame that can start decoding without earlier images. Synchronization interval is 500, 1000, or 2000 ms and is not a maximum power-loss window.
+
+The default total limit is 20 GiB, including incomplete sessions and sidecars, with at least 5 GiB free. Reaching either protection stops the current session and retains previous files. There is no circular overwrite or automatic deletion. Export, verify, and apply the operator's retention policy between sessions.
+
+## Capture ownership and sessions
+
+Video copies the full accepted NV12 camera frame, containing luminance and chroma, before hardware-buffer reuse. It does not use annotated ROS or HDMI output and adds no crop, resize, flip, or overlay. H.264 is lossy, so decoded pixels are not identical to the pre-encoding input.
+
+`CameraNv12Sink` stages a candidate, then publishes or cancels it at the final capture boundary. Driver return, stop, and warmup-deadline checks complete before acceptance. Four shared slots transfer pixels to the worker; full slots drop the current recording frame instead of blocking healthy capture. Slot consumers finish copying before releasing a slot. The fixed session dispatcher retains one session through each candidate's complete stage/publish/cancel/disposition sequence.
+
+For RK3576 camera input with `osd.enabled=true`, service startup opens capture and preview without preparing a recording worker or copying recording pixels. ON requests a session only when recording is enabled. A serial recording controller prepares resources while tracking and preview continue. Frames observed before readiness are not replayed into the session. OFF closes acceptance immediately and cancels candidates that have not passed final acceptance. Already accepted frames drain within the three-second parent-close budget; resource preparation has its separate three-second budget. An unreaped worker retains isolated storage and prevents another worker from being created. OFF leaves continuous capture/HDMI running.
+
+With OSD disabled, original ON/start and OFF/stop capture lifetime remains. SC233HGS warmup precedes eligible frames. In continuous mode warmup belongs to the stream and can precede multiple recording sessions; ON does not repeat it. Each session records stream identity, tracking round, reception-boundary count snapshots, and its own end reason. `camera_running_at_end=true` means recording stopped while preview continued.
+
+PTS, the video presentation timestamp, is zero for the session's first accepted frame. Later PTS values retain real capture-time gaps, including recording drops. They have not been validated as exposure times. The worker encodes H.264 Baseline Level 5.0 without B frames, requesting IDR approximately each input second. Its supported color contract is full range with the accepted default matrix/transfer metadata; unsupported marking is rejected.
+
+## Files, health, and inspection
+
+A new exclusive `session-…` directory contains:
+
+| File | Purpose |
+|---|---|
+| `session.json` | Program, model, configuration, board, and actual input-format identity |
+| `000001.ts` and later segments | Original-camera encoded video |
+| `000001.frames.jsonl` and later sidecars | Capture identity, PTS, encoder time, and complete-frame end byte offsets |
+| `events.jsonl` | Distinct driver gaps, tracker queue drops, and recording-branch drops |
+| `commits.jsonl` | Synchronized video/sidecar commit boundaries |
+| `camera.json` | Warmup, qualified-frame, and termination counts |
+| Segment/session `complete.json` | Finished cleanup outcome; inspect `outcome` and `video_success` |
+
+Missing completion markers mean unfinished output. `.pending` metadata remains as failure evidence. Zero-frame cancellation preserves its reason without creating a placeholder TS video. Normal process exit alone does not establish a successful video session.
+
+A synchronization watermark reports the last successfully synchronized input position; before establishment it is unknown. Qualified input lag exceeding two seconds marks degradation with the default policy. Five seconds without synchronization progress or an actual synchronization timeout ends that recording session. Preparation, storage, and encoding failures report separately and leave healthy capture, tracking, and display running. Sudden power loss may remove unsynchronized data and does not guarantee a final marker.
+
+Use the matching inspector to create a new report without changing originals:
 
 ```bash
-./build-recording/rk3576_recording_probe /持久目录/新相机文件.h264 60 12000000 600 /dev/video22 /dev/media2 'm00_b_sc233hgs 0-0030'
+rk3576_recording_inspect /var/lib/drone_tracker/recordings \
+  /var/lib/drone_tracker/inspection-001.jsonl
 ```
 
-运行前须复核 `v4l2-ctl --list-devices`、`media-ctl -d /dev/media2 -p` 及实际格式。示例节点仅对应本次生产板。探测器目前明确支持全范围、矩阵/传递函数为 Default 的基线色彩标记；其他标记报错，不偷偷转换。
+It bounds line size, file count, memory, and report size while checking metadata, parseable commits, and complete TS packet prefixes. Packet structure is not decoding validation. A recovered commit record alone cannot prove that a synchronization call returned before power loss. General-decoder checks and actual power-loss experiments are separate evidence.
 
-相机输入使用原采集边界及预热规则。画面在驱动归还前暂存，最终检查通过后才发布。录像首帧 PTS（视频显示时间）为零，此后使用真实采集时间差；合成模式才使用帧索引生成时间。程序核验编码器返回 PTS 和所请求 IDR。采集线程与编码线程通过四个共享槽通信，满时丢当前录像帧；输出写盘独立运行，包含在途写入的编码队列不超过 8 MiB。报告分别列出预热丢弃、录像丢帧、驱动序号缺口和内存峰值。
+## Independent encoder probe
 
-`CameraNv12Sink` 定义 `stage/publish/cancel` 三步接口：暂存期间编码器不可读取，最终检查成功才发布，归还失败、停止或最终超时均撤销。默认调用不传接收器，原灰度路径不复制额外像素。`RecordingSlots` 使用四槽共享内存，发布/读取状态通过无需互斥锁的原子操作交接；消费者复制完成后才能释放槽。当前仅独立探测器接入，尚未装配正式节点。
+`rk3576_recording_probe` remains an experiment alongside production recording. Its arguments are exclusive output path, FPS, bitrate in bit/s, and frame count. For synthetic 1920×1200 NV12 input:
 
-验证限制：此程序是受外部 `timeout` 限时的实验入口，线程退出不提供正式录像子进程的故障隔离。没有 TS 封装、周期持久化、会话证据及 ROS 生命周期。峰值 RSS 为进程驻留内存，不代表全部硬件内部内存。退出成功只表示探测流程完成，还须检查丢帧、通用解码和资源结果；不能据此宣布整项录像验收完成。
+```bash
+./build-recording/rk3576_recording_probe /persistent/new-output.h264 60 12000000 600
+```
 
-### Continuous preview sessions
+To use a verified SC233HGS topology, append capture device, media device, and sensor entity:
 
-For the RK3576 ROS camera with `osd.enabled=true`, service startup opens capture and
-HDMI preview. It does not prepare a recording process or copy recording pixels.
-ON requests a recording session only when `recording.enabled=true`. Preparation
-runs on a serial recording controller. Tracking and preview continue during it.
-Frames seen before preparation completes are never replayed into the session.
+```bash
+./build-recording/rk3576_recording_probe /persistent/new-camera.h264 60 12000000 600 \
+  /dev/video22 /dev/media2 'm00_b_sc233hgs 0-0030'
+```
 
-A fixed capture dispatcher pins the same session from candidate staging through
-publish/cancel and frame disposition. OFF closes reception immediately. A staged
-candidate that has not passed the final boundary is cancelled. Already accepted
-frames finish within the existing parent close budget of three seconds. Resource
-preparation retains its separate three-second budget. An unreaped process keeps
-its mapping isolated and prevents another recording process from being created.
-OFF leaves the camera and HDMI preview running.
+Confirm actual wiring with `v4l2-ctl --list-devices` and `media-ctl -d /dev/media2 -p`. These node numbers are examples. Synthetic input measures maximum submission throughput without camera pacing. Probe output is raw H.264, not the production session's MPEG-TS/sidecar protocol. The probe's in-process threads do not establish production worker fault isolation. Use an external deadline and inspect frame/drop/decode/resource outcomes; resident memory excludes hardware-internal allocations.
 
-Each session records a stream identity, tracking round, reception start/end count
-snapshots and an independent end reason. Stream warmup can precede multiple
-sessions; it is recorded as stream evidence, without repeating warmup on ON.
-`camera_running_at_end=true` means that recording ended while preview continued.
-PTS (video presentation time) zero belongs to the first frame accepted by that
-session. Subsequent timestamps retain actual capture gaps. These timestamps have
-not been validated as exposure times. Recording failures remain isolated from
-healthy capture, tracking and display.
+For application rollback, close the active round and exit cleanly, then disable `recording.enabled` and restart. Retain recorded sessions and the matching inspector. Do not replace system RKNN Runtime. See [production integration evidence](../../../../openspec/changes/archive/2026-09-24-add-rk3576-camera-recording/final-validation.md) and [the platform guide](../../README.md). Historical measurements apply only to their recorded software and inputs. `.docker-artifacts` and `/tmp` may be cleared; copy required evidence to separately managed storage rather than assuming those paths remain available.

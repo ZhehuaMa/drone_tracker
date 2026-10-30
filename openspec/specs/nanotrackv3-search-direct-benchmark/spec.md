@@ -2,114 +2,130 @@
 
 ## Purpose
 
-为 RK3576 提供仅改变搜索特征传递方式的 NanoTrackV3 独立性能测试，让用户在相同模型和输入下比较共享设备内存与现有 CPU 交接的实际成本。通过独立数值参照、原始计时和明确失败结果，保证比较不被旧帧数据、额外优化或观测方式混淆。
+Define the standalone RK3576 NanoTrack shared-memory benchmark, its independent numerical reference, and the conditions for interpreting performance evidence. The current production and baseline loaders also use shared-memory search transfer; historical CPU-transfer comparisons require their original build identities.
 
 ## Requirements
 
-### Requirement: 独立入口与基线兼容
+### Requirement: Standalone entries retain compatible configuration
 
-系统 SHALL 提供独立程序 `nanotrackv3_search_direct`，接受与 baseline 相同语义的录像、初始框、三模型路径、精度证据、预热、更新上限、轮次及输出目录配置。程序 SHALL 支持仓库构建及不依赖 ROS 的独立构建。已有输出目录 SHALL 被拒绝。
+`nanotrackv3_search_direct` SHALL accept baseline-compatible video, initial box, three model paths, precision evidence, warmup, update limit, rounds, and output settings. It SHALL support repository and ROS-free standalone builds. It SHALL reject existing output directories and run NanoTrack without YOLO, DCF, Kalman filtering, or ROS publication. Both current executable names SHALL remain available. All three models SHALL pass the baseline FP16 export-evidence checks.
 
-程序 SHALL 仅运行 NanoTrackV3。程序 MUST NOT 加载 YOLO、DCF、卡尔曼滤波或发布 ROS 消息。新增程序 SHALL 保持原 baseline 入口、默认路径及既有记录读取兼容。
+#### Scenario: Both entries use one configuration
+- **WHEN** a valid configuration is given to baseline and search-direct with distinct new output directories
+- **THEN** input ranges and tracker settings match and search-direct records its variant; current baseline also uses the production shared-memory loader, so executable names alone do not establish a CPU-transfer comparison
 
-#### Scenario: 同配置运行两个程序
-- **WHEN** 同一合法配置仅更换输出目录，分别交给 baseline 和新程序
-- **THEN** 两者使用相同输入范围和跟踪配置，新程序明确标记搜索直连，baseline 仍使用普通特征交接
+#### Scenario: Output already exists
+- **WHEN** the configured output directory exists
+- **THEN** the benchmark fails before measurement without overwriting evidence
 
-#### Scenario: 输出目录已有数据
-- **WHEN** 新程序配置的输出目录已经存在
-- **THEN** 测量前失败，不覆盖已有证据
+### Requirement: Search transfer preserves the established workload
 
-### Requirement: 搜索特征交接是唯一优化变量
+A Backbone extracts features; Head compares them. FP16 and Float32 are 16-bit and 32-bit floating types. The benchmark SHALL retain local MJPEG luminance decoding, Float32 image preparation, initial-box setup, sequential updates, and common box/score computation. MJPEG stores each frame as JPEG. Normal initialization SHALL run one template inference; each normal update SHALL run one search inference and one Head inference.
 
-backbone 表示图像特征提取模型，head 表示比较模板与搜索特征的模型。Float32 和 FP16 分别表示 32 位、16 位浮点。程序 SHALL 沿用 `nanotrackv3-performance-baseline` 的本地 MJPEG 亮度解码、Float32 图像前处理、首帧初始化、逐帧更新和公共框/分数计算语义。MJPEG 表示每帧独立 JPEG 编码的视频。
+#### Scenario: Fractional input and template work remain
+- **WHEN** grayscale resize produces fractional pixels followed by ten updates
+- **THEN** Float32 fractions are retained, template features are ordinarily submitted each update, and search and Head each execute ten times
 
-三份模型 SHALL 满足 baseline 的 FP16 导出证据要求。与 baseline 对照时，三份模型文件指纹 SHALL 分别相同。模板生成、特征保存、每帧普通提交以及 head 最终输出读取 SHALL 保持 baseline 行为。程序 MUST NOT 顺带缓存模板提交转换结果、改变搜索图像输入准备、改变精度或加入跨帧并行。正常初始化 SHALL 只执行一次模板模型；正常更新 SHALL 只执行一次搜索模型和一次 head。
+#### Scenario: A historical CPU-transfer comparison is reproduced
+- **WHEN** an explicitly identified historical build provides the ordinary host-transfer reference
+- **THEN** the same three FP16-evidenced model hashes, input preparation, template generation/storage/submission, and Head output retrieval are used; template conversion caching, precision changes, and cross-frame parallelism are not added to one side
 
-程序 SHALL 仅将搜索特征交接改为原生 FP16 设备共享内存。正式性能路径中，CPU MUST NOT 读取、复制或转换该中间特征。CPU 的提交、绑定及同步控制 SHALL 仍计入实际执行成本。
+#### Scenario: Search features pass through shared device memory
+- **WHEN** the benchmark executes the direct path
+- **THEN** CPU code does not read, copy, or convert the intermediate search feature, while actual submission, binding, and synchronization costs remain measured
 
-#### Scenario: 保留小数像素和模板工作量
-- **WHEN** 灰度裁剪缩放产生非整数像素，随后执行十次更新
-- **THEN** 搜索图像输入保留 baseline 的 Float32 小数，模板仍每次普通提交，搜索模型和 head 各执行十次，搜索特征不经过 CPU 数据处理
+### Requirement: Native compatibility is checked without silent fallback
 
-### Requirement: 原生特征兼容性与明确拒绝
+Native attributes describe actual device storage. NC1HWC2 groups channels; stride is storage distance between rows or dimensions. The benchmark SHALL validate logical roles and compatible native FP16 shapes, grouping, effective strides, and safe capacities. It SHALL diagnose unsupported attributes, import, or binding failure without host-transfer fallback. File names or logical element counts alone MUST NOT establish compatibility.
 
-原生属性描述设备实际读写的特征排列及容量。NC1HWC2 表示按组存储通道；跨度表示相邻数据行或维度在内存中的距离。程序 SHALL 校验搜索输出与 head 搜索输入的逻辑角色、原生形状、FP16 类型、通道分组、有效跨度及安全容量。程序 SHALL 依据实际返回属性判断兼容，不根据文件名或仅逻辑元素数推断。
+#### Scenario: Equivalent effective strides have different fields
+- **WHEN** one supported native stride is zero and the other explicitly equals logical width
+- **THEN** effective strides are compared using SDK semantics rather than rejecting different raw fields alone
 
-程序 SHALL 支持当前已验证的原生 `[1,12,16,16,8]`、49152 字节搜索特征，以及符合相同逻辑契约和受支持存储表示的模型。模型文件指纹 SHALL 用于追溯及对照，不作为固定白名单。浮点属性携带的量化元数据 MUST NOT 导致重复缩放。原生属性不支持、内存导入失败或绑定失败 SHALL 明确报错，MUST NOT 静默回退为 CPU 交接。
+#### Scenario: Matching element count conceals incompatible storage
+- **WHEN** native grouping or types differ despite equal logical element counts
+- **THEN** measurement fails with the difference instead of conversion disguised as direct transfer
 
-#### Scenario: 字面跨度不同但实际兼容
-- **WHEN** 已支持原生格式的输出行跨度报告为零，输入显式报告逻辑宽度，按 SDK 约定两者有效跨度相同
-- **THEN** 程序按有效跨度判断，不仅因字段字面不同拒绝
+#### Scenario: Known storage is checked without a model whitelist
+- **WHEN** native search storage is `[1,12,16,16,8]` with 49152 bytes, or another supported contract-compatible representation
+- **THEN** actual shape/stride/capacity and floating metadata are validated without a fixed model-hash whitelist or repeated affine rescaling
 
-#### Scenario: 同元素数但存储不兼容
-- **WHEN** 两端逻辑元素数相同但原生通道分组或类型不匹配
-- **THEN** 程序在正式测量前报告具体差异并失败，不转换后冒充直连
+### Requirement: Bindings refer to current-frame features
 
-### Requirement: 每帧使用当前特征且绑定有效
+A binding selects memory used by the device. After each ordinary submission, the benchmark SHALL re-establish the corresponding shared bindings before execution. It MUST NOT rely on initialization-time bindings surviving submission. Head SHALL run after the current search output is complete. The next frame MUST NOT overwrite shared storage before Head finishes reading.
 
-绑定表示指定设备读写哪块内存。每次普通输入提交后，程序 SHALL 在对应模型执行前重新建立相关共享输入或输出绑定。程序 MUST NOT 依赖初始化时的旧绑定跨普通输入提交持续有效。程序 SHALL 在搜索模型完成当前帧写入后才运行 head。head 完成读取前，下一帧 MUST NOT 覆盖共享特征。
+#### Scenario: First search does not read empty storage
+- **WHEN** the first search image and template feature are submitted after initialization
+- **THEN** bindings are refreshed after their respective submissions and Head reads the first generated search feature
 
-#### Scenario: 首次更新不能读取空缓冲区
-- **WHEN** 初始化完成后首次提交搜索图像和模板特征
-- **THEN** 两端共享绑定在各自普通提交后重新建立，head 使用首次搜索模型的真实输出，不读取初始空数据
+#### Scenario: Alternating inputs and replacement templates
+- **WHEN** search inputs alternate A/B/A and templates change during verification
+- **THEN** every output matches its independent ordinary-submission reference rather than the previous search or template
 
-#### Scenario: 搜索交替和模板切换
-- **WHEN** 搜索输入按 A/B/A 交替，期间重新建立不同模板
-- **THEN** 每次结果均与独立普通提交参照对应，不复用上一帧搜索特征或旧模板
+### Requirement: Lifecycle failures cannot return stale predictions
 
-### Requirement: 生命周期和失败不产生虚假结果
+Shared storage SHALL outlive device access by both owners. After confirmed stop, consumer imports SHALL be released before producer memory and sessions. Reset or template replacement SHALL invalidate the old template; search without a valid template SHALL fail. Input rejection SHALL precede device submission. Binding/execution errors SHALL identify role, operation, and cause without old/partial outputs. Unconfirmed stop or failed release SHALL terminate the process.
 
-程序 SHALL 保持共享内存有效，直到生产者与消费者均结束访问。程序 SHALL 在确认设备停止后按所有权顺序释放导入对象、原始内存及会话。reset SHALL 使模板失效；建立新模板开始时 SHALL 清除旧模板有效性。无有效模板时 SHALL 拒绝搜索。
+#### Scenario: Head binding fails
+- **WHEN** search features exist but Head binding fails
+- **THEN** the frame fails without executing Head or returning the previous box, and completed stages remain in the failure record
 
-输入检查失败 SHALL 不提交设备执行。绑定或运行失败 SHALL 返回明确的模型角色、操作及原因，不返回旧预测或部分输出。设备执行失败后 SHALL 阻止失效后端继续运行。无法确认设备停止或释放失败时 SHALL 沿用致命诊断并终止进程，MUST NOT 提前释放可能仍被设备使用的存储。
+#### Scenario: Template replacement fails
+- **WHEN** template A exists and generating B fails
+- **THEN** later searches cannot use A as if B had succeeded, and invalidated device sessions cannot continue until rebuilt
 
-#### Scenario: head 绑定失败
-- **WHEN** 搜索特征已经生成，但 head 的共享输入绑定失败
-- **THEN** 本帧失败且不运行 head，不返回上一帧框，已执行阶段保留在失败记录中
+### Requirement: Timing includes direct-transfer costs and preserves provenance
 
-#### Scenario: 模板更新失败
-- **WHEN** 已有模板 A，重建模板 B 时执行失败
-- **THEN** 后续搜索不能使用 A 冒充 B，必须重新建立有效模板
+`decode_to_result` is monotonic elapsed time from JPEG decoding to readable box/score. The benchmark SHALL retain integer-nanosecond timing and separate initialization/update samples. Rebinding and device waits SHALL remain included. Unexecuted host-fetch/copy stages SHALL be absent rather than zero-duration samples. Existing raw files, human-readable reports, machine statistics, warmup exclusion, failure retention, and exit semantics SHALL remain compatible.
 
-### Requirement: 直连成本完整计时且路径可追溯
+#### Scenario: Binding and waiting have measurable cost
+- **WHEN** a frame rebinds producer and consumer storage and waits for device completion
+- **THEN** those costs remain in stage and end-to-end intervals, with no subtraction or double counting of nested spans
 
-`decode_to_result` 表示从当前帧 JPEG 解码开始到框和分数可读的单调时钟耗时。程序 SHALL 沿用 baseline 的唯一端到端指标、初始化/更新分组和整数纳秒计时。每帧重新绑定及等待设备完成的成本 SHALL 包含于推理和端到端区间。未执行的搜索输出获取、复制或转换阶段 SHALL 表示为未执行，不记录为零耗时。
+#### Scenario: Search output is not fetched to the host
+- **WHEN** search output passes through shared memory
+- **THEN** no ordinary search-output fetch/copy span is invented, while final Head retrieval remains timed
 
-程序 SHALL 保留 baseline 的 `frames.csv`、`spans.csv`、manifest、中文报告及机器可读统计，并沿用其预热、原始记录、失败保留、统计口径和退出状态要求。父子区间 SHALL 不重复累计。新程序 SHALL 记录 `benchmark_variant=search_direct`、`search_handoff=native_fp16_shared`、绑定策略、实际模型属性、共享容量、程序及输入身份。旧 baseline 记录缺少变体字段时 SHALL 仍可读取为普通路径。
+#### Scenario: Direct benchmark records its identity
+- **WHEN** search-direct writes `frames.csv`, `spans.csv`, manifest, summary, and report
+- **THEN** it retains `benchmark_variant=search_direct`, `search_handoff=native_fp16_shared`, binding policy, actual model attributes, shared capacity, and program/input identities
 
-#### Scenario: 绑定有成本
-- **WHEN** 本帧进行了两端重新绑定和必要设备等待
-- **THEN** 这些时间均包含于端到端记录，可从阶段记录核对，不从原始耗时扣除
+#### Scenario: Older baseline evidence lacks variant fields
+- **WHEN** an existing baseline record has no explicit variant metadata
+- **THEN** it remains readable, but its actual transfer path must be interpreted from its recorded build rather than assuming every current baseline binary uses host transfer
 
-#### Scenario: 搜索不取回输出
-- **WHEN** 搜索特征通过共享内存交给 head
-- **THEN** 记录不伪造普通搜索输出获取/复制区间，head 最终输出读取仍被计时
+### Requirement: Numerical verification uses an independent reference
 
-### Requirement: 数值验证具有独立参照
+Verification SHALL compare the same Float32 inputs against independent ordinary search and Head sessions. The reference MUST NOT derive its inputs from the tested shared buffer. Verification SHALL cover first use, A/B/A inputs, template changes, independent processes, and input-sensitive outputs. Diagnostic shared-buffer reads SHALL occur after consumer completion and stay outside formal performance samples.
 
-正式实现 SHALL 在同一 Float32 输入下与独立普通搜索会话和普通 head 会话对照。参照 MUST NOT 依赖被测共享缓冲区生成自身输入。设备验证 SHALL 覆盖首次调用、A/B/A 交替、模板切换及多次独立进程运行，并检查不同测试输入确实产生不同参照输出。
+#### Scenario: Distinct inputs produce suspiciously identical outputs
+- **WHEN** tested and reference outputs are identical across different inputs but input-sensitivity checks fail
+- **THEN** equality or finite values alone do not establish verification; the missing coverage is reported
 
-已验证模型的固定输入对照 SHALL 要求 head 两项输出逐元素一致。完整同录像回放 SHALL 要求框各分量绝对误差不超过 `1e-4` 像素、分数不超过 `1e-6`。超限 SHALL 作为验收失败，不自动放宽容差。用于诊断的共享特征读取 SHALL 位于消费者完成之后，且该诊断运行 MUST NOT 进入正式性能统计。
+#### Scenario: Only a temporary Python probe has passed
+- **WHEN** 720 probe comparisons passed but the formal C++ replay has not run
+- **THEN** only low-level feasibility is established; formal numerical, replay, and performance acceptance remain incomplete
 
-#### Scenario: 两条错误路径恰好输出相同
-- **WHEN** 多个不同输入得到相同的被测及参照输出，输入敏感性检查未通过
-- **THEN** 不以相等或有限数值宣称验证通过，报告覆盖缺口并补充有效参照
+#### Scenario: Numerical tolerance is checked
+- **WHEN** fixed verified models and a complete same-video replay are compared
+- **THEN** fixed-input Head outputs match elementwise, box component error is at most `1e-4` pixels, and score error is at most `1e-6`; violations fail acceptance without relaxed tolerances
 
-#### Scenario: 只有 Python 探针通过
-- **WHEN** 已有 720 次临时探针对照通过，但正式 C++ 程序尚未运行完整录像
-- **THEN** 报告仅声明底层可行性已验证，正式数值、回放和性能验收仍为未完成
+### Requirement: Performance conclusions require comparable identified paths
 
-### Requirement: 性能比较保持同条件且不过度推断
+Formal comparisons SHALL fix board, Runtime 2.3.2, driver 0.9.8, models, video, initial box, warmup, frame range, rounds, and environment. Each observation-mode group SHALL have at least three rounds, with default warmup 30 updates. Reports SHALL retain per-round/combined distributions, slow and low-score frames, and actual build identities. Current baseline/direct results MUST NOT be interpreted as host-versus-shared transfer solely from their names.
 
-正式性能对照 SHALL 使用同一开发板、Runtime 2.3.2、驱动 0.9.8、模型、录像和首帧框。两程序 SHALL 使用相同预热、帧范围、轮次及环境策略，分别比较开启和关闭细分观测的结果。每组 SHALL 至少运行三轮，默认预热 30 次更新。报告 SHALL 给出每轮及合并延迟分布，不丢弃慢帧或低分帧。
+#### Scenario: No speedup is observed
+- **WHEN** numerically matching comparable paths show higher direct-path latency
+- **THEN** all results remain and the report states no benefit without deleting samples, changing work, or inventing a post-hoc threshold
 
-身份或配置不匹配时，比较工具 SHALL 拒绝输出可比提速结论。程序 SHALL 如实报告无收益或变慢，不设事后速度门槛。验收 SHALL 另行覆盖重复创建/reset/销毁及持续回放资源检查。无法读取资源指标 SHALL 记录缺失原因，不以正常退出证明无泄漏。报告 MUST NOT 将有限样本一致性称为跟踪质量验收或硬件内部绝对零搬运。
+#### Scenario: Model hashes differ
+- **WHEN** any model hash differs between the compared groups
+- **THEN** the comparison is marked unsuitable for a single-variable speedup conclusion
 
-#### Scenario: 三轮结果没有加速
-- **WHEN** 两程序数值一致，但新程序端到端耗时更高
-- **THEN** 报告保留全部结果并说明未取得性能收益，不改变工作量或删除样本制造加速
+#### Scenario: Observation and resource acceptance remain explicit
+- **WHEN** detailed and total-only runs are evaluated
+- **THEN** both modes retain at least three rounds and matched conditions; separate create/reset/destroy and sustained-resource checks are reported, unreadable metrics remain unknown, and normal exit alone does not establish no leaks
 
-#### Scenario: 两组模型不同
-- **WHEN** baseline 与直连结果中任一模型指纹不同
-- **THEN** 比较工具明确标记不满足单变量对照，不输出该优化的提速结论
+#### Scenario: Finite numerical evidence is interpreted
+- **WHEN** a finite replay comparison passes
+- **THEN** it does not establish tracking accuracy or absolute absence of internal hardware data movement

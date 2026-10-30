@@ -1,40 +1,57 @@
-# RK3576 生产部署包
+# RK3576 production deployment package
 
-ARM64 input programs are now compiled by the default x86_64 image, or explicitly by the ARM64 fallback. The separate `deployment/package.sh` collector still runs inside the ARM64 image to resolve and bundle genuine ARM ROS libraries. This is an intentional remaining ARM64-image dependency, not a compilation restriction. The packager reads the selected local installation and does not read an installed production board. 它包含主节点、录像工作进程、录像检查器、ROS 包发现文件、明确选定的原样配置及配置引用的 RKNN 模型。随包包含程序依赖的 ROS 共享库和 vision_msgs 非 Python 类型支持库，存放在版本目录的 `lib/bundled-ros`。预检和启动优先使用这些库，不覆盖系统 ROS。包内没有源码、基准测试程序、RKNN Runtime 或基础系统共享库。
+Build ARM64 programs with the default x86_64 cross-compiler image or explicit ARM64
+fallback. `deployment/package.sh` separately uses the ARM64 image to collect genuine
+ARM ROS dependencies from the selected local installation. It does not read a live
+production board. The package contains the node, recording worker/inspector, diagnostic
+worker/inspector, package-discovery files, selected unchanged configuration and referenced
+RKNN models. Required ROS libraries and non-Python vision_msgs type support are bundled
+under each release's `lib/bundled-ros`. Startup prefers those libraries without overwriting
+system ROS. Source, benchmark programs, RKNN Runtime and base system libraries are excluded.
 
-## 从开发机校时
+## Board clock synchronization
 
-将测试板通过 ADB 接入开发机，确认开发机时间正确，然后在仓库根目录运行：
+Attach the intended board over ADB and verify the development host's clock first:
 
 ```bash
 ./deployment/sync-board-time.sh
 ```
 
-连接多台 ADB 设备时，将目标序列号作为参数，例如 `./deployment/sync-board-time.sh b31f8847ff67f9d1`。脚本只接受 `HZ-RK3576_WuKong Board` 且要求板端 ADB shell 为 root。它临时停止正在运行的 `drone-tracker` 和 `drone-interceptor` 服务，写入系统时钟和硬件实时时钟（RTC），核对读回时间，再恢复原先运行的服务。校时失败时也会尝试恢复服务。此脚本是开发机工具，不在目标板上运行。
+With multiple devices, pass its explicit serial, for example
+`./deployment/sync-board-time.sh b31f8847ff67f9d1`. The script accepts only
+HZ-RK3576_WuKong Board and requires a root ADB shell. It temporarily stops running
+tracker/interceptor services, sets system/RTC time, checks readback and restores their
+original running states. Restoration is attempted on clock-setting failure as well.
+Run this tool on the development host, not inside the board.
 
-## 在其他生产板安装
+## Install on a production board
 
-适用板卡为 `HZ-RK3576_WuKong Board`，Ubuntu 22.04 ARM64、ROS 2 Humble，系统 RKNN Runtime 2.3.2、RKNPU 驱动 0.9.8。基础系统库（如 OpenCV、FFmpeg）和相机驱动须预先安装。无需在目标板通过 apt 补装 vision_msgs 或 cv_bridge；ROS 2 Humble 基础环境仍需存在。
+The target requires HZ-RK3576_WuKong Board, Ubuntu 22.04 ARM64, ROS 2 Humble, system
+RKNN Runtime 2.3.2, RKNPU driver 0.9.8, base dependencies such as OpenCV/FFmpeg, and
+working camera drivers. Bundled libraries remove the need to install vision_msgs or
+cv_bridge separately through apt; the base ROS environment is still required.
 
-1. 将 `.tar.gz` 和同名 `.sha256` 复制到目标板同一目录。
-2. 核对压缩包，解压并进入目录。将下面的 `<包名>` 替换为实际文件名，不含 `.tar.gz`。
+1. Copy the archive and its `.sha256` companion to the same board directory.
+2. Replace PACKAGE below with the archive name without `.tar.gz`, then verify and inspect:
 
    ```bash
-   sha256sum -c <包名>.tar.gz.sha256
-   tar -xzf <包名>.tar.gz
-   cd <包名>
+   sha256sum -c PACKAGE.tar.gz.sha256
+   tar -xzf PACKAGE.tar.gz
+   cd PACKAGE
    sudo ./deploy.sh --check
    ```
 
-3. 安装并设置上电启动：
+3. Install and enable startup at boot:
 
    ```bash
    sudo ./deploy.sh
    ```
 
-   首次安装默认不立即启动，也不关闭当前桌面。若希望立即启动，使用 `sudo ./deploy.sh --start`。升级前同名服务已经运行时，脚本会停止它并在升级后恢复运行。每次启动节点前都会关闭桌面，当前桌面会话也会结束。
-
-4. 检查服务：
+   A first installation does not start immediately or close the desktop. Use
+   `sudo ./deploy.sh --start` for immediate startup. Upgrading an already running service
+   stops it and restores running state after installation. Starting the node closes the
+   desktop session.
+4. Check actual service state:
 
    ```bash
    systemctl is-enabled drone-tracker.service
@@ -42,151 +59,196 @@ ARM64 input programs are now compiled by the default x86_64 image, or explicitly
    journalctl -u drone-tracker.service -f
    ```
 
-`enabled` 表示已配置上电启动，不代表本次已启动或相机验证通过。脚本不会重启开发板，也不会发送 `/fpv/tracker_trigger`；跟踪触发方式与原程序相同。
+Enabled means boot startup, not current running state or passed camera acceptance.
+Deployment neither reboots the board nor sends `/fpv/tracker_trigger`.
 
-## 配置和 CPU
+## Configuration, devices and CPU policy
 
-相机配置安装到 `/opt/drone_tracker/config/camera.yaml`，CPU 策略安装到 `/opt/drone_tracker/config/cpu-affinity.yaml`。这里及模型配置中的 `/opt/drone_tracker/...` 均是目标板运行路径，不是本机或容器中的输入路径。两份配置与打包时的源文件逐字节一致。`SOURCE.json` 记录宿主机所选输入路径、文件 SHA-256 指纹、Git 状态和容器镜像身份；`SHA256SUMS` 校验包内文件，`MODELS.sha256` 校验所用模型。
+Camera configuration installs as `/opt/drone_tracker/config/camera.yaml`; CPU policy
+installs as `/opt/drone_tracker/config/cpu-affinity.yaml`. Model/configuration paths
+below `/opt/drone_tracker` are target-board paths. Both configurations preserve their
+selected source bytes. `SOURCE.json` records input paths/hashes, Git state and image
+identity; `SHA256SUMS` covers package files and `MODELS.sha256` covers models.
 
-本次生产配置启用 HDMI 与录像，使用 `/dev/video22`、`/dev/media2`、`/dev/dri/card0`，录像目录为 `/var/lib/drone_tracker/recordings`。这些设备编号依赖接线和驱动，不保证其他板相同。采集前执行 `v4l2-ctl --list-devices` 和 `media-ctl -p` 核对实际拓扑。设备存在仅是预检，不证明接入了正确传感器或显示设备。
+The production template enables OSD, timing, ROS bag and independent camera recording.
+It uses `/dev/video22`, `/dev/media2`, `/dev/dri/card0` and
+`/var/lib/drone_tracker/recordings`. These are explicit wiring-dependent settings.
+Before capture, use `v4l2-ctl --list-devices` and `media-ctl -p` to verify topology and
+formats. Device existence alone does not establish the correct sensor/display.
 
-启动入口会同步停止 `display-manager.service` 和生产板使用的 `lightdm.service`。OSD 启用时，随后读取 `/sys/kernel/debug/dri/<设备编号>/clients`，确认没有进程占用目标显示设备；最多等待 5 秒。停止失败、列表不可读或仍有占用时，启动失败并报告原因，不执行节点。系统必须已挂载 debugfs（内核调试信息文件系统）；脚本不会自动挂载。`deploy.sh --check` 只检查部署条件，不停止桌面。
+The launcher stops display-manager.service and lightdm.service synchronously. When
+OSD is enabled it then checks `/sys/kernel/debug/dri/<device-number>/clients`, allowing
+up to five seconds for device release. Failed stops, unreadable lists or remaining
+clients prevent node execution. Debugfs must already be mounted; the launcher does not
+mount it. `deploy.sh --check` checks conditions without stopping the desktop.
 
-开机服务排在桌面启动任务之后执行，因此会先等桌面启动任务结束，再停止桌面并运行节点。运行期间不要手动启动桌面。停止节点后不会自动恢复桌面，避免服务异常重启时与桌面争用显示设备。需要恢复时，先执行 `sudo systemctl stop drone-tracker.service`，确认没有手动运行的节点且显示设备已释放，再执行 `sudo systemctl start lightdm.service`。
+Boot startup runs after desktop startup, then stops the desktop before launching the
+node. Do not start the desktop while the node owns display resources. Node stop does
+not restore it automatically. To restore the desktop, stop the service, confirm all
+manual nodes have exited and released the display, then start lightdm.service.
 
-服务以 root 运行以访问相机、显示和录像目录。服务和手动运行都调用 `/opt/drone_tracker/bin/run-camera`。该入口读取同一份 `cpu-affinity.yaml`，用 `taskset` 设置总允许范围，并把策略路径传给节点。服务主进程就是节点，异常退出后由 systemd 尝试重启；一分钟失败五次后停止重试，可修复问题后执行 `sudo systemctl reset-failed drone-tracker.service` 再启动。
+Service and direct startup use `/opt/drone_tracker/bin/run-camera`, running as root for
+device/storage access. It applies the shared allowed CPU range with taskset and passes
+the same policy to the node. Systemd supervises the node directly. Abnormal exits restart
+until five failures within one minute exhaust the limit; after repair use
+`sudo systemctl reset-failed drone-tracker.service` before restarting.
 
-The `allowed_cpus` list is the complete allowed range. In `role-pinned` mode the production template uses:
+`allowed_cpus` is the complete permitted range. The role-pinned production template uses:
 
 | Role | CPU | Responsibility |
 |---|---:|---|
-| `ros_transport` | 6 | ROS initialization, node construction, and communication resource creation |
-| `control` | 4 | Model initialization and the single-threaded ROS callback executor |
-| `tracking` | 4 | Tracking worker |
-| `yolo` | 5 | Detection worker |
-| `display` | 6 | HDMI display |
-| `capture` | 7 | Camera capture and frame dispatch |
-| `recording` | 7 | Recording process and its helper threads |
+| ros_transport | 6 | ROS initialization, node construction and communication creation |
+| control | 4 | Models and single-threaded ROS callback executor |
+| tracking | 4 | Tracking worker |
+| yolo | 5 | Detection worker |
+| display | 6 | HDMI display |
+| capture | 7 | Capture and persistent frame dispatcher |
+| recording | 7 | Recording process and helpers |
 
-Version 1 policies without `ros_transport` use the `control` core for communication creation. An explicitly
-provided transport role must be an integer in the online allowed range; null, strings and booleans are invalid.
-`inherit` mode leaves individual threads unbound. Running the executable without `DRONE_TRACKER_CPU_CONFIG`
-also preserves inherited affinity. The policy is fixed at startup; restart the node after editing it.
+Version-1 policies omitting ros_transport use control for communication creation.
+Explicit transport values must be online allowed integers; null/strings/booleans fail.
+Inherit mode leaves threads unbound. Running the bare node without
+DRONE_TRACKER_CPU_CONFIG retains inherited affinity. Policy changes require restart.
 
-ROS communication is created before the inference models. The main entry binds the transport role before
-`rclcpp::init`. Direct `DroneTrackerNode` construction applies the same role before the ROS node base constructor.
-Application subscriptions and publishers are created on that core. The main thread then explicitly applies and
-reads back `control` before opening the input and initializing the models. This restoration is repeatable;
-an earlier control initialization cannot suppress it. Existing worker entries still apply their own roles.
+ROS resources are created before models. Main applies RosTransport before rclcpp::init;
+direct DroneTrackerNode construction applies it before the ROS base constructor.
+Application publishers/subscriptions use that boundary. Main explicitly applies and
+reads back Control before input/model initialization, including repeated initialization.
+Workers apply their own roles. Later communication creation through DroneTrackerNode
+restores the caller's previous mask afterward. Plain rclcpp::Node callers must wrap it
+in `cpu_affinity::withRole(Role::RosTransport, ...)`. Creation failures restore the prior
+mask; restoration failures propagate. Production never scans/moves existing middleware
+threads or changes priorities/scheduling policies.
 
-Later publisher/subscriber creation through `DroneTrackerNode` uses the same transport boundary and restores
-the calling thread's previous mask. Code that uses a plain `rclcpp::Node` reference must wrap new communication
-resource creation in `cpu_affinity::withRole(Role::RosTransport, ...)`. Creation failures restore the prior mask;
-restoration failures propagate as errors. The production path never scans and moves existing middleware threads.
-No priority or scheduling-policy changes are introduced. Flight mode and `ON MISSION` still require their existing
-confirmed flight-controller inputs.
-
-`CPU policy loaded` confirms only parsing. Each `CPU affinity pid=... tid=... role=... requested=... actual=...`
-entry confirms an application-controlled binding and readback. Middleware helper threads inherit their creator's
-mask; verify their actual masks separately. A configuration log alone does not establish that every Fast DDS
-thread has been checked.
-
-服务停止时先向主节点发送 SIGINT，让它完成录像收尾；30 秒后仍未退出的进程组由 systemd 清理。启动后可核对所有节点线程的实际核心限制：
+`CPU policy loaded` proves parsing only. Per-role requested/actual logs prove managed
+binding/readback. Middleware helpers inherit creator masks; inspect their actual masks
+separately instead of inferring every Fast DDS thread from a configuration log.
+Stop sends SIGINT to finish recording; after 30 seconds systemd cleans remaining group
+members. Check masks with:
 
 ```bash
 pid=$(systemctl show -p MainPID --value drone-tracker.service)
 grep Cpus_allowed_list /proc/"$pid"/task/*/status
 ```
 
-部署不修改 `drone-interceptor.service`，不覆盖 `/usr/lib/librknnrt.so`，不写 ROS 安装目录。
+Deployment leaves drone-interceptor.service, system librknnrt.so and the ROS installation
+unchanged.
 
-## 备份与回退
+## Backups and rollback
 
-每次安装在 `/opt/drone_tracker/backups/<时间戳>` 留存旧入口、模型、配置和 `current` 链接。旧 release 目录保持不变。脚本输出本次备份路径；安装失败也应使用该路径。
-
-以下步骤恢复已有安装。将 `backup` 改为实际备份路径：
+Every installation records old entries, model/configuration state, current link and both
+services under `/opt/drone_tracker/backups/TIMESTAMP`. Existing release directories remain.
+The installer prints the selected backup; retain that path even after installation failure.
+Use the matching package's rollback script from its extracted root:
 
 ```bash
-backup=/opt/drone_tracker/backups/<时间戳>
-sudo systemctl disable --now drone-tracker.service
-# 先移走本次新增的配置和入口，再恢复备份，避免旧安装遗留新策略。
-sudo rm -f /opt/drone_tracker/config/cpu-affinity.yaml /opt/drone_tracker/bin/cpu-policy.py
-sudo tar -xpf "$backup/installation.tar" -C /opt/drone_tracker
-if [ -f "$backup/drone-tracker.service" ]; then
-    sudo cp -a "$backup/drone-tracker.service" /etc/systemd/system/drone-tracker.service
-else
-    sudo rm -f /etc/systemd/system/drone-tracker.service
-fi
-sudo systemctl daemon-reload
+sudo ./rollback.sh /opt/drone_tracker/backups/TIMESTAMP
 ```
 
-查看备份中的 `service-enabled.txt` 和 `service-active.txt`。原来已启用时再执行 `sudo systemctl enable drone-tracker.service`；原来正在运行（值为 `1`）时再执行 `sudo systemctl start drone-tracker.service`。原来不存在该服务时无需再启动。备份解压会覆盖原有文件；本次新增且旧包没有的模型或程序版本可以保留，不影响旧配置。
+Rollback restores program links, launch entries, configuration, services and their original
+enabled/active states. Rolling back to a version without diagnostics stops/removes the
+new diagnostic service. Release directories and diagnostic originals remain available
+unless separately cleaned. Read new-format logs with the matching retained inspector.
+The rollback script requires `installation.tar` and rejects a first-install backup
+without it. To undo such an installation, stop and disable the newly installed tracker
+and diagnostic services, remove their installed service files, and move aside the new
+configuration, launch entries and current link. Run `systemctl daemon-reload` afterward.
+Retain models, recordings, diagnostics and release directories for inspection. Restore
+only service states that actually existed before installation. Inspect the backup and
+rollback result before removing any retained data.
 
-首次安装没有旧内容时可能不存在 `installation.tar`。此时禁用并删除服务文件，再移走本次安装的 `config/camera.yaml`、`config/cpu-affinity.yaml`、`bin/run-camera`、`bin/cpu-policy.py`、`bin/prepare-display.py` 和 `current` 链接；最后执行 `sudo systemctl daemon-reload`。保留模型、录像和 release 目录供检查，确认后再清理。
+## Build and package locally
 
-## 在本机重新打包
+Run `./build.sh --test` for ARM64 output. Use `--clean` when cache identity requires it;
+`--backend arm64` deliberately selects the older compiler-image workflow. Select the
+resulting backend installation explicitly when packaging.
 
-Run `./build.sh --clean --test` to generate ARM64 output with the default x86_64 compiler image. Use `--backend arm64` only when deliberately selecting the previous ARM64-image workflow. The new per-backend install must be selected explicitly when packaging. 把四个已批准的模型放到本机目录。例如，若生产配置引用 `/opt/drone_tracker/models/fp16/head.rknn`，则本机文件应为 `<模型目录>/fp16/head.rknn`。该目录还须包含 YOLO、模板 Backbone 和搜索 Backbone 文件。共享 `nano_backbone` 保持空值。
-
-在仓库根目录运行：
+Place four approved models in a local directory mirroring target paths. For example,
+`/opt/drone_tracker/models/fp16/head.rknn` corresponds to MODEL_ROOT/fp16/head.rknn.
+Include YOLO, template backbone, search backbone and head; shared nano_backbone stays empty.
 
 ```bash
 ./deployment/package.sh .docker-artifacts/packages \
   --install-root "$PWD/.docker-artifacts/backends/amd64/install/drone_tracker" \
-  --model-root "$PWD/.docker-artifacts/production-models"
+  --model-root /absolute/retained-model-directory
 ```
 
-默认相机配置是 `parameters/rk3576_sc233hgs_production_params.yaml`；默认安装目录是 `.docker-artifacts/install/drone_tracker`；默认 CPU 策略是 `deployment/cpu-affinity.yaml`。三个路径可分别用 `--camera-config`、`--install-root`、`--cpu-policy` 指定存在的绝对路径。例如，切换到 AR0234 时先在该模板中填好四个目标板模型路径，再执行：
+Defaults are parameters/rk3576_sc233hgs_production_params.yaml, the legacy
+`.docker-artifacts/install/drone_tracker`, and deployment/cpu-affinity.yaml.
+Override them with existing absolute `--camera-config`, `--install-root`, `--cpu-policy`
+paths. For AR0234, fill its four model paths and select that template explicitly:
 
 ```bash
 ./deployment/package.sh .docker-artifacts/packages \
   --install-root "$PWD/.docker-artifacts/backends/amd64/install/drone_tracker" \
-  --model-root "$PWD/.docker-artifacts/production-models" \
+  --model-root /absolute/retained-model-directory \
   --camera-config "$PWD/parameters/rk3576_ar0234_camera_params.yaml"
 ```
 
-默认随包携带模型。若目标板已有逐字节相同的四个模型，可追加 `--without-models`。此选项仍要求完整本地模型目录，仍生成 `MODELS.sha256`；目标板 `deploy.sh --check` 会对已有模型核对指纹。缺少配置、策略、安装程序或模型时，打包失败。打包检查输入复制前后是否变化，不会留下成功命名的半成品归档。
+Models are included by default. `--without-models` still requires complete local model
+files and generates MODELS.sha256; board preflight verifies the existing model bytes.
+Missing inputs or changes during copying fail packaging without a successful partial
+archive. Packaging does not compile, contact the board, start capture or change services.
+Run board preflight separately before deployment. Keep models and generated packages
+outside ordinary source control.
 
-旧板端 `--release /绝对路径/安装目录` 用法已改为本机 `--install-root /绝对路径/安装目录`。脚本不再读取板上的 `/opt/drone_tracker/current`、相机配置、模型或 CPU 策略，也不需要 SSH。打包不重新编译、不启动相机、不更改服务。生成包后仍须在目标生产板核对设备拓扑和运行条件，再执行 `sudo ./deploy.sh --check`；容器检查不能替代相机或 NPU 实机验收。
+`.docker-artifacts` and `/tmp` are disposable work areas and may be cleared routinely.
+Retain required release archives, checksums, source/build identities and acceptance
+results in an explicitly retained external location. Paths in historical reports do not
+guarantee surviving files. A successful package check does not establish camera/NPU acceptance.
 
-模型和生成的部署包应放入 Git 忽略的本地产物目录，不提交到源码仓库。
+## Display timing
 
-### 显示计时诊断版本
+`osd.timing_enabled` is startup-only. Its C++ default is false; the production template
+sets true. Save the release path and camera.yaml before editing, then restart to apply.
+Metric boundaries are in the [platform guide](../src/platform/README.md).
 
-需要排查 HDMI 延迟时，在保留当前 release 路径和 `camera.yaml` 副本后，
-使用包含 `add-osd-stage-timing` 实现的版本。将配置 `osd.timing_enabled` 设为
-`true` 并重启服务；默认值为 `false`，不可运行时修改。
-指标边界及日志示例见 `src/platform/README.md` 的“HDMI 显示分段计时”。
+For an authorized board comparison keep models/input/recording/display mode fixed,
+alternate timing off/on for at least three 60-second rounds per side, and record identities,
+Runtime, display mode, capture/consume/display rates, CPU and memory. Investigate a median
+throughput decrease above 5% as an unmet observation-cost target. Restore the original
+configuration/release afterward. Disabling only timing requires false plus restart;
+never replace the system Runtime.
 
-生产对照须在明确测试窗口执行。保持模型、输入、录像、显示模式与其他配置不变，
-交替关闭和开启计时，各至少三轮且每轮至少 60 秒。记录板卡、源码/配置/模型指纹、
-系统 Runtime、显示模式、采集/消费/显示速率及 CPU/内存变化。
-吞吐中位数下降超过 5% 时记录为开销目标未通过并调查。
-测试结束恢复原配置和 release 后重启服务。只回退诊断时可设
-`osd.timing_enabled=false` 后重启；不得覆盖系统 RKNN Runtime。
+## Independent diagnostics
 
-## 独立跟踪诊断
+`drone-tracker-diagnostics.service` is an independent collector. Business Wants/After
+attempt its startup and establish order, without coupling stop. Business exit/restart/OFF
+leaves it running. Its own failures restart separately. The client continues after a
+500 ms connection budget with diagnostics marked unavailable.
 
-`drone-tracker-diagnostics.service` 单独运行收集器。主业务通过 `Wants`（启动时尝试拉起）和 `After`（启动顺序）使用它；这两种关系不绑定停止。主业务退出、重启或 OFF 不停止日志服务。日志服务失败时独立重启，业务在最多 500 ms 的连接预算后继续运行并报告诊断不可用。
+The production template uses basic; other entries default off. Mode is startup-only.
+Off disables only that business client's submissions, not the global collector. Detail
+adds stage timing. Normal client exit waits at most two seconds; service stop has a
+three-second budget. The socket `/run/drone_tracker/diagnostics.sock` is mode 0600 and
+requires the same local user as the collector. Installed service/direct entries currently
+use root. `/var/lib/drone_tracker/diagnostics` contains only diagnostic records; installation
+does not remove prior records or overwrite camera video, ROS logs or bags.
 
-生产配置默认 `diagnostics.mode: basic`，其余入口默认 `off`。模式启动后固定。`off` 仅关闭该业务进程的提交，不会停止全局日志服务。`detail` 增加阶段耗时；业务退出时诊断收尾最多等 2 秒，服务停止预算 3 秒。
-
-通信端点为 `/run/drone_tracker/diagnostics.sock`，权限为 0600，只接受与收集器相同本机用户身份。服务及当前直接入口均以生产安装用户运行（现有服务为 root）。文件目录为 `/var/lib/drone_tracker/diagnostics`，只保存诊断，不覆盖录像、ROS 日志或 bag。部署不会删除历史诊断。
-
-只检查命令仍为 `sudo deployment/deploy.sh --check`。它核对新增 ARM64 程序、动态库、协议版本、服务语法及配置，不启停服务，也不改写诊断日志。正式安装先备份程序链接、入口、配置及两个服务。升级时先停业务，再有限停止旧诊断服务，安装完整匹配版本后先尝试恢复日志服务，再启动业务。诊断启动失败只使记录退化。
+Package-root `sudo ./deploy.sh --check` validates ARM64 programs, dependencies, protocol,
+service syntax and configuration without starting/stopping services or rewriting logs.
+Upgrade backs up first, stops business then old diagnostics within budgets, installs a
+matching set, attempts diagnostics restoration and then business startup. Collector failure
+degrades recording rather than stopping healthy tracking.
 
 ```bash
 sudo systemctl start drone-tracker-diagnostics.service
 sudo systemctl start drone-tracker.service
-sudo systemctl stop drone-tracker.service   # 日志服务继续保存已提交事件
+sudo systemctl stop drone-tracker.service
 sudo systemctl stop drone-tracker-diagnostics.service
 ```
 
-Before direct startup, confirm the independent service is stopped; two collectors cannot share one socket. Run `/opt/drone_tracker/bin/run-diagnostics`. Both service and direct startup validate the installed shared CPU policy, which must allow CPU 6. The launcher pins only itself to CPU 6 and requires an exact `{6}` readback before replacing itself with the collector. It retains ordinary `SCHED_OTHER` scheduling. An excluded or unavailable CPU, setting failure, or readback mismatch returns nonzero without executing the collector or selecting another core. CPU 6 remains shared with HDMI display work. Other processes, threads, the shared allowed range, and business role assignments keep their existing settings. An outer `taskset` cannot select a different core for this installed entry.
+For direct startup, stop the collector service first; two collectors cannot own one
+socket. `/opt/drone_tracker/bin/run-diagnostics` validates the shared CPU policy, requires
+CPU 6 and verifies exact `{6}` readback before exec with ordinary SCHED_OTHER scheduling.
+An outer taskset cannot select another core. Missing/excluded CPU or failed set/readback
+returns nonzero without starting the collector or altering business assignments.
+CPU 6 remains shared with display work.
 
-空间不足、写入失败或同步落后超过 500 ms 会使诊断退化。业务继续；满缓冲计入缺口。维护者应先备份原件，再用匹配的 `rk3576_diagnostic_inspect` 导出至新目录。100 ms 同步周期不保证固定最大掉电损失时间。
-
-回退使用新包内的 `sudo deployment/rollback.sh /opt/drone_tracker/backups/<备份名>`。该脚本恢复原业务、程序链接、入口、配置、服务和启用/运行状态；回退到没有诊断能力的旧版本时停止并移除新诊断服务。所有发布目录和历史诊断原件保留。读取新格式日志时使用已保留新发布目录中的匹配检查器，不能使用旧程序猜测格式。
+Space protection, write errors or synchronization age above 500 ms degrade diagnostics;
+business continues and full buffers record gaps. Back up originals and export with the
+matching inspector into a new directory. A 100 ms sync period does not guarantee a fixed
+maximum power-loss window. See the [diagnostic guide](../src/diagnostics/README.md).
 
 ### Continuous preview upgrade and rollback
 

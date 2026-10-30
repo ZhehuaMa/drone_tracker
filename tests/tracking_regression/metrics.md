@@ -8,7 +8,7 @@ These metrics describe program behavior for each independently configured video 
 
 Event joins use `(run_id,round_id,update_id)` for update and publication calls, and `(run_id,round_id,request_id)` for detector calls. Source frames are mapped by exact `frame_time_us = e0_us + relative_us` equality. There is no nearest-time matching. Samples retain producer sequence numbers and causal identities, so the values can be traced to raw events. Chinese inspector names and numeric event/reason IDs are accepted. Unknown names or malformed required times cause a field-specific error.
 
-The production `PublishEnd` does not contain the output box. Its matching `Output.other_box` supplies the actual realtime box used for publication. `OtherBoxValid` (flag 32) and `Output.values[1]` supply box and tracking validity. `Output.box` is the display box and is not substituted. An enriched collector record may instead explicitly provide `box` and boolean `tracking`. `Complete` (128) and reason `None` distinguish a normal publication return. Failed publication calls remain in raw evidence and invalidate formal results.
+Current diagnostic format 2 takes the published floating box from `ObservationBbox`, joined by run, round and observation sequence. The corresponding bbox and LOS call records describe independent publication outcomes. `Output.box/other_box` retain integer display/prediction evidence and must not replace the floating payload. Historical format 1 joins `PublishEnd` to `Output.other_box`, using `OtherBoxValid` (flag 32) and `Output.values[1]` for box and tracking validity. `Complete` (128) and reason `None` distinguish a normal return. Failed publication calls remain in raw evidence and invalidate formal results.
 
 The calculator requires `DetectStage.Observed` (2048) to identify an actual inference invocation. A stage that fails during input preparation before inference does not count. Successful or inference-failed stages without this marker make the evidence incomplete. A reference build therefore needs the same additive diagnostic marker as its candidate; older ambiguous logs cannot supply a formal inference count.
 
@@ -33,7 +33,7 @@ An invalid interval begins with the first known invalid publication. More invali
 
 ## Descriptor and availability
 
-Every metric carries `metric_version:1`, `unit`, `window`, `sample_count`, `availability` and `reason`. Values use JSON numbers; unknown values use `null`.
+Every metric carries its explicit `metric_version`, `unit`, `window`, `sample_count`, `availability` and `reason`. Established formulas retain version 1; the arbitration and observation extensions below have their own versions. Values use JSON numbers; unknown values use `null`.
 
 | Availability | Meaning |
 |---|---|
@@ -84,32 +84,41 @@ For a frame planned at 15.721 ms, prediction at 100 ms, and publication at 403.7
 | `input_residual_count` | Explicit input rows marked as still queued at teardown; counted by their planned source time |
 | `frame_selected_count`, `frame_skipped_count`, `frame_residual_count` | Actual `FrameSelect`, `FrameSkip/LatestSkip`, `FrameSkip/Termination` events and exact source identities. Input teardown residuals remain separate because they need not have a diagnostic termination event within the window |
 
-The collector checks whole-run conservation across all 1,200 input IDs. Window event counts can differ from input counts because the two use distinct placement rules and teardown can occur after 20 seconds. A complete no-event duration is null; a real count of no actions is zero. Unpaired necessary events or mismatched catchup summary/step counts invalidate the whole record.
+The collector checks whole-run conservation across every configured input ID. The historical reference has 1,200 IDs. Window event counts can differ from input counts because the two use distinct placement rules and teardown can occur after 20 seconds. A complete no-event duration is null; a real count of no actions is zero. Unpaired necessary events or mismatched catchup summary/step counts invalidate the whole record.
 
 ## Frozen baseline and differences
 
-Run these commands from the repository root. All output destinations must be new:
+Use the single suite entry from the repository root:
 
 ```bash
-python3 tests/tracking_regression/baseline.py \
-  runs/group/reference-01 runs/group/reference-02 runs/group/reference-03 \
-  --output baselines/reference-v1
-python3 tests/tracking_regression/compare.py baselines/reference-v1 \
-  runs/group/candidate-01 runs/group/candidate-02 runs/group/candidate-03 \
-  --output comparisons/candidate-v1
+python3 tests/tracking_regression/run_suite.py freeze.yaml
+python3 tests/tracking_regression/run_suite.py compare.yaml
 ```
 
-Freezing requires at least three distinct qualified runs of the fixed 20-second realtime case. The completion checksum manifest must cover identity, input, full exported events, raw `.dtd` or `events.bin`, frame/message tables and metrics. All checksums are rechecked. Frozen references include the completion checksum too. The source snapshot and binary SHA-256 are mandatory; a commit alone cannot describe a dirty build. Existing destinations are refused. Comparing has no baseline update mode.
+Both files use the complete suite configuration described in [README.md](README.md) and
+[configs/example.yaml](configs/example.yaml). Set `operation: freeze` in the first file.
+Its `freeze.baseline_id` names a new baseline and `freeze.cases.<case_id>.runs` lists at
+least three distinct qualified reference runs. Set `operation: compare` in the second
+file. Each `compare.cases.<case_id>` names its frozen `baseline`, explicit `candidates`,
+and optional `thresholds` file. The internal `baseline.py` and `compare.py` modules
+reject direct command-line invocation.
+
+All destinations must be new. Freezing uses this case's resolved duration and windows;
+it does not require the historical twenty-second case. The completion checksum manifest
+must cover identity, input, complete exported events, raw `.dtd` or `events.bin`,
+frame/message tables and metrics. All checksums are rechecked. References include the
+completion checksum. Source snapshot and binary SHA-256 fingerprints are mandatory;
+a commit alone cannot identify a dirty build. Comparing never updates the baseline.
 
 All comparison-group identity fields must be present and nonempty: fixture pixels/timing, attitude, models, algorithm, concrete board, runtime, driver, system library, dependencies, CPU policy, workload, observation, test driver, metric schema and metric calculator. Source code identity sits outside the group and may differ. Every differing identity leaf is reported by field name. Missing identity, altered evidence, unqualified runs and mismatched metric versions/windows return an incomparable report with no performance verdict.
 
 For each scalar or duration statistic, reports retain every round, median and min/max range. If one round has no event, no numeric aggregate or difference is formed for that statistic; the round and availability transition remain visible. Sparse complete reason counts mean real zero counts and can be compared as such.
 
-The difference is candidate minus baseline. Reference gap values 380,400,420 ms and candidate values 240,250,270 ms give medians 400→250 ms, difference -150 ms and relative change -37.5%. A count change 0→2 has relative percentage `null` with `zero_baseline_new_event`. 0→0 is 0%. A ratio .80→.90 has +10 percentage points and +12.5% relative change. The Markdown report uses Chinese, as the specification requires. JSON and CSV use stable field names and retain units and per-round availability.
+The difference is candidate minus baseline. Reference gap values 380,400,420 ms and candidate values 240,250,270 ms give medians 400→250 ms, difference -150 ms and relative change -37.5%. A count change 0→2 has relative percentage `null` with `zero_baseline_new_event`. 0→0 is 0%. A ratio .80→.90 has +10 percentage points and +12.5% relative change. The Markdown report uses Chinese, as implemented by the report generator. JSON and CSV use stable field names and retain units and per-round availability.
 
 ## Optional, explicit thresholds
 
-No thresholds means `decision.status=not_set` and “未设置判定规则” in the report. Changes remain increase/decrease/unchanged/unavailable. There is no inferred overall quality score.
+No thresholds means `decision.status=not_set`; the generated report states that decision rules are unset. Changes remain increase/decrease/unchanged/unavailable. There is no inferred overall quality score.
 
 Provide a separate versioned file when a performance decision is needed:
 
@@ -134,9 +143,9 @@ Provide a separate versioned file when a performance decision is needed:
 }
 ```
 
-Pass it with `--thresholds limits.json`. `lower` allows an increase up to the stated budget; `higher` allows a decrease up to that budget. Types are `absolute` (the metric's unit), `relative_percent` or `percentage_points` (ratios only). Every rule states whether its measurement is required. An unavailable required metric makes the decision `not_evaluated`. A zero-baseline relative threshold cannot be evaluated for a nonzero candidate. The entire rule file, its version and SHA-256 are copied into the comparison evidence; the comparator never modifies it based on results.
+Set `compare.cases.<case_id>.thresholds: limits.json` in the suite configuration. Paths resolve relative to that configuration file. `lower` allows an increase up to the stated budget; `higher` allows a decrease up to that budget. Types are `absolute` (the metric's unit), `relative_percent` or `percentage_points` (ratios only). Every rule states whether its measurement is required. An unavailable required metric makes the decision `not_evaluated`. A zero-baseline relative threshold cannot be evaluated for a nonzero candidate. The entire rule file, its version and SHA-256 are copied into the comparison evidence; the comparator never modifies it based on results.
 
-The comparison CLI returns 2 for incomparable sets, 1 for failed or unevaluable explicit rules and 0 for a completed comparable report with no rules or passing rules. Reports are written in each case. Input/format errors and existing destinations fail without overwriting evidence.
+The suite records comparison operation, evidence comparability and threshold decision separately. A completed comparison without thresholds is not a performance pass. Input/format errors and existing destinations fail without overwriting evidence.
 
 ## Arbitration extensions (metric version 2)
 
@@ -210,3 +219,7 @@ external scans and export. The same bounded observer is required on both experim
 This is an instrumented comparison, not a claim that observation is free or that memory/NPU contention is isolated.
 Recovery totals must be read with actual step counts and per-step durations; different work amounts cannot
 be attributed to scheduling merely because total duration changed.
+
+## Evidence retention
+
+Keep the complete immutable run and comparison tree in an explicitly retained external location when results must remain reproducible. `.docker-artifacts` and `/tmp` are disposable work areas and may be cleared at any time. A recorded historical path does not guarantee that its files still exist.

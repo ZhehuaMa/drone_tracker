@@ -1,22 +1,22 @@
-# RK3576 HDMI 显示构建与部署
+# RK3576 HDMI display: build and operation
 
-原 HDMI 管线变更的既定任务已完成（39/39）。RKNN 同步完成问题已修复；生产板在桌面关闭时已完成同进程 20 轮启停及额外 610 秒联合负载，并完成人工画面与恢复流程验收。具体证据见 [原管线最终验收记录](../openspec/changes/integrate-rk3576-hdmi-osd/final-validation.md)。新增参考 HUD 视觉对齐的实施与实机验收进度独立记录在 [HUD 对齐验证记录](../openspec/changes/archive/2026-09-27-align-hud-with-rk-hdmi-osd/validation.md)。原管线的负载数据不能代替新 HUD 的性能验收。
+OSD means the text and graphics over the video. The display runs inside `drone_tracker_node`, using the existing camera source and shared read-only frames. During tracking it displays an actually consumed image with its own target result. Continuous camera preview displays fresh unboxed images before ON and after OFF. It never opens a second camera.
 
-OSD（屏幕信息叠加）在 `drone_tracker_node` 进程内显示跟踪器已消费的图像、同次显示框和外部遥测。不启动第二个采集器。偶数尺寸灰度帧通过 RGA 的中性色度路径处理；奇数尺寸灰度帧先在显示线程复制为等值 BGR，再缩放，不裁切输入。图像与目标层由 DRM/KMS（Linux 显示控制接口）在一次原子提交中切换，即两个层作为同一组交给显示器。
+RGA performs display scaling and color conversion. DRM/KMS, the Linux display interface, submits video and overlay planes together. Model preprocessing is separate from this display path. The renderer does not crop odd-sized grayscale input: it converts such input to equal-channel BGR before scaling when required.
 
-## 构建
+## Build
 
-The current default entry point cross-compiles ARM64 with the x86_64 image. It enables HDMI and recording at build time; the runtime `osd.enabled` parameter still controls display operation:
+From the repository root:
 
-```sh
+```bash
 ./build.sh --test
 ```
 
-Use `./build.sh --backend arm64 --test` for the explicit ARM64-image fallback. For native x86_64 portable OSD checks, use the standalone command below. Complete paths, target libraries and packaging limits are in [the x86_64 image guide](../dockerfiles/README.amd64.md).
+The default x86_64 image cross-compiles ARM64 output and enables HDMI and recording support. `--backend arm64` explicitly selects the ARM64-image fallback. The runtime `osd.enabled` parameter controls display creation. See [the image guide](../dockerfiles/README.amd64.md) for target SDK paths, test launchers, and packaging.
 
-The following manual configuration is for a native ARM64 SDK environment. In the x86_64 image the repository entry point supplies the cross toolchain and target SDK paths automatically:
+For a native ARM64 ROS 2 Humble SDK environment, manual configuration can use:
 
-```sh
+```bash
 source /opt/ros/humble/setup.bash
 colcon build --packages-select drone_tracker --cmake-args \
   -DCMAKE_BUILD_TYPE=Release \
@@ -28,238 +28,173 @@ colcon build --packages-select drone_tracker --cmake-args \
   -DRKNN_LIBRARY=/usr/lib/librknnrt.so
 ```
 
-`RKNN_INCLUDE_DIR` 必须包含适配目标 Runtime 的 `rknn_api.h`。链接和部署使用生产板系统 Runtime 2.3.2、驱动 0.9.8，不复制容器 Runtime 到系统。HDMI 构建通过 pkg-config 查找 `libdrm`、`librga` 及其开发头文件。不存在外部 `rk_hdmi_osd` 仓库依赖。
+The x86_64 entry point supplies the cross toolchain and target SDK paths automatically. HDMI configuration uses pkg-config to find `libdrm`, `librga`, and their development headers. Disabling `DRONE_TRACKER_BUILD_OSD` avoids display SDK discovery. Use the system RKNN Runtime 2.3.2 and RKNPU driver 0.9.8 on the production board; do not overwrite Runtime with a container copy.
 
-`DRONE_TRACKER_BUILD_OSD=OFF` 不查找显示 SDK。公共显示逻辑和模拟测试可独立构建：
+Portable drawing and policy checks do not need HDMI hardware:
 
-```sh
+```bash
 cmake -S src/osd -B /tmp/drone-osd-tests -DCMAKE_BUILD_TYPE=Release
 cmake --build /tmp/drone-osd-tests
 ctest --test-dir /tmp/drone-osd-tests --output-on-failure
 ```
 
-可选低层反馈需要 ROS 2 `quadrotor_msgs`，先加载其安装环境，再设置 `DRONE_TRACKER_OSD_LOW_LEVEL_FEEDBACK=ON`。该开关要求 HDMI 构建同时开启。缺少消息包时 CMake 明确失败。已核对的 `LowLevelFeedback` 电池等级为 0 未知、1 正常、2 低电量、3 严重；编译时检查这些常量，避免静默误读其他版本。
+The optional `DRONE_TRACKER_OSD_LOW_LEVEL_FEEDBACK=ON` adapter also requires OSD and a matching `quadrotor_msgs` installation. Its checked battery levels are unknown=0, normal=1, low=2, and critical=3. Missing or incompatible definitions fail compilation.
 
-程序安装入口仍为 `lib/drone_tracker/drone_tracker_node`。OSD 是静态内部库，不安装单独显示程序或 SDK。参考 ASCII 点阵字库在 `src/osd/reference_font.h`，来源是 DejaVu Sans Mono；`src/osd/DEJAVU_FONT_LICENSE.txt` 保存授权原文。固定中文提示的字形及其独立许可仍在本仓库维护。字体已嵌入源码；构建与运行均不读取本机 `rk_hdmi_osd` 目录。
+The installed node remains `lib/drone_tracker/drone_tracker_node`. OSD is an internal static library. Fonts are embedded, including the DejaVu-derived ASCII font and existing localized hints. Licenses are retained in `src/osd/FONT_LICENSE.txt` and `src/osd/DEJAVU_FONT_LICENSE.txt`. Build and runtime do not read a sibling `rk_hdmi_osd` checkout.
 
-## 设备和启动参数
+## Devices, defaults, and startup
 
-启动前检查 HDMI 已连接且指定模式存在。必须停止桌面显示服务，并确认桌面已释放显示设备。仅关闭窗口、屏幕变黑或采集 OFF 都不满足这一条件。程序不会停止或恢复桌面服务、调整 CPU 频率或绑核。
+Verify the current display connector, mode, camera topology, and device users before starting. Access is needed to the selected DRM card, DMA heap, RGA devices, and readable debugfs client records. Node startup does not mount debugfs or elevate privileges.
 
-后端调用 `drmSetMaster()` 请求显示控制权，再读取目标设备对应的 `/sys/kernel/debug/dri/<设备次设备号>/clients`。只有内核记录中恰好存在本进程的一个客户端，且 `master=y`（持有显示控制权），才继续分配显示缓冲。生产板 root 下 `drmIsMaster()` 和 `drmSetMaster()` 都可能误报成功，不能仅凭返回值认定独占。
+The backend requests display control with `drmSetMaster()`, then verifies `/sys/kernel/debug/dri/<device-minor>/clients`. It proceeds only when the kernel reports exactly one client belonging to this process with `master=y`. A successful DRM API return alone is insufficient. Unreadable/unrecognized records, competing clients, or missing ownership reject initialization and release acquired resources.
 
-该部署需要可读取上述 debugfs 内核调试记录。记录不可读、格式无法识别、有其他客户端或本进程不是 master 时，初始化拒绝并关闭已打开的 DRM 文件。此时应检查权限、桌面服务与设备占用，不绕过核验。节点不自动挂载 debugfs 或提升权限。
-
-访问 `/dev/dri/card0`、`/dev/dma_heap/system` 以及系统 RGA 所需设备必须具备相应权限。权限分配由部署环境负责。默认不会提升程序权限。
-
-`parameters/rk3576_ar0234_camera_params.yaml`、`parameters/rk3576_sc233hgs_production_params.yaml` 和 `parameters/rk3576_video_params.yaml` 包含如下启动参数：
-
-| 参数 | 默认值 | 含义 |
+| Parameter | Declaration/default value | Meaning |
 |---|---|---|
-| `osd.enabled` | false | 是否启动 HDMI 显示 |
-| `osd.drm_device` | `/dev/dri/card0` | 显示设备 |
-| `osd.connector` | `HDMI-A-1` | 必须精确匹配的接口名称 |
-| `osd.width` / `osd.height` | 720 / 480 | 输出模式，偶数且在 2–4096 范围 |
-| `osd.refresh_hz` | 60.0 | 名义刷新率，允许对应约 59.94 Hz 模式 |
-| `osd.frame_stale_ms` | 1000 | 无新结果包超过此时长后清框并提示等待 |
-| `osd.telemetry_timeout_ms` | 2000 | 遥测有效期限，使用不受校时影响的单调时钟 |
-| `osd.craft_name` | FPV | 最多 24 个可打印 ASCII 字符 |
-| `osd.battery_cells` | 0 | 电池节数；0 表示未知，不按整包电压猜测 |
+| `osd.enabled` | false | Create HDMI resources |
+| `osd.render_path` | `cached-overlay` | Renderer; `legacy` is the alternative |
+| `osd.timing_enabled` | false | Collect display-stage durations |
+| `osd.drm_device` | `/dev/dri/card0` | Display device |
+| `osd.connector` | `HDMI-A-1` | Exact connector name |
+| `osd.width`, `osd.height` | 720, 480 | Even output dimensions, 2..4096 |
+| `osd.refresh_hz` | 60.0 | Nominal mode rate; corresponding approximately 59.94 Hz modes are accepted |
+| `osd.frame_stale_ms` | 1000 | Clear targets and show waiting when results stop |
+| `osd.telemetry_timeout_ms` | 2000 | Monotonic telemetry validity interval |
+| `osd.craft_name` | `FPV` | Up to 24 printable ASCII characters |
+| `osd.battery_cells` | 0 | Unknown; never infer the count from pack voltage |
 
-两个超时的合法范围均为 1–3600000 毫秒，电池节数为 0–32，刷新率为 1–240 Hz。尺寸范围只保证配置合法；实际设备必须提供该模式，文字可读性应在实际尺寸验收。所有 `osd.*` 修改均需重启。
+Declaration defaults are not every template's runtime configuration. [The production SC233HGS template](../parameters/rk3576_sc233hgs_production_params.yaml) explicitly enables OSD, timing, independent recording, and ROS bag. AR0234 and video templates disable these features. Inspect the selected YAML before use. All `osd.*` parameters are fixed at startup. Timeouts accept 1..3600000 ms, battery cells 0..32, and refresh rate 1..240 Hz. Legal dimensions do not prove the physical mode exists or text is readable.
 
-`visualized_result` 只控制既有 ROS 调试图像，与 HDMI 开关独立。未编译 OSD 时启用 `osd.enabled` 会明确失败。显示初始化失败会回收资源并使节点初始化失败；运行中显示失败只停用显示，原跟踪和 ROS 发布继续，恢复 HDMI 需要重启节点。
+The installed `/opt/drone_tracker/bin/run-camera` entry applies the CPU policy and invokes display preparation. Preparation stops `display-manager.service` and `lightdm.service`, then checks display-device release when OSD is enabled. The node also applies configured CPU roles. The display backend itself does not manage desktop services. Stopping the tracker does not automatically restore the desktop. See [deployment instructions](../deployment/README.md) for service and manual-entry behavior.
 
-## 遥测与显示行为
+For direct `ros2 run` operation outside that wrapper, arrange desktop shutdown and device release first. A typical board sequence, only within an authorized maintenance window, is:
 
-标准遥测订阅 IMU、飞行状态、遥控链路、电池、GPS、气压、温度、失效保护和独立雷达状态。完整话题与消息类型见本变更 `specs/osd-ros-telemetry/spec.md`。IMU、GPS、气压、温度和 RSSI 采用 best-effort（允许丢弃旧消息以优先新数据）；其他输入采用 reliable（可靠传递），深度均为 10。可用 ROS remap 替换话题名。
-
-For example, remap the RSSI input to an isolated telemetry topic:
-
-```sh
-ros2 run drone_tracker drone_tracker_node --ros-args \
-  --params-file /path/to/rk3576_video_params.yaml \
-  -p osd.enabled:=true -r /mavros/rc/in:=/my_bridge/rc_in
-```
-
-必须先填写参数文件中的既有模型和输入配置。此示例不新增模型默认值，也不代表相机已标定。
-
-返航点仅在连接与定位都有效的解锁上升沿记录。解锁时没有定位，本轮不补记后来的位置。气压地面参考只在连接、未解锁和落地状态均新鲜时更新。电池 `charge` 是剩余 Ah：容量 13 Ah、剩余 10 Ah 对应已耗 3000 mAh。未知、非法或过期值不会伪装为有效零值。
-
-ON 开始新轮；重复 ON 不新增轮次。ON/OFF 短提示只在当前轮保留约两秒，使用不受校时影响的单调时钟计时。OFF、EOF 和输入故障保留最后实际显示的纯视频底图，清框并显示对应中文提示，遥测继续更新。新轮首包之前旧底图保持冻结标记。左下 `F` 后面的数字是本轮已消费帧的真实序号；它不是采集时间。左下时钟使用运行设备的本地系统日历时间，显示到十分之一秒；设备时区改变会影响该读数。
-
-### RSSI signal strength
-
-RSSI here means the flight controller's remote-control receive link quality.
-The input is `/mavros/rc/in` (`mavros_msgs/msg/RCIn`), delivered with best-effort
-QoS and depth 10. The source contract is `apm_bridge` branch `rk3576`, commit
-`390668d2d822731e95651cd3b88547e5912e66a1`: `PayloadMedium.rssi_pct` is copied
-directly into `RCIn.rssi` as an integer percentage from 0 through 100.
-The older service installed on the production board is not the authority for
-this source contract. Do not divide the value by 254. Other publishers must
-convert their values to this percentage contract before publishing.
-This value may represent receiver RSSI or CRSF link quality. It is not video
-signal strength or received power in dBm.
-
-The former temperature row is removed. The main-font `RSSI` label starts at
-logical (22,278). The former battery gauge now displays only RSSI: its track
-starts at (20,330), and its 148-pixel interior fills yellow according to
-`floor(148 * percentage / 100)`. The percentage starts at (178,318), once only.
-For example, RSSI 85 with battery charge 96% displays 125 yellow pixels and
-`85%`. Even weak valid signals stay yellow. Battery voltage, cell voltage,
-current, consumed mAh, and existing battery warnings retain their own sources
-and display rules. Battery charge no longer drives this gauge.
-
-A valid zero displays `0%` and an empty track. Missing input, values above 100
-(including 255), and expired input display `--%` with no yellow fill. RSSI has
-its own monotonic receipt timestamp and uses `osd.telemetry_timeout_ms`
-(default 2000 ms). It is valid at exactly 2000 ms and unknown after that.
-Battery, temperature, and video updates cannot keep old RSSI alive. Updates
-continue during preview and frozen video. Temperature reception remains
-available internally but does not draw a temperature label, value, or placeholder.
-
-### 参考 HUD 的位置与数据
-
-视觉基准固定为 `rk_hdmi_osd` 提交 `3e605a26c7c135b468ef2a3638ffd47144594603` 的 720×480 默认布局。主字为 16×32，小字为 8×16。画布缩放时，机名、四角角标、左右信息列和图形一起缩放；目标框仍用视频几何结果定位。元素坐标、颜色和参考快照的完整对照见 [HUD 对齐验证记录](../openspec/changes/archive/2026-09-27-align-hud-with-rk-hdmi-osd/validation.md)。
-
-| 区域 | 显示内容 | 缺失或过期时 |
-|---|---|---|
-| 左上与左列 | 机名、副标题、高度、地速、航向、卫星定位等级、RSSI 标签 | 未知数值显示 `--`；地速从 m/s 换算为 km/h，定位等级取 `GPSRAW.fix_type`。 |
-| 上中与中心 | 琥珀色返航箭头和距离、红色圆环准星、白色俯仰梯 | 返航所需信息或姿态过期时隐藏相应图形。红色准星不表示已锁定目标。 |
-| 右列 | 飞行模式、跟踪状态、解锁计时、电池整包电压、单节电压、电流、已耗 mAh | 单节电压与已耗电量没有可信输入时显示 `--`；不按电压猜电芯节数。 |
-| 左下与底部 | RSSI 黄色条与百分数、本地时钟、帧序号、实时消息、ON/OFF 短提示和独立告警 | RSSI 未知时清除填充并显示 `--%`；冻结与故障时中文提示占用消息区，告警保留在右侧。 |
-| 视频中的单目标 | 状态色角框；Tracking 另有外角框、中心菱形与标签底板 | 无有效框、等待或冻结时全部清除。算法未提供置信度或编号，画面不会造出百分比、`T01` 或第二目标。 |
-
-### Confirmed mission display
-
-`ON MISSION` requires a received `/fpv/mission_state=true` event plus fresh
-`/mavros/state` with `connected=true`, `armed=true`, and `guided=true`. The bridge
-sets `guided` from the flight controller's OFFBOARD flag. Mode text such as
-`OFFBOARD|ANGLE` is accepted without exact string matching. A `MISSION` trigger
-alone does not authorize the banner. Tracking-state publications do not end it.
-Target colors, RSSI, arming text, and preview remain governed by their existing rules.
-
-Mission status is an event: its publisher sends starts and ends without a heartbeat.
-A received `true` remains remembered while flight reports stay valid. Flight status
-is periodic and expires using its original monotonic receipt time and
-`osd.telemetry_timeout_ms` (default 2000 ms). A monotonic clock measures elapsed
-time independently of calendar corrections. Repeated 10 Hz telemetry snapshots do
-not renew that time. Each received mission and flight transition reaches the policy
-directly, so a short `false` or OFFBOARD exit cannot disappear between summaries.
-
-A start waits hidden for OFFBOARD confirmation. Fresh armed ACRO during entry
-keeps it pending. After confirmation, mission `false`, OFFBOARD exit, disarm,
-disconnection, or flight expiry clears the banner. `OFF` and `DISMISS` cancel it
-before tracking cleanup; `DISMISS` leaves tracking running. An invalidated attempt
-cannot resume on repeated `true` or flight recovery. Another received `false`
-followed by a later `true` is required. Cancellation after an already received
-`false` preserves that end boundary.
-
-For example, a target can remain `Tracking=2` while mission `false` arrives. The
-screen restores `TRK TRACKING` within 500 ms on a healthy display, without a new
-frame or tracker-state publication. Flight expiry must clear the banner by the
-last flight receipt plus timeout plus 500 ms (2500 ms with defaults). This also
-applies when inference or recording cleanup is blocked. Prepared obsolete overlays
-are rejected before hardware handoff. Video admission uses a separate version;
-valid prepared video is retained for a redraw with the current overlay.
-Already-authorized hardware work completes safely before the following redraw.
-
-After a tracker restart, OFFBOARD reports cannot reconstruct a missed mission start.
-The banner remains hidden until a start is actually received. If the interceptor dies
-without an end event while valid armed OFFBOARD reports continue, these topics cannot
-prove mission termination. The banner can remain visible. Fixing that gap requires a
-different external status contract and is outside this change.
-
-Use `journalctl -u drone-tracker.service -f` and filter for `Tracker trigger received`,
-`Tracker state published`, `OSD mission`, and `OSD display`. `OSD mission` records
-policy transitions with `phase`, `reason`, `overlay_revision`, `attempt`, and
-`monotonic_us`. The attempt is a local diagnostic counter, not an interceptor mission
-identifier. Reasons distinguish `mission_true`, `offboard_confirmed`, `mission_false`,
-`offboard_lost`, `disarmed`, `disconnected`, `flight_status_stale`, `trigger_off`, and
-`trigger_dismiss`. Unchanged reports do not generate transition logs.
-
-`OSD display` reports successful HDMI submission separately from receipt and policy
-decisions. Correlate its `overlay_revision`, `attempt`, and `monotonic_us` with the
-transition and inspect `mission`, `hud`, `stream`, `round`, `source_sequence`, and
-`kind`. Visible target labels remain removed, so `target_label=""`. `has_video=1`
-means a retained video base exists; increasing source sequences establish continuing
-preview. For the continuous camera, `OFF` clears target decorations and shows the
-tracking-off hint while new preview continues. Other input modes keep their existing
-freeze behavior. Logs alone do not establish physical-screen timing acceptance.
-
-电流取自 `/mavros/battery`。HUD 对有效电流显示绝对值，例如输入 `-3.0 A` 显示 `CUR 03.0A`；未知或非有限值显示 `CUR --A`。该显示转换不修改原始 ROS 消息。
-
-严重告警为红色，约每 300 毫秒切换可见性；连接异常为琥珀色。`cached-overlay` 只重画变化区域，`legacy` 每次完整绘制，两者使用同一元素定义。可重复生成的纯 CPU 快照、差异图及生成命令保存在 HUD 对齐变更目录。参考快照里的两个人造目标与虚构置信度仅用于识别视觉差异。
-
-内部计数 `submitted/replaced/displayed/refreshes` 分别表示接受的新包、槽内替换包、实际显示的新包和成功画面提交。节点日志将最后一项标为 `commits`。`refreshes` 是提交次数，不是显示器物理扫描次数；屏幕刷新率另由模式信息报告。相同帧重复提交不能计为新视频帧率。
-
-节点另报告累计 `submit_calls`（提交调用次数）、`submit_mean_us`（平均微秒）和 `submit_max_us`（最大微秒）。统计覆盖完整提交调用及被替换包的释放，不包括包构造或硬件完成等待。采样期间仍可能发生新提交，累计值用于运行诊断；它们不代表相机到屏幕的端到端延迟。
-
-## 部署与回退
-
-1. 为当前 OSD 关闭版本保留独立安装目录和配置，记录二进制及系统 Runtime 的 SHA-256。
-2. 把 OSD 开启版本安装到另一个目录，检查 `ldd -r` 无缺库或未解析符号。
-3. 停止桌面服务并确认设备释放，再启动 OSD。先用受控输入验证，再用已批准模型和明确相机/视频运行。正式验收必须记录具体生产板、模型指纹和输入身份。
-4. 同一节点进程至少执行 20 轮 ON/OFF，再额外持续运行至少 10 分钟，并比较相同输入下 OSD 开关的吞吐和资源占用。
-
-生产板已验证的桌面服务为 `lightdm`。在板端执行以下顺序；`sudo` 表示由有权管理服务的部署人员操作：
-
-```sh
+```bash
 sudo systemctl stop lightdm
-systemctl is-active lightdm  # 预期 inactive；该状态的退出码为非零
 sudo cat /sys/kernel/debug/dri/0/clients
-# /dev/dri/card0 对应上面的 0；预期只剩表头，没有客户端行。
-# 若仍有客户端，查明占用者并正常结束，确认释放后再启动节点。
+# For card0, verify that only the table header remains before starting.
 source /opt/ros/humble/setup.bash
 source /path/to/install/setup.bash
 ros2 run drone_tracker drone_tracker_node --ros-args \
-  --params-file /path/to/rk3576_video_params.yaml -p osd.enabled:=true
-# 节点退出后执行；采集 OFF 时不能执行恢复操作。
+  --params-file /absolute/path/validated-camera.yaml
+# After the node has exited and released the display:
 sudo cat /sys/kernel/debug/dri/0/clients
-# 确认 OSD 已退出且列表只有表头后，按需恢复桌面。
 sudo systemctl start lightdm
-systemctl is-active lightdm  # 预期 active
 ```
 
-OSD 整个运行期间保持桌面关闭。OFF 只停止采集，HDMI 仍显示冻结底图并更新遥测，因此继续占有显示设备。正确顺序是“停止桌面 → 确认设备释放 → 启动 OSD → 退出并释放显示资源 → 按需恢复桌面”。若退出后仍有显示客户端，先查明并正常释放，不立即恢复桌面。
+OFF is insufficient for desktop restoration: the process retains HDMI, and continuous-camera mode also retains capture. Stop the service or node and confirm resource release first. OSD initialization failure fails node initialization. Runtime display failure disables display while healthy tracking/ROS output continues; recovery requires restart.
 
-回退方法一：在同一安装中设置 `osd.enabled=false` 并重启。回退方法二：若缺少显示动态库导致进程无法启动，切回已保留的 OSD 关闭安装和配置。两种方法均不更换系统 RKNN 库。恢复桌面之前，均须确认原 OSD 进程退出并释放显示设备。
+## Video, tracking, and control
 
-新 HUD 部署时先保留当前 `/opt/drone_tracker/current` 所指发布目录、配置和模型指纹，再把新包部署到独立发布目录。若屏幕不可读、配对异常或负载不达标，切回原 `current` 目标和原配置，并确认 OSD 进程已退出后再恢复桌面。当前实施与实机验收记录见 [HUD 对齐验证记录](../openspec/changes/archive/2026-09-27-align-hud-with-rk-hdmi-osd/validation.md)。模拟测试、RGA 调用成功或参考程序曾经运行，均不能替代本项目的屏幕配对和生产负载验收。
+Continuous preview applies to RK3576 ROS camera input with `osd.enabled=true`, for both render paths. Startup initializes parameters, models, message interfaces, and display before opening capture. The screen starts with black waiting video and available telemetry until a qualified frame arrives.
+
+ON starts tracking and explicitly enabled recording/bag sessions. OFF closes new tracking-result and recording reception, clears target decorations, and returns to fresh preview without waiting for model or storage cleanup. Duplicate ON keeps the active round. Pending rapid ON/OFF changes retain only the latest desired state. SC233HGS warmup belongs to the camera stream and is not repeated on ON.
+
+During Running, video and targets remain paired to actually consumed tracker frames. A 60 FPS capture rate does not guarantee 60 new HDMI frames per second. A blocked inference can reach stale-result waiting; OFF resumes preview while safe cleanup continues. Preview frames never publish bbox, LOS, tracker state, or `/fpv/tracker_image`. Debug-image publication remains controlled by `visualized_result` within an active consumed-frame window. RK3576 bags never record that image topic.
+
+Camera startup/runtime failure ends continuous service with nonzero status so the existing service restart policy can recover. ON does not reopen a failed continuous stream. Tracking failure ends only the round if preview remains healthy. Recording/bag/display failures preserve their own isolation boundaries.
+
+Finite video, OSD-disabled cameras, independent tools, and Jetson retain their existing round-based input lifetime. In finite-video mode OFF/EOF freezes the last video base, clears targets, and continues available telemetry. A new round rejects old results. In continuous-camera mode OFF keeps accepting fresh unboxed preview. The stale-frame timeout clears decorations without falsely reporting EOF or TargetLost.
+
+## Telemetry and HUD
+
+HUD means the text and graphics presented to the operator. The base geometry derives from the 720×480 `rk_hdmi_osd` reference at commit `3e605a26c7c135b468ef2a3638ffd47144594603`; subsequent approved changes define the current fields. Main characters are 16×32 and small characters 8×16. Output resizing scales the HUD, while video-space target geometry is transformed separately.
+
+Telemetry topics, types, and reliability are defined in [the telemetry specification](../openspec/specs/osd-ros-telemetry/spec.md). IMU, GPS, pressure, temperature, and RSSI inputs use best-effort delivery; other status inputs use reliable delivery, with depth 10 for these OSD subscriptions. ROS remapping can select a compatible source, for example `-r /mavros/rc/in:=/my_bridge/rc_in`. Fill valid input/model parameters before starting.
+
+| Area | Current content | Unknown/stale behavior |
+|---|---|---|
+| Upper left/left column | Craft name, subtitle, altitude, groundspeed, heading, fix grade, RSSI label | Numeric placeholders use `--`; speed converts m/s to km/h; fix grade uses GPSRAW |
+| Upper center/center | Amber home arrow/distance, red circular reticle, white pitch ladder | Hide geometry whose required position or attitude is unavailable; the reticle is not a target lock |
+| Right column | Flight mode, tracking/mission text, arm timer, battery values, current, consumed mAh, latitude/longitude | Independent placeholders; no inferred cell count or charge |
+| Lower left/bottom | RSSI gauge/percentage, local calendar clock, frame identity, messages, trigger hint, persistent arm status | Preserve independent warnings and applicable waiting/freeze hints |
+| Target | State-colored corner geometry; Tracking adds outer corners and a center diamond | Clear when invalid, stale, or stopped; no visible target label, invented confidence, ID, or second target |
+
+Home is captured only at an armed rising edge with fresh connection and valid position. Missing position at arming is not filled later in that arm cycle. Ground pressure reference updates only with fresh connected/disarmed/landed status. Battery `charge` is remaining Ah: 13 Ah capacity and 10 Ah remaining mean 3000 mAh consumed. Current from `/mavros/battery` displays its absolute value, so -3.0 A displays `CUR 03.0A`; unknown/non-finite current displays `CUR --A`. Original messages are unchanged.
+
+Severe warnings blink red approximately every 300 ms; connection warnings are amber. The clock is the runtime device's local calendar time to tenths of a second, so timezone changes affect it. Frame identity is not capture time. `TRIG ON/OFF` is a separate cyan two-second control hint at logical (22,80); it does not establish that tracking is running.
+
+### RSSI signal strength
+
+RSSI here describes the flight controller's remote-control receive-link quality. `/mavros/rc/in` supplies `mavros_msgs/msg/RCIn.rssi` as integer percent 0..100, following `apm_bridge` commit `390668d2d822731e95651cd3b88547e5912e66a1`. Do not divide by 254. Other publishers must convert to this percent contract. The value can represent receiver RSSI or CRSF link quality; it is not video strength or dBm received power.
+
+The `RSSI` label begins at logical (22,278). The gauge begins at (20,330), filling a 148-pixel interior in yellow by `floor(148 * percentage / 100)`. Percentage text begins at (178,318). RSSI 85 produces 125 yellow pixels and `85%`, independently of battery charge. Weak valid values remain yellow. Battery charge does not drive the gauge, and temperature reception no longer produces a visible row.
+
+Zero is valid and displays `0%` with an empty gauge. Missing, expired, or above-100 values, including 255, display `--%` without fill. RSSI uses its own original monotonic receipt time and `osd.telemetry_timeout_ms`: it remains valid at exactly the timeout and becomes unknown afterward. Other telemetry/video updates do not refresh it.
 
 ### Coordinates and persistent arm status
 
-The right column now includes `LAT` and `LON` below `MAH`. Position comes from
-`/mavros/global_position/global` (`sensor_msgs/msg/NavSatFix`). For example,
-`(31.2304, 121.4737)` displays `LAT +31.230400` and `LON +121.473700`.
-These are signed decimal degrees: a minus sign means south latitude or west
-longitude. Six decimal places describe display formatting, not GPS accuracy.
-A valid zero coordinate displays `+0.000000`; rounded negative zero uses the
-same spelling. No arm state, home position, or GPSRAW message is required.
-Missing, invalid, or expired position displays `LAT --` and `LON --` together.
-Position keeps the existing monotonic timeout (`osd.telemetry_timeout_ms`,
-2000 ms by default), independently of battery or other telemetry.
+`LAT`/`LON` come from `/mavros/global_position/global` (`sensor_msgs/msg/NavSatFix`). Coordinates (31.2304,121.4737) display `LAT +31.230400` and `LON +121.473700`. Negative latitude/longitude means south/west. Six decimals describe formatting, not positional accuracy. Valid zero, including rounded negative zero, displays `+0.000000`. Arm state, home capture, and GPSRAW are not prerequisites. Invalid, missing, or expired position changes both rows to `LAT --` and `LON --`.
 
-Both coordinate rows use the same white 16×32 main font and black outline as
-`MAH`. On the 720×480 logical canvas they start at y=314 and y=350. Their full
-text bounds, including the outline, end at x=702. The longest valid longitude,
-`LON -180.000000`, starts at x=458. Output resizing scales the whole layout.
+The coordinate rows use the outlined white main font at y=314 and y=350; full bounds end at x=702. The longest longitude `LON -180.000000` begins at x=458. Position has its own monotonic freshness interval.
 
-The bottom center always shows one arm status, using the main font and black
-outline. Its text bounds are centered at x=360, with their top at y=430:
+The bottom center always shows one outlined main-font arm state, centered at x=360 with top y=430:
 
-| Current flight state | Text | Color |
+| Flight state | Text | Color |
 |---|---|---|
 | Fresh, connected, armed | `ARMED` | Green |
 | Fresh, connected, disarmed | `DISARMED` | White |
-| Missing, expired, or disconnected | `ARM --` | Amber |
+| Missing, stale, or disconnected | `ARM --` | Amber |
 
-This state comes from `/mavros/state` (`mavros_msgs/msg/State`), and continues to
-update during preview, tracking, waiting, and frozen video. It has no blink or
-three-second limit. Tracking `ON`, `OFF`, and `MISSION` do not arm or disarm the
-aircraft. The separate cyan `TRIG ON/OFF` hint now starts at (22,80), below the
-left subtitle and above altitude. Its existing two-second lifetime is unchanged.
-The right-side `ON MISSION` banner, tracking phase hints, freeze text, warnings,
-and target drawing keep their existing rules. Both `legacy` and `cached-overlay`
-renderers share these fields; cached updates clear old longer text when values
-become shorter or unknown.
+This follows `/mavros/state` during preview, tracking, waiting, and frozen video. It has no blink or three-second expiry. Tracking control messages do not arm or disarm the aircraft.
+
+### Confirmed mission display
+
+`ON MISSION` requires a received `/fpv/mission_state=true` event and fresh `/mavros/state` with `connected=true`, `armed=true`, and `guided=true`. The bridge derives guided status from the flight controller's OFFBOARD flag; text such as `OFFBOARD|ANGLE` need not exactly equal a mode string. A MISSION trigger alone is insufficient. Tracking-state publications do not end the banner or change mission authorization.
+
+Mission starts/ends are events without a heartbeat. Flight status is periodic, using its original monotonic receipt time and `osd.telemetry_timeout_ms`, default 2000 ms. Repeated summary snapshots do not renew that receipt. Every received mission/flight transition enters the policy directly, preserving even short false events or OFFBOARD exits between summaries.
+
+A mission start waits hidden for first OFFBOARD confirmation. Fresh armed ACRO keeps it pending. After confirmation, mission false, OFFBOARD loss, disarm, disconnect, or flight expiry clears it. OFF and DISMISS cancel before tracking cleanup; DISMISS preserves tracking. Repeated true or flight recovery cannot revive an invalidated attempt: a later false then true is required. Cancellation after an already received false preserves that end boundary.
+
+For example, if a target stays Tracking=2 while mission false arrives, a healthy display restores `TRK TRACKING` within 500 ms without waiting for another frame or tracker-state publication. Flight expiry clears by last receipt plus timeout plus 500 ms, 2500 ms with defaults. This remains independent of blocked inference/recording cleanup. Prepared stale overlays are rejected before hardware handoff; valid prepared video can be redrawn with the current overlay. Already submitted hardware work completes safely.
+
+A tracker restart cannot reconstruct a missed volatile mission start from OFFBOARD alone. If the interceptor dies without an end event while fresh armed OFFBOARD reports continue, the existing topics cannot prove mission termination and the banner can remain visible. These are external-message limitations.
+
+`journalctl -u drone-tracker.service -f` exposes trigger receipt, tracker-state publication, `OSD mission` policy transitions, and `OSD display` submissions. Mission logs carry `phase`, `reason`, `overlay_revision`, `attempt`, and `monotonic_us`. Attempt is a local counter, not an interceptor mission ID. Reasons distinguish start, confirmation, end, OFFBOARD loss, disarm, disconnect, expiry, OFF, and DISMISS. Unchanged reports do not generate transitions.
+
+Correlate display submission with overlay revision, attempt, stream, round, source sequence, and kind. `target_label=""` is always retained because visible target labels have been removed. `has_video=1` means a retained base exists; increasing source sequences show continuing preview. Submission logs do not prove physical-screen latency.
+
+## Renderers and display-stage timing
+
+`osd.render_path` accepts `cached-overlay` and `legacy`, fixed at startup. Cached overlay uses a video plane and a transparent text/target plane with two buffers each. Only a confirmed page flip makes a buffer displayed and reusable. Telemetry refreshes and non-continuous freezes reuse the current video plane; continuous OFF can admit fresh preview. Unknown flip completion stops display safely rather than overwriting a potentially scanned buffer.
+
+Cached layout retains a canvas and glyph cache, restoring/redrawing changed field regions. Geometry, theme, or round changes can rebuild the layout. Legacy draws complete images. Compatible BGR input uses one synchronous RGA conversion; grayscale copies luminance and uses neutral chroma for conversion. Byte strides that cannot be represented as integer pixels are repacked into reusable storage. Source views remain owned until synchronous device reads complete.
+
+### Display stage timing
+
+`osd.timing_enabled` enables measurement only after restart. C++ defaults it false; the production camera template sets it true. With OSD disabled it does not create display resources. Disable and restart to stop sampling.
+
+All durations use a monotonic clock. A telemetry callback takes fixed-size snapshots and prints after releasing the submission lock. New-round, shutdown, and fault handling flush bounded windows; abrupt kill/power loss may lose the tail. Events belong to their actual measurement window, so submission and display can land in different windows.
+
+| Metric | Boundary |
+|---|---|
+| `source_copy` | Legacy source mapping, allocation, synchronization, and row copying |
+| `source_prepare` | Cached source validation/import and necessary repacking |
+| `scale_convert` | Geometry, scaling, and color conversion |
+| `layout` | Text, telemetry, and target drawing |
+| `compose` | Legacy plane/image copy, synchronization, and RGA composition |
+| `overlay_upload` | Cached overlay transfer |
+| `commit` | Request creation, authorization check, and device submission |
+| `flip_wait` | Display completion event wait; not light reaching the screen |
+| `render_total` | Parent duration from packet take through processing completion |
+| `other` | Parent duration minus measured children; do not add parents and children twice |
+| `pending_wait` | Acceptance-to-take for packets actually taken; replaced packets are absent |
+| `submit_to_display` | Acceptance-to-completion for successful new video; not camera-to-screen delay |
+| `new_frame_interval` | Adjacent successful new-video completions within one continuous segment |
+
+Stop, EOF, failure, new-round, and stale-wait transitions break the interval chain. Repeated frozen bases do not count as new video. The first processed video is tagged `first_frames=1`, retaining initial allocation cost. Logs distinguish new/repeat video and success/rejected/failure. Unexecuted stages have no samples, rather than fabricated zero durations. Failed stages retain elapsed time before failure.
+
+Counters `submitted/replaced/displayed/rejected/commits` in timing logs are window increments. `commits`, internally `refreshes`, counts successful display updates rather than physical scans. Cumulative `submit_calls`, `submit_mean_us`, and `submit_max_us` measure the full submit call including replaced-packet release, excluding packet construction and hardware completion wait. They are not end-to-end latency.
+
+Means and maxima retain raw microseconds. P95/P99 use approximate power-of-two bucket upper bounds from 1 through 67108864 microseconds, followed by overflow. There are 28 colon-separated buckets; an estimate can approach twice the exact duration. Aggregate buckets before computing a cross-window percentile; never average window percentiles. Divide counts by actual `window_us`. RGA stage duration includes CPU scheduling and synchronization, not pure accelerator execution.
+
+## Acceptance and rollback
+
+Use a specific production `HZ-RK3576_WuKong Board`, matching Runtime/driver, approved models, and identified camera/input. Save release/configuration/model/system-library fingerprints and initial service states. Run candidate programs from an isolated directory and ROS domain when synthetic messages are used. Stop conflicting camera/display users only within the authorized window, and restore their prior states afterward.
+
+Current continuous-preview acceptance uses the dedicated continuous-stream specification: at least 20 ON/OFF rounds and at least 60 seconds of joint tracking/recording/HDMI workload, with each run at most 180 seconds. Legacy behavior and an OSD-disabled baseline have separate comparable runs. Historical ten-minute or thirty-minute protocols for earlier lifecycles do not replace this acceptance. Mission-display acceptance checks actual captures and monotonic receipt-to-display times for both renderers, including end/expiry while inference is blocked.
+
+To compare timing overhead, keep the board, models, input, recording, display mode, and other configuration identical. Alternate timing off/on for at least three rounds of at least 60 seconds each, within applicable run limits. Record source/configuration/model identities, Runtime, rates, CPU/memory, and comparable windows. A throughput-median drop over 5% requires investigation rather than a pass claim.
+
+For renderer rollback, stop the node and restart with `osd.render_path=legacy`; models, topics, and CPU policy remain unchanged. This changes rendering, not continuous-camera lifetime. To disable HDMI, set `osd.enabled=false` and restart after confirming old display resources are released. To restore an earlier input lifecycle, restore the complete older release and matching configuration/entry. Never replace system RKNN Runtime. Restore the desktop only after node exit and device-release verification.
+
+Dated results are in [original HDMI validation](../openspec/changes/archive/2026-09-23-integrate-rk3576-hdmi-osd/final-validation.md), [cached-overlay validation](../openspec/changes/archive/2026-09-24-optimize-rk3576-hdmi-osd-pipeline/validation.md), [HUD alignment](../openspec/changes/archive/2026-09-27-align-hud-with-rk-hdmi-osd/validation.md), and [mission policy validation](../openspec/changes/archive/2026-10-30-fix-osd-mission-banner-state/validation.md). They establish only their recorded binaries, devices, inputs, and checks. `.docker-artifacts` and `/tmp` are disposable and may be cleared; preserve needed originals in separately managed storage. Historical artifact paths do not assure current availability. This guide update performs no new hardware acceptance.

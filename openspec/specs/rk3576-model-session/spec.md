@@ -1,79 +1,139 @@
-# rk3576-model-session 规格
+# rk3576-model-session Specification
 
 ## Purpose
 
-为 RK3576 上的模型提供与具体网络任务无关的同步执行能力，使单输入和多输入模型都能得到可检查的数据与失败结果。通过明确输入有效期、输出所有权和设备停止条件，保证模型串联及既有 YOLO 调用的资源安全。
+Provide synchronous RK3576 model execution with explicit tensor contracts, result ownership, and device-stop boundaries. Support ordinary model chaining and shared device memory without weakening the existing YOLO checks.
 
 ## Requirements
 
-### Requirement: 单模型执行支持查询与多输入输出
+### Requirement: Model sessions expose every fixed input and output
 
-执行会话表示一个已加载模型及其资源。张量是模型传入或返回的多维数据。系统 SHALL 提供每个输入输出的索引、名称、形状、类型、布局及量化属性。系统 SHALL 按模型实际输入输出数量执行固定形状模型，不以某个检测模型的输入输出数量作为通用限制。首版 SHALL 拒绝未解析的动态形状。
+A session owns one loaded model and its resources. A tensor is a multidimensional model input or output. The system SHALL expose each tensor's index, name, shape, type, layout, and quantization attributes. It SHALL support the model's actual fixed input/output counts. It SHALL reject unresolved dynamic shapes.
 
-#### Scenario: 双输入双输出模型
-- **WHEN** 加载一个具有两个合法固定形状输入和两个输出的模型
-- **THEN** 查询返回全部四个张量属性，提交符合描述的两个输入可得到两个输出
+#### Scenario: Two-input two-output model
+- **WHEN** a model has two valid fixed inputs and two outputs
+- **THEN** querying returns all four tensor descriptions and submitting both compatible inputs produces both outputs
 
-#### Scenario: 未解析形状
-- **WHEN** 查询的维度包含无法确定的大小
-- **THEN** 返回契约诊断，不提交设备执行
+#### Scenario: Unresolved shape
+- **WHEN** a queried dimension has no resolved size
+- **THEN** the session returns a contract diagnostic without submitting device execution
 
-### Requirement: 全部输入在设备提交前校验
+### Requirement: Inputs are validated before device submission
 
-系统 SHALL 在提交前检查全部输入的数量、索引、形状、数据类型、布局、存储有效性与字节数。系统 SHALL 检查尺寸乘法溢出。合法的应用提交类型可与模型原生类型不同，但转换必须受支持。发现任一不兼容输入时 SHALL 拒绝整次执行。
+The system SHALL check input counts, indices, shapes, types, layouts, storage, and byte sizes before ordinary execution. It SHALL reject size multiplication overflow. Application submission types can differ from native model types only through supported conversion. Any incompatible input SHALL reject the entire execution.
 
-#### Scenario: 第二个输入存储不足
-- **WHEN** 双输入模型的第一个输入合法，第二个输入缓冲区比所需字节数少一个字节
-- **THEN** 返回包含第二个输入预期与实际属性的诊断，设备执行次数不增加
+#### Scenario: Second input storage is too small
+- **WHEN** the first input is valid but the second buffer is one byte shorter than required
+- **THEN** execution is rejected with expected and actual second-input attributes, without increasing the device execution count
 
-#### Scenario: 索引重复
-- **WHEN** 两个输入都指定模型输入索引 0，索引 1 缺失
-- **THEN** 拒绝执行，不以提交顺序猜测第二个输入的角色
+#### Scenario: Duplicate index
+- **WHEN** both inputs specify index 0 and index 1 is absent
+- **THEN** execution is rejected without inferring roles from submission order
 
-### Requirement: 类型转换不改变模型数据语义
+### Requirement: Output conversion preserves numerical meaning
 
-Float32、FP16 分别表示 32 位和 16 位浮点。INT8 仿射量化使用比例 scale 与零点 zp 表示实数。系统 SHALL 支持 FP16、Float32 和有效逐张量仿射 INT8 逻辑输出转换为 Float32。系统 SHALL 拒绝非有限或非正 scale、越界 zp 和未支持的量化或布局。转换后的描述 SHALL 反映实际返回的类型和布局。系统 MUST NOT 对已转换的 Float32 输出再次反量化。通用执行 SHALL 不自动添加像素归一化、分类概率计算或框解码。
+Float32 and FP16 are 32-bit and 16-bit floating-point types. Affine INT8 represents real values using scale and zero point. The system SHALL convert supported logical outputs to Float32 once. It SHALL reject unsupported layouts or quantization. INT8 scale SHALL be finite and positive, with a valid zero point. Floating AFFINE metadata MUST NOT cause integer validation or rescaling. Generic execution MUST NOT add normalization, probabilities, or box decoding.
 
-#### Scenario: 量化输出转换一次
-- **WHEN** 原生 INT8 输出的 scale=0.1、zp=0、整数值为 10，运行时已将其转换为浮点 1.0
-- **THEN** 消费者读取约为 1.0 的 Float32 值，不是再次缩放后的 0.1
+#### Scenario: Quantized output is converted once
+- **WHEN** INT8 value 10 with scale=0.1 and zero point=0 has already been returned as Float32 1.0
+- **THEN** the consumer reads approximately 1.0, rather than a second conversion to 0.1
 
-#### Scenario: 浮点结果保持数值
-- **WHEN** 模型返回合法浮点输出 128.0
-- **THEN** 执行能力不自动将其除以 255 或转为概率
+#### Scenario: Floating values remain unchanged
+- **WHEN** a model returns valid floating output 128.0
+- **THEN** the session does not divide it by 255 or convert it to a probability, and the returned description identifies the actual type and layout
 
-#### Scenario: 浮点张量携带仿射元数据
-- **WHEN** 类型为 FP16 或 Float32 的张量携带 AFFINE 标记和 scale/zp 字段
-- **THEN** 按浮点类型接受，不使用这些字段再次缩放数值，也不以 INT8 的比例或零点取值范围拒绝该浮点张量
+#### Scenario: Floating tensor has affine metadata
+- **WHEN** an FP16 or Float32 tensor carries AFFINE metadata and scale/zero-point fields
+- **THEN** its floating values are accepted without rescaling or rejection using INT8 parameter ranges
 
-### Requirement: 同步返回与独立输出所有权
+### Requirement: Synchronous results own independent output storage
 
-系统 SHALL 声明单会话仅支持串行执行，调用方 MUST 在销毁前结束该会话的所有调用。成功返回 SHALL 表示设备已结束本次输入输出访问。返回结果 SHALL 持有独立于 SDK 临时输出的存储所有权。已有结果 SHALL 不被后续推理或会话销毁破坏。
+One session SHALL execute serially. Callers MUST finish all session calls before destruction. Successful synchronous return SHALL confirm the device has finished accessing that call's inputs and outputs. Returned host results SHALL own storage independently of temporary SDK outputs. Later execution or session destruction MUST NOT invalidate retained results.
 
-#### Scenario: 模型串联保留旧特征
-- **WHEN** 消费者保留第一次输出，进行第二次推理并销毁产生输出的会话
-- **THEN** 第一次输出仍可读取且数据不变，可继续作为另一个模型的输入
+#### Scenario: A retained feature outlives its session
+- **WHEN** a consumer retains the first output, performs another inference, and destroys the producing session
+- **THEN** the first output remains readable and unchanged, including when used as another model's input
 
-### Requirement: 失败结果与设备停止边界明确
+### Requirement: Failure reports preserve the device-stop boundary
 
-系统 SHALL 区分加载失败、契约不匹配、平台存储不匹配、未就绪和执行失败。诊断 SHALL 包含模型路径、失败操作及原因。契约错误 SHALL 包含张量和预期、实际属性。失败 SHALL 不返回部分输出。初始化中途失败 SHALL 回收已取得资源。提交后失败且确认停止时 SHALL 使会话失效。无法确认设备停止或销毁失败时 SHALL 沿用致命诊断并立即终止进程的策略，不提前释放仍可能被设备访问的存储。
+The system SHALL distinguish load, contract, storage-type, readiness, and execution failures. Diagnostics SHALL identify the model, operation, cause, and relevant tensor mismatch. Failure MUST NOT return partial outputs. Partial initialization SHALL release acquired resources. A submitted execution that fails SHALL invalidate the session after confirmed stop. Unconfirmed device stop or destruction failure SHALL emit a fatal diagnostic and terminate the process.
 
-#### Scenario: 输出获取失败后确认停止
-- **WHEN** 推理已提交，输出获取失败，后续等待成功确认设备停止
-- **THEN** 返回无部分输出的执行失败并安全回收资源，后续执行返回未就绪
+#### Scenario: Output retrieval fails after synchronous completion
+- **WHEN** blocking execution succeeded but ordinary output retrieval then fails
+- **THEN** the call returns an execution failure without partial outputs, resources are safely reclaimed, and later execution reports not ready
 
-#### Scenario: 停止无法确认
-- **WHEN** 推理失败后等待也失败，无法确认设备结束访问
-- **THEN** 进程输出模型与操作诊断并立即终止，不通过正常析构释放不确定的设备资源
+#### Scenario: Device stop cannot be confirmed
+- **WHEN** execution and its subsequent wait both fail
+- **THEN** the process reports the model and operation and terminates without normal destruction of potentially active device storage
 
-### Requirement: 通用化保持已有 YOLO 行为
+### Requirement: General sessions preserve the existing YOLO contract
 
-YOLO 是现有目标检测模型。引入通用执行后，系统 SHALL 继续满足 `rk3576-yolo-backend` 的输入、六输出、类别数及失败要求。系统 SHALL 保持其独立命令、参数和真实异步检测调用行为。NanoTrack 支持的输入输出形式 SHALL 不放宽 YOLO 的专属检查。
+YOLO is the detection model. General execution SHALL retain the input, six-output, class-count, failure, command-line, and asynchronous-call contracts in `rk3576-yolo-backend`. NanoTrack support MUST NOT relax YOLO-specific validation.
 
-#### Scenario: 双输入模型误用为 YOLO
-- **WHEN** 通用执行能力可以加载某个双输入双输出模型，但调用方将其用作 YOLO
-- **THEN** YOLO 装配返回契约不匹配，不将其当作合法检测模型
+#### Scenario: General model is unsuitable for YOLO
+- **WHEN** the generic session loads a two-input two-output model but a caller tries to use it as YOLO
+- **THEN** YOLO assembly reports a contract mismatch
 
-#### Scenario: 停止已有异步检测
-- **WHEN** YOLO 推理尚未结束时调用方请求停止
-- **THEN** 调用方等待检测线程完成后才销毁执行资源，既有输出与停止语义保持不变
+#### Scenario: Asynchronous detection is stopped
+- **WHEN** a caller requests stop while YOLO inference is active
+- **THEN** it waits for the detection thread before destroying execution resources, preserving existing output and stop semantics
+
+### Requirement: Native tensor attributes remain separately queryable
+
+Native attributes describe device storage, which can group channels differently from logical tensor shapes. The system SHALL expose native layout, channel grouping, stride, and capacity for every input and output. This query MUST NOT replace or change logical shape, type, layout, or quantization queries.
+
+#### Scenario: Native storage groups logical channels
+- **WHEN** an output has a fixed logical shape but grouped native storage
+- **THEN** native queries expose its actual grouping, stride, and capacity while logical queries retain their original results
+
+### Requirement: Partial submission and binding support shared memory
+
+Binding selects caller-owned device memory for a tensor. The session SHALL support partial ordinary input submission alongside explicit shared-memory bindings. It SHALL validate that capacity after the binding offset covers the native tensor. Bindings SHALL be re-established after each partial submission before execution. Existing whole-input submission and whole-output retrieval SHALL remain available.
+
+#### Scenario: Only one input is ordinarily submitted
+- **WHEN** one input of a two-input model is submitted and the other is bound to shared memory
+- **THEN** both sources are validated without rejecting the bound input as a missing ordinary submission
+
+#### Scenario: Binding capacity is insufficient
+- **WHEN** remaining capacity after the offset is smaller than the tensor requires
+- **THEN** binding fails with required and actual capacity, without submitting device execution
+
+#### Scenario: New submission invalidates prior bindings
+- **WHEN** another partial submission follows a completed submit-bind-run sequence
+- **THEN** related bindings must be established again before the next execution
+
+### Requirement: Completion can be confirmed without fetching output
+
+The system SHALL allow synchronous completion confirmation without ordinary output retrieval when bound output already resides in shared device memory. Confirmation SHALL use the existing device-stop evidence. Successful submission alone MUST NOT be treated as completed device access.
+
+#### Scenario: Bound output needs no host copy
+- **WHEN** execution writes output through an explicit shared-memory binding
+- **THEN** the caller can confirm completion without ordinary output retrieval or a Float32 host copy of that output
+
+### Requirement: Shared memory has explicit ownership and failure rules
+
+The system SHALL support allocation, equivalent-handle import, and release of registered shared device memory. Returned capacity SHALL cover the requested or original capacity. Consumer imports SHALL be released before producer storage, after confirmed device stop. Unconfirmed stop or a failed release SHALL emit a fatal diagnostic and terminate the process before unsafe reclamation.
+
+#### Scenario: Allocation returns insufficient capacity
+- **WHEN** returned capacity is below the requested byte count
+- **THEN** allocation fails without returning a usable handle
+
+#### Scenario: Import refers to the same storage
+- **WHEN** an equivalent identifier for allocated memory is imported
+- **THEN** the import refers to the same underlying storage with at least the original capacity
+
+#### Scenario: Shared owners are destroyed in order
+- **WHEN** producer and consumer sessions own original and imported handles and device access has ended
+- **THEN** the imported handle is released before original storage; unconfirmed stop instead terminates the process without releasing that storage
+
+### Requirement: Missing shared-memory operations preserve ordinary execution
+
+Shared-memory binding, allocation, import, and release SHALL be optional operations. Missing operations SHALL produce explicit capability diagnostics when requested, without changing ordinary execution. Partial host submission SHALL remain available independently. Loading SHALL require successful native input/output queries. Production NanoTrack loading SHALL additionally require shared-memory operations under its separate contract.
+
+#### Scenario: Runtime interface omits shared-memory operations
+- **WHEN** a session can query logical/native attributes and execute ordinary calls but has no shared-memory operations
+- **THEN** ordinary execution retains its behavior and extension requests report unavailable capabilities
+
+#### Scenario: Native attribute query fails during loading
+- **WHEN** a native input or output query fails
+- **THEN** loading fails diagnostically rather than promising an ordinary-execution fallback

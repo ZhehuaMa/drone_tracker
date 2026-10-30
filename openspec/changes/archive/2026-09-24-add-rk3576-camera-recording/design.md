@@ -1,174 +1,185 @@
-# 生产相机实时录像设计
+# Production-camera recording design
+
+This archived design records the recording change's original scope and delivery decisions. Statements about the previous implementation, defaults, or outstanding checks refer to that change, not the current checkout. Later lifecycle and bag changes have their own specifications.
 
 ## Context
 
-生产程序需要保存未绘制检测框、跟踪框或文字的相机视频，供现场问题回溯和真实数据收集使用。当前相机入口拒绝录像；目标是每轮从相机预热后的首个合格帧开始持续录制，并让录制故障不拖住跟踪。预热是交付图像前观察时间连续递增的阶段，不表示曝光或图像质量稳定。动机和范围见 [proposal.md](proposal.md)。
+Production needs camera video without detection boxes, tracking boxes, or text for incident review and real-data collection. At the start of this change, camera input rejected recording. The goal was continuous recording from each round's first qualified post-warmup frame, with recording failures isolated from tracking. Warmup observes strictly increasing timestamps before image delivery; it does not establish stable exposure or image quality. See [proposal.md](proposal.md) for motivation and scope.
 
-本变更依赖 [启动预热变更](../archive/2026-09-23-fix-sc233hgs-startup-timestamp-warmup/design.md)。2026-09-23 生产板三轮裸驱动采集均出现初始重复时间，不能把原“任意成功出队均可录像”的假设用于实现。预热的固定阈值、重复兼容及正常阶段严格失败规则由相机变更定义；本文件只定义录像如何消费合格帧。
+The prerequisite is the [startup-warmup change](../2026-09-23-fix-sc233hgs-startup-timestamp-warmup/design.md). Three raw-driver captures on the production board on 2026-09-23 all had initial repeated timestamps. Implementation therefore cannot assume every successful dequeue is immediately recordable. The camera change defines fixed warmup thresholds, tolerated startup repeats, and strict failures after warmup. This design defines how recording consumes qualified frames.
 
-已观察到的接入边界：
+Observed integration boundaries:
 
-- `Rk3576CameraCaptureBase::next()` 在驱动缓冲归还前把亮度复制为独立 Gray8 帧，SC233HGS 的色度没有进入公共帧。Gray8 表示每像素一个八位灰度值；NV12 还包含交织色度平面。
-- `processFrames()` 排空取最新帧，因此不能作为完整录像取帧点。`/fpv/tracker_image` 已经绘框，OSD（屏幕显示叠加）有自己的显示管线，两者都不是录像来源。
-- `openRecording()` 目前耦合旧 `need_save` 与 ROS bag（ROS 消息文件）。相机的新录像应具有独立故障状态，不能走旧 bag 写入失败导致整轮停止的路径。
-- SC233HGS 包装复用了 AR0234 帧源调度；修改共享采集代码需要回归 AR0234。主规格中的“拒绝所有录像”和“不得增加图像队列”需要通过本 change 的增量明确收窄。
-- 2026-09-23 只读检查的生产板具有 MPP 服务设备、共享库和编码测试工具。MPP 是 Rockchip 的硬件媒体处理接口；这些文件存在不证明所需编码性能已通过。根目录在 eMMC 的 ext4 文件系统上，`/tmp` 为易失内存文件系统，`/userdata` 容量不足。部署时重新检查，不把瞬时空余容量写成硬件保证。
+- `Rk3576CameraCaptureBase::next()` copies luminance into an independent Gray8 frame before returning the driver buffer. SC233HGS chroma does not enter the public frame. Gray8 stores one eight-bit grayscale value per pixel; NV12 also has an interleaved chroma plane.
+- `processFrames()` drains the queue to obtain the latest frame, so it cannot supply complete recording. `/fpv/tracker_image` already contains boxes and OSD has its own display pipeline. Neither is a recording source.
+- `openRecording()` couples the old `need_save` option to ROS bag message files. New camera video needs an independent failure state and cannot use the old bag-write failure path that stops the whole round.
+- The SC233HGS wrapper reuses AR0234 frame-source scheduling. Shared capture changes require AR0234 regression checks. This change's deltas must narrow the previous main-spec prohibitions against all recording and additional image queues.
+- Read-only production inspection on 2026-09-23 found MPP service devices, libraries, and encoder tools. MPP is Rockchip's hardware media interface; file presence does not establish encoding performance. Root is on eMMC ext4, `/tmp` is volatile memory storage, and `/userdata` has insufficient capacity. Recheck at deployment; transient free space is not a hardware guarantee.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- 相机 ON 准备会话，首个合格帧开始视频内容，OFF 停止；未发现目标时持续录制，OFF 时不保持相机开流。
-- 从完整 NV12 分流，保持公共算法输入像素、时间戳和队列消费方式不变。
-- 给编码、写入、同步、内存使用和收尾建立可观测边界，控制录制与跟踪之间的资源竞争。
-- 保留可由通用视频工具读取的完整前缀，以及实际采集时间与录像帧的关联信息。
+- Prepare a session on camera ON, begin video at its first qualified frame, and stop on OFF. Continue recording without a detected target; OFF does not retain camera streaming in this original lifecycle.
+- Branch from complete NV12 while preserving algorithm input pixels, timestamps, and queue consumption.
+- Make encoding, writes, synchronization, memory, and closing observable; bound resource competition with tracking.
+- Retain a complete prefix readable by general video tools and its correspondence to actual capture times.
 
 **Non-Goals:**
 
-- 不提供传感器 RAW、无损录像、额外图像增强或动态切换录像接口。
-- 不增加离线转换工具，不扩展现有回放解码能力。测试可使用通用解码器检查输出，不修改生产回放入口。
-- 不做断电、拔电、强制重启、碰撞或损坏性存储测试，不以进程终止代替真实掉电证据。
-- 不提供循环覆盖、低电量订阅协议或远程备份；不增加 AR0234 录像功能。
+- Sensor RAW, lossless video, additional image enhancement, or dynamic recording-interface switching.
+- An offline conversion tool or expanded production replay decoding. Acceptance may use general decoders to inspect output.
+- Power interruption, unplugging, forced reboot, collision, or destructive storage checks. Process termination is not evidence of real power failure.
+- Circular overwrite, a low-battery subscription protocol, remote backups, or AR0234 recording.
 
 ## Decisions
 
-### 1. 独立配置，随相机整轮启停
+### 1. Independent startup configuration and whole-camera rounds
 
-选择 `recording.*` 作为启动配置，默认关闭，生产部署显式启用。保持 RK3576 相机 `need_save=false`，不自动创建 ROS bag。拒绝运行时修改录像配置。原因是视频证据与旧消息记录的输出及失败语义不同；不采用重解释 `need_save` 的方案，避免改变视频/Jetson 行为。
+Choose startup-only `recording.*`, disabled by default and explicitly enabled for production deployment. Keep RK3576 camera `need_save=false` in this change and do not automatically create ROS bags. Reject runtime recording-configuration changes. Video evidence and old message recording have different outputs and failure semantics; reinterpreting `need_save` would change video/Jetson behavior.
 
-参数拟定如下。它们是实现的初始配置，不是已经实测通过的设备能力。
+These initial settings are implementation configuration, not already measured device capabilities:
 
-| 参数 | 默认值 | 校验与作用 |
+| Parameter | Default | Validation and effect |
 |---|---|---|
-| `recording.enabled` | false | 仅 RK3576 SC233HGS 相机允许 true；其他输入显式拒绝 |
-| `recording.directory` | `/var/lib/drone_tracker/recordings` | 必须为绝对路径；启用时核验实际挂载点为持久存储，首版生产支持本地 ext4，拒绝 tmpfs/ramfs/网络文件系统 |
-| `recording.bitrate_bps` | 12000000 | 正整数，编码器须接受；本次不进行三类现场画质或码率对照验收 |
-| `recording.segment_seconds` | 60 | 10–600 秒，达到时间后的首个 IDR 切段 |
-| `recording.sync_interval_ms` | 1000 | 只接受 500、1000、2000，供资源与落后时间比较 |
-| `recording.max_total_bytes` | 21474836480 | 目录录像及附属文件容量上限，默认 20 GiB，须大于零 |
-| `recording.min_free_bytes` | 5368709120 | 文件系统可用空间保护线，默认 5 GiB，须大于零 |
+| `recording.enabled` | false | Only RK3576 SC233HGS accepts true; other inputs explicitly reject it in this design |
+| `recording.directory` | `/var/lib/drone_tracker/recordings` | Absolute path; enabling checks the actual persistent mount. Initial production supports local ext4 and rejects tmpfs, ramfs, and network filesystems |
+| `recording.bitrate_bps` | 12000000 | Positive integer accepted by the encoder. Three field-image-quality scenarios and bitrate comparisons are outside this acceptance |
+| `recording.segment_seconds` | 60 | 10–600 seconds; split at the first IDR after the interval |
+| `recording.sync_interval_ms` | 1000 | Only 500, 1000, or 2000, for resource and lag comparisons |
+| `recording.max_total_bytes` | 21474836480 | Recording and sidecar quota, default 20 GiB; positive |
+| `recording.min_free_bytes` | 5368709120 | Filesystem free-space reserve, default 5 GiB; positive |
 
-固定策略为原尺寸、全部通过相机预热及正常时间检查的合格帧尝试提交、H.264、MPEG-TS、约每秒 IDR、无 B 帧，不在首版加入动态降码率或帧率自适应。IDR 是不依赖以前画面即可开始解码的关键帧；B 帧会引入重排等待。忙时丢录像原始帧并记录，而非自动改变相机或算法频率。预热观察丢弃不属于录像拥塞丢帧。
+Use original dimensions, attempt every frame that passes camera warmup and normal time checks, encode H.264 into MPEG-TS, request IDR about once a second, and use no B-frames. IDR is a keyframe that starts decoding without previous images; B-frames introduce reordering waits. Initial scope excludes dynamic bitrate reduction and adaptive frame rate. Congestion drops current raw recording frames and records those drops; it does not change camera/algorithm rates. Warmup observation discards are not recording-congestion drops.
 
-非法值、不支持的输入和易失存储配置在初始化阶段明确失败。合法配置遇到目录无权限、空间不足、编码器不可用或录像子进程启动失败时，报告本轮录像失败但允许相机跟踪启动。这样配置错误不会被忽略，运行资源故障也不会阻断核心任务。次轮 ON 可重试，当前轮不自动反复重启录像。
+Invalid values, unsupported inputs, and volatile-storage configuration fail initialization explicitly in this design. A valid configuration encountering permissions, insufficient space, an unavailable encoder, or failed worker startup reports recording failure for that round but permits camera tracking. Configuration errors remain visible without making runtime recording resources a prerequisite for the core task. A later ON can retry; the current round does not repeatedly restart recording.
 
-### 2. 在驱动缓冲有效期内分流完整 NV12
+### 2. Branch complete NV12 within the driver-buffer lifetime
 
-选择在共享采集基类中加入可选、非阻塞的原画面接收边界，仅为 SC233HGS 启用。只有元数据及时间检查通过的候选帧才能暂存；相机最终确认有效后才向录像进程发布。发布表示允许子进程读取并编码该帧。在 `VIDIOC_QBUF` 归还驱动缓冲之前，把有效 Y/UV 行复制到预分配录像槽。行跨度、色度偏移、有效字节数和编码器对齐尺寸逐项校验。编码器需要的填充不进入可见画面；保留并传递驱动色彩范围/矩阵信息，未知值明确标注，不自动做范围拉伸。
+Add an optional nonblocking original-image sink to the shared capture base, enabled only for SC233HGS. Only a candidate passing metadata and time checks may be staged. Publish it to the worker only after final camera confirmation. Publication permits the worker to read and encode it. Copy valid Y/UV rows into preallocated recording slots before `VIDIOC_QBUF` returns the driver buffer. Validate row stride, chroma offset, valid length, and encoder alignment separately. Encoder padding is outside the visible image. Preserve driver color range/matrix metadata, explicitly mark unknown values, and do not stretch ranges automatically.
 
-选择跟踪和录像共享同一次预热判定，不为录像独立过滤或缓存观察帧。原因是两个支路必须使用同一合格帧身份，拒绝“先录后过滤”以免重复时间进入视频。实际顺序为：成功出队及安全校验 → 预热/正常时间校验 → 候选画面暂存 → 驱动归还 → 停止与预热期限最终检查 → 合格帧发布。暂存槽在发布前不能被编码器读取；最终检查失败或停止时撤销暂存。预热丢弃只归还缓冲并保留元数据，不复制录像像素。共享边界出现归还等致命错误时，相机仍按自身契约失败；尚未发布的暂存样本必须撤销并保留终止处置身份，不得进入编码或视频帧记录。
+Tracking and recording share one warmup decision. Do not independently filter or cache observation frames for recording: both branches must use the same qualified identity. Recording before filtering would allow repeated timestamps into video. The sequence is:
 
-不采用第二次打开相机、不从已有跟踪队列增加消费者、不从 ROS/OSD 图像回采。这样录像不会抢走算法帧，也不会随着跟踪消费变慢而天然缺失所有跳过帧。代价是新增一次完整画面复制；1920×1200 NV12 约为每帧 3.456 MB，60 帧/秒时有效复制数据约 207 MB/秒，实际内存总线流量更高，必须实测。
+1. Dequeue successfully and check safety.
+2. Apply warmup or normal time checks.
+3. Stage candidate pixels.
+4. Return the driver buffer.
+5. Recheck stop and the final warmup deadline.
+6. Publish the qualified frame.
 
-首版使用 4 个原始帧共享槽，总字节不超过 64 MiB；尺寸超限拒绝该录像会话。槽满时丢当前新录像帧，保留原有算法队列规则。所有未提交成功的录像分支错误在该边界内转为录像故障，不能通过异常向上终止采集。关闭录像时不分配或复制 NV12 录像缓冲。
+The encoder cannot read a staged slot before publication. Stop or failed final checks cancel it. Warmup discards only return the buffer and retain metadata; they copy no recording pixels. Fatal shared-boundary errors such as failed driver return still fail capture under its contract. Cancel the unpublished candidate, retain its terminal-disposition identity, and exclude it from encoding and video-frame records.
 
-### 3. 独立工作进程及明确所有权
+Reject a second camera open, another consumer of the tracking queue, and recapture from ROS/OSD. Recording must neither steal algorithm frames nor inherently lose every frame skipped by a slow tracker. The cost is one complete image copy: 1920×1200 NV12 is about 3.456 MB/frame, or about 207 MB/second at 60 fps. Actual memory-bus traffic is higher and must be measured.
 
-新增 RK3576 录像工作程序，使用 `posix_spawn` 启动，避免在已运行 ROS/推理线程的进程中 fork 后调用复杂库。公共配置/状态只含普通值，MPP 类型留在平台模块。通过预分配共享内存槽、轮次编号和非阻塞通知传递画面。
+Use four shared raw-frame slots with a total limit of 64 MiB; reject an oversized session. A full slot set drops the current new recording frame while preserving algorithm-queue rules. Convert recording-branch submission failures into recording faults at this boundary rather than propagating exceptions that stop capture. Disabled recording allocates and copies no NV12 recording buffer.
 
-父进程只写空闲槽，子进程取得槽后复制到自己拥有的 MPP 输入缓冲；在复制完成后确认槽可复用。MPP 缓冲保持到硬件确认不再访问后才释放。不能让摄像头驱动缓冲生命周期延长到编码或写盘阶段。跨进程协议不使用可能因持锁进程死亡而永远阻塞采集的锁。
+### 3. Independent worker process and explicit ownership
 
-子进程内部编码和存储分开，编码输出缓冲上限 8 MiB。编码输出拥塞时停止接受新原始帧；若不能安全保留已编码帧依赖，则以录像失败结束本轮，不能任意丢 P 帧后继续宣称视频完整。录像进程异常退出由父进程监测，解绑提交入口并发布故障。
+Start a new RK3576 recording program with `posix_spawn`; avoid complex library calls after fork in a process already running ROS/inference threads. Public configuration/status contains ordinary values, and MPP types remain platform-private. Preallocated shared slots, round identities, and nonblocking notifications transfer images.
 
-选择进程隔离而非仅在线程内捕获异常，以隔离编码库崩溃和阻塞写盘。后果是增加进程协议和共享内存管理，但不改公共跟踪状态机。发生内核不可中断 I/O 时，发信号不能保证立即退出；父进程不得无限等待，也不得复用仍被旧进程访问的资源。每节点最多隔离一个未退出旧录像进程；它退出并回收前，后续轮次录像保持失败，不再累积子进程或缓冲。
+The parent writes only free slots. The child copies a claimed slot into its own MPP input buffer, then acknowledges slot reuse. Retain MPP buffers until hardware has stopped accessing them. Driver-buffer ownership must not extend into encoding or disk writes. Cross-process synchronization must not let a process dying while holding a lock block capture forever.
 
-### 4. 硬件 H.264 与独立 MPEG-TS 文件
+Separate encoding and storage inside the child. Encoded-output buffering is limited to 8 MiB. Output congestion stops admission of raw frames. If encoded dependencies cannot be retained safely, fail the recording round rather than dropping arbitrary P-frames and claiming completeness. The parent detects worker exit, detaches submission, and reports failure.
 
-选择 MPP 编码和 libavformat 封装 MPEG-TS，后者是 FFmpeg 的视频文件封装库。通过自定义文件 I/O 保留原始文件描述符，以控制应用缓冲清空和数据同步。不能依赖是否安装 ffmpeg 命令，也不假定标准 FFmpeg 编码器已经支持 Rockchip 硬件。MPP 和封装库只链接录像工作程序。
+Choose process isolation over exception-catching threads to isolate encoding-library crashes and blocked writes. This adds a process protocol and shared-memory management without changing the public tracking state machine. Signals cannot guarantee immediate exit from uninterruptible kernel I/O. The parent must neither wait indefinitely nor reuse resources still accessed by an old worker. Isolate at most one unreaped old worker per node; until it exits and is reaped, later rounds report recording failure without accumulating processes or buffers.
 
-拒绝普通 MP4，因为异常结束时可能缺少必要索引；分片 MP4 可恢复完整片段，但需要额外协调片段索引和同步边界。MJPEG 便于逐帧读取，但同等画质下通常需要更多存储带宽。MPEG-TS 每段有自己的流信息和编码参数，不依赖前段文件或外部播放列表。每个文件从 IDR 开始，重复写入必要解码参数；原件扩展名始终为 `.ts`。
+### 4. Hardware H.264 and independent MPEG-TS files
 
-帧显示时间 PTS 由采集时间相对本轮首个被录像接受的合格帧换算到视频时间单位，该首帧 PTS 为零。开流时间、预热完成时间和视频起点分别记录，不把 ON 或预热样本时间当成视频起点。保留整数微秒原始时间及换算信息；不按帧计数伪造恒定时间。出现丢帧保留间隔，长时间无图像时不制造重复帧。IDR 按合格采集时间到期请求，并验证实际输出；持续合格输入而超过两秒仍没有预期 IDR 时以编码异常停止录像。IDR 无进展计时从首个合格输入到达录像提交边界开始，不能靠持续拒收重置；预热期间不启动该计时。每次切段把新 IDR 放入新文件，前段不会包含对新文件的依赖。
+Use MPP encoding and libavformat MPEG-TS encapsulation. libavformat is FFmpeg's container library. Custom file I/O retains the underlying descriptor to control application-buffer flushes and data synchronization. Do not depend on an installed ffmpeg command or assume the standard FFmpeg encoder supports Rockchip hardware. Link MPP and the container library only into recording programs.
 
-### 5. 同步周期与真实进度
+Reject ordinary MP4 because abnormal termination may leave required indexes missing. Fragmented MP4 can recover complete fragments but needs additional index/sync coordination. MJPEG is convenient per frame but usually needs more storage bandwidth at comparable quality. Each MPEG-TS segment has its own stream information and encoding parameters, without a previous-file dependency or external playlist. Start every file with IDR and repeat necessary decoding parameters. Original filenames always end in `.ts`.
 
-选择默认 1000 ms 同步周期，封装后的应用缓冲至少每 200 ms 清空一次，正常写盘时不积压整段文件。`avio_flush` 只把库缓冲交给操作系统；`fdatasync` 才请求同步文件数据和读取所需元数据。新建文件、目录和改名还需对相应父目录调用 `fsync`。不使用每帧同步、全系统 `sync`、丢弃内核缓存或修改全局脏页参数。
+Derive video PTS, the presentation timestamp, from capture time relative to the first qualified frame accepted for recording in that round. Its PTS is zero. Record stream start, warmup completion, and video origin separately; neither ON nor an observation frame supplies the video origin. Retain integer microseconds and conversion information. Do not invent constant timing from frame counts. Drops retain their gaps; long image absence creates no synthetic duplicates. Request IDR according to qualified capture time and verify actual output. Continued qualified input without expected IDR for more than two seconds stops recording as an encoding failure. Start that progress timer when the first qualified input reaches the recording-submission boundary; repeated rejection cannot reset it. Warmup starts no such timer. A split places the new IDR in the new file, and the old segment must not depend on the new one.
 
-持久化流程：
+### 5. Synchronization period and actual progress
 
-1. 每轮创建唯一目录，使用排他创建避免覆盖。先写并同步会话清单及父目录，首个被录像接受的合格帧到达后才创建视频段、写视频头并同步必要目录变化。
-2. 录像数据持续写入，以完整编码帧为边界记录视频字节偏移与原始帧时间。
-3. 同步期限到达时先让封装器输出待写的完整视频帧，再清空其 I/O 缓冲，执行视频 `fdatasync`。只对已实际写到文件描述符的完整帧登记边界，不能用编码器产包或封装函数返回推断已写入。检查所有返回值，失败不能推进水位。
-4. 写入并同步附属时间记录，再更新、同步提交记录。提交记录只引用已成功同步的视频边界；附属记录失败时录像失败，不声称整套证据完整。
-5. 正常结束或切段时完成同样同步，再写正常完成标记；完成标记与目录变化同步成功才宣称该段正常完成。
+Use a default 1000 ms synchronization period. Flush container/application buffers at least every 200 ms so healthy writes do not retain a whole segment. `avio_flush` hands library-buffered bytes to the OS; `fdatasync` requests file-data and required-metadata synchronization. New files/directories and renames also require `fsync` on their relevant parent directories. Do not sync every frame, invoke global `sync`, discard kernel caches, or change global dirty-page settings.
 
-单调时钟用于同步调度和操作超时，避免校时干扰。同步期间只允许一个在途存储同步；不创建无限同步线程，也不通过悄悄延长周期隐藏性能不足。健康反馈包含 `last_synced_frame_time_us`、最后成功同步的单调时刻、同步耗时及失败原因。
+Persistence sequence:
 
-父进程使用“最新合格采集帧时间减最后同步帧时间”表示持久化落后量，同时跟踪最后成功同步距今时间；包括录像拒收的合格帧，不包括预热观察帧。尚无同步帧时标为未知，不能显示零。默认周期下超过 2 秒发出退化警告；持续有合格输入而 5 秒没有持久化进展，或一次同步等待超过 5 秒，停止录像提交并报告失败。无进展期限从首个合格帧到达录像提交边界开始，不能通过拒收或尚未建首段反复延后。预热等待不计作视频持久化停滞，但已经开始的实际文件同步仍执行其超时检查。采集静止不把固定的旧时间差当作仍健康。
+1. Exclusively create a unique round directory. Write and synchronize the session manifest and parent directory. Create the video segment/header and synchronize required directory changes only when the first accepted qualified frame arrives.
+2. Write video continuously. Record file end offsets and original frame times only at complete encoded-frame boundaries.
+3. At the synchronization deadline, make the container writer emit pending complete frames, flush its I/O buffer, then call video `fdatasync`. Register only complete frames actually written to the descriptor; encoder packets or container-function returns do not prove this. Check every return value and do not advance the confirmed position on failure.
+4. Write and synchronize timestamp sidecars, then update and synchronize the commit record. A commit references only a successfully synchronized video boundary. Failed sidecars fail recording; they do not produce a complete-evidence claim.
+5. Apply the same synchronization at normal close or split. Write the normal completion marker and claim completion only after that marker and directory changes synchronize successfully.
 
-1 秒只是发起同步的周期，不是断电最多丢一秒的承诺。队列、编码、同步延迟和设备缓存均影响最后可恢复位置；正常负载下的候选目标为默认周期持久化落后量 P99 不超过 2 秒。P99 表示 99% 样本不超过该值，所有最大值也必须报告。
+Use a monotonic clock for sync scheduling and operation timeouts so calendar correction cannot change them. Permit only one storage synchronization in flight. Do not create unbounded sync threads or silently lengthen the period to hide insufficient performance. Health includes `last_synced_frame_time_us`, the last successful synchronization's monotonic time, duration, and failure reason.
 
-### 6. 证据文件和空间保护
+The parent computes persistence lag as latest qualified capture time minus the last synchronized frame time. Also track elapsed time since last successful synchronization. Include qualified frames rejected by recording, but exclude warmup observations. No synchronized frame means unknown, not zero. With defaults, warn after two seconds of lag. Continued qualified input without persistence progress for five seconds, or a single synchronization wait exceeding five seconds, stops recording submission and reports failure. The no-progress deadline starts at the first qualified frame reaching the recording boundary. Rejection or delayed first-segment creation cannot postpone it repeatedly. Warmup is not video-persistence stagnation; an actual file sync already started still has its timeout. Stopped capture cannot make an unchanged old lag a sign of continued health.
 
-有视频内容的轮次目录含 `session.json`、编号 `.ts`、每段 `frames.jsonl` 和追加提交记录。JSONL 表示每行一条独立 JSON 记录，尾部截断时仍能读取完整前缀。每个实际视频帧记录轮次、驱动帧序号、驱动时间及标志、映射后的微秒时间、视频 PTS、段号和完整编码帧的文件结束偏移。另记录录像队列丢帧区间、驱动序号缺口和跟踪队列丢弃；三者不互相替代。
+A one-second request period is not a one-second maximum-loss guarantee during power failure. Queues, encoding, synchronization latency, and device caches affect recovery. The normal-load candidate target is persistence-lag P99 no greater than two seconds with defaults. P99 is the value covering 99% of samples; report all maxima too.
 
-会话记录另含相机预热阈值、耗时、观察/丢弃/重复计数、结果及首个合格帧身份；零帧时身份与视频起点为未知。预热元数据作为有界会话证据保存，不写入视频帧记录，不增加视频 PTS 或编码帧数。按相机规格对账出队总量、预热丢弃、合格帧和终止处置；录像再按提交尝试、接受、拒收、编码及尾部处置对账。相机归还失败、最终预热期限检查失败或停止时，暂存帧尚未发布；按采集身份记录撤销，不计入录像接受或编码数量。
+### 6. Evidence files and space protection
 
-会话清单含程序/配置/模型身份、相机实际格式与色彩标记、编码设置、板卡标识和时间来源。文件指纹在采集前或复用已取得结果，不在实时采集路径反复读取大型模型。状态通过已有日志和状态文本通路报告，每秒最多一次常规汇总，故障及时报告，不改六个业务话题或跟踪状态数值。
+A round with video contains `session.json`, numbered `.ts` files, per-segment `frames.jsonl`, and appended commits. JSONL stores one JSON record per line, so complete prefixes survive tail truncation. Every actual video-frame record contains round, driver sequence, driver timestamp/flags, mapped microsecond time, video PTS, segment number, and complete encoded-frame end offset. Separately record recording-queue drops, driver-sequence gaps, and tracking-queue drops.
 
-重启检查只在配置的录像目录内识别未完成会话，保留原件并生成独立检查报告。生产侧只检查清单、提交记录及完整 TS 包前缀，不转码、不重写视频，也不引入解码播放功能。是否完整可解码由验收中的通用工具独立检查，不能把 TS 包对齐称为解码成功。检查工作不能延迟相机 ON，应独立、限速执行。
+Session evidence includes camera warmup thresholds, duration, observed/discarded/repeated counts, outcome, and first qualified identity. With zero frames, identity and video origin are unknown. Bounded warmup metadata does not enter video-frame records or increment PTS/frame counts. Reconcile camera dequeues, warmup discards, qualified frames, and terminal dispositions under the camera specification. Separately reconcile recording attempts, admissions, rejections, encoded frames, and tail dispositions. Driver-return failure, failed final deadline, or stop cancels a staged unpublished frame by capture identity; it is neither accepted nor encoded.
 
-容量累计包括完成和未完成会话及附属文件。每次新写入前按请求字节检查配额和剩余空间；保留给尾部记录的预算，统计外部磁盘使用变化。达到保护线停止录像，不覆盖旧文件，日志明确说明。软保护不能保证其他程序不同时耗尽磁盘，实际 ENOSPC（磁盘空间不足）仍按录像故障处理。
+The manifest identifies program/configuration/models, actual camera format/color metadata, encoding settings, board, and time source. Compute file fingerprints before capture or reuse already obtained values; do not reread large models repeatedly in the capture path. Existing logs and status text report health, with at most one regular summary per second and prompt failures. Do not change the six business topics or tracking-state values.
 
-选择保留证据而非循环覆盖，代价是需要操作人员在任务之间导出/清理。目录不能在开机任务中被清空，安装与升级不能覆盖既有会话。
+Restart inspection recognizes incomplete sessions only within the configured recording directory. Preserve originals and write a separate report. Production inspection checks manifests, commits, and complete TS-packet prefixes; it neither transcodes nor rewrites video and adds no playback decoder. General acceptance tools independently establish decodability. Packet alignment alone is not decoding success. Inspection must run independently with rate limits rather than delay camera ON.
 
-### 7. 启停和故障恢复顺序
+Quota accounting includes complete/incomplete sessions and sidecars. Before each new write, check requested bytes against quota and free space. Reserve capacity for tail records and account for external disk-usage changes. Hitting a protection threshold stops recording, preserves old files, and explains the cause. Soft protection cannot prevent other processes exhausting disk concurrently; actual ENOSPC remains a recording failure.
 
-正常 ON 的过程为：
+Preserving evidence rather than circular overwrite requires operators to export and clean between missions. Boot tasks must not empty recording directories, and installations/upgrades must not overwrite sessions. This retention rule concerns production recording originals; `.docker-artifacts/` and temporary validation outputs are disposable and need separate managed retention when required.
 
-1. 校验静态参数，建立新轮身份，准备录像进程及缓冲；资源准备最长等待 3 秒，失败则标记本轮不录像并继续相机启动。
-2. 相机成功开流后开始其独立预热期限，录像维持等待合格输入状态。只有相机允许输出的帧才尝试提交录像与原算法队列；模型是否发现目标不影响录像。录像资源准备的 3 秒预算不占相机开流后的预热预算，两者起点和耗时分别报告。
-3. OFF 或相机故障先停止录像接收和相机采集，保持原相机停止门槛。
-4. 独立请求录像排空、同步并退出，默认最多等待 3 秒；超时撤销该轮会话，保留不完整标记，向子进程发出终止请求并异步监测回收。
-5. 模型按原契约等待在途访问结束。录像收尾耗时与模型等待分别报告；不能把 3 秒说成整个节点 OFF 的保证。
+### 7. Start, stop and recovery order
 
-正常原始队列尾帧应排空；超时被丢弃的尾帧计数并说明。新轮建立新缓冲和身份；旧轮资源若未退出则按第 3 项隔离规则拒绝新录像，跟踪仍可重启。父进程异常死亡通过父进程死亡通知及控制通道关闭通知子进程停止，不留下无限独立采集者。
+Normal ON sequence in this original design:
 
-若预热中 OFF，保存 `cancelled_before_first_frame`（首个合格帧之前用户取消）的零帧会话；若预热失败，保存 `camera_warmup_failed` 及相机原始原因。没有实际视频输入不创建 `.ts` 或视频帧记录，不伪造占位图像。会话元数据可以正常关闭，但不得标为视频录制成功；预热失败保留失败状态，取消不伪装成超时。已有录像资源仍按上述有限预算回收。若存储自身不可写，失败至少保留在节点日志，不承诺不可写目录内必有会话文件。拒绝将所有零帧会话统一当成编码失败，因为其实际来源是取消或相机失败。
+1. Validate static parameters, create round identity, and prepare worker/buffers. Resource preparation waits at most three seconds; failure marks this round as not recording and still allows camera startup.
+2. Successful stream start begins the camera's independent warmup deadline. Recording waits for qualified input. Only camera-qualified frames attempt recording and original algorithm-queue submission, whether or not a target is detected. The three-second recording-preparation budget does not consume the post-stream-start warmup budget; record both origins and durations.
+3. OFF or camera failure first closes recording admission and stops capture, preserving the original camera-stop threshold.
+4. Independently request recording drain, synchronization, and exit, waiting at most three seconds by default. Timeout revokes the session, retains incomplete status, requests worker termination, and monitors reaping asynchronously.
+5. Models retain their original safe wait for in-flight accesses. Report recording close separately from model waits; three seconds does not bound the node's entire OFF operation.
 
-### 8. 以非破坏性测试界定验收
+Drain normal raw-queue tails. Count and explain tails discarded after timeout. New rounds use new buffers/identities; an old unreaped worker blocks new recording under decision 3 while tracking may restart. Parent-death notification and control-channel closure tell the worker to stop after abnormal parent exit; do not leave an unbounded independent capture process.
 
-选择三层验证，原因是用户明确排除断电测试；不以真实掉电为完成前置条件，也不把未执行的掉电测试保留成待勾选实施项。
+OFF during warmup preserves a zero-frame `cancelled_before_first_frame` session. Warmup failure preserves `camera_warmup_failed` and the original camera reason. Without actual video input, create neither `.ts` nor video-frame records or placeholder images. Session metadata may close normally, but cannot claim successful video. Failure remains failure, and cancellation is not timeout. Reclaim prepared resources within their separate budgets. If storage itself is unwritable, preserve failure at least in node logs; a session file in that directory cannot be guaranteed. Zero-frame sessions cannot all be labeled encoding failures because cancellation/camera failure are distinct causes.
 
-- 无硬件测试：带行填充 NV12 的 Y/UV 内容、轮次隔离、有限缓冲、同步调用次序、失败水位、短写/EINTR/EIO/ENOSPC、子进程死亡和同步阻塞。故障通过可注入边界模拟，不填满系统盘。
-- 预热联合测试：重复时间观察帧不进入录像；首个合格帧被接受后 PTS 为零并请求首个 IDR；预热中 OFF、失败及跨轮重启能产生准确零帧结果；视频停滞检查不因等待预热误触发，正式合格输入持续但拒收时也不能无限等待。
-- 文件恢复测试：对测试文件副本在 TS 包、编码帧、同步和切段附近截断；至少覆盖 100 个偏移。使用通用解码工具核验完整前缀，记录最后可解码帧与截断位置的关系。实机仅做一次录像子进程终止和一次父进程异常退出检查；已有受控重复测试保留，不再扩大实机故障次数。保持板端供电，不重启系统。
-- 生产板实际使用检查：默认 12 Mbps、1000 ms 同步周期，连续录像 5 分钟，同时运行跟踪和 OSD。检查正常 OFF、再次 ON、默认 60 秒分段、视频独立解码和帧数对账。不再执行多周期重复对照、20 轮启停或 30 分钟负载。
+### 8. Acceptance through non-destructive checks
 
-按用户 2026-09-24 要求，以实际可用性收尾：五分钟内跟踪和显示持续正常，录像无应用主动丢帧，视频能解码且与采集提交对账。默认同步落后量 P99 不超过 2 秒，最大值照实报告。P99 表示 99% 样本不超过该值。取消相对基线 P95/吞吐比值的专项发布门槛，不据此声称性能无损或完成长时间稳定性验证。
+Use three validation layers because the user explicitly excludes power interruption. Real power-loss checks are neither a completion prerequisite nor an unchecked implementation task.
 
-五分钟从首个合格帧之后计时，不包含预热。预热丢弃单列，不计为录像丢帧，也不能把正常阶段丢帧归入预热。已有资源准备、预热、首帧时间及未知同步位置记录继续保留；未知值不当作零计算。预热取消、失败及同步阻塞使用已有组件证据和少量针对性检查，不再追加重复压力测试。
+- No-hardware checks: padded NV12 Y/UV content, round isolation, bounded buffers, sync-call ordering, failure positions, short writes/EINTR/EIO/ENOSPC, child death, and sync stalls. Inject failures at controlled boundaries without filling the system disk.
+- Joint warmup checks: repeated-time observations never enter video; first accepted qualified input has PTS zero and requests IDR. Warmup OFF/failure and cross-round restart produce accurate zero-frame outcomes. Waiting for warmup does not trigger video stagnation; continuous qualified input that is rejected cannot postpone deadlines indefinitely.
+- File-recovery checks: truncate copies near TS packets, encoded frames, synchronization, and splits at at least 100 offsets. General decoders verify complete prefixes and relate last decodable frames to truncation. Hardware scope is one recording-child termination and one abnormal parent exit; retain controlled repeats without adding more hardware failure runs. Keep the board powered and do not reboot.
+- Production use: default 12 Mbps and 1000 ms sync, five continuous recording minutes with tracking and OSD. Check normal OFF, another ON, default 60-second splits, independent segment decoding, and frame accounting. Do not run further multi-period comparisons, twenty-round restarts, or thirty-minute load.
 
-报告保留本轮可取得的同步延迟、CPU、内存、分区写入和温度。没有可靠设备的功耗明确未测，不新增专项测量。实际使用检查失败时修复已知问题，不降低分辨率、帧率或隐瞒失败。本次仍不包含三类现场画质及码率对照，不能用可解码结果代替画质结论。
+The user's 2026-09-24 completion scope is practical usability: five minutes of healthy tracking/display, no application recording drops, and decodable video reconciled against capture submissions. Default synchronization-lag P99 must be at most two seconds; report maxima unchanged. Remove the dedicated relative-baseline P95/throughput release gate without claiming performance is unaffected or long-term stability is established.
+
+Count five minutes after the first qualified frame, excluding warmup. Keep warmup discards separate from recording drops and do not relabel normal-stage drops as warmup. Preserve preparation, warmup, first-frame, and unknown-sync evidence; unknown values are not zero. Use existing component evidence and small targeted checks for warmup cancellation/failure and blocked synchronization, without more repeated stress runs.
+
+Report synchronization lag, CPU, memory, partition writes, and temperature available during the run. Without reliable equipment, explicitly leave power consumption unmeasured and add no separate measurement campaign. Fix known practical-use failures without lowering dimensions/frame rate or hiding failure. The three field-image-quality scenarios and bitrate comparison remain excluded; decodability is not image-quality acceptance.
 
 ## Risks / Trade-offs
 
-- [eMMC 真实掉电或介质损坏] → 使用文件/目录同步和流式封装降低风险，明确尚无真实掉电恢复证据；硬件损毁后不保证保留本机数据。
-- [硬件编码与 NPU/RGA 竞争内存带宽] → 有界缓冲、硬件编码和生产板五分钟并发检查；不承诺长期性能。
-- [内核 I/O 不可中断] → 父进程不无限等待，隔离旧资源且不累积子进程；不承诺强杀立即完成。
-- [有损压缩损伤小目标] → 保持原尺寸，不将录像解码像素称为算法精确原输入。按用户 2026-09-23 确认，本次删除三类现场画质验收及码率对照；相关画质未验证，不作为本变更完成条件。
-- [共享采集代码影响 AR0234] → 默认路径无录像缓冲，保留 AR0234 拒绝启用录像及其既有测试。
-- [新录像无法被原回放入口读取] → 文档明确 H.264/TS 与当前 MJPEG 入口边界；本次不添加转换或解码扩展。
+- **Real eMMC power loss or media damage:** file/directory sync and streaming containers reduce risk. Real power-loss recovery is unverified; hardware damage can lose local data.
+- **Encoding competes with NPU/RGA for bandwidth:** bounded buffers, hardware encoding, and a five-minute production joint check provide limited evidence, without a long-term performance promise.
+- **Uninterruptible kernel I/O:** bound parent waits, isolate old resources, and prevent accumulating workers; immediate force-kill is not guaranteed.
+- **Lossy compression harms small targets:** preserve original dimensions and do not call decoded video exact algorithm input. The user removed the three field-quality scenarios and bitrate comparison on 2026-09-23, so those properties are unverified and outside completion.
+- **Shared capture changes affect AR0234:** the default path has no recording buffers; retain AR0234's recording rejection and its existing checks in this change.
+- **Original replay cannot read new files:** document H.264/TS versus MJPEG boundaries; add no conversion or decoder extension here.
 
 ## Migration Plan
 
-前置：先完成 `fix-sc233hgs-startup-timestamp-warmup` 的采集实现与生产板验收，再集成录像。主规格同步顺序为预热变更后录像变更；两者重叠的 ROS ON/OFF 条款在本增量保留预热正文与场景，避免后同步覆盖。录像不得要求预热先依赖录像实现，独立预热验收仍使用无模型/显示入口。
+Prerequisite: finish `fix-sc233hgs-startup-timestamp-warmup` capture implementation and production acceptance before recording integration. Synchronize warmup before recording. Preserve overlapping ROS ON/OFF warmup text and scenarios so a later sync cannot erase them. Warmup must not depend on recording; its independent acceptance remains model/display-free.
 
-1. 在独立录像目标验证生产板 MPP 头文件/库 ABI（调用接口兼容性）和实际编码参数。沿用项目构建环境约定；缺 SDK 时明确补齐录像目标所需依赖，不能擅自重建镜像或替换系统 RKNN Runtime。
-2. 集成可选支路，默认关闭。同步更新上述三个已有能力增量，保留旧 `need_save` 语义；核对同时进行的 HDMI OSD 变更，不覆盖其修改。
-3. 完成模拟、ARM64 构建、非断电恢复与指定生产板验收。部署前创建持久目录及最小必要权限，不使用全局可写权限。
-4. 在已验证的生产配置中启用录像，保留确切帧率、码率、同步周期和指标记录。回滚设置 `recording.enabled=false` 并重启节点，既有视频文件不删除。
+1. Verify production MPP header/library ABI, meaning call compatibility, and actual encoding settings in an independent target. Use established build conventions. Missing SDKs require explicit recording dependencies, not an unauthorized image rebuild or system RKNN replacement.
+2. Integrate the optional branch disabled by default. Update the three existing capability deltas above and preserve old `need_save` semantics. Check concurrent HDMI changes without overwriting them.
+3. Complete simulation, ARM64 builds, non-power-loss recovery, and identified production-board acceptance. Prepare persistent storage with minimum permissions before deployment; do not make it world-writable.
+4. Enable recording in a validated production configuration and retain exact frame rate, bitrate, synchronization period, and metrics. Roll back by setting `recording.enabled=false` and restarting; keep existing video files.
 
 ## Open Questions
 
-仅保留可在既定架构内实测解决的事项：生产板实际 MPP 版本及支持的对齐/码率控制参数，以及默认配置五分钟实际录像结果。若实际硬件无法满足固定格式、全帧率或发布门槛，必须更新方案，不能将其视为实现者可自行放宽的细节。默认 12 Mbps 不代表已通过小目标、快速运动、暗光场景的人工画质验收；用户已明确将该项移出本次范围。
+The remaining measurements within this design are actual production MPP version, supported alignment/rate-control settings, and five-minute default recording results. If hardware cannot meet fixed format, full frame rate, or release thresholds, revise the design rather than letting implementation silently relax them. Default 12 Mbps does not establish manual small-target, fast-motion, or low-light quality; the user explicitly excluded that acceptance.
 
 ## References
 
-- [Rockchip MPP 项目](https://github.com/rockchip-linux/mpp)：硬件编码接口及平台实现参考；具体部署版本以生产板核验记录为准。
-- [FFmpeg 视频封装文档](https://www.ffmpeg.org/ffmpeg-formats.html)：MPEG-TS、MP4 分片与封装缓冲选项参考。
-- [Linux fsync/fdatasync 文档](https://www.man7.org/linux/man-pages/man2/fsync.2.html)：文件同步、目录同步和错误返回语义参考。
+- [Rockchip MPP](https://github.com/rockchip-linux/mpp): hardware-encoding interface and platform implementation. Use production inspection for the deployed version.
+- [FFmpeg container documentation](https://www.ffmpeg.org/ffmpeg-formats.html): MPEG-TS, fragmented MP4, and container-buffer options.
+- [Linux fsync/fdatasync documentation](https://www.man7.org/linux/man-pages/man2/fsync.2.html): file/directory synchronization and error semantics.
 
-## 已确认的首帧边界（2026-09-23）
+## Confirmed first-frame boundary — 2026-09-23
 
-录像从相机最终确认有效的第一帧开始。若候选首帧在 1.999 秒通过初步检查，而复制与归还后已到 2.001 秒，相机仍按既有规则判预热超时；撤销暂存画面，保留零帧失败会话。不得为录像删除或提前相机原有的最终检查。
+Recording begins at the first frame the camera finally confirms as valid. If a candidate passes its preliminary check at 1.999 seconds but copying and driver return finish at 2.001 seconds, existing camera rules still report warmup timeout. Cancel staged pixels and retain a zero-frame failed session. Recording must not remove or advance the original final camera check.

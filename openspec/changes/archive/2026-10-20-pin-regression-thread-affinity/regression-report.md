@@ -1,60 +1,60 @@
-# 回归线程 CPU 亲和性：最终十八轮实测报告
+# Regression-thread CPU affinity: final eighteen-run report
 
-本次新计划十八轮全部合格。三个 test-03 区间各有三轮未绑定参考和三轮绑定候选。候选受管角色的允许范围与工作点 CPU 符合指定映射。未设置判定规则，因此没有性能通过结论，也没有准确率结论。
+All eighteen fresh planned runs qualified. Each of three test-03 intervals has three unbound references and three pinned candidates. Candidate managed masks and work-point CPUs match the requested mapping. No thresholds were set, so this establishes neither a performance pass nor an accuracy conclusion.
 
-本报告的实测由顺序工作 2 完成。顺序工作 3 的新代理独立验证已完成，初始及最终问题均为 CRITICAL 0、WARNING 0、SUGGESTION 0，且未修代码。顺序工作 4 按用户授权复用本报告的十八轮证据。完整依据见 [verification-1.md](/home/mzh/nickluo/drone_tracker-worktrees/regression-cpu-affinity/openspec/changes/archive/2026-10-20-pin-regression-thread-affinity/verification-1.md) 和 [final-validation.md](/home/mzh/nickluo/drone_tracker-worktrees/regression-cpu-affinity/openspec/changes/archive/2026-10-20-pin-regression-thread-affinity/final-validation.md) 的后续流程状态。
+Sequential work 2 performed these measurements. A fresh work-3 agent independently verified them with initial/final CRITICAL 0, WARNING 0, SUGGESTION 0 and no code fixes. Work 4 reused all eighteen runs under user authorization. See [verification-1.md](verification-1.md) and the later-workflow section of [final-validation.md](final-validation.md).
 
-CPU 亲和性是线程允许执行的 CPU 集合，掩码表示该集合。工作点 CPU 是函数调用当时实际运行的核心。PID 是进程标识，TID 是 Linux 线程标识。三个概念必须分开核对。
+CPU affinity is the permitted set of cores, expressed by a mask. Work-point CPU is the core actually executing a call. PID identifies a process and TID a Linux thread. Check permitted placement, actual execution, and process/thread identity separately.
 
-## 固定条件与实际平台
+## Frozen conditions and actual platform
 
-- 唯一板卡连接：`adb -s 5ceb49407502303d`，没有使用 SSH。板型 `HZ-RK3576_WuKong Board`，内核 `6.1.141-rt36`，实际可见内存 8112044 KiB（约 7.74 GiB）。此为本次指定板，不改写其他生产板规格。
-- CPU 0–3 为 Cortex-A53，4–7 为 Cortex-A72，隔离集合 4–7。只调整测试线程允许集合，没有改变优先级、调频、NPU 调度或系统隔离。
-- Runtime 为系统 `/usr/lib/librknnrt.so` 2.3.2，驱动 0.9.8。未调用前台 `rknn_server`，未覆盖系统库或模型。
-- 两侧均为 `predecode_all`，先解码并校验所有像素；supplier 固定 CPU 4，准备预算 3600 秒，收尾预算 10 秒，供应迟到界限 50000 微秒，队列容量 32。没有预热跳帧、过滤零有效框或放宽门槛。
-- 每个区间按参考 1、候选 1、参考 2、候选 2、参考 3、候选 3 串行执行；每轮新进程、新状态。test-02 按用户要求明确跳过。
-- 板端日历时间落后于宿主机；原始记录原样保留。每轮用单调时钟起点 m0 和系统时间起点 e0 建立映射，保留录像帧的相对间隔与身份。绝对时间按本轮映射解释；顺序和延迟使用单调时钟，未修改系统时间。
+- Board access only through `adb -s 5ceb49407502303d`, without SSH. Board `HZ-RK3576_WuKong Board`, kernel `6.1.141-rt36`, visible memory 8112044 KiB (about 7.74 GiB). This identifies the selected board without rewriting other production-board specifications.
+- CPUs 0–3 are Cortex-A53 and 4–7 Cortex-A72; isolation set is 4–7. Only test-thread allowed masks changed. Priority, governors, NPU scheduling, and system isolation stayed unchanged.
+- System `/usr/lib/librknnrt.so` Runtime 2.3.2, driver 0.9.8. No foreground `rknn_server`, system-library replacement, or model replacement.
+- Both sides use `predecode_all`, decoding/verifying all pixels first. Supplier is CPU 4, preparation 3600 seconds, cleanup 10 seconds, supply-lateness limit 50000 microseconds, queue 32. No warmup skipping, zero-box filtering, or relaxed limits.
+- Each interval runs serially as reference 1, candidate 1, reference 2, candidate 2, reference 3, candidate 3. Each run starts a fresh process/state. test-02 is explicitly user-skipped.
+- Board calendar time lagged the host; raw records were preserved. Each run maps monotonic origin m0 to system origin e0, retaining original frame spacing/identity. Absolute times use that mapping; order/latency use monotonic time. System time was unchanged.
 
-系统 Runtime SHA-256：`d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8`。
+System Runtime SHA-256: `d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8`.
 
-三个模型类别为 YOLO、NanoTrackV3 Backbone 和 Head；对应四个运行参数。实际模型内容如下：
+The three logical roles are YOLO, NanoTrackV3 Backbone, and Head, expressed through four runtime parameters. Actual model contents:
 
-| 运行参数 | SHA-256 |
+| Runtime parameter | SHA-256 |
 |---|---|
 | `tracker.yolo_engine` | `002b1b0a5e7476a5cc62f495997f05d2550e44697fb89c8d48913fb1ee5e06f7` |
 | `tracker.nano_template_backbone` | `622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2` |
 | `tracker.nano_search_backbone` | `9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44` |
 | `tracker.nano_head` | `2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889` |
 
-原素材、姿态和算法参数均只读复用。冻结输入包含 `[20,35)` 的 900 帧、`[100,130)` 的 1801 帧、`[165,end)` 的 2575 帧，保留末帧。素材包（fixture）校验、模型内容、外部依赖、工作负载及观测方式进入身份核对。
+Original media, attitude, and algorithm settings were reused read-only. Frozen inputs contain 900 frames for `[20,35)`, 1801 for `[100,130)`, and 2575 for `[165,end)`, including the final frame. Fixture integrity, model content, external dependencies, workload, and observation mode belong to identity checks.
 
-## 源码、构建与工具身份
+## Source, build and tool identities
 
-算法提交固定为 `4871442dda37d3d64087fda0b7756692c8f7e473`。参考必须称为“4871442 算法基线 + 共同观测补丁 + 共同供帧支持修复”。参考保留未绑定启动行为；候选包含职责绑定及 supplier 提前就绪。两侧使用不同 ARM64 二进制。
+Algorithm commit is `4871442dda37d3d64087fda0b7756692c8f7e473`. Label reference “4871442 algorithm baseline + common observation patch + common source-support fix.” It retains unbound startup; candidate adds role binding and early supplier readiness. Executables are distinct ARM64 builds.
 
-| 侧别 | 源码 SHA-256 | 二进制 SHA-256 |
+| Side | Source SHA-256 | Executable SHA-256 |
 |---|---|---|
-| 未绑定参考 | `080cf382dc2b8306c8e75c14b8c21807968a69551bd9fc62f3d7848faaebb37a` | `dcba1fdc854fad8102cf930149d8bc5b19ec2f2542cdb8f2b3422d041f548799` |
-| 绑定候选 | `198c42f7a0173f3a980b9a54fa842c29f600ec7048b24a686087c46ad656186d` | `9810ee537e7120baafbba94b69c7f1414c4d6f2e705337f68820cefda72c1251` |
+| Unbound reference | `080cf382dc2b8306c8e75c14b8c21807968a69551bd9fc62f3d7848faaebb37a` | `dcba1fdc854fad8102cf930149d8bc5b19ec2f2542cdb8f2b3422d041f548799` |
+| Pinned candidate | `198c42f7a0173f3a980b9a54fa842c29f600ec7048b24a686087c46ad656186d` | `9810ee537e7120baafbba94b69c7f1414c4d6f2e705337f68820cefda72c1251` |
 
-共同供帧支持补丁 SHA-256：`7073f8d077d6a56d4201fdbc1f80b6a0697cbcc4c95aca7203024269e2e52389`。
-共同观测生命周期修正 SHA-256：`6112ad40a98afe5447c959a6007a39b13014a4821a33f719c53a6db9c2410c29`。
+Common supplier-support patch SHA-256: `7073f8d077d6a56d4201fdbc1f80b6a0697cbcc4c95aca7203024269e2e52389`.
+Common observation-lifecycle correction SHA-256: `6112ad40a98afe5447c959a6007a39b13014a4821a33f719c53a6db9c2410c29`.
 
-可重建参考的方法：从固定提交依次应用 `reference-observation-and-tools-final.patch` 与 `common-source-support.patch`。候选应用 `candidate-from-base-final.patch`。同时保存完整参考补丁 `reference-from-base-final.patch`。处理清单的参考 `source_patch_sha256` 指观测/工具补丁；共同支持补丁哈希另由冻结计划保存，两者共同重建实际源码身份。
+Reconstruct reference by applying `reference-observation-and-tools-final.patch`, then `common-source-support.patch`, to the fixed commit. Candidate uses `candidate-from-base-final.patch`. Full reference patch `reference-from-base-final.patch` is also retained. Reference `source_patch_sha256` identifies observation/tools; the frozen plan records common-support hash separately. Both reconstruct actual source identity.
 
-共同支持使真实 HostFrame 保留已验证的只读 Gray8 像素所有权，移除计时供应中的整幅像素分配和复制。Gray8 表示每像素一个八位灰度字节。完整缓存保留到源停止；帧和读取视图能在源清理后继续读取。既有生产深复制接口及调用点保持独立复制。该修复在两侧完全相同。
+Common support makes real HostFrame retain verified read-only Gray8 ownership, removing full-image allocation/copy during timed supply. Gray8 is one eight-bit grayscale byte per pixel. The complete cache remains until source stop; frames/read views survive source cleanup. Production deep-copy interfaces/callers retain independent copies. Both builds use the identical fix.
 
-构建使用默认 amd64 镜像 `sha256:025d0aa88983b0646a1b7a4d25cbc13dc96a6206e0148475bbfd5fad15057421`，GCC 11.4.0 交叉编译 ARM64，CMake 3.22.1，Release，测试、HDMI 和录像编译选项相同。84 个 C++ 目标的编译器、编译参数（flags）和预处理宏（defines）逐项相同。没有切换后端。项目代码静态链接到节点；每侧实际动态依赖及空的独立项目共享库集合均保留在身份中。每侧另有 24 个库构建产物的文件哈希，见 `project-library-artifacts.json`。
+Build image is default amd64 `sha256:025d0aa88983b0646a1b7a4d25cbc13dc96a6206e0148475bbfd5fad15057421`, GCC 11.4.0 cross-compiling ARM64, CMake 3.22.1, Release. Test/HDMI/recording options match. Compiler, flags, and preprocessor definitions match for all 84 C++ targets. No backend switch occurred. Project code links statically into the node. Actual external dynamic dependencies and the empty independent project-shared-library set remain in identity. Each side also has 24 library-artifact hashes in `project-library-artifacts.json`.
 
-控制器在停服前及每轮前后核对实际已加载的 15 个回归模块。核对包含模块绝对来源路径、文件哈希，以及惰性导入的 `cpu_evidence.py`。新控制器没有导入会改写 `sys.path` 的旧 `preflight.py`。控制器、状态助手、恢复脚本、环境脚本、原配置和计划也冻结并复核。原始证明为 `board/control/loaded-tool-audit.jsonl`。
+Before stopping services and before/after each run, the controller checks 15 actually loaded regression modules: absolute origins, hashes, and lazily imported `cpu_evidence.py`. It does not import old `preflight.py`, which mutates `sys.path`. Controller, status helper, restoration/environment scripts, original configuration, and plan are frozen/rechecked. Raw proof is `board/control/loaded-tool-audit.jsonl`.
 
-普通比较仍拒绝 CPU 策略差异。三个显式实验处理清单仅允许逐叶记录的职责策略和三份已审阅驱动源文件差异。每侧三轮仍执行严格一致性和原完整性规则；原始两侧比较组完整保留。
+Ordinary comparison still rejects CPU-policy differences. The three explicit treatment manifests permit only exact policy leaves and three reviewed driver-source differences. Three runs per side retain strict consistency/integrity checks, and both original comparison groups remain complete.
 
-## 每轮原始摘要
+## Raw per-run summary
 
-p95 为该轮样本的第 95 百分位；下节再对三轮的 p95 取中位数和范围。MiB 为 1024×1024 字节，RSS 为驻留物理内存。补跟踪是恢复时为较早检测结果补做的实际跟踪步骤；没有步骤时耗时记无事件，不补成零。所有轮次、零有效框及慢值均保留。
+p95 is each run’s 95th percentile; the next section aggregates the three p95 values by median/range. MiB is 1024×1024 bytes; RSS is resident physical memory. Catch-up steps replay tracking after an earlier detection. No steps means no duration event, not zero milliseconds. Every run, zero-box result, and slow value is retained.
 
-| 区间 | 侧/轮 | 更新/检测 | 发布/有效 | 恢复尝试/步数 | 更新 p95 ms | YOLO p95 ms | 请求排队 p95 ms | 最大供应迟到 ms | 节点峰值 MiB |
+| Interval | Side/run | Updates/detections | Publications/valid | Recovery attempts/steps | Update p95 ms | YOLO p95 ms | Request queue p95 ms | Maximum supply lateness ms | Node peak MiB |
 |---|---|---|---|---|---|---|---|---|---|
 | wlcb-104206-020-035 | ref/1 | 900/33 | 900/0 | 0/0 | 0.031235 | 462.303 | 14.2563 | 0.073704 | 2194.92 |
 | wlcb-104206-020-035 | cand/1 | 900/62 | 900/0 | 0/0 | 0.019044 | 247.487 | 15.7637 | 0.129368 | 2187.39 |
@@ -75,17 +75,17 @@ p95 为该轮样本的第 95 百分位；下节再对三轮的 p95 取中位数�
 | wlcb-104206-165-end | ref/3 | 2551/93 | 2550/68 | 1/24 | 0.037721 | 464.395 | 16.1421 | 0.086181 | 5871.57 |
 | wlcb-104206-165-end | cand/3 | 2572/183 | 2572/310 | 3/15 | 8.30874 | 287.015 | 32.5224 | 0.199701 | 5872.99 |
 
-所有轮次供应超过 50 毫秒的帧数为零，进程正常退出并完成资源回收。指标 `input_late_count` 统计任何正延迟，并不表示超过 50 毫秒；门槛越界另按原始计划/供应时间核对。队列拒绝、输入残留、跳帧和清框的逐轮值保存在 `analysis/per-run-summary.csv`，没有从统计中删除。
+No supplied frame exceeded 50 milliseconds of lateness. All processes exited normally and resources were reclaimed. `input_late_count` counts any positive delay, not only violations; limits are checked separately from planned/actual supply times. Per-run queue rejection, residual input, skipped frames, and clearing remain in `analysis/per-run-summary.csv` without statistical removal.
 
-## 每区间三轮比较
+## Three-run comparison by interval
 
-差值为候选减参考，百分比为差值除以参考中位数。中位数旁方括号表示三轮最小值和最大值。基数为零且出现新增事件时百分比为 null；任一轮无事件时相应耗时不跨轮聚合。没有跨区间合并样本或相互抵消。摄氏温度只报告差值，不赋予比例百分比含义；该百分比记 null。
+Differences are candidate minus reference; percentages divide by reference median. Brackets show each side’s three-run minimum/maximum. A new event over zero baseline gives null percentage. If any run has no event, that duration is not aggregated across runs. Intervals are neither pooled nor used to offset each other. Celsius temperature has only an absolute difference; its relative percentage is null.
 
 ### wlcb-104206-020-035
 
-该区间六轮均为新合格结果。完整全部窗口及指标：[JSON](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-020-035/comparison.json)、[CSV](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-020-035/comparison.csv)、[中文明细](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-020-035/report.md)。
+All six interval runs are fresh qualified results. Complete windows/metrics: [JSON](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-020-035/comparison.json)、[CSV](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-020-035/comparison.csv)、[Chinese details](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-020-035/report.md).
 
-| 指标/单位 | 参考三轮 | 候选三轮 | 参考中位数 [范围] | 候选中位数 [范围] | 差值 | 百分比 |
+| Metric/unit | Three reference runs | Three candidate runs | Reference median [range] | Candidate median [range] | Difference | Percentage |
 |---|---|---|---|---|---|---|
 | `full.update_duration_ms.p95`/ms | 0.031235; 0.030188; 0.030392 | 0.019044; 0.018239; 0.018699 | 0.030392 [0.030188, 0.031235] | 0.018699 [0.018239, 0.019044] | -0.011693 | -38.4739% |
 | `full.detector_duration_ms.p95`/ms | 462.303; 464.292; 463.642 | 247.487; 246.103; 246.609 | 463.642 [462.303, 464.292] | 246.609 [246.103, 247.487] | -217.033 | -46.8105% |
@@ -122,9 +122,9 @@ p95 为该轮样本的第 95 百分位；下节再对三轮的 p95 取中位数�
 
 ### wlcb-104206-100-130
 
-该区间六轮均为新合格结果。完整全部窗口及指标：[JSON](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-100-130/comparison.json)、[CSV](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-100-130/comparison.csv)、[中文明细](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-100-130/report.md)。
+All six interval runs are fresh qualified results. Complete windows/metrics: [JSON](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-100-130/comparison.json)、[CSV](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-100-130/comparison.csv)、[Chinese details](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-100-130/report.md).
 
-| 指标/单位 | 参考三轮 | 候选三轮 | 参考中位数 [范围] | 候选中位数 [范围] | 差值 | 百分比 |
+| Metric/unit | Three reference runs | Three candidate runs | Reference median [range] | Candidate median [range] | Difference | Percentage |
 |---|---|---|---|---|---|---|
 | `full.update_duration_ms.p95`/ms | 0.032117; 0.03319; 0.031112 | 0.019044; 0.018952; 0.018837 | 0.032117 [0.031112, 0.03319] | 0.018952 [0.018837, 0.019044] | -0.013165 | -40.9908% |
 | `full.detector_duration_ms.p95`/ms | 463.219; 462.39; 463.038 | 245.932; 245.297; 245.324 | 463.038 [462.39, 463.219] | 245.324 [245.297, 245.932] | -217.714 | -47.0185% |
@@ -161,9 +161,9 @@ p95 为该轮样本的第 95 百分位；下节再对三轮的 p95 取中位数�
 
 ### wlcb-104206-165-end
 
-该区间六轮均为新合格结果。完整全部窗口及指标：[JSON](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-165-end/comparison.json)、[CSV](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-165-end/comparison.csv)、[中文明细](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-165-end/report.md)。
+All six interval runs are fresh qualified results. Complete windows/metrics: [JSON](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-165-end/comparison.json)、[CSV](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-165-end/comparison.csv)、[Chinese details](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/analysis/comparisons/final-affinity/wlcb-104206-165-end/report.md).
 
-| 指标/单位 | 参考三轮 | 候选三轮 | 参考中位数 [范围] | 候选中位数 [范围] | 差值 | 百分比 |
+| Metric/unit | Three reference runs | Three candidate runs | Reference median [range] | Candidate median [range] | Difference | Percentage |
 |---|---|---|---|---|---|---|
 | `full.update_duration_ms.p95`/ms | 15.5723; 15.1913; 0.037721 | 8.50782; 8.32472; 8.30874 | 15.1913 [0.037721, 15.5723] | 8.32472 [8.30874, 8.50782] | -6.86661 | -45.2009% |
 | `full.detector_duration_ms.p95`/ms | 539.552; 528.713; 464.395 | 280.116; 292.927; 287.015 | 528.713 [464.395, 539.552] | 287.015 [280.116, 292.927] | -241.698 | -45.7144% |
@@ -198,15 +198,15 @@ p95 为该轮样本的第 95 百分位；下节再对三轮的 p95 取中位数�
 | `exited_during_read_count`/count | 0; 0; 0 | 0; 0; 0 | 0 [0, 0] | 0 [0, 0] | 0 | 0% |
 | `temperature_max_c`/C | 48.076; 48.076; 48.076 | 52.692; 52.692; 51.768 | 48.076 [48.076, 48.076] | 52.692 [51.768, 52.692] | 4.616 | null |
 
-恢复尝试数与实际步数必须一起解释。工作量变化时，恢复总耗时差不能单独归因于调度。当前数据只描述这些固定输入下的观测分布，不证明 NPU、缓存或内存带宽争用已隔离。
+Interpret recovery attempts with actual step counts. Changed work amounts prevent attributing total recovery-duration differences solely to scheduling. These data describe fixed-input distributions, not isolation of NPU/cache/memory-bandwidth contention.
 
-## 实际 CPU、线程与观测代价
+## Actual CPUs, threads and observation cost
 
-supplier 表示供帧线程，Tracking 表示跟踪更新线程，logger 表示独立诊断日志进程，control 表示主线程，supervision 表示外部监督。九个候选轮的读回范围均为 supplier 4、Tracking 5、YOLO 6、logger 7、control 1、supervision 0–3。受管更新、初始化、各个实际补跟踪步骤、YOLO 关键边界与发布位置均按轮次、更新或请求身份核对；必要点完整，零溢出、零缺失。参考除 supplier 4 外均保留 0–7，不能称为 CPU 1 参考。
+Supplier is the frame-input thread, Tracking the update thread, logger the independent diagnostic process, control the main thread, and supervision external controllers. All nine candidates read back supplier 4, Tracking 5, YOLO 6, logger 7, control 1, supervision 0–3. Managed updates, initialization, every actual catch-up step, YOLO boundaries, and publications were joined by round/update/request. Required points were complete with zero overflow/missing records. Reference retains 0–7 except supplier 4; it is not a CPU-1 reference.
 
-下表的工作点集合来自实际调用记录。logger 使用整个独立进程及线程快照核对；supplier 由入口读回和逐帧 wake/copy/lock CPU 样本证明；supervision 在回放时钟前读回。外部 `/proc` 的 last_cpu 只表示离散采样看到的最近执行核心，不能代替调用时 CPU。
+The table’s work-point sets come from actual call records. Logger uses complete-process/thread snapshots. Supplier uses entry readback and per-frame wake/copy/lock CPU samples. Supervision is read back before playback origin. External `/proc` last_cpu is the most recent core observed discretely; it cannot replace call-time CPU.
 
-| 区间 | 侧/轮 | Tracking 调用 CPU | YOLO 调用 CPU | control 调用 CPU | 模型就绪未知 TID 数 | 回放期间未知 TID 数 |
+| Interval | Side/run | Tracking call CPUs | YOLO call CPUs | control call CPUs | Unknown model-ready TIDs | Unknown playback TIDs |
 |---|---|---|---|---|---|---|
 | wlcb-104206-020-035 | ref/1 | 0,1,2,3 | 0,1,2,3 | 0 | 11 | 18 |
 | wlcb-104206-020-035 | cand/1 | 5 | 6 | 1 | 11 | 11 |
@@ -227,38 +227,38 @@ supplier 表示供帧线程，Tracking 表示跟踪更新线程，logger 表示�
 | wlcb-104206-165-end | ref/3 | 0,1,2,3 | 0,1,2,3 | 1 | 11 | 18 |
 | wlcb-104206-165-end | cand/3 | 5 | 6 | 1 | 11 | 11 |
 
-未知 TID 是实际发现但没有受管职责登记的库或中间件线程；不把它们猜成 RKNN 或 YOLO。解码及登记前准备记录保留为准备证据，登记后才核对稳定掩码。逐线程读取开始时间防止扫描跨越登记边界而误判。读取期间退出的线程单独保留，不以缺失掩码冒充位置证明。未知线程的实际 TID、掩码、last_cpu 分布，以及逐轮温度、频率和内存样本见 `analysis/cpu-and-memory.json` 和各轮 `thread-snapshots.jsonl`。
+Unknown TIDs are observed library/middleware threads without managed-role registration; no RKNN/YOLO attribution is guessed. Decoder/pre-registration data remain preparation evidence. Stable masks are checked only after registration. Per-thread read-start times avoid false changes when a scan crosses registration. Exit races stay explicit and missing masks do not prove placement. Unknown TIDs/masks/last_cpu distributions and per-run temperature/frequency/memory are in `analysis/cpu-and-memory.json` and `thread-snapshots.jsonl`.
 
-每个写者预分配 262144 条容量。热路径不扫描线程、不写文件、不申请观测存储；掩码只在入口登记时读取。逐点 `cost_ns` 衡量记录内部的单调时钟和 CPU 查询等开销，不包含首次登记及整个接收调用外层开销。另列的提交成本包含诊断时钟和通知。这些数值不是关闭观测与开启观测的总成本对照。两侧共同启用，仍可能扰动被测工作。
+Each writer preallocates 262144 records. The hot path neither scans threads, writes files, nor allocates observer storage; masks are read only at entry registration. Per-point `cost_ns` measures internal monotonic-clock/CPU queries and record costs, excluding first registration and the whole receiver-call envelope. Separate submission costs include diagnostic clocks/notifications. These are not complete observation-off/on overhead comparisons. Both builds enable observation symmetrically, but it can still perturb execution.
 
-线程快照由外部监督执行，每秒至多一次并增加模型就绪/回放结束边界。节点峰值为准备与实际线程快照中的峰值 RSS（驻留物理内存）最大值；系统最小可用内存来自同样的离散样本，不能当作连续采样的绝对极值。MiB 为 1024×1024 字节。
+External supervision takes snapshots at most once per second, plus model-ready/playback-ended boundaries. Node peak is the maximum RSS from preparation and thread snapshots. Minimum system-available memory uses the same discrete samples, not continuous absolute extrema. MiB is 1024×1024 bytes.
 
-## 自动检查、历史失败与未运行项
+## Automated checks, historical failures and omitted scope
 
-| 检查 | 本次结果 |
+| Check | Result from this plan |
 |---|---|
-| 候选 `./build.sh --test` | 57/57 CTest；native OS 内存限制 1/1 |
-| 参考 `./build.sh --test` | 首次 56/57；补齐既有空 install 目录后，受影响 packaging CTest 1/1。累计全部 57 项通过，首次失败日志原样保存；native OS 1/1 |
-| 双侧 Python SDK | 各 88 个唯一用例：87 本机 + 1 实际 ARM 中间件；无跳过，包含亲和性定向及控制器失败/回收用例 |
-| 编译器/编译选项一致性 | 84 个 C++ 目标逐项相同 |
-| 最终板端 | 18/18 新计划轮合格，全部原完整性和截止门槛生效 |
+| Candidate `./build.sh --test` | 57/57 CTests; native OS memory limit 1/1 |
+| Reference `./build.sh --test` | Initial 56/57; affected packaging CTest 1/1 after adding existing empty install directory. All 57 eventually passed, first failure log retained; native OS 1/1 |
+| Both Python SDK groups | 88 unique cases each: 87 native + 1 actual ARM middleware; no skips, including affinity and controller failure/cleanup checks |
+| Compiler/options equality | All 84 C++ targets match |
+| Final board runs | 18/18 fresh planned runs qualified with all original integrity/deadline limits |
 
-首次参考构建的 packaging 测试依赖被 Git 忽略的 `.docker-artifacts/install/drone_tracker` 空目录。新克隆没有该目录；候选和此前诊断参考均已有。只补齐该测试环境目录并重跑受影响测试，没有修改源码或二进制。`reference-build.log`、`reference-full-ctest-initial.log` 与 `reference-package-fixture-recheck.log` 均保留。
+Initial reference packaging required ignored empty `.docker-artifacts/install/drone_tracker`, absent in a fresh clone but present for candidate/earlier diagnostic reference. Only that existing test-environment directory was added before rerunning the affected test; source and binaries were unchanged. `reference-build.log`, `reference-full-ctest-initial.log`, and `reference-package-fixture-recheck.log` remain. Artifact-directory retention is not permanent.
 
-首次本机分析在 ADB 复制未结束时启动，因缺失参考目录被拒绝。该尝试与日志保留在 `analysis-incomplete-transfer-attempt/` 和 `analysis-incomplete-transfer-console.log`。复制完成后重新执行冻结和比较，三个区间均通过身份与完整性检查；没有改写任何板端轮次。
+Initial host analysis started before ADB transfer completed and rejected the missing reference directory. Keep that attempt in `analysis-incomplete-transfer-attempt/` and `analysis-incomplete-transfer-console.log`. After copying, freeze/comparison reran and all three intervals passed identity/integrity without changing board records.
 
-原正式首轮 210.9 毫秒像素复制等待、所有诊断失败及 import 顺序问题均保存在原证据根，未修写、未作为本次十八轮槽位。因果与限制见 [failure-investigation.md](failure-investigation.md)。原失败交付见 [validation.md](validation.md)，其中历史进度和结论不适用于本次新计划。
+The original formal 210.9 ms pixel-copy wait, diagnostic failures, and import-order issue remain under their original evidence root and do not occupy any of the new eighteen-run slots. See [failure-investigation.md](failure-investigation.md) for causality/limits and [validation.md](validation.md) for the failed delivery. Those historical progress/conclusions do not describe this new plan.
 
-clang-tidy/clangd 在本环境不可用。未运行 Jetson 实机、相机、HDMI、长期负载、飞行或人工标注的准确率检查；本任务是固定录像的回归职责分配对照。容器与 QEMU 检查不能替代板端时间性能，本报告十八轮均在指定实际 RK3576 板上完成。
+clang-tidy/clangd were unavailable. Jetson hardware, camera, HDMI, long load, flight, and human-labeled accuracy did not run. This experiment compares regression CPU roles on fixed video. Containers/QEMU do not replace board timing; all eighteen runs here used the identified physical RK3576 board.
 
-## 环境恢复与完整证据
+## Restoration and complete evidence
 
-停服前独立 `afffinal20-restore.timer` 已 active 并核验，每轮前续期。最终服务 PID **11692**，active/running/enabled；恢复 timer inactive；无测试遗留进程。原 91 个受保护正式文件、模型、Runtime、部署链接与 governors 均逐项相同。
+Independent `afffinal20-restore.timer` was active/verified before services stopped and renewed before each run. Final service PID **11692**, active/running/enabled; restore timer inactive; no test leftovers. All 91 protected files, models, Runtime, deployment link, and governors matched original values.
 
-受保护文件映射 SHA-256：`2027df07543b1eaf29c30dd2ecd7ffd4e98b9ccecb688eabbda12842c4884ce4`。部署：`/opt/drone_tracker/releases/bundle-20260927T075028Z-3213`。
+Protected-file mapping SHA-256: `2027df07543b1eaf29c30dd2ecd7ffd4e98b9ccecb688eabbda12842c4884ce4`. Deployment: `/opt/drone_tracker/releases/bundle-20260927T075028Z-3213`.
 
-完整证据根：`/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020`。恢复证明：[final-board-proof.json](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/final-board-proof.json)；原始前后状态和守护完成记录位于 `board/control/`。
+Complete evidence root: `/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020`. Restoration proof: [final-board-proof.json](/home/mzh/nickluo/drone_tracker-validation/pin-regression-thread-affinity-final-20261020/final-board-proof.json). Raw before/after states and guard completion are under `board/control/`.
 
-正式配置及顺序为 `board/control/{ref,cand}.json`、`plan.json`、`frozen-plan.json` 和每区间 `*-treatment.json`。分析入口为 `analysis/freeze-config.json` 与 `analysis/compare-config.json`，全部原始轮目录在 `board/r/runs/`。各区间 JSON/CSV/中文报告保留所有指标及允许差异；补充 CPU、内存和观测成本的三轮比较另存 `analysis/supplementary-comparison.{json,csv}`。
+Formal configurations/order are `board/control/{ref,cand}.json`, `plan.json`, `frozen-plan.json`, and per-interval `*-treatment.json`. Analysis entries are `analysis/freeze-config.json` and `analysis/compare-config.json`; all raw runs are under `board/r/runs/`. Interval JSON/CSV/Chinese reports preserve every metric/allowed difference. Additional CPU/memory/observer-cost comparisons are `analysis/supplementary-comparison.{json,csv}`.
 
-最终源码一致性和逐需求映射见 [final-validation.md](/home/mzh/nickluo/drone_tracker-worktrees/regression-cpu-affinity/openspec/changes/archive/2026-10-20-pin-regression-thread-affinity/final-validation.md)。若后续独立验证修改影响构建或运行的代码，必须重新冻结并再跑完整十八轮；只读验证确认后可复用当前证据。
+Final source consistency and requirement mapping are in [final-validation.md](final-validation.md). A later verification changing build/runtime code requires refreezing and eighteen fresh runs; read-only verification may confirm reuse of this evidence.

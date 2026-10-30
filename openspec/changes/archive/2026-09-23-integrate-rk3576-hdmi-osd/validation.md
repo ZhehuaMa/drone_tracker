@@ -1,145 +1,145 @@
-# HDMI OSD 实施与验证记录
+# HDMI OSD implementation and validation record
 
-> 2026-09-23 最新验收见 [剩余任务验收记录](final-validation.md)，包括产品独占检查、用户实际画面观察和最终节点验证。RKNN 同步修复证据见 [RKNN 同步修复记录](rknn-sync-validation.md)。下文完整保留此前失败与验收历史；其中进度和阻塞描述均属于历史状态，不代表当前结果。
+> Latest acceptance as of 2026-09-23 is in [remaining-task acceptance](final-validation.md), including product exclusivity checks, user observation of actual output, and final node validation. RKNN synchronization repair is in [RKNN synchronization validation](rknn-sync-validation.md). This report preserves earlier failure and acceptance history. Progress and blockers below describe those earlier stages, not the final result.
 
-本记录对应 `integrate-rk3576-hdmi-osd`。验收对象为生产 `HZ-RK3576_WuKong Board`，不是开发板 1 或 2。更新日期为 2026-09-23。任务进度为 **28/32**；剩余 4.6、6.2、6.3、6.4。尚未完成的任务保持未勾选，不同步或归档本变更。
+Change: `integrate-rk3576-hdmi-osd`. Acceptance target was production `HZ-RK3576_WuKong Board`, not development board 1 or 2. Updated 2026-09-23. This historical stage was **28/32**, with 4.6, 6.2, 6.3, and 6.4 outstanding. They stayed unchecked and this stage did not synchronize or archive the change as accepted.
 
-后续隔离测试的具体证据与诊断结论见 [isolation-diagnosis.md](isolation-diagnosis.md)。下文初轮验收中的“根因未确认”保留为当时的记录，不覆盖后续发现。
+Subsequent isolated-test evidence and diagnoses are in [isolation-diagnosis.md](isolation-diagnosis.md). Initial statements that the cause was unconfirmed remain records of that stage and do not override later findings.
 
-## 已实施代码
+## Implemented code
 
-- `src/osd/presentation.h`：完整包、拥有字符串与数值的遥测快照、可注入显示接口。
-- `src/osd/presenter.*`：独立线程、单槽整包替换、轮次隔离、冻结、过期、失败收尾及统计。
-- `src/osd/geometry.*`：按输入尺寸计算最终视频矩形，框使用同一映射并裁剪。
-- `src/osd/layout.*` 与 `status_glyphs.h`：独立信息层和透明目标层、状态颜色、锁定标记、未知值与固定中文提示。
-- `src/osd/ros_telemetry.*`：标准消息订阅、单调时钟有效期限、返航与气压参考、单位转换及告警。
-- `src/osd/low_level_feedback.*`：单独的可选消息依赖边界，编译时校验电池等级常量。
-- `src/platform/rk3576/osd/`：自有 DMA 缓冲、RGA 灰度/彩色处理、DRM 双层原子提交及原状态恢复。
-- `src/drone_tracker_node.*`：仅在已消费结果路径提交 `display_box`；生命周期事件在原控制路径通知显示。未新增帧源消费者或本地结果 ROS 回订阅。
+- `src/osd/presentation.h`: complete presentation packet, telemetry snapshots owning strings/values, and injectable display interface.
+- `src/osd/presenter.*`: separate thread, single-slot whole-packet replacement, round isolation, freezing, expiry, failure cleanup, and counters.
+- `src/osd/geometry.*`: final video rectangle from actual input dimensions, with the same mapping/clipping for boxes.
+- `src/osd/layout.*` and `status_glyphs.h`: separate information/transparent-target layers, state colors, lock decorations, unknown values, and fixed Chinese screen hints.
+- `src/osd/ros_telemetry.*`: standard-message subscriptions, monotonic expiry, home/barometric references, unit conversions, and warnings.
+- `src/osd/low_level_feedback.*`: separate optional-message dependency with compile-time battery-level checks.
+- `src/platform/rk3576/osd/`: owned DMA buffers, RGA grayscale/color operations, two-plane atomic DRM submission, and prior-state restoration.
+- `src/drone_tracker_node.*`: `display_box` submission only for consumed results and display lifecycle notifications on existing control paths. This change added neither a frame-source consumer nor ROS resubscription to local results.
 
-## 模拟与 ROS 自动化证据
+## Simulation and ROS automation evidence
 
-本机使用约定的 `roc-rk3576-ros2-build:humble-arm64` 镜像和 `./build.sh --test`，没有修改或重建镜像。默认 OSD 关闭构建的完整测试已通过 **34/34**。日志位于本机 `.docker-artifacts/log/build-console.log` 和 `test-console.log`。
+The local agreed image was `roc-rk3576-ros2-build:humble-arm64`, invoked through `./build.sh --test`, without image modification/rebuild. The default OSD-disabled complete suite passed **34/34**. Historical logs were `.docker-artifacts/log/build-console.log` and `test-console.log`.
 
-| 测试 | 覆盖要求 |
+| Test | Coverage |
 |---|---|
-| `osd_presenter_tests` | A/B/C 整包替换、只读源帧、视图存活、硬件在途时不复用、提交前停止、在途停止、新轮隔离、可控单调时钟过期、EOF、输入/显示故障及重复退出 |
-| `osd_geometry_tests` | 1920×1200 → `(0,14,720,450)`、中心 `(360,239)`、其他宽高比、贴边/越界/非法框 |
-| `osd_layout_tests` | 四种跟踪状态、空框清除、冻结无框、告警与冻结区域隔离、新遥测更新、未知姿态、固定中文提示及 PNG 快照 |
-| `osd_telemetry_tests` | 四元数归一化与 ENU 航向、非有限值、消息未知标记、GPS 单位、3000 mAh 示例、未知节数、返航点上升沿、飞行中气压参考、告警优先级和独立超时 |
-| `ros_osd_telemetry_tests` | 实际 ROS 发布到模拟显示、话题重映射、QoS 匹配、OFF 后更新、过期组独立失效、雷达不覆盖本地跟踪状态 |
-| `ros_video_tests` | OSD/ROS 图像开关组合、采集时间、状态仅变化发布、显示故障后业务继续、初始化回滚、原有重启/EOF/输入异常回归 |
-| `ros_initialization_tests` | 未编译却请求启用的明确诊断；编译启用版本使用不存在的显示设备验证初始化失败 |
+| `osd_presenter_tests` | A/B/C whole-packet replacement, immutable source frames, retained views, no reuse during hardware access, stopping before/during submission, new-round isolation, controlled monotonic expiry, EOF, input/display failure, repeated shutdown |
+| `osd_geometry_tests` | 1920×1200 → `(0,14,720,450)`, center `(360,239)`, other aspect ratios, edge/outside/invalid boxes |
+| `osd_layout_tests` | Four tracking states, clearing empty boxes, frozen images without targets, separate warning/freeze areas, new telemetry, unknown attitude, fixed Chinese hints, PNG snapshots |
+| `osd_telemetry_tests` | Quaternion normalization/ENU heading, nonfinite/unknown values, GPS units, 3000 mAh example, unknown cell count, arm-edge home capture, airborne pressure reference, warning priorities, independent expiry |
+| `ros_osd_telemetry_tests` | Real ROS publication to mock display, remapping, QoS, updates after OFF, independent expiry groups, radar cannot overwrite local tracking state |
+| `ros_video_tests` | OSD/debug-image combinations, capture timestamps, state publication only on change, business continues after display failure, initialization rollback, existing restart/EOF/input-failure coverage |
+| `ros_initialization_tests` | Explicit error for enabling unbuilt OSD; built OSD uses a missing display device to verify failed initialization |
 
-布局快照输出位于 `.docker-artifacts/build/drone_tracker/src/osd/osd-status-*.png`。已人工检查工具返回的故障提示快照，中文可辨识，冻结提示与告警没有重叠。此处是 CPU 画布检查，不是 HDMI 屏幕验收。
+Layout snapshots were `.docker-artifacts/build/drone_tracker/src/osd/osd-status-*.png`. Manual inspection of returned fault snapshots found readable Chinese text without overlapping freeze hints/warnings. This was a CPU-canvas check, not HDMI-screen acceptance. `.docker-artifacts/` is disposable; historical paths do not guarantee the files still exist.
 
-系统日历时间不参与有效期限计算。时间测试注入单调时钟；布局单独接收系统时间。没有把 ROS 消息自带时间戳当作接收新鲜度。
+Calendar time does not determine expiry. Tests inject monotonic time; layout receives system time separately. Message-provided timestamps were not used as receipt freshness.
 
-没有配置可运行的 clang-tidy/clangd 检查入口，约定容器也不提供这两个工具；该静态检查缺口保留。C++ 构建、CTest 和 `git diff --check` 已执行。Jetson 硬件/SDK 构建未执行；`jetson_config_tests` 仅测试配置策略。
+No runnable clang-tidy/clangd entry was configured and the container lacked those tools. C++ builds, CTest, and `git diff --check` ran. Jetson hardware/SDK builds did not run; `jetson_config_tests` checks configuration policy only.
 
-## 生产板硬件前提和探针
+## Production hardware prerequisites and probes
 
-详细能力检查见 [environment-check.md](environment-check.md)。本次 SSH 对象为 `firefly-production`，主机名 `hzhy`，内核 `6.1.141-rt36`。
+See [environment-check.md](environment-check.md). SSH target was `firefly-production`, hostname `hzhy`, kernel `6.1.141-rt36`.
 
-- libdrm pkg-config 版本 2.4.124；librga pkg-config 版本 2.1.0，运行 API 报告 `1.10.5_[9]`。
-- `HDMI-A-1`，720×480，实际 60 Hz；可启用原子接口并使用带透明通道的显示层。
-- 系统 Runtime `/usr/lib/librknnrt.so` 指纹为 `d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8`，驱动 0.9.8。没有覆盖系统 Runtime。
-- 板端独立构建目录 `/tmp/drone-osd-20260923/build`。公共测试 **3/3** 通过。
-- 首轮 `osd_hdmi_probe` 使用有行填充的 1920×1200 灰度渐变和彩色红蓝块及运动框，分别开启两次后端。两次均为 `submitted=60,replaced=0,displayed=60,refreshes=93`，退出码 0。初始化双层 TEST_ONLY 检查、实际原子提交、等待事件、退出恢复和再次打开均成功。
-- 后续探针源码在视频像素内加入 `FRAME N`，目标框标签同步为 `N`，供实际输出配对观察。首次探针上述计数不冒充后续版本的视觉验收结果。
+- libdrm pkg-config: 2.4.124. librga pkg-config: 2.1.0; runtime API: `1.10.5_[9]`.
+- `HDMI-A-1`, 720×480 at actual 60 Hz, with atomic mode and an alpha-capable plane.
+- System `/usr/lib/librknnrt.so` SHA-256: `d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8`; driver 0.9.8. Runtime was not overwritten.
+- Board standalone build: `/tmp/drone-osd-20260923/build`. Public tests passed **3/3**.
+- Initial `osd_hdmi_probe` used padded 1920×1200 grayscale gradients, red/blue blocks, and moving boxes, opening the backend twice. Both runs reported `submitted=60,replaced=0,displayed=60,refreshes=93` and exit 0. Initial two-plane TEST_ONLY, real atomic submissions, completion-event waits, restoration, and reopen succeeded.
+- Later probe source added `FRAME N` within video and matching target label `N` for visual pairing. Initial probe counts are not visual acceptance for that later version.
 
-`displayed` 表示成功交付的新输入包；`refreshes` 表示成功画面提交次数，不是物理屏幕扫描次数。重复刷新同一帧不增加新帧计数。
+`displayed` counts successfully delivered new packets. `refreshes` counts successful display submissions, not physical scans. Repeated refresh of one frame does not increase new-frame count.
 
-**仍缺实际输出证据：**当前 Mac 的 AVFoundation 没有枚举出可读取的视频设备。因此尚未观察 HDMI 端的灰度中性、红蓝通道、运动框配对和冻结提示。提交成功不等于像素验收完成，任务 4.6 保持未完成。
+**Actual-output evidence was still missing at this stage:** Mac AVFoundation exposed no readable video device. HDMI grayscale neutrality, red/blue channels, moving-box pairing, and freeze hints had not been observed. Successful submission is not pixel acceptance; task 4.6 remained incomplete.
 
-## 完整板端构建环境处理
+## Complete board build environment
 
-生产板原缺少 `vision_msgs`、`cv_bridge`。已新增 `ros-humble-vision-msgs` 4.1.1、`ros-humble-cv-bridge` 3.2.1，以及其 `libboost-python1.74.0`、`python3-opencv` 依赖；没有升级已有软件包。原下载代理 `127.0.0.1:18080` 未运行，本次 apt 命令临时使用 DIRECT；未修改代理配置。
+The board initially lacked `vision_msgs` and `cv_bridge`. Added `ros-humble-vision-msgs` 4.1.1, `ros-humble-cv-bridge` 3.2.1, and dependencies `libboost-python1.74.0`/`python3-opencv`; existing packages were not upgraded. Download proxy `127.0.0.1:18080` was not running. Those apt commands temporarily used DIRECT without changing proxy configuration.
 
-找到生产板已有 `quadrotor_msgs` 1.0.0，安装前缀 `/home/hzhy/workspace/fpv_ws/install/quadrotor_msgs`。其 LowLevelFeedback 定义明确包含 BAT_INVALID=0、BAT_GOOD=1、BAT_LOW=2、BAT_CRITICAL=3。初次仅加载 `/opt/ros/humble` 时未找到该包；显式指定实际 CMake 路径后完成发现。不能将先前的环境未加载误报为包不存在。
+Existing board `quadrotor_msgs` 1.0.0 was under `/home/hzhy/workspace/fpv_ws/install/quadrotor_msgs`. LowLevelFeedback defined BAT_INVALID=0, BAT_GOOD=1, BAT_LOW=2, BAT_CRITICAL=3. Loading only `/opt/ros/humble` did not discover it; explicitly selecting its actual CMake path succeeded. An unloaded environment is not evidence that a package is absent.
 
-完整节点源快照位于 `/tmp/drone-osd-node-20260923/src/drone_tracker`。构建头文件从本仓库既有 `.docker-artifacts/rknn/include/rknn_api.h` 复制到独立临时 SDK 目录，链接仍指定生产板系统库。该头文件不是本次安装或升级的系统 SDK。
+The complete-node source snapshot was `/tmp/drone-osd-node-20260923/src/drone_tracker`. Its build copied existing repository `.docker-artifacts/rknn/include/rknn_api.h` into a private temporary SDK directory and still linked the board system library. That header was not a newly installed/upgraded system SDK.
 
-源快照不含 Git 历史。尝试默认构建全部目标时，无关的 NanoTrack 基准程序在源码身份收集处报错；随后只构建本次节点及相关测试目标。默认 ARM64 容器中的完整回归仍覆盖既有基准测试，不将板端定向构建描述为全部目标通过。
+The snapshot lacked Git history. An initial all-target build failed in unrelated NanoTrack benchmark code-identity collection; subsequent builds targeted this node and related checks. Complete default ARM64-container regression still covered existing benchmarks. The board's targeted build must not be described as all targets passing.
 
-## 已执行的板端构建与诊断
+## Board builds and diagnostics performed
 
-启用 HDMI 与 `quadrotor_msgs` 的定向构建已成功。初轮 CTest 的两项失败来自未加载安装前缀与可选消息动态库路径；安装节点并设置 `AMENT_PREFIX_PATH`、`LD_LIBRARY_PATH` 后，相关 **8/8** 测试通过。关闭可选消息适配重新构建后，ROS 遥测集成测试 **1/1** 通过。最终源码同步后发现部分旧目标文件被增量构建复用，已强制重新编译受影响源码。奇数灰度尺寸修复后的最终 OSD 开启、可选消息关闭版本相关测试 **8/8 通过**，耗时 14.94 秒，见 `rebuilt-final-test.log`。可选消息开启的最终源码复核 **1/1 通过**，耗时 0.78 秒，见 `final-test-lowlevel-on-confirmed.log`；实际发布 BAT_CRITICAL，并断言电池等级为 3、雷达状态不覆盖本地跟踪状态。该复核只重建测试目标，最终已安装节点仍保持可选消息关闭。
+A targeted HDMI/`quadrotor_msgs` build succeeded. Two initial CTest failures came from missing installation-prefix and optional-message library paths. After installation and setting `AMENT_PREFIX_PATH`/`LD_LIBRARY_PATH`, related checks passed **8/8**. Rebuilding with the optional adapter disabled passed ROS telemetry integration **1/1**. Final source synchronization exposed reused stale objects, so affected source was forcibly recompiled. After the odd-grayscale-size fix, final OSD-enabled/optional-message-disabled checks passed **8/8** in 14.94 seconds; see `rebuilt-final-test.log`. Final-source optional-message-enabled confirmation passed **1/1** in 0.78 seconds; see `final-test-lowlevel-on-confirmed.log`. It published actual BAT_CRITICAL, asserted level 3, and checked radar did not overwrite local state. Only the test target was rebuilt for that confirmation; the installed final node retained the disabled optional adapter.
 
-初次真实模型运行使用既有 INT8 NanoTrack 模型，当前后端明确拒绝其原生特征布局：要求 FP16 NC1HWC2，实际为 INT8 NC1HWC2。随后使用同批已批准 FP16 模型。没有更改模型契约、训练或转换模型。
+The first real-model run used existing INT8 NanoTrack. The backend explicitly rejected its native feature layout: required FP16 NC1HWC2, observed INT8 NC1HWC2. Subsequent runs used approved FP16 models from the same batch. No contract, training, or model conversion changed.
 
-合成测试输入为 FFmpeg `testsrc2` 生成的 640×480、20 帧/秒、660 秒 MJPEG AVI。示例内参为 `(800,810,320,240)`，只用于软件流程验证，不是相机标定。该画面没有捕获目标；有效框数量为零，不能据此评价跟踪质量或实际运动框配对。
+Synthetic input was FFmpeg `testsrc2`, 640×480, 20 frames/second, 660-second MJPEG AVI. Intrinsics `(800,810,320,240)` were software-test examples, not calibration. No target was captured; valid boxes were zero. This says nothing about tracking quality or actual moving-target pairing.
 
-预检查在同一进程完成 20 轮 ON/OFF，跟踪输出正常停止并能重新开始。但中途显示提交出现 `ENOSPC`，显示按设计停用、跟踪继续。该次结果不计为健康显示持续负载通过。后续带系统调用记录的 30 秒复现未出现同一错误，观察到每次提交后的完成事件读取；尚不能据此判定首次故障已解决。原始记录在 `.docker-artifacts/hdmi-osd-20260923/` 及板端独立验收目录保留。
+The preliminary process completed 20 ON/OFF rounds with output stopping/restarting normally. A display submission encountered `ENOSPC`; display disabled itself while tracking continued. It did not pass healthy sustained display. A later 30-second system-call-traced reproduction did not repeat the error and observed a completion-event read after every submission. That did not resolve the first fault. Historical records were `.docker-artifacts/hdmi-osd-20260923/` and the board acceptance directory.
 
-奇数尺寸边界输入还暴露了 RGA Y400 对偶数宽高的要求。641×479 灰度帧原先触发明确的 RGA 参数错误；已修复为只在显示线程复制阶段将奇数尺寸灰度扩展为等值 BGR，再由 RGA 缩放。保留原图尺寸、行跨度与坐标，不裁切边缘或修改源帧。修复后真实生产板两轮 EOF 各消费 90 帧；显示计数达到 `submitted=180,displayed=180`，没有尺寸错误。输入文件移走后明确报告启动失败；恢复后新轮消费 2 帧，计数达到 `submitted=182,displayed=182`，正常退出。该结果证明提交与生命周期路径，不替代 HDMI 像素观察。
+Odd dimensions exposed RGA Y400's even-width/even-height constraint. A 641×479 grayscale frame initially produced an explicit RGA parameter error. The fix copied odd grayscale into equal-channel BGR only in the display thread, then scaled with RGA. It retained dimensions, stride, and coordinates without cropping edges or mutating source pixels. Two real-board EOF rounds then consumed 90 frames each, reaching `submitted=180,displayed=180` without size errors. Moving the input away explicitly failed startup; restoring it allowed another round to consume 2 frames, reaching `submitted=182,displayed=182`, then exit normally. These prove submission/lifecycle paths, not HDMI pixel observation.
 
-## 可回退部署与文件身份
+## Rollback installations and identities
 
-生产板独立目录为 `/home/hzhy/drone-tracker-osd-20260923/`。`install-off/` 保留默认关闭构建，`install-on/` 为最终启用 HDMI、关闭可选消息适配的版本。两者安装入口均为 `lib/drone_tracker/drone_tracker_node`。安装只执行根包的安装脚本，不把未构建的无关基准程序描述成已安装。
+Board root was `/home/hzhy/drone-tracker-osd-20260923/`. `install-off/` held the default-disabled build; `install-on/` held final HDMI enabled with optional adapter disabled. Both used `lib/drone_tracker/drone_tracker_node`. Installation ran only root-package installation rules; unrelated unbuilt benchmarks were not claimed as installed.
 
-两个副本均完成 `ldd -r` 检查，无缺库或未解析符号。最终启用副本不依赖 `quadrotor_msgs` 动态库。未切换系统服务使用的正式程序，也没有覆盖系统 RKNN Runtime。
+Both copies passed `ldd -r` without missing libraries or unresolved symbols. Final enabled output did not depend on `quadrotor_msgs` shared libraries. Production service executables were not switched and system RKNN Runtime was unchanged.
 
-| 文件 | SHA-256 |
+| File | SHA-256 |
 |---|---|
-| OSD 开启节点 | `6846910feddde3cb6da12b01d753e3c7363d8a1ba728fd67ddffae68ebadbb02` |
-| OSD 关闭回退节点 | `a90ca1bb0d55e1c928d24557b4a94b0d3954d1aa450b902b5b7154a3821ec014` |
-| 合成视频配置 `synthetic.yaml` | `0a25315b9ab1a81d403dc5431343fc780d1b92c75bf0ce42480d7e7a64464fde` |
-| 640×480、20 FPS、660 秒合成视频 | `3e344dd4afab97a1b0b3b9c43ad47f8e480c8f4d58ca8e0b7d39f9417de6c1f9` |
-| 641×479、90 帧边界视频 | `7d9c2e0961678812126fca978b74da2125449a9e90b61f4d57573aff34ae0a2b` |
-| 系统 RKNN Runtime，部署前后相同 | `d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8` |
+| OSD-enabled node | `6846910feddde3cb6da12b01d753e3c7363d8a1ba728fd67ddffae68ebadbb02` |
+| OSD-disabled rollback node | `a90ca1bb0d55e1c928d24557b4a94b0d3954d1aa450b902b5b7154a3821ec014` |
+| Synthetic-video configuration `synthetic.yaml` | `0a25315b9ab1a81d403dc5431343fc780d1b92c75bf0ce42480d7e7a64464fde` |
+| 640×480, 20 FPS, 660-second synthetic video | `3e344dd4afab97a1b0b3b9c43ad47f8e480c8f4d58ca8e0b7d39f9417de6c1f9` |
+| 641×479, 90-frame boundary video | `7d9c2e0961678812126fca978b74da2125449a9e90b61f4d57573aff34ae0a2b` |
+| System RKNN Runtime, unchanged before/after deployment | `d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8` |
 | YOLO | `4d8a22bc8da9fbbc43f190b7ea90c27d9980f77e3e27064ec32cf6566c2680f3` |
 | FP16 Template Backbone | `622f36f606a51d4fa6514856fefb1afea79218d45d2af4f3c3ced84ce3c52ca2` |
 | FP16 Search Backbone | `9ca8cc19dd0de798a3075c0f797ad4508362d9c297f9a1f04e784c34bfdc9f44` |
 | FP16 Head | `2ffad600a875ab04332140a59248285bfa5c23b1cc3b32c6dbb9486165494889` |
 
-模型来自既有批准的 RKNN 文件，没有训练或转换；未加入 Git。验收脚本、详细日志和资源采样在本地 `.docker-artifacts/hdmi-osd-20260923/` 保留。板端构建日志位于 `/tmp/drone-osd-node-20260923/`，最终源码副本位于其 `src/drone_tracker/`。板端临时目录不是长期部署依赖。
+Models were existing approved RKNN files, without training/conversion or Git addition. Historical scripts, logs, and resource samples were under local `.docker-artifacts/hdmi-osd-20260923/`. Board build logs were `/tmp/drone-osd-node-20260923/`, with final source under its `src/drone_tracker/`. These temporary directories are not durable deployment dependencies or guaranteed evidence storage.
 
-## 未完成的生产验收与实际阻塞
+## Incomplete production acceptance and actual blockers at this stage
 
-2026-09-23，用户明确决定将任务 4.6 的 HDMI 实际画面观察留待后续单独完成。该决定只推迟视觉验收，不代表其他生产检查通过。
+On 2026-09-23, the user explicitly postponed actual HDMI observation for task 4.6. This deferred visual acceptance without making other production checks pass.
 
-| 检查 | 实际结果 | 结论 |
+| Check | Actual result | Conclusion |
 |---|---|---|
-| 最终节点 EOF、输入缺失、恢复 | 两次 EOF 各 90 帧；恢复新轮 2 帧；显示计数同步增加；退出码 0 | 自动化路径通过；屏幕冻结提示尚未观察 |
-| 同进程 20 轮启停 | 全部 20 轮有输出并可停止；观察到的停止耗时 0.255–0.340 秒 | 中途显示故障，不能勾选健康显示多轮验收 |
-| 最终版本显示故障 | `OSD paired plane commit: No space left on device`，即 DRM 原子提交返回 ENOSPC | 已重复复现，根因未确认；不是磁盘空间诊断结论 |
-| 故障后的业务 | 显示停用后跟踪和 ROS 输出继续；正常停止可退出 | 证明故障隔离，不能替代持续显示通过 |
-| 主动注入 EIO | 准备了第 100 次提交失败的工具，但该轮在注入点之前先遇到真实 ENOSPC | 不计为预期故障注入成功 |
-| 至少 10 分钟持续负载 | 20 轮后进入持续阶段，但显示已失效，主动 SIGINT 停止测试 | 未完成，不把剩余仅跟踪运行计为显示负载 |
-| DRM 调用审计 | 100 次提交时已读取 99 次完成事件；尚未到下一个百次记录点即遇到 RKNN 致命等待失败 | 不能据此断言 ENOSPC 来自事件队列泄漏 |
-| RKNN 诊断期失败 | `search_backbone.rknn: RKNN wait failed; device access cannot be excluded` | 当前后端的保护逻辑终止进程；未证明与 OSD 的因果关系，未修改模型后端 |
-| OSD 开关性能对照 | 由于前述阻塞未执行最终对照 | 未完成 |
+| Final node EOF/missing input/recovery | Two EOF rounds of 90 frames, recovery round of 2, matching display-count increases, exit 0 | Automated path passed; screen freeze hints unobserved |
+| Same-process 20 restarts | All 20 produced output and stopped; observed stop duration 0.255–0.340 seconds | Mid-run display fault prevents healthy multi-round acceptance |
+| Final-version display fault | `OSD paired plane commit: No space left on device`, DRM atomic `ENOSPC` | Reproduced; cause unconfirmed then. This is not a disk-space diagnosis |
+| Business after failure | Tracking/ROS continued after display disabled; normal stop exited | Establishes isolation, not sustained display |
+| Intended EIO injection | Tool scheduled failure at submission 100, but real ENOSPC occurred first | Intended injection did not complete |
+| At least 10 minutes of load | Sustained phase followed 20 rounds, but display was already failed; SIGINT ended it | Incomplete; tracking-only remainder is not display load |
+| DRM audit | At 100 submissions, 99 completion events had been read; RKNN fatal wait occurred before the next hundred-submission log | Does not establish an event-queue leak as the ENOSPC cause |
+| RKNN diagnostic-period failure | `search_backbone.rknn: RKNN wait failed; device access cannot be excluded` | Existing protection terminated the process. Causality with OSD was unproven and model backend unchanged |
+| OSD on/off performance comparison | Final comparison blocked by the above | Incomplete |
 
-20 轮空闲点 RSS 从 126996 KiB 到 127712 KiB；线程从 17 降到 16，文件描述符从 49 降到 39。后两项下降对应显示故障后的资源回收。这不是健康显示长期无泄漏的证明。停止耗时是收到 OFF 后直到测试端观察到停止消息的时间，不是屏幕冻结延迟。
+Across 20 round-idle points, RSS went from 126996 to 127712 KiB, threads from 17 to 16, and descriptors from 49 to 39. The last two decreases reflected resource cleanup after display failure, not healthy long-term leak freedom. Stop duration measured receipt of OFF through the observer's stop message, not screen freeze latency.
 
-`endurance-result.json` 的 `RuntimeError('node exited 0')` 来自主动停止无效长测，不是节点崩溃。`audit-result.json` 的 `KeyError('VmRSS')` 是采样器读取已退出进程时的次生错误；真正的进程终止原因以 `audit.log` 中 RKNN 致命等待失败为准。两个失败记录均未删除或改成通过。
+`endurance-result.json` contained `RuntimeError('node exited 0')` because the invalid long run was deliberately stopped, not because the node crashed. `audit-result.json` contained `KeyError('VmRSS')` when sampling an already exited process; the true termination cause was the fatal RKNN wait in `audit.log`. Neither failed record was deleted or relabeled passed.
 
-验收进程已退出。RKNN 异常终止绕过了析构，显示模式暂留在 720×480。已依据测试前 `modetest.txt` 记录，校验原帧缓冲 213 仍为 1280×720 后，恢复原连接器 177、CRTC 75 的 1280×720@60 模式和该帧缓冲。`drm-postflight-restored.txt` 记录恢复结果。上述编号仅用于本次环境收尾，不写入产品的设备选择逻辑。未停止桌面服务、调频或绑核。
+All acceptance processes exited. Fatal RKNN termination bypassed destruction and left 720×480 display mode temporarily active. Using preflight `modetest.txt`, restoration first verified framebuffer 213 remained 1280×720, then restored connector 177, CRTC 75, 1280×720@60 and that framebuffer. `drm-postflight-restored.txt` records restoration. These IDs describe this cleanup only and were not hardcoded in product selection. This run stopped no desktop service and changed neither frequencies nor CPU affinity.
 
-未测项仍包括实际 HDMI 灰度与颜色、运动框配对、500 ms 屏幕冻结期限、显示端到端延迟、提交耗时分布、健康显示下持续 10 分钟资源趋势和 OSD 开关性能对照。合成画面无目标捕获，因此不宣称目标跟踪质量或相机标定通过。任务 4.6、6.2–6.4 保持未完成，不同步或归档为已验收。
+Unmeasured scope remained actual HDMI grayscale/color, moving-box pairing, 500 ms screen-freeze deadline, end-to-end display delay, submit-duration distribution, healthy 10-minute resource trends, and OSD on/off performance. Synthetic no-target input established neither target quality nor camera calibration. Tasks 4.6 and 6.2–6.4 stayed incomplete at this stage.
 
-部署与两种回退方法见 [RK3576_HDMI_OSD.md](../../../docs/RK3576_HDMI_OSD.md)。下一步先定位 DRM ENOSPC 和 RKNN 等待失败，再重跑健康显示多轮及持续负载；实际画面验收依用户决定后续单独完成。
+Deployment and two rollback methods are in [RK3576_HDMI_OSD.md](../../../../docs/RK3576_HDMI_OSD.md). The historical next steps were to diagnose DRM ENOSPC/RKNN waits and rerun healthy restarts/load; actual visual acceptance was separately deferred by the user. Later outcomes are in the reports linked at the top.
 
-## 任务与证据索引
+## Historical task/evidence index
 
-| 任务 | 实现与证据 | 当前边界 |
+| Task | Implementation/evidence | Boundary at this stage |
 |---|---|---|
-| 1.1–1.3 | `presentation.h`、`presenter.*`、`osd_presenter_tests` | 公共显示控制已验证 |
-| 1.4–1.5 | `src/osd/tests/presenter_test.cpp` | 使用可阻塞后端和可控时钟，不能替代实机延迟测量 |
-| 2.1 | `geometry.*`、`osd_geometry_tests` | 包含规格中的坐标实例 |
-| 2.2–2.4 | `layout.*`、`status_glyphs.h`、`osd_layout_tests`、PNG 快照 | 已检查 CPU 画布，HDMI 输出另验 |
-| 3.1–3.2、3.4 | `ros_telemetry.*`、`osd_telemetry_tests` | 标准消息契约已验证 |
-| 3.3 | `low_level_feedback.*`、真实 LowLevelFeedback 定义 | 启用构建与真实消息测试结果单列；关闭构建不依赖该包 |
-| 3.5 | `src/tests/ros_osd_telemetry_test.cpp` | 标准遥测到模拟显示已通过 |
-| 4.1 | `environment-check.md` | 生产板能力查询已完成 |
-| 4.2–4.5 | `src/platform/rk3576/osd/`、生产板探针 | 已有真实提交/完成/重开证据；尚非完整像素验收 |
-| 4.6 | 带帧号的 `osd_hdmi_probe` | 用户明确推迟实际输出观察，保持未完成 |
-| 5.1–5.3 | `drone_tracker_node.*`、两个 RK3576 参数文件 | 复用原消费和控制路径，默认关闭 |
-| 5.4 | 根及 OSD CMake 目标 | 默认关闭不查找显示或自定义消息 SDK |
-| 5.5 | `ros_video_tests`、`ros_initialization_tests` | 受控模型业务兼容性已验证 |
-| 5.6 | ARM64 全量回归、板端定向构建 | 最终 OSD 开启相关 8/8；两种可选消息配置均验证 |
-| 6.1 | 独立安装目录、产物指纹 | 两个安装副本、完整指纹及动态依赖记录已保存 |
-| 6.2–6.4 | 真实模型集成、20 轮及持续负载 | 真实模型路径部分通过；ENOSPC 与 RKNN 等待失败阻塞验收 |
-| 6.5 | `docs/RK3576_HDMI_OSD.md` | 已给出依赖、参数、部署及两种回退方式 |
-| 6.6 | 本记录及 `tasks.md` | 按证据维护完成状态；不归档 |
+| 1.1–1.3 | `presentation.h`, `presenter.*`, `osd_presenter_tests` | Public display control verified |
+| 1.4–1.5 | `src/osd/tests/presenter_test.cpp` | Blockable backend and controlled clock, not hardware latency |
+| 2.1 | `geometry.*`, `osd_geometry_tests` | Includes specified coordinate examples |
+| 2.2–2.4 | `layout.*`, `status_glyphs.h`, `osd_layout_tests`, PNGs | CPU canvas checked; HDMI separate |
+| 3.1–3.2, 3.4 | `ros_telemetry.*`, `osd_telemetry_tests` | Standard-message contracts verified |
+| 3.3 | `low_level_feedback.*`, actual LowLevelFeedback definition | Enabled build/real-message checks recorded separately; disabled build has no package dependency |
+| 3.5 | `src/tests/ros_osd_telemetry_test.cpp` | Standard telemetry to mock display passed |
+| 4.1 | `environment-check.md` | Production capability query complete |
+| 4.2–4.5 | `src/platform/rk3576/osd/`, board probe | Real submit/complete/reopen evidence; incomplete pixel acceptance |
+| 4.6 | Numbered-frame `osd_hdmi_probe` | User deferred actual-output observation; incomplete |
+| 5.1–5.3 | `drone_tracker_node.*`, two RK3576 parameter files | Existing consumer/control paths, default disabled |
+| 5.4 | Root/OSD CMake targets | Disabled default discovers no display/custom-message SDK |
+| 5.5 | `ros_video_tests`, `ros_initialization_tests` | Business compatibility checked with controlled models |
+| 5.6 | Full ARM64 regression, targeted board build | Final enabled OSD 8/8; both optional-message settings checked |
+| 6.1 | Independent installations, fingerprints | Two copies, full identities, dynamic dependencies recorded |
+| 6.2–6.4 | Real models, 20 rounds, sustained load | Real-model paths partly passed; ENOSPC/RKNN wait blocked acceptance |
+| 6.5 | `docs/RK3576_HDMI_OSD.md` | Dependencies, parameters, deployment, two rollback routes documented |
+| 6.6 | This report and `tasks.md` | Evidence-based completion state; no archival at this stage |

@@ -78,7 +78,7 @@ A complete workflow uses separate saved request files or deliberately changes `o
 4. Build and run the candidate with `cohort_id: candidate-a`; keep input/model/platform/observation/window/deadline conditions identical.
 5. `compare` with `comparison_id: candidate-a`: compare each frozen case against its three explicit candidate paths.
 
-Existing operation destinations are rejected. A comparison cannot overwrite references. Each operation produces `suite-report.json`, `suite-report.csv` and a Chinese `report.md`. Comparisons additionally produce per-case JSON/CSV/Chinese reports. Missing, extra, incomplete and incomparable cases remain visible. No thresholds means “未设置判定规则”; operation success and performance pass are separate fields. Metrics and percentages are never averaged across recordings.
+Existing operation destinations are rejected. A comparison cannot overwrite references. Each operation produces `suite-report.json`, `suite-report.csv` and a Chinese `report.md`. Comparisons additionally produce per-case JSON/CSV/Chinese reports. Missing, extra, incomplete and incomparable cases remain visible. No thresholds means an unset-rules explanation; operation success and performance pass are separate fields. Metrics and percentages are never averaged across recordings.
 
 ```text
 OUTPUT_ROOT/
@@ -131,11 +131,12 @@ belongs to the comparison identity, so changing it requires fresh references.
 
 `source-scheduling.json` records the supplier thread ID, inherited and actual
 CPU sets, scheduling policy, priority, and setup time. `supply-timing.csv` separates
-scheduled wakeup, actual wakeup, frame-copy time, queue acquisition, and attitude
-callback time. It also records the actual CPU, thread CPU time, page faults, and
-context switches during copying. These diagnostics preserve the original supply
-timestamp: a frame counts as supplied only after its owned pixel copy is ready
-and the queue lock has been acquired. The lateness threshold remains 50,000
+scheduled wakeup, actual wakeup, frame construction, queue acquisition, and attitude
+callback time. The historical `copy_begin_ns`, `copy_end_ns`, and `copy_cpu_ns` column
+names now measure `retainGrayFrame`, which retains immutable cached pixels and builds
+frame metadata. Timed supply performs no full-image pixel copy. The columns also
+record actual CPU, thread CPU time, page faults, and context switches around that call.
+A frame counts as supplied only after construction and queue-lock acquisition. The lateness threshold remains 50,000
 microseconds in the external clip configurations.
 
 CPU masks need interpretation alongside the board's isolation configuration.
@@ -233,10 +234,14 @@ Freeze the treatment manifest before the first timed run. Keep all failed, slow 
 Use alternating reference/candidate order per clip. This change requires three fresh rounds per side for each
 of test-03's `[20,35)`, `[100,130)`, and `[165,end)` clips. Test-02 remains explicitly skipped by the user.
 A successful placement check does not establish a performance improvement. Without declared thresholds,
-the result is `not_set` (未设置判定规则). No ground-truth annotation means no accuracy conclusion.
+the result is `not_set` (no decision rules). No ground-truth annotation means no accuracy conclusion.
 
 The shared source-support fix is required in both affinity-experiment builds. Preserve its exact patch
 separately from the common observation patch. Label the reference “4871442 algorithm baseline + common
 observation patch + common source-support fix”; the reference still has no managed role binding.
 Deep-copy production APIs and callers retain their original behavior. Timing and integrity limits
 remain unchanged, and earlier failed or diagnostic runs never replace the final frozen comparison.
+
+## Evidence retention
+
+Use an explicitly retained external output root for results that must remain available. `.docker-artifacts` and `/tmp` are disposable and may be cleared routinely. Copy required source/build identities, inputs or their retained locators, raw logs, manifests and reports outside those areas before cleanup. Historical paths record provenance and do not promise present availability.

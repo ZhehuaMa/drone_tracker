@@ -1,91 +1,131 @@
-# rk3576-nanotrack-backend 规格
+# rk3576-nanotrack-backend Specification
 
 ## Purpose
 
-为 RK3576 提供可运行公共单目标跟踪算法的 NanoTrack 模型后端与灰度输入能力。允许在输入输出含义一致时替换模型文件及受支持的精度组合，并通过独立查询、回放和明确失败结果验证跟踪接入。
+Run the common single-target NanoTrack algorithm on RK3576 with explicit model roles, grayscale preprocessing, and safe feature ownership. Distinguish compatible logical model precision from the native storage required for production search-feature transfer.
 
 ## Requirements
 
-### Requirement: 兼容模型可通过路径替换
+### Requirement: Compatible models can be replaced by explicit paths
 
-模型契约包括数据含义、形状及受支持的存储表示。系统 SHALL 接受模板 Backbone、搜索 Backbone、Head 三个独立模型路径；Backbone 提取图像特征，Head 比较两份特征。系统 SHALL 在重新创建后端时加载指定文件。满足相同语义契约和受支持存储属性的文件 SHALL 无需重新编译即可替换。系统 MUST NOT 使用固定文件名、哈希或模型版本白名单限制替换。模型身份记录 SHALL 仅用于诊断和验证追溯。
+A Backbone extracts image features; the Head compares template and search features. The system SHALL accept separate template Backbone, search Backbone, and Head paths. Recreating the backend SHALL load those files. Contract-compatible replacements MUST NOT require recompilation or a filename, hash, or version whitelist. Recorded model identities SHALL serve diagnostics and verification only.
 
-#### Scenario: 更换兼容权重
-- **WHEN** 三个模型被替换为内容和哈希不同、但语义契约相同且存储属性受支持的文件
-- **THEN** 重新创建后端成功，可以建立模板和搜索，无需修改或编译程序
+#### Scenario: Compatible replacement model
+- **WHEN** a caller stops the old process and supplies new files with matching semantic and supported storage contracts
+- **THEN** recreating the backend loads them without recompiling the program
 
-#### Scenario: 同尺寸不同语义
-- **WHEN** 替换模型的分类输出已经是概率，而接口要求未转概率的分类原值
-- **THEN** 该模型不满足兼容契约；系统文档明确此类含义必须由提供方保证并经固定输入验证，不能将仅形状检查成功作为兼容证明
+#### Scenario: Matching shapes have different meanings
+- **WHEN** a replacement model emits classification probabilities but the contract requires raw scores
+- **THEN** it is semantically incompatible; the provider must establish meaning through fixed-input verification because shape checks alone do not prove compatibility
 
-### Requirement: 三模型接口匹配且完整装配
+### Requirement: Model roles and logical tensor shapes match completely
 
-NCHW 表示批次、通道、高、宽的逻辑排列。系统 SHALL 按规范化到 NCHW 的形状检查模板输入 `[1,3,127,127]` 与输出 `[1,96,8,8]`。系统 SHALL 检查搜索输入 `[1,3,255,255]` 与输出 `[1,96,16,16]`。Head SHALL 接受对应模板、搜索两份特征。Head SHALL 返回分类 `[1,2,15,15]` 与位置 `[1,4,15,15]`；位置按左、上、右、下距离解释。输入输出角色 SHALL 唯一，不依赖固定导出名称或枚举顺序。系统 SHALL 拒绝缺失、额外或重复角色。装配失败 SHALL 不返回部分可用组件。
+NCHW orders batch, channels, height, and width. The system SHALL validate logical template `[1,3,127,127] -> [1,96,8,8]` and search `[1,3,255,255] -> [1,96,16,16]` shapes. Head inputs SHALL match these features. Head outputs SHALL be classification `[1,2,15,15]` and location `[1,4,15,15]`. Roles SHALL be unique and shape-derived, independent of names or enumeration order. Missing, extra, duplicate, or incompatible roles SHALL reject complete assembly.
 
-#### Scenario: Head 枚举顺序变化
-- **WHEN** 合法 Head 的输入按搜索、模板枚举，输出按位置、分类枚举
-- **THEN** 系统依据唯一角色匹配正确提交与返回顺序，公共算法读取到相同含义的数据
+#### Scenario: Head tensors are enumerated in another order
+- **WHEN** Head inputs enumerate search before template and outputs enumerate location before classification
+- **THEN** unique shapes determine their roles, classification remains unnormalized scores, and location retains left/top/right/bottom distance meaning
 
-#### Scenario: 第三个文件加载失败
-- **WHEN** 两个 Backbone 已加载，而 Head 无法加载或输入特征不匹配
-- **THEN** 返回包含对应路径与原因的失败，回收先前取得的资源，不返回可执行后端
+#### Scenario: Head cannot be assembled
+- **WHEN** both Backbones load but Head loading or feature compatibility fails
+- **THEN** assembly reports the relevant model and role, releases acquired resources, and returns no partial backend
 
-### Requirement: 共用执行链支持不同精度组合
+### Requirement: Logical precision and native transfer compatibility are distinct
 
-FP16 表示 16 位浮点，INT8 表示使用比例与零点近似实数的 8 位整数。系统 SHALL 支持契约兼容的全 FP16、全 INT8、FP16 Backbone 加 INT8 Head、INT8 Backbone 加 FP16 Head 组合。首版 SHALL 通过 Float32 特征交接模型。不同量化参数的特征 SHALL 保持实数含义，不将原始整数直接按接收端参数解释。公共返回 SHALL 为 Float32 NCHW 分类和位置数据。系统 SHALL 不把精度切换解释为对现有文件进行运行时重新量化。
+FP16, Float32, and affine INT8 are supported logical types, subject to their contracts. Template features SHALL use Float32 host values. Public classification/location outputs SHALL be Float32 NCHW. Quantized values SHALL retain real-number meaning. The production search edge SHALL additionally satisfy the native shared-memory contract below. Logical precision alone MUST NOT guarantee load success. Changing model files MUST NOT mean runtime requantization.
 
-#### Scenario: 两端量化参数不同
-- **WHEN** Backbone 的整数 10 在 scale=0.1、zp=0 下表示 1.0，Head 输入使用 scale=0.2、zp=0
-- **THEN** Head 消费的实数含义约为 1.0，不能因直接复制整数 10 而变成 2.0
+#### Scenario: Quantization differs across ordinary feature submission
+- **WHEN** template integer 10 represents 1.0 at scale=0.1 and zero point=0, while Head input uses scale=0.2 and zero point=0
+- **THEN** ordinary submission preserves approximately 1.0 rather than reinterpreting the original byte as 2.0
 
-#### Scenario: 切换混合精度
-- **WHEN** 创建后端时指定契约兼容的 INT8 Backbone 文件与 FP16 Head 文件
-- **THEN** 同一调用接口完成模板建立与搜索，公共跟踪算法不增加精度分支
+#### Scenario: Mixed logical precision is requested
+- **WHEN** compatible INT8 Backbone and FP16 Head files also expose a compatible native FP16 search edge
+- **THEN** the common calling interface can initialize and search without precision branches in the tracking algorithm
 
-### Requirement: 灰度预处理保持既有浮点语义
+#### Scenario: Logical shapes pass but native storage fails
+- **WHEN** a model combination passes logical tensor validation but its search edge has unsupported native storage
+- **THEN** production loading fails with the actual native mismatch instead of silently selecting host transfer
 
-Gray8 表示每像素一个 8 位灰度值。系统 SHALL 遵守 `model-input-preprocessing` 的 NanoTrack 裁剪舍入、目标均值、重置及失败约定。模板和搜索输入 SHALL 分别为 `[1,3,127,127]`、`[1,3,255,255]` Float32 NCHW。系统 SHALL 先转浮点再进行线性缩放，复制到三个通道并保持 0～255 范围。系统 MUST NOT 额外除以 255 或在缩放后量化回 uint8。准备输入仍被持有时 SHALL 不被缓存复用覆盖。
+### Requirement: Grayscale preparation preserves floating pixel semantics
 
-#### Scenario: 边缘搜索与分数像素
-- **WHEN** 搜索窗口越过图像边缘，填充和线性插值产生非整数像素
-- **THEN** 越界部分使用当前目标初始化帧的既定均值，非整数插值结果在 Float32 输入中保留
+Gray8 stores one 8-bit luminance value per pixel. The system SHALL preserve `model-input-preprocessing` crop rounding, target mean, reset, and failure rules. Template/search inputs SHALL be Float32 NCHW `[1,3,127,127]` and `[1,3,255,255]`. It SHALL convert to floating values before linear resize, replicate three channels, and retain 0–255 values. It MUST NOT divide by 255 or quantize resized values back to bytes. Retained prepared inputs MUST NOT be overwritten.
 
-#### Scenario: 输入租约未释放
-- **WHEN** 上一次模板准备结果仍占用可复用缓存，又请求准备模板
-- **THEN** 返回输入忙诊断，旧结果内容不变，失败不触发模型执行
+#### Scenario: Search window crosses an image edge
+- **WHEN** padding and linear interpolation produce fractional pixels
+- **THEN** outside pixels use the initialized target's mean and fractional results remain in the Float32 input
 
-### Requirement: 模板生命周期与搜索失败保持既有语义
+#### Scenario: A prepared-input lease remains held
+- **WHEN** a prior template input still occupies reusable storage and another template is requested
+- **THEN** preparation reports input busy, preserves the retained values, and submits no model execution
 
-系统 SHALL 遵守 `model-backends` 的模板建立、搜索与重置规则。建立新模板开始时 SHALL 使旧模板失效，仅在新特征生成并通过兼容检查后标记有效。搜索 SHALL 不覆盖模板特征。无模板时 SHALL 不执行搜索模型。可恢复的输入检查失败 SHALL 保留当前模板；设备执行会话失效后 SHALL 返回未就绪直到重建。
+### Requirement: Template and search failure preserve existing lifecycle rules
 
-#### Scenario: 目标切换失败
-- **WHEN** 目标 A 模板有效，建立目标 B 时 Backbone 执行失败
-- **THEN** 后续搜索不能使用 A 模板，不返回虚假的 B 搜索结果
+Starting template replacement SHALL invalidate the previous template. A new template SHALL become valid only after successful compatible feature generation. Search MUST NOT overwrite template features or run without a valid template. Recoverable input rejection SHALL retain a valid template. An invalidated execution session SHALL report not ready until rebuilt. Reset SHALL clear template validity.
 
-#### Scenario: 重置及前置校验失败
-- **WHEN** 有效模板下某次搜索输入检查失败，随后提交合法搜索输入且会话仍就绪
-- **THEN** 搜索继续使用原模板；执行重置后再搜索则返回未就绪且不提交模型
+#### Scenario: Replacement template fails
+- **WHEN** template A exists but creating template B fails
+- **THEN** later searches cannot use A as if B had succeeded
 
-### Requirement: 独立查询与真实跟踪回放
+#### Scenario: Recoverable search input rejection
+- **WHEN** an input is rejected while the session and template remain valid, followed by a legal input
+- **THEN** the legal search uses the retained template; after reset, search instead reports not ready without device execution
 
-系统 SHALL 提供不依赖 ROS、CUDA、TensorRT、VPI 的 ARM64 独立入口。查询模式 SHALL 报告三模型路径、输入输出属性、角色和运行时版本。回放模式 SHALL 接受视频、首帧目标框与三个模型路径，并通过现有公共跟踪算法输出帧号、成功状态、框、置信度和耗时。彩色视频 SHALL 明确转为灰度后处理。非法参数、模型不兼容或初始化失败 SHALL 输出诊断并以失败状态结束。普通单帧搜索失败 SHALL 明确标记，不作为成功框输出。
+### Requirement: Standalone query and replay expose actual outcomes
 
-#### Scenario: 指定目标后逐帧跟踪
-- **WHEN** 输入可读取视频、有效首帧框和兼容模型
-- **THEN** 第一帧建立模板，后续帧输出真实公共跟踪结果，不通过模拟后端替代
+The system SHALL provide an ARM64 standalone tool without ROS or Jetson SDK dependencies. Query SHALL report all three paths, tensor roles/attributes, and runtime versions. Replay SHALL accept local MJPEG video, an initial pixel box, and model paths, run the common tracker, and output frame, success, box, score, and duration. Invalid configuration or loading SHALL exit with a diagnostic. Failed searches MUST NOT be presented as successful boxes.
 
-#### Scenario: 完整平台仍未接通
-- **WHEN** 用户使用独立 NanoTrack 入口或请求完整 rk3576 平台构建
-- **THEN** 独立入口可单独构建使用，完整平台选择仍遵循既有未实现诊断，不因本次变更静默启用半套平台
+#### Scenario: MJPEG enters grayscale replay
+- **WHEN** replay receives legal local MJPEG, a valid initial box, and compatible models
+- **THEN** the reader extracts Gray8 luminance, the first frame initializes the real common tracker, and later frames report actual results without simulated backends or an invented initialization score
 
-### Requirement: 验证区分实现正确性与模型质量
+### Requirement: Verification separates implementation correctness from model quality
 
-系统 SHALL 提供同一浮点输入下模型特征、分类、位置输出的对照验证记录。记录 SHALL 包含实际模型身份、输入、版本和数值容差。四种精度组合 SHALL 在同一灰度回放条件下分别报告质量和延迟，不能把 INT8 与 FP16 数值不同直接归为实现错误。现有彩色评估 SHALL 不作为灰度输入验收替代。系统 SHALL 保持公共框更新、阈值和状态含义不变。未执行的硬件检查 SHALL 明确列出。
+Fixed-input verification SHALL identify the models, inputs, versions, tolerances, and feature/Head comparisons. Supported precision combinations SHALL be evaluated under the same grayscale replay conditions. Numerical precision differences alone MUST NOT be labelled implementation defects. Color evaluation MUST NOT substitute for grayscale acceptance. Public box updates, thresholds, and states SHALL retain their contracts. Unexecuted hardware checks SHALL be listed.
 
-#### Scenario: 量化模型质量下降
-- **WHEN** INT8 后端输出通过同模型固定输入参考对照，但灰度回放质量低于 FP16
-- **THEN** 记录模型质量差异，不修改公共阈值掩盖损失，不因模型哈希不同拒绝加载
+#### Scenario: INT8 quality differs from FP16
+- **WHEN** same-model numerical comparisons pass but grayscale INT8 tracking quality is below FP16
+- **THEN** the report distinguishes model quality from backend correctness and does not claim complete platform equivalence
 
-#### Scenario: 只有构建证据
-- **WHEN** ARM64 构建成功但尚未运行目标硬件回放
-- **THEN** 报告只声明构建通过，实机数值、资源和跟踪检查保持未完成
+#### Scenario: Only build evidence exists
+- **WHEN** ARM64 compilation succeeds but target-hardware replay has not run
+- **THEN** only compilation is reported as passed; hardware numerical, resource, and tracking acceptance remain incomplete
+
+### Requirement: Production search transfer requires compatible native memory
+
+Native attributes describe device storage rather than logical tensor order. Production SHALL require matching search-output and Head-search-input FP16 grouped-channel shapes, effective strides, and safe capacities. Compatible features SHALL pass through shared device memory without CPU reads, copies, or conversion. An incompatible contract SHALL reject loading with the difference. It MUST NOT silently fall back to Float32 host transfer.
+
+#### Scenario: Native search edge is compatible
+- **WHEN** both sides have matching supported FP16 grouping, strides, and capacity
+- **THEN** loading succeeds and search features reach Head through the same underlying device storage without ordinary CPU feature submission
+
+#### Scenario: Logical element counts conceal an incompatible layout
+- **WHEN** logical element counts match but native grouping or types differ
+- **THEN** loading fails with that native mismatch rather than converting or falling back
+
+### Requirement: Each search re-establishes bindings and uses current features
+
+A binding selects the memory a model accesses. The system SHALL rebind search output after ordinary search-image submission and before execution. It SHALL rebind Head search input after ordinary template-feature submission and before Head execution. Head SHALL wait for the current search write. The next search MUST NOT overwrite shared storage before Head finishes reading it.
+
+#### Scenario: First search uses real generated features
+- **WHEN** template and search inputs are submitted after backend creation
+- **THEN** Head reads the first search model's output instead of initially empty shared memory
+
+#### Scenario: Consecutive searches refresh bindings
+- **WHEN** two search frames execute consecutively
+- **THEN** both frames re-establish their producer and consumer bindings and Head uses each frame's current features
+
+### Requirement: Direct-transfer failures retain safe resource boundaries
+
+Recoverable binding failures SHALL return the existing single-search failure outcome when device access has not started or has stopped. Unconfirmed stop or failed shared-memory release SHALL emit a fatal diagnostic and terminate the process. Destruction SHALL release the consumer import before producer storage after confirmed device stop. Reset SHALL clear template validity while retaining allocated shared memory for later per-call rebinding.
+
+#### Scenario: One binding is rejected safely
+- **WHEN** a valid template exists and a search binding fails with device access confirmed absent or stopped
+- **THEN** the search fails through existing model-error semantics without terminating healthy process execution
+
+#### Scenario: Template reset reuses shared allocation
+- **WHEN** template A is reset and template B is created
+- **THEN** shared memory is neither freed nor allocated again solely because of reset, and subsequent ordinary submissions still require fresh bindings
+
+#### Scenario: Shared memory release fails
+- **WHEN** a backend destruction release call fails
+- **THEN** a fatal diagnostic terminates the process instead of continuing ordinary resource destruction
