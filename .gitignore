@@ -2,10 +2,12 @@
 .docker-artifacts/
 .github/
 .vscode/
-build/
 **/__pycache__/
-*.pyc
+build/
+models/balloon/
+
 *.engine
+*.pyc
 AGENTS.local.md
 
 # Generated checksum-pinned native emulator; prepare explicitly before image build.
