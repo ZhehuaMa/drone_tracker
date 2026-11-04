@@ -1,5 +1,7 @@
 # NanoTrackV3 search-feature shared-memory benchmark
 
+[Project overview](../../../README.md) · [Documentation index](../../../docs/README.md)
+
 `nanotrackv3_search_direct` runs public NanoTracker on local MJPEG luminance frames.
 The template backbone extracts features from 127x127 input; the search backbone uses
 255x255 input; the head compares the two. Search features pass through one shared

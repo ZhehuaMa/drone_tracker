@@ -1,5 +1,7 @@
 # NanoTrackV3 FP16 benchmark
 
+[Project overview](../../../README.md) · [Documentation index](../../../docs/README.md)
+
 `nanotrackv3_baseline` runs the public NanoTracker and RK3576 model backend on a local
 MJPEG file. MJPEG stores each frame as an independent JPEG image. Decode yields the
 original eight-bit luminance without a color round trip. The program does not start

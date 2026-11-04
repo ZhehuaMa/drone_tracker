@@ -1,5 +1,7 @@
 # RK3576 production deployment package
 
+[Project overview](../README.md) · [Documentation index](../docs/README.md)
+
 Build ARM64 programs with the default x86_64 cross-compiler image or explicit ARM64
 fallback. `deployment/package.sh` separately uses the ARM64 image to collect genuine
 ARM ROS dependencies from the selected local installation. It does not read a live

@@ -1,10 +1,12 @@
 # Jetson-to-RK3576 architecture and remaining validation
 
+[Project overview](../../README.md) · [Documentation index](../README.md)
+
 ## Current implementation
 
 The repository uses one public tracking algorithm with a platform backend selected at build time. RK3576 camera input, ROS video input, HDMI display, original-camera recording, diagnostics, and deployment packaging are implemented. These capabilities have different configuration and acceptance boundaries; their presence does not establish full Jetson equivalence or flight readiness.
 
-The raw CMake default is `DRONE_TRACKER_PLATFORM=jetson`. The supported RK3576 entry point, `./build.sh`, explicitly selects `rk3576` and produces ARM64 binaries with a native x86_64 cross compiler. `--backend arm64` selects the ARM64-image fallback. Current build SDKs provide RKNN Runtime 2.3.2; the target compatibility baseline is Runtime 2.3.2 and RKNPU driver 0.9.8. See the [build guide](dockerfiles/README.amd64.md) and local environment instructions.
+The raw CMake default is `DRONE_TRACKER_PLATFORM=jetson`. The supported RK3576 entry point, `./build.sh`, explicitly selects `rk3576` and produces ARM64 binaries with a native x86_64 cross compiler. `--backend arm64` selects the ARM64-image fallback. Current build SDKs provide RKNN Runtime 2.3.2; the target compatibility baseline is Runtime 2.3.2 and RKNPU driver 0.9.8. See the [build guide](../../dockerfiles/README.amd64.md) and local environment instructions.
 
 This document describes the current architecture and remaining work. Main specifications under `openspec/specs/` define approved behavior. Dated change reports retain the scope and limitations of their original measurements.
 
@@ -60,7 +62,7 @@ For a camera with `osd.enabled=true`, service startup begins capture and HDMI pr
 
 RK3576 bbox and LOS observations share one reference timestamp. LOS means the camera-to-target direction and its rotation-compensated angular rates. Default `publish_prediction=false` uses capture time; prediction mode selects an eligible pose time or falls back to capture time. Preserve the separate image capture timestamp, floating observation precision, validity rules, and QoS. Tracking states remain `Detecting=0`, `TargetFound=1`, `Tracking=2`, and `TargetLost=3`; preview does not create another algorithm state.
 
-The `ON MISSION` display requires a received mission-start event and fresh connected, armed, guided flight status. Tracking-state publications do not determine its lifetime. Follow the current mission policy and [HDMI guide](docs/RK3576_HDMI_OSD.md) for cancellation and reauthorization.
+The `ON MISSION` display requires a received mission-start event and fresh connected, armed, guided flight status. Tracking-state publications do not determine its lifetime. Follow the current mission policy and [HDMI guide](../operations/RK3576_HDMI_OSD.md) for cancellation and reauthorization.
 
 ## Verification already recorded
 
@@ -68,19 +70,19 @@ The following are historical evidence sources, not claims that the current check
 
 | Area | Recorded scope |
 |---|---|
-| Public factory | [Factory verification](openspec/changes/archive/2026-09-10-introduce-platform-factory/verification.md): portable contracts and source review; no Jetson execution claim |
-| RKNN model backends | [YOLO board validation](openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md), [NanoTrack validation](openspec/changes/archive/2026-09-11-implement-rk3576-nanotrack-backend/validation.md), and [shared-feature adoption](openspec/changes/archive/2026-09-22-adopt-nanotrack-search-direct-handoff/validation.md) |
-| Software video and ROS video | [Video-source validation](openspec/changes/archive/2026-09-14-implement-rk3576-video-frame-source/validation.md) and [ROS-video validation](openspec/changes/archive/2026-09-15-integrate-rk3576-ros-video/validation.md) |
-| Camera and ROS integration | [Camera-source validation](openspec/changes/archive/2026-09-15-implement-rk3576-camera-frame-source/validation.md) and [ROS-camera final board validation](openspec/changes/archive/2026-09-15-integrate-rk3576-ros-camera/final-board-validation.md); both changes are archived |
-| HDMI, recording and preview | [HDMI final validation](openspec/changes/archive/2026-09-23-integrate-rk3576-hdmi-osd/final-validation.md), [recording final validation](openspec/changes/archive/2026-09-24-add-rk3576-camera-recording/final-validation.md), and [continuous-preview validation](openspec/changes/archive/2026-10-13-decouple-rk3576-hdmi-stream-from-tracker-trigger/validation.md) |
+| Public factory | [Factory verification](../../openspec/changes/archive/2026-09-10-introduce-platform-factory/verification.md): portable contracts and source review; no Jetson execution claim |
+| RKNN model backends | [YOLO board validation](../../openspec/changes/archive/2026-09-11-implement-rk3576-yolo-backend/board-validation.md), [NanoTrack validation](../../openspec/changes/archive/2026-09-11-implement-rk3576-nanotrack-backend/validation.md), and [shared-feature adoption](../../openspec/changes/archive/2026-09-22-adopt-nanotrack-search-direct-handoff/validation.md) |
+| Software video and ROS video | [Video-source validation](../../openspec/changes/archive/2026-09-14-implement-rk3576-video-frame-source/validation.md) and [ROS-video validation](../../openspec/changes/archive/2026-09-15-integrate-rk3576-ros-video/validation.md) |
+| Camera and ROS integration | [Camera-source validation](../../openspec/changes/archive/2026-09-15-implement-rk3576-camera-frame-source/validation.md) and [ROS-camera final board validation](../../openspec/changes/archive/2026-09-15-integrate-rk3576-ros-camera/final-board-validation.md); both changes are archived |
+| HDMI, recording and preview | [HDMI final validation](../../openspec/changes/archive/2026-09-23-integrate-rk3576-hdmi-osd/final-validation.md), [recording final validation](../../openspec/changes/archive/2026-09-24-add-rk3576-camera-recording/final-validation.md), and [continuous-preview validation](../../openspec/changes/archive/2026-10-13-decouple-rk3576-hdmi-stream-from-tracker-trigger/validation.md) |
 
 Read each report's board, program, model, input, timing, and failure boundaries before reusing a conclusion. An old SDK version or completed earlier run does not define the current build or prove acceptance of a changed binary. Raw outputs under `.docker-artifacts/` and `/tmp` may have been deleted. Preserve required acceptance evidence in an explicitly retained location outside disposable build caches.
 
 ## Remaining validation and change process
 
-- The active [complete-replay task list](openspec/changes/assemble-rk3576-tracker-replay/tasks.md) retains incomplete FP16/INT8 automatic-capture and required-scene acceptance. Existing resource and integration evidence does not turn an unsuccessful detection-quality run into a pass.
-- The active [diagnostic task list](openspec/changes/add-rk3576-tracking-diagnostic-process/tasks.md) retains its independent basic-mode overhead acceptance. Recorded diagnostic or regression runs do not substitute for that prescribed paired measurement.
+- The active [complete-replay task list](../../openspec/changes/assemble-rk3576-tracker-replay/tasks.md) retains incomplete FP16/INT8 automatic-capture and required-scene acceptance. Existing resource and integration evidence does not turn an unsuccessful detection-quality run into a pass.
+- The active [diagnostic task list](../../openspec/changes/add-rk3576-tracking-diagnostic-process/tasks.md) retains its independent basic-mode overhead acceptance. Recorded diagnostic or regression runs do not substitute for that prescribed paired measurement.
 - Jetson hardware build/runtime equivalence, NPU device-memory accounting where not measured, physical camera timestamp/exposure synchronization, calibrated angular accuracy, and flight behavior require their own evidence. Synthetic intrinsics and unannotated footage cannot establish these properties.
 - Scope each future platform optimization through OpenSpec. Freeze program, model, input, configuration, board, and workload identities; compare observable results before claiming a performance benefit. Follow each change's actual deadlines and acceptance conditions instead of combining unrelated historical tests.
 
-For future changes: inspect the existing change, complete or revise its planning artifacts, implement its tasks, verify code and specifications together, then synchronize or archive. Keep the system Runtime unchanged during application deployment and use the [deployment guide](deployment/README.md) for selected installation paths, service ownership, and rollback.
+For future changes: inspect the existing change, complete or revise its planning artifacts, implement its tasks, verify code and specifications together, then synchronize or archive. Keep the system Runtime unchanged during application deployment and use the [deployment guide](../../deployment/README.md) for selected installation paths, service ownership, and rollback.

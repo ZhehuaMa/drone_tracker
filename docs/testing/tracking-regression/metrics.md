@@ -1,5 +1,7 @@
 # Behavior metrics and comparison protocol
 
+[Documentation index](../../README.md) · [Regression tool guide](../../../tests/tracking_regression/README.md)
+
 These metrics describe program behavior for each independently configured video case. There are no human target labels. A valid publication means a normally returned publication call carrying a tracking flag and a finite box with positive width and height. It does not establish that the box contains the drone. Model scores and overlap between model boxes are not accuracy measurements. Publication return also does not establish receipt by a subscriber.
 
 ## Inputs, identities and clocks
@@ -95,8 +97,8 @@ python3 tests/tracking_regression/run_suite.py freeze.yaml
 python3 tests/tracking_regression/run_suite.py compare.yaml
 ```
 
-Both files use the complete suite configuration described in [README.md](README.md) and
-[configs/example.yaml](configs/example.yaml). Set `operation: freeze` in the first file.
+Both files use the complete suite configuration described in [README.md](../../../tests/tracking_regression/README.md) and
+[configs/example.yaml](../../../tests/tracking_regression/configs/example.yaml). Set `operation: freeze` in the first file.
 Its `freeze.baseline_id` names a new baseline and `freeze.cases.<case_id>.runs` lists at
 least three distinct qualified reference runs. Set `operation: compare` in the second
 file. Each `compare.cases.<case_id>` names its frozen `baseline`, explicit `candidates`,
@@ -181,7 +183,7 @@ records still prevent formal comparison. Reports retain each descriptor's metric
 
 ## Multi-case operation and record migration
 
-Use `run_suite.py CONFIG.yaml` with one explicit `prepare`, `run`, `freeze` or `compare` operation. The complete sections and sequence are documented in [README.md](README.md) and [configs/example.yaml](configs/example.yaml). Every case has an independent fixture, at least three qualified reference runs, frozen baseline, at least three independent candidate runs and comparison output. References/candidates match by `case_id` and content, never list position. The specified four-case template requires twelve rounds per cohort and twenty-four total; no cross-case sample pooling or percentage averaging is permitted.
+Use `run_suite.py CONFIG.yaml` with one explicit `prepare`, `run`, `freeze` or `compare` operation. The complete sections and sequence are documented in [README.md](../../../tests/tracking_regression/README.md) and [configs/example.yaml](../../../tests/tracking_regression/configs/example.yaml). Every case has an independent fixture, at least three qualified reference runs, frozen baseline, at least three independent candidate runs and comparison output. References/candidates match by `case_id` and content, never list position. The specified four-case template requires twelve rounds per cohort and twenty-four total; no cross-case sample pooling or percentage averaging is permitted.
 
 New metrics containers use `schema_version: 2`; unchanged metric formulas retain their original `metric_version` (including existing version-2 diagnostic extensions). Old containers retain fixed full/core validation. Unknown versions, mixed old/new runs, changed numeric selection/windows or changed preparation/cleanup budgets cannot enter one formal group. File/config paths and unrelated case lists remain provenance. Comparison output distinguishes completed operation, comparable evidence and explicit threshold performance decision. Missing cases and unset thresholds cannot yield a suite pass.
 

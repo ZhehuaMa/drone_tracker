@@ -1,5 +1,7 @@
 # RK3576 tracking diagnostics
 
+[Project overview](../../README.md) · [Documentation index](../../docs/README.md)
+
 Business threads submit fixed 256-byte numeric events that connect capture, detection,
 history lookup, recovery and ROS publication calls. The independent
 `rk3576_diagnostic_worker` collects them. `rk3576_diagnostic_inspect` reads stored
@@ -77,7 +79,7 @@ in `values[2..5]`. They use observation sequence `values[0]` and nanosecond head
 `values[1]`. Bbox values are center-x, center-y, width, height; LOS values are pitch,
 yaw, pitch rate, yaw rate. `counts[0]` selects capture=0, qualified-pose=1 or prediction
 fallback=2. Integer Output boxes cannot substitute for these publication payloads.
-See the [regression diagnostic contract](../../tests/tracking_regression/diagnostic_contract.md)
+See the [regression diagnostic contract](../../docs/testing/tracking-regression/diagnostic_contract.md)
 for format-1 compatibility and independent bbox/LOS call pairing.
 
 For example, capture can advance from 200 to 224 while a tracker call takes 388 ms.
@@ -181,7 +183,7 @@ windows. P99 is sorted sample `ceil(0.99*N)`, and every sample at or above it is
 Off-mode acceptance CSV is an explicit measurement output, not a structured event log.
 The ten-pair task requires at least eight complete groups to meet submission P99 <=20 us,
 call P99 increase <=0.2 ms, consumed-frame-rate decrease <=1% and no health gaps.
-See the [ten-pair procedure](tests/ten_round_acceptance.md). Changed business binaries
+See the [ten-pair procedure](../../docs/testing/diagnostics/ten_round_acceptance.md). Changed business binaries
 require a fresh complete batch.
 
 The Linux deadline controller uses `PR_SET_CHILD_SUBREAPER` to adopt surviving descendants,

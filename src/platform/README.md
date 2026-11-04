@@ -1,5 +1,7 @@
 # Platform factory and RK3576 operation
 
+[Project overview](../../README.md) · [Documentation index](../../docs/README.md)
+
 `PlatformFactory` creates frame sources, host-image frame builders, and a complete set of model and preprocessing components. The shared tracker uses these interfaces without including hardware SDK types. A frame reference shares immutable image storage so asynchronous detection can safely outlive its caller.
 
 The raw CMake default is `DRONE_TRACKER_PLATFORM=jetson`. The supported RK3576 entry point, `./build.sh`, explicitly selects `rk3576`. Unknown platform values fail before hardware dependency discovery. Jetson uses CUDA, VPI, TensorRT, and Jetson Multimedia API behind its platform boundary. RK3576 uses the RKNN backend, software MJPEG decoding, and V4L2 camera capture. HDMI rendering uses RGA; model image preprocessing remains separate from that display acceleration.
@@ -269,7 +271,7 @@ The lifecycle applies to both `cached-overlay` and `legacy`. Cameras with OSD di
 
 Camera startup/runtime failure ends continuous service with a nonzero result for the existing service restart policy. ON cannot reopen that failed stream. A tracking exception ends only its round; healthy preview continues and another ON may retry after cleanup. Recording, bag, and runtime display failures remain isolated. A failed display does not automatically reconnect and does not stop healthy tracking.
 
-`TRIG ON/OFF` shows the last control event for two seconds. Mission display requires an actually received `/fpv/mission_state=true` plus fresh connected, armed, guided `/mavros/state`. Tracking-state changes do not determine its lifetime. A MISSION trigger alone is insufficient. Mission end, flight-authorization loss/expiry, OFF, or DISMISS clears it; an invalidated attempt requires a later false then true mission event. DISMISS preserves tracking. See [the HDMI guide](../../docs/RK3576_HDMI_OSD.md) for timing, visible fields, and restart limitations.
+`TRIG ON/OFF` shows the last control event for two seconds. Mission display requires an actually received `/fpv/mission_state=true` plus fresh connected, armed, guided `/mavros/state`. Tracking-state changes do not determine its lifetime. A MISSION trigger alone is insufficient. Mission end, flight-authorization loss/expiry, OFF, or DISMISS clears it; an invalidated attempt requires a later false then true mission event. DISMISS preserves tracking. See [the HDMI guide](../../docs/operations/RK3576_HDMI_OSD.md) for timing, visible fields, and restart limitations.
 
 Diagnostics use a stream ID and source sequence across ON/OFF, plus separate tracking-round IDs. Counters distinguish capture, dispatch, task replacement, actual consumption, and preview/paired submissions. Control acceptance, display completion, model/bag cleanup, and recording close have distinct timestamps. Display completion does not measure light reaching the screen. Messages already handed to ROS middleware may still arrive after OFF; clients retain their existing drain/discard behavior.
 
@@ -301,7 +303,7 @@ See [the recording guide](rk3576/recording/README.md) for hardware encoding, run
 
 ## HDMI display stage timing
 
-See [the HDMI guide](../../docs/RK3576_HDMI_OSD.md#display-stage-timing) for renderer selection, stage boundaries, counter interpretation, and rollback. `osd.timing_enabled` is startup-only and defaults to false in C++; the production camera template explicitly enables it. Set false and restart to disable measurement.
+See [the HDMI guide](../../docs/operations/RK3576_HDMI_OSD.md#renderers-and-display-stage-timing) for renderer selection, stage boundaries, counter interpretation, and rollback. `osd.timing_enabled` is startup-only and defaults to false in C++; the production camera template explicitly enables it. Set false and restart to disable measurement.
 
 ## Verification boundaries
 

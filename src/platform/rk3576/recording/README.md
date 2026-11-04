@@ -1,5 +1,7 @@
 # RK3576 camera recording and encoder tools
 
+[Project overview](../../../../README.md) · [Documentation index](../../../../docs/README.md)
+
 This directory contains the production SC233HGS recording worker, session management, MPEG-TS storage, read-only inspector, and independent encoder probes. MPP is Rockchip's hardware video encoding interface. FFmpeg's libavformat packages encoded H.264 into MPEG-TS, a segmented video container. Production recording is integrated with the ROS node through the platform camera boundary.
 
 ## Build and enable

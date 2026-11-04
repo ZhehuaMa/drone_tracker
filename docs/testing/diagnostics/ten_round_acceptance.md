@@ -1,5 +1,9 @@
 # Ten paired diagnostic acceptance groups
 
+[Documentation index](../../README.md) · [Diagnostics guide](../../../src/diagnostics/README.md)
+
+Acceptance helper scripts remain under [src/diagnostics/tests/](../../../src/diagnostics/tests/). Copy the helpers named below from that source directory into the isolated board directory.
+
 Task 7.3 compares ten `off`/`basic` pairs of the same business binary on the same
 identified production board. Odd groups run off first; even groups run basic first.
 Each measurement window lasts 45 seconds after four seconds of warmup. Retain all

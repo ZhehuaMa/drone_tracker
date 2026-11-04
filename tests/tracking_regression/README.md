@@ -1,5 +1,7 @@
 # Configurable RK3576 tracking regression
 
+[Project overview](../../README.md) · [Documentation index](../../docs/README.md)
+
 Run one operation from one file:
 
 ```bash
@@ -98,7 +100,7 @@ Suite configuration is version 1; generated per-round settings are version 3. Ne
 
 Comparison conditions include this case's pixels, timing, resolved numeric selection, attitudes, algorithm/model content, windows, preparation/deadline settings, board, Runtime/driver, actual dependencies, CPU policy, userspace workload and observation mode. Source/model locations and the original interval spelling remain provenance. Unrelated case order/list edits and output/config paths do not change this case's semantic conditions. Execution order remains recorded context and can affect thermal observations. ELF dependencies are hashed by SONAME (the dynamic loader's library name); project-built libraries belong to code identity. The effective ROS middleware is measured in a separate non-node probe. Concurrent unrelated userspace processes remain workload conditions; private suite/control processes and kernel threads are recorded separately.
 
-Real-model/performance acceptance requires the same specific `HZ-RK3576_WuKong Board`, its system RKNN Runtime 2.3.2 and RKNPU 0.9.8. The tool never changes Runtime, production services or CPU policy. Arrange any required maintenance separately. The historical three-reference/three-repeat fixed-case acceptance in [acceptance.md](acceptance.md) is evidence for the earlier fixed tool, not acceptance of this configurable feature.
+Real-model/performance acceptance requires the same specific `HZ-RK3576_WuKong Board`, its system RKNN Runtime 2.3.2 and RKNPU 0.9.8. The tool never changes Runtime, production services or CPU policy. Arrange any required maintenance separately. The historical three-reference/three-repeat fixed-case acceptance in [acceptance.md](../../docs/reports/tracking-regression/acceptance.md) is evidence for the earlier fixed tool, not acceptance of this configurable feature.
 
 ## Build and portable checks
 
@@ -120,7 +122,7 @@ Playback uses the timestamps in `frames.jsonl`, independently of the generated c
 This setup optimization preserves the full-cache, slow-consumer, queue-rejection, stop, lateness and allocation
 failure checks, including the separate real operating-system address-space limit check.
 
-See [metrics.md](metrics.md) for formulas, [diagnostic_contract.md](diagnostic_contract.md) for event integrity, and the active OpenSpec change for implementation/acceptance evidence.
+See [metrics.md](../../docs/testing/tracking-regression/metrics.md) for formulas, [diagnostic_contract.md](../../docs/testing/tracking-regression/diagnostic_contract.md) for event integrity, and the active OpenSpec change for implementation/acceptance evidence.
 
 The optional `run.settings.supplier_cpu` selects one online CPU for the test's
 frame supplier. For example, `supplier_cpu: 4` changes only that thread's allowed

@@ -1,5 +1,7 @@
 # Diagnostic contract for configurable regression, formats 1 and 2
 
+[Documentation index](../../README.md) · [Regression tool guide](../../../tests/tracking_regression/README.md)
+
 The current dependency is `src/diagnostics/event.h` format 2. The collector also supports historical format-1 records. An event is a fixed 256-byte record. Its exact identity is `(run_id, producer_id, producer_seq)`. `round_id` identifies the ON/OFF round; `update_id` identifies the tracker call. Requests and results use `request_id`, `source_update_id`, and `source_tracker_frame_id`. Times are integer `mono_ns` (monotonic nanoseconds), `frame_time_us` and `prediction_us` (system microseconds). The fixture supplies an exact `E0 + relative_us` mapping to `fixture_frame_id`. Camera driver identities remain unknown for the synthetic source; original driver sequences are provenance only.
 
 The collector reads binary storage directly and preserves every Event field, including frame round identity, all arrays and enum numbers. The existing inspector's presentation export is insufficient as an interchange contract: it lacks `frame.round_id`, the raw type/reason numbers and byte length. The regression collector preserves those fields from the raw binary instead of guessing or changing the production protocol.

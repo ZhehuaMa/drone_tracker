@@ -1,5 +1,7 @@
 # RK3576 NanoTrack local-window verification
 
+[Project overview](../../../README.md) · [Documentation index](../../../docs/README.md)
+
 This tool checks whether local-window preparation preserves the former model input,
 and compares recovery time using identical inputs. Recovery initializes from an older
 detection and tracks its following history frames in order. It uses the real

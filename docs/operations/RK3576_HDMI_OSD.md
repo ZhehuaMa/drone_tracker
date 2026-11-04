@@ -1,5 +1,7 @@
 # RK3576 HDMI display: build and operation
 
+[Project overview](../../README.md) · [Documentation index](../README.md)
+
 OSD means the text and graphics over the video. The display runs inside `drone_tracker_node`, using the existing camera source and shared read-only frames. During tracking it displays an actually consumed image with its own target result. Continuous camera preview displays fresh unboxed images before ON and after OFF. It never opens a second camera.
 
 RGA performs display scaling and color conversion. DRM/KMS, the Linux display interface, submits video and overlay planes together. Model preprocessing is separate from this display path. The renderer does not crop odd-sized grayscale input: it converts such input to equal-channel BGR before scaling when required.
@@ -12,7 +14,7 @@ From the repository root:
 ./build.sh --test
 ```
 
-The default x86_64 image cross-compiles ARM64 output and enables HDMI and recording support. `--backend arm64` explicitly selects the ARM64-image fallback. The runtime `osd.enabled` parameter controls display creation. See [the image guide](../dockerfiles/README.amd64.md) for target SDK paths, test launchers, and packaging.
+The default x86_64 image cross-compiles ARM64 output and enables HDMI and recording support. `--backend arm64` explicitly selects the ARM64-image fallback. The runtime `osd.enabled` parameter controls display creation. See [the image guide](../../dockerfiles/README.amd64.md) for target SDK paths, test launchers, and packaging.
 
 For a native ARM64 ROS 2 Humble SDK environment, manual configuration can use:
 
@@ -62,9 +64,9 @@ The backend requests display control with `drmSetMaster()`, then verifies `/sys/
 | `osd.craft_name` | `FPV` | Up to 24 printable ASCII characters |
 | `osd.battery_cells` | 0 | Unknown; never infer the count from pack voltage |
 
-Declaration defaults are not every template's runtime configuration. [The production SC233HGS template](../parameters/rk3576_sc233hgs_production_params.yaml) explicitly enables OSD, timing, independent recording, and ROS bag. AR0234 and video templates disable these features. Inspect the selected YAML before use. All `osd.*` parameters are fixed at startup. Timeouts accept 1..3600000 ms, battery cells 0..32, and refresh rate 1..240 Hz. Legal dimensions do not prove the physical mode exists or text is readable.
+Declaration defaults are not every template's runtime configuration. [The production SC233HGS template](../../parameters/rk3576_sc233hgs_production_params.yaml) explicitly enables OSD, timing, independent recording, and ROS bag. AR0234 and video templates disable these features. Inspect the selected YAML before use. All `osd.*` parameters are fixed at startup. Timeouts accept 1..3600000 ms, battery cells 0..32, and refresh rate 1..240 Hz. Legal dimensions do not prove the physical mode exists or text is readable.
 
-The installed `/opt/drone_tracker/bin/run-camera` entry applies the CPU policy and invokes display preparation. Preparation stops `display-manager.service` and `lightdm.service`, then checks display-device release when OSD is enabled. The node also applies configured CPU roles. The display backend itself does not manage desktop services. Stopping the tracker does not automatically restore the desktop. See [deployment instructions](../deployment/README.md) for service and manual-entry behavior.
+The installed `/opt/drone_tracker/bin/run-camera` entry applies the CPU policy and invokes display preparation. Preparation stops `display-manager.service` and `lightdm.service`, then checks display-device release when OSD is enabled. The node also applies configured CPU roles. The display backend itself does not manage desktop services. Stopping the tracker does not automatically restore the desktop. See [deployment instructions](../../deployment/README.md) for service and manual-entry behavior.
 
 For direct `ros2 run` operation outside that wrapper, arrange desktop shutdown and device release first. A typical board sequence, only within an authorized maintenance window, is:
 
@@ -99,7 +101,7 @@ Finite video, OSD-disabled cameras, independent tools, and Jetson retain their e
 
 HUD means the text and graphics presented to the operator. The base geometry derives from the 720×480 `rk_hdmi_osd` reference at commit `3e605a26c7c135b468ef2a3638ffd47144594603`; subsequent approved changes define the current fields. Main characters are 16×32 and small characters 8×16. Output resizing scales the HUD, while video-space target geometry is transformed separately.
 
-Telemetry topics, types, and reliability are defined in [the telemetry specification](../openspec/specs/osd-ros-telemetry/spec.md). IMU, GPS, pressure, temperature, and RSSI inputs use best-effort delivery; other status inputs use reliable delivery, with depth 10 for these OSD subscriptions. ROS remapping can select a compatible source, for example `-r /mavros/rc/in:=/my_bridge/rc_in`. Fill valid input/model parameters before starting.
+Telemetry topics, types, and reliability are defined in [the telemetry specification](../../openspec/specs/osd-ros-telemetry/spec.md). IMU, GPS, pressure, temperature, and RSSI inputs use best-effort delivery; other status inputs use reliable delivery, with depth 10 for these OSD subscriptions. ROS remapping can select a compatible source, for example `-r /mavros/rc/in:=/my_bridge/rc_in`. Fill valid input/model parameters before starting.
 
 | Area | Current content | Unknown/stale behavior |
 |---|---|---|
@@ -197,4 +199,4 @@ To compare timing overhead, keep the board, models, input, recording, display mo
 
 For renderer rollback, stop the node and restart with `osd.render_path=legacy`; models, topics, and CPU policy remain unchanged. This changes rendering, not continuous-camera lifetime. To disable HDMI, set `osd.enabled=false` and restart after confirming old display resources are released. To restore an earlier input lifecycle, restore the complete older release and matching configuration/entry. Never replace system RKNN Runtime. Restore the desktop only after node exit and device-release verification.
 
-Dated results are in [original HDMI validation](../openspec/changes/archive/2026-09-23-integrate-rk3576-hdmi-osd/final-validation.md), [cached-overlay validation](../openspec/changes/archive/2026-09-24-optimize-rk3576-hdmi-osd-pipeline/validation.md), [HUD alignment](../openspec/changes/archive/2026-09-27-align-hud-with-rk-hdmi-osd/validation.md), and [mission policy validation](../openspec/changes/archive/2026-10-30-fix-osd-mission-banner-state/validation.md). They establish only their recorded binaries, devices, inputs, and checks. `.docker-artifacts` and `/tmp` are disposable and may be cleared; preserve needed originals in separately managed storage. Historical artifact paths do not assure current availability. This guide update performs no new hardware acceptance.
+Dated results are in [original HDMI validation](../../openspec/changes/archive/2026-09-23-integrate-rk3576-hdmi-osd/final-validation.md), [cached-overlay validation](../../openspec/changes/archive/2026-09-24-optimize-rk3576-hdmi-osd-pipeline/validation.md), [HUD alignment](../../openspec/changes/archive/2026-09-27-align-hud-with-rk-hdmi-osd/validation.md), and [mission policy validation](../../openspec/changes/archive/2026-10-30-fix-osd-mission-banner-state/validation.md). They establish only their recorded binaries, devices, inputs, and checks. `.docker-artifacts` and `/tmp` are disposable and may be cleared; preserve needed originals in separately managed storage. Historical artifact paths do not assure current availability. This guide update performs no new hardware acceptance.

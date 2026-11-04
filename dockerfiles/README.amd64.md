@@ -1,5 +1,7 @@
 # Native x86_64 build image
 
+[Project overview](../README.md) · [Documentation index](../docs/README.md)
+
 `drone-tracker-rk3576:humble-amd64-rknn2.3.2` runs Linux x86_64 tools directly on an x86_64 host. It contains ROS 2 Humble, OpenCV, Eigen, FFmpeg, and the dependencies used by the sibling ROS packages. The existing ARM64 image remains the source of the production SDK.
 
 The image delivered on 2026-10-15 uses a **local Ubuntu/ROS package snapshot** as its native base. Official registry downloads stalled. Its final frozen ID is `sha256:025d0aa88983b0646a1b7a4d25cbc13dc96a6206e0148475bbfd5fad15057421`. The local fallback and its provenance are documented below. The default official-base command is a separate rebuild option.

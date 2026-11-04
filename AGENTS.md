@@ -3,13 +3,13 @@
 ## Branches and compatibility
 
 - Develop on `rk3576` unless the task explicitly selects another branch. Use `jetson` as the reference implementation; compare with `git show jetson:<path>` or a branch diff when investigating behavior differences.
-- Preserve externally visible behavior and algorithm semantics unless an approved OpenSpec change authorizes a difference. Read [RK3576_REFACTORING_PLAN.md](RK3576_REFACTORING_PLAN.md) before changing platform boundaries. Proposed designs and unverified hardware assumptions are not acceptance evidence.
+- Preserve externally visible behavior and algorithm semantics unless an approved OpenSpec change authorizes a difference. Read [RK3576_REFACTORING_PLAN.md](docs/architecture/RK3576_REFACTORING_PLAN.md) before changing platform boundaries. Proposed designs and unverified hardware assumptions are not acceptance evidence.
 - Keep hardware-specific dependencies inside their platform boundaries. CUDA, TensorRT, VPI, Jetson Multimedia API, Tegra libraries, and CUDA architecture 87 belong to the Jetson build. The RK3576 build selects RKNN and its own camera/display/recording dependencies.
 
 ## Architecture and terminology
 
 - `src/drone_tracker_node.*` orchestrates ROS 2 parameters, inputs, tracking rounds, observations, and recording. `src/drone_tracker_main.cpp` owns process startup and the ROS executor.
-- `src/hybrid_tracker/` contains asynchronous YOLO detection, NanoTrackV3 tracking, optional DCF center fusion, and a rotation-compensated Kalman filter. DCF is the grayscale correlation filter; disabling it retains the separate center Kalman filter. [ALGORITHM_REVIEW.md](src/hybrid_tracker/ALGORITHM_REVIEW.md) explains the algorithm; code and approved specifications remain authoritative.
+- `src/hybrid_tracker/` contains asynchronous YOLO detection, NanoTrackV3 tracking, optional DCF center fusion, and a rotation-compensated Kalman filter. DCF is the grayscale correlation filter; disabling it retains the separate center Kalman filter. [ALGORITHM_REVIEW.md](docs/architecture/ALGORITHM_REVIEW.md) explains the algorithm; code and approved specifications remain authoritative.
 - `src/frame/` and the public interfaces under `src/platform/` describe shared read-only frames and complete tracker components. Keep hardware SDK types out of these interfaces and the algorithm state machine.
 - Jetson capture and decoding use `src/mv_camera/`; Jetson adapters live under `src/platform/jetson/`. RK3576 capture, software video decoding, model sessions, display, and recording live under `src/platform/rk3576/`.
 - The three logical model roles are YOLO, NanoTrackV3 Backbone, and NanoTrackV3 Head. Jetson uses three TensorRT `.engine` files. RK3576 uses four `.rknn` files because template and search Backbone inputs require separate files.
