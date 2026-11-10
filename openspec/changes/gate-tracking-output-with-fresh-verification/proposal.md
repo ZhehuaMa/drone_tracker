@@ -1,0 +1,46 @@
+# Proposal
+
+## Why
+
+A tracking box can leave the balloon yet remain marked valid for almost two seconds, supplying false visual measurements to guidance. The tracker should withhold uncertain measurements promptly while continuing to search and verify recovery internally.
+
+The November 4 `12-06-28` analysis brackets visible drift around 100–130 ms after launch and records the first invalid box at 2.012 s. This evidence motivates the change; it does not establish that tracking caused the initial departure or that any proposed timeout is flight-safe.
+
+## What Changes
+
+- **BREAKING behavior:** separate an initialized NanoTrack track from permission to publish valid observations. Invalidate on the first usable detector disagreement, completed no-target search, tracking execution failure, invalid geometry, or confirmation expiry. Already published observations cannot be retracted.
+- Start provisional initialization immediately from the first eligible seed detection. When searching with invalid output, an otherwise eligible positive result may seed an attempt even if it is too old to confirm output, provided its original pixels remain available. That exception cannot change current confirmation permission or count as adverse evidence. Catch up through buffered images and retain per-image tracking measurements. Require a fresh second, later-image detection to verify acquisition and recovery before releasing valid output.
+- Permit that second detection to have been submitted before initialization. Its comparison must use a replay-produced measurement from the same image and acquisition attempt, not the old track or the newest image.
+- Return the target-class candidates remaining after existing YOLO filtering and non-maximum suppression. Select a unique same-image overlap match; remain invalid when association is ambiguous. Preserve the existing first-successful-stage search cascade.
+- Add a source-image-based confirmation lifetime and an inference-independent expiry notification. Preserve the existing detector worker, replaceable pending request, source metadata, and one-result-snapshot scheduling.
+- Preserve source timestamps in standalone replay, but measure each image's evidence age from an immutable monotonic admission time. Admission is when the prepared image enters the tracker after the replay wait. Initialization, inference, and later stalls consume its remaining lifetime. This synthetic timing does not establish production-camera timing.
+- Update the RK3576 camera/video and replay configuration templates to use `tracker.yolo_interval: 1` as the starting configuration. Keep the interval configurable; other supported values remain valid. The actual camera operates at 60 FPS (frames per second). An interval of one offers submission on each processed image, without promising one completed detection per captured image.
+- Retain the YOLO unconfirmed counter for abandoning unsuccessful provisional attempts. It does not delay invalidation or the start of recovery. Keep YOLO and NanoTrack jump counters inactive while motion validation is deferred.
+- Provide nonblocking appearance-score and motion-validation stubs. They report `not_evaluated` and reject no candidate. Existing jump heuristics must not bypass these stubs as hidden verification gates.
+- **Fix the coordinate mismatch:** convert the filter's `(cx, cy, width, height)` prediction to top-left rectangle coordinates before ROI generation and box comparisons. ROI means the image region searched preferentially.
+- Gate RK3576 bounding-box and line-of-sight (LOS) messages together. Publish an explicit invalid pair at the trust-loss event time, reset LOS velocity history, and prevent stale in-flight work from restoring validity. Preserve floating-point boxes and existing valid-observation reference times.
+- Finish a revoked track's pending loss-notification attempt before admitting later recovery output. Recovery initialization and verification may continue internally. Serialize the invalid pair and TargetLost transition before subsequent image observations or recovery-state publications, so a delayed notification cannot overtake a newly verified track.
+- Revoke local permission immediately and register the pending loss event in the same state transition. The ordered TargetLost publication attempt can occur later if publication is delayed. Record revocation and publication times separately; do not claim immediate subscriber notification.
+
+Example: detector result D1 seeds a provisional track on image F1 while image F2 is submitted to YOLO. Replay creates tracking box T2 on F2. Result D2 may verify T2 even though its request predates initialization. Until verification succeeds, output stays invalid. Later disagreement revokes future valid output immediately rather than waiting for five unconfirmed results.
+
+## Capabilities
+
+### New Capabilities
+
+- `tracking-output-validity`: provisional acquisition, replay-based verification, bounded confirmation lifetime, track-attempt identity, counter roles, nonblocking validation stubs, and evidence diagnostics.
+
+### Modified Capabilities
+
+- `detection-tracking-arbitration`: same-image candidate association, attempt-specific replay evidence, strict catch-up acceptance, immediate trust loss, revised counter authority, and correct filter rectangle conversion. Explicitly replace the existing age-observation-only and legacy jump/recovery acceptance rules.
+- `target-observations`: verified-output eligibility, paired trust-loss notifications independent of consumed frames, loss-before-recovery publication ordering, and LOS reset behavior. Retain valid sample timestamps, message types, topic names, and QoS (ROS reliability and queue settings).
+- `rk3576-tracking-regression`: explicit freshness decisions, versioned clock mappings, and valid-output availability and recovery-duration metrics. Replace the legacy age-observation-only reporting restriction while preserving historical format meanings and explicit comparison compatibility.
+
+## Impact
+
+- Shared algorithm: `src/hybrid_tracker/hybrid_tracker.*`, `yolo_detector.*`, and the boundary to `NanoDcfTracker`. Keep platform SDKs and model formats unchanged.
+- ROS integration: `src/drone_tracker_node.*`, `src/target_observation.h`, diagnostics, and the existing paired bag-recording path. Share publication infrastructure with OFF notification without invoking OFF lifecycle actions.
+- Configuration and reporting: tracker settings, RK3576 parameter templates, strict replay configuration parsing/serialization, example replay files, and replay/regression diagnostics. Set the affected templates' starting YOLO interval to 1 without enforcing that value at runtime or changing replay input FPS to match the camera. Proposed timeout starting values are 100 ms confirmation lifetime, 1000 ms provisional-attempt timeout, and a 10 ms expiry check interval; these are testable engineering defaults, not approved flight limits.
+- Tests: extend source-association, asynchronous scheduling, recovery, geometry, observation, and ROS round tests. Verify failure paths with controlled outputs and clocks; manual target annotation is not an implementation prerequisite.
+- No edits to `drone_interceptor` or `apm_bridge`. Do not send `DISMISS`, `OFF`, `MISSION`, or fabricated target measurements as a workaround. The unchanged controller may continue prediction-based guidance after receiving invalid vision.
+- No model retraining, new model conversion, new inference workers, or change to RKNN device-feature transfer. Target-board acceptance remains separate from host tests and requires identified hardware and model/input fingerprints.
