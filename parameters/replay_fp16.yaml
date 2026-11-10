@@ -27,7 +27,10 @@ tracker:
   yolo_target_class_id: 2
   yolo_conf_threshold: 0.5
   yolo_nms_threshold: 0.45
-  yolo_interval: 4
+  yolo_interval: 1
+  confirmation_timeout_ms: 100
+  candidate_timeout_ms: 1000
+  expiry_check_interval_ms: 10
   yolo_recall_relax_ratio: 1.0
   iou_reset_threshold: 0.4
   iou_calibrate_threshold: 0.8

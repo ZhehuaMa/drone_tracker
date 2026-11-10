@@ -35,7 +35,7 @@ Each request follows this sequence:
 2. If the ROI does not contain the target class, detect the whole image.
 3. If whole-image detection also fails, use adaptive overlapping tiles. The shorter side is split in two; the longer side's count depends on the aspect ratio. Overlap is `0.2`. The first tile containing a target ends the search.
 
-The cascade selects the first successful stage and returns that stage's highest-confidence single box. Candidates from all stages and tiles are not ranked together. There is no separate tiling switch.
+The cascade selects the first successful stage and returns all surviving target-class candidates from it. The highest-confidence candidate remains the provisional seed choice. Candidates from all stages and tiles are not ranked together. There is no separate tiling switch.
 
 Postprocessing reads only the class score selected by `target_class_id`. It restores letterbox coordinates, filters dimensions, and applies NMS. Letterboxing resizes with preserved aspect ratio and padding. NMS, or non-maximum suppression, removes highly overlapping candidate boxes. `max_box_area_ratio` separately limits candidate width and height relative to the current detection region; it does not limit area directly.
 
@@ -52,75 +52,76 @@ There is no `tracking_conf_threshold` parameter or fixed `0.8` score threshold c
 
 Both paths use center-deviation threshold `dcf_max_div_factor * (width + height) / 2`. The center filter is independent of the main `RotationKalmanFilter`. Disabling DCF therefore still applies center smoothing.
 
-## 4. Per-frame processing and states
+## 4. Acquisition, verification, and recovery
 
-### 4.1. Input checks and cache
+An initialized model is separate from permission to publish valid observations. `OutputValidity` stores values under a short mutex. The tracking worker owns models, images, and local filter state. The ROS expiry callback only changes validity values; it never resets a model.
 
-1. Check the frame, components, and platform compatibility. Frame timestamps must increase strictly. Repeated or backward timestamps return `consumed=false`; the caller skips publication for that frame.
-2. Call `predictOnly()` at capture time to obtain the main Kalman prediction.
-3. Add the frame to the recovery cache, retaining at most `frame_buffer_size` frames. The cache supplies source images when detection arrives late.
-4. Enter the detecting or tracking branch according to tracker initialization state.
+The internal phases are `Searching`, `PreparingProvisional` (initialization and catch-up), `VerifyingProvisional`, and `VerifiedTracking`. A track instance is one target template and its state across images. An acquisition attempt is one seed, preparation, and later-image verification. A recovery episode begins when a previously verified instance loses trust and can contain several attempts.
 
-Preserve this coordinate detail when interpreting the current code: `predictOnly()` returns center format `(cx, cy, w, h)`, but `kf_pred_box`, used for ROI and jump comparisons, writes the first two values directly into the top-left fields of `cv::Rect2f`. This path has not converted center coordinates to top-left coordinates. Final output boxes perform their own correct conversion.
+### 4.1. Input and coordinates
 
-### 4.2. Uninitialized: discovery and catch-up
+Frames and components must be compatible. Source timestamps must increase strictly. Invalid or repeated input returns `consumed=false` before detector interaction; independent expiry still runs. The bounded image cache retains at most `frame_buffer_size` images.
 
-Before initialization, each valid update attempts a YOLO request. With a Kalman prediction, the ROI expansion factor is `roi_scale_factor * 1.5`. Without a prediction, detection starts with the whole image.
+`predictOnly()` returns center format `(cx,cy,w,h)`. `filterRectangle()` converts it once to `(cx-w/2,cy-h/2,w,h)` for ROI generation and retained source metadata. For example, `(100,50,40,20)` becomes `(80,40,40,20)`. Its unconstrained doubled ROI is `(60,30,80,40)`, centered at `(100,50)`. Fractional values survive until display conversion. Minimum ROI size and image clipping are applied afterward.
 
-A positive detection from the current round requires its source image to remain in the cache. Initialize `NanoDcfTracker` on that source image using the detection box, then track subsequent cached images in timestamp order. This catch-up replay advances the delayed detection to the current frame.
+### 4.2. First seed and independent second evidence
 
-For example, detection of frame 100 may be read during the frame-104 update. If frame 100 remains cached, initialize there and process frames 101–104. If frame 100 has been evicted, frame 104 cannot substitute for it during initialization.
+1. On F1, request detection D1. During a later update, save one completed-result snapshot, then submit the current image F2 before processing D1.
+2. While searching, an eligible positive D1 with original F1 pixels starts initialization immediately. D1 may be stale for confirmation; this exception permits only provisional work. It cannot replace an active instance or change its counter.
+3. Initialize on F1 and replay subsequent buffered images in source order. Every preparation, inference, and geometry step must succeed. The first failed intermediate step rejects the attempt.
+4. Retain each replay-produced measurement, such as T2 on F2, with round and attempt identity. These records contain values and immutable clock anchors, not image ownership. Preserve evidence required by outstanding detector requests even after source pixels leave the cache.
+5. Consume D2 in a later normal update. F2 must be strictly later than seed F1. Join D2 to this attempt's T2 before any detector correction. D2 may have been submitted before initialization and may finish during it. An old instance's submitted box or the newest image cannot substitute for T2.
+6. A unique fresh overlap match verifies the attempt. Initialize the trusted motion filter at the current accepted provisional measurement, clearing inherited velocity and LOS history. Only then may output be valid, subject to publication admission and expiry.
 
-Successful initialization enters `TargetFound` and resets the main Kalman filter. A failed individual catch-up step does not make the entire `catchupTracker()` call fail; the display box retains the latest successful result. Ten consecutive failed detection initializations clear Kalman state so later requests stop relying on the old predicted ROI.
+Initialization, catch-up, verification, and confirmation have different meanings. Confirmation renews a verified instance using fresh same-image evidence; it does not reinitialize or reset LOS rates. Original request metadata remains unchanged when replay evidence is used. Consumed results cannot be reused against a new attempt.
 
-### 4.3. Initialized: tracking and jump checks
+### 4.3. Association and structural failures
 
-Each frame first calls `NanoDcfTracker::update()`. A tracking box must differ from both the Kalman prediction and the previous display box to count as a jump. A difference qualifies when center distance exceeds `max_position_jump` pixels or either side-length ratio falls outside `[1/max_size_jump_ratio, max_size_jump_ratio]`.
+Clip candidate boxes and the source tracking measurement to that source image. IoU (intersection over union) is intersecting area divided by combined area. Exactly one candidate at or above `iou_reset_threshold` is agreement. Zero matches is disagreement; multiple matches is ambiguity. `iou_calibrate_threshold` describes strong agreement diagnostically and adds no mandatory gate.
 
-An isolated jump retains the old display box and does not correct the main filter with that measurement. When consecutive jumps reach `jump_tolerance`, clear tracker initialization and boxes, then return early with `consumed=false`. This path does not additionally set `TargetLost`.
+For example, candidate A scores 0.88 and uniquely overlaps T2, while unrelated B scores 0.94 elsewhere. A can verify T2; B's higher score cannot replace A. The first-successful-stage cascade still applies, so this does not establish that unsearched regions lack distractors.
 
-A normal measurement updates the display and previous boxes and retains the floating-point tracking result for Kalman correction. A failed tracking update supplies no measurement. State may remain `Tracking`, and output may continue using the existing prediction.
+Missing same-image context, stale evidence, duplicate results, and irrelevant old-attempt results are neutral. They do not confirm or increment the unconfirmed count. Predictions and held display boxes are not genuine tracking measurements. Metadata-only confirmation can succeed after image eviction; initialization still requires original pixels.
 
-Every `yolo_interval` valid updates, attempt another YOLO request. Prefer the Kalman prediction for ROI; otherwise use the display box. Expand ROI width and height by `roi_scale_factor`, make each at least half the corresponding YOLO input dimension, then constrain it to the image.
+Appearance-score and motion validators return allow with `not_evaluated`. Weak positive NanoTrack scores and large displacements do not independently reject candidates. Both legacy jump counters stay zero. `max_position_jump`, `max_size_jump_ratio`, and `jump_tolerance` remain accepted but inactive. Failed execution, non-finite geometry, nonpositive dimensions, and invalid identity or clock relations remain structural failures.
 
-### 4.4. Delayed-detection arbitration
+### 4.4. Revocation, attempt budgets, and cleanup
 
-Arbitration decides whether a delayed YOLO result confirms tracking or should restart it. Compare the YOLO box with the tracking and prediction boxes saved for the same source frame. Clip boxes to the source image first so comparison uses their visible portions. IoU, intersection over union, is intersection area divided by union area and measures box overlap.
+The first eligible adverse detector result, tracking failure, invalid geometry, or expired confirmation removes valid-output permission. Revocation atomically registers a pending loss event. It does not wait for five results. Recovery starts immediately: an eligible adverse positive may seed a new provisional attempt from its original image; otherwise searching continues. Provisional and rejected measurements never update trusted motion state.
 
-Apply these rules in code order:
+Each attempt starts with zero YOLO unconfirmed count. Distinct usable disagreements and completed no-target searches count against the active instance. At `lost_max_count`, abandon a provisional attempt and search again. Candidate timeout independently bounds elapsed seed-acceptance time. Neither count reset nor initialization progress renews confirmation permission.
 
-| Condition | Behavior |
-|---|---|
-| Result belongs to an older round | Skip target arbitration. |
-| Positive detection lacks a valid source-frame tracking box | Neither confirm nor reanchor; an old display box cannot substitute for an observation. |
-| Box differs from both source-frame prediction and tracking boxes, and IoU is below `iou_calibrate_threshold` | Count a YOLO jump. At `jump_tolerance`, attempt catch-up reanchoring. Before that threshold, count an unconfirmed result. |
-| Current tracking update failed, or IoU is below `iou_reset_threshold` | Attempt catch-up reanchoring and count an unconfirmed result. |
-| IoU exceeds `iou_calibrate_threshold` | Confirm tracking and clear unconfirmed/YOLO-jump counters. Keep the current box without an extra YOLO-based Kalman correction. |
-| Remaining intermediate overlap band | Clear unconfirmed/YOLO-jump counters and keep the current tracking result. |
-| Detection completed without a target | Clear the YOLO-jump counter and count an unconfirmed result. |
+Example: verified A disagrees on its first usable detector result. A loses permission immediately. That result can initialize B with count zero. If B receives five usable disagreements, B is abandoned; result five does not mark the beginning of A's recovery episode.
 
-Reanchoring initializes on the detection's source image and catches up to the current frame. Comparison data can still confirm tracking after that image is evicted, but reanchoring requires the image itself. When a jump reaches its acceptance threshold and the source image remains available, the current code clears the unconfirmed counter even if initialization fails. Without that image, it increments the counter. The low-IoU/current-tracking-failure branch increments the counter regardless of recovery success.
+The no-result frame watchdog retains strict `counter > lost_max_count * yolo_interval * 3` cleanup. For count 5, interval 1 cleans up at update 16, not 15; explicit interval 4 cleans up at 61, not 60. It is internal cleanup, not a replacement for elapsed-time expiry, and cannot create another loss event for already revoked permission.
 
-### 4.5. Loss, timeout, and state values
-
-At `lost_max_count` unconfirmed results, clear initialization and boxes and set `TargetLost`. Unconfirmed results include no target, low-IoU reinitialization, and jumps not yet accepted.
-
-While initialized, more than `lost_max_count * yolo_interval * 3` consecutive updates without reading a detection result also clear initialization and boxes. The default product is `60`, so the 61st such update triggers timeout. Any read result resets this counter, including no-target results, missing-comparison results, and older-round results. This timeout has no result-age threshold and does not additionally set `TargetLost`.
-
-| State | Value | Typical trigger |
+| Public state | Value | Meaning |
 |---|---|---|
-| `Detecting` | 0 | Uninitialized detection branch. |
-| `TargetFound` | 1 | Successful source-image initialization and catch-up. |
-| `Tracking` | 2 | Initialized branch, including prediction and brief tracking failures. |
-| `TargetLost` | 3 | YOLO unconfirmed counter reaches its limit. |
+| Detecting | 0 | Searching or provisional acquisition |
+| TargetFound | 1 | Fresh later-image verification succeeds |
+| Tracking | 2 | Next normal verified update |
+| TargetLost | 3 | Ordered publication attempt for revoked permission |
 
-State values alone do not establish box validity. Repeated jumps and no-result timeout may clear internal initialization before the next update enters `Detecting`.
+Local revocation can precede the TargetLost publication attempt when publication is blocked. That attempt must finish before later recovery states and observation pairs.
+
+### 4.5. Separate evidence and observation clocks
+
+`confirmation_timeout_ms=100`, `candidate_timeout_ms=1000`, and `expiry_check_interval_ms=10` are positive integer startup-only settings. The expiry interval cannot exceed the confirmation lifetime. These are engineering defaults, not validated flight limits.
+
+`capture-monotonic-v1` maps production and independently timed regression capture age into a monotonic execution clock. An image already 80 ms old at admission plus 30 ms inference is 110 ms old. It cannot confirm with a 100 ms lifetime. Future anchors, invalid clock relations, and checked-arithmetic overflow withhold permission.
+
+`standalone-admission-v1` is synthetic. Preserve each source timestamp for frame order, filtering, and observation reference. Decode, copy, and complete the replay wait first. Immediately before tracker admission, sample one immutable monotonic anchor for that image. Initialization, inference, catch-up, and later stalls consume its lifetime. Result arrival and newer images cannot renew old anchors.
+
+At 50 FPS, F1 can have source time 1000 ms and admission 5000 ms, with its update finishing at 5120 ms. After the next 20 ms wait, F2 has source time 1020 ms and admission 5140 ms. At 5170 ms, F1 is 170 ms old and F2 is 30 ms old. F2 expires exactly at 5240 ms under the 100 ms lifetime, even if its result arrives then. Standalone decoding and waiting before admission are outside synthetic evidence age. Slowed standalone replay establishes neither production-camera timing nor camera-rotation acceptance.
+
+Searching and provisional updates offer a YOLO request on every normally processed image. Verified tracking uses configurable `yolo_interval`. The RK3576 camera/video and replay templates start at 1; other positive intervals remain supported. Interval 1 offers submissions, not one completed detection per captured image. Replay FPS is unchanged.
+
 
 ## 5. Kalman output and line-of-sight observations
 
 `RotationKalmanFilter` state is `[cx, cy, w, h, vx, vy]`; measurements are `[cx, cy, w, h]`. It compensates camera rotation and revisits historical states. `predictOnly()` queries a prediction at the requested time without changing internal state or history.
 
-Successful initialization or reanchoring resets the filter at the current frame time using the caught-up display box and sets `reset_los=true`. Ordinary tracking measurements correct it with the original floating-point box. YOLO confirmation alone performs no extra correction. Final output prediction uses `ctx.now_us` and `ctx.R_cam_now`.
+Successful later-image verification resets the filter at the current frame time using the caught-up display box and sets `reset_los=true`. Ordinary tracking measurements correct it with the original floating-point box. YOLO confirmation alone performs no extra correction. Final output prediction uses `ctx.now_us` and `ctx.R_cam_now`.
 
 `display_box` is an integer display box; `realtime_box` is an integer prediction box. `observation_box` retains double-precision prediction and clips it to the actual input image. Internal filter state is not clipped to image boundaries. The ROS node selects observation time according to its time mode. With `publish_prediction` defaulting to `false`, observations are not all extrapolated to current wall-clock time.
 
@@ -143,16 +144,19 @@ These values come from `TrackerSettings`. The ROS node, YAML, and launch setting
 | `yolo_conf_threshold` | `0.4` | Confidence threshold for whole-image and tile detection. |
 | `yolo_nms_threshold` | `0.4` | NMS overlap threshold. |
 | `yolo_recall_relax_ratio` | `1.0` | ROI threshold multiplier; no relaxation by default. |
-| `yolo_interval` | `4` | Tracking-branch request interval in valid updates. |
-| `iou_reset_threshold` | `0.4` | Attempt reanchoring below this overlap. |
-| `iou_calibrate_threshold` | `0.8` | Confirm tracking above this overlap; confirmation keeps the tracking box. |
-| `max_position_jump` | `150.0` | Center jump-distance threshold in pixels. |
-| `max_size_jump_ratio` | `2.0` | Jump-ratio threshold applied separately to width and height. |
+| `yolo_interval` | `4` | Verified-track request interval; RK3576 templates start at 1. |
+| `confirmation_timeout_ms` | `100` | Source-evidence lifetime; startup-only. |
+| `candidate_timeout_ms` | `1000` | Provisional seed-acceptance timeout; startup-only. |
+| `expiry_check_interval_ms` | `10` | Independent RK3576 expiry servicing interval; startup-only. |
+| `iou_reset_threshold` | `0.4` | Minimum unique same-image overlap for verification and confirmation. |
+| `iou_calibrate_threshold` | `0.8` | Diagnostic strong-agreement threshold. |
+| `max_position_jump` | `150.0` | Accepted legacy setting; inactive. |
+| `max_size_jump_ratio` | `2.0` | Accepted legacy setting; inactive. |
 | `max_box_area_ratio` | `0.8` | Maximum width and height ratios relative to the detection region. |
-| `lost_max_count` | `5` | Consecutive unconfirmed-result limit. |
+| `lost_max_count` | `5` | Usable adverse-result budget for a provisional attempt; also scales internal watchdog. |
 | `roi_scale_factor` | `2.0` | Tracking-stage ROI expansion factor. |
 | `frame_buffer_size` | `30` | Recovery image-cache capacity in frames. |
-| `jump_tolerance` | `3` | Count threshold for tracking-jump reset and YOLO-jump acceptance. |
+| `jump_tolerance` | `3` | Accepted legacy setting; both jump counters inactive. |
 | `enable_dcf` | `true` | Enable the grayscale DCF center; disabling it selects the center filter. |
 | `dcf_max_div_factor` | `0.5` | Center-deviation threshold as a multiple of mean target side length. |
 | `kf_fx`, `kf_fy`, `kf_cx0`, `kf_cy0` | All `0.0` | Focal lengths and principal point in input-image pixels; valid calibration is required at runtime. |

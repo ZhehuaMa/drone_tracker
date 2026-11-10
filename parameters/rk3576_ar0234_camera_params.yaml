@@ -61,7 +61,10 @@ drone_tracker_node:
       # the public hybrid tracker; consult its current algorithm review for semantics.
       yolo_conf_threshold: 0.5
       yolo_nms_threshold: 0.45
-      yolo_interval: 4
+      yolo_interval: 1
+      confirmation_timeout_ms: 100
+      candidate_timeout_ms: 1000
+      expiry_check_interval_ms: 10
       yolo_recall_relax_ratio: 1.0   # ROI confidence multiplier; 1.0 leaves the threshold unchanged.
       iou_reset_threshold: 0.4       # Re-anchor when overlap is below this threshold.
       iou_calibrate_threshold: 0.8   # YOLO agreement threshold; confirmation does not overwrite the track.
@@ -69,7 +72,7 @@ drone_tracker_node:
       max_size_jump_ratio: 2.0
       max_box_area_ratio: 0.8
       tracking_roi_scale_factor: 2.0
-      lost_max_count: 5              # Consecutive unconfirmed results: no target, low-IoU recovery or unaccepted jumps.
+      lost_max_count: 5  # Provisional attempt budget; first adverse evidence revokes immediately.
                                      # Counts detector results, not a guaranteed frame count or wall-clock duration.
       frame_buffer_size: 30
       jump_tolerance: 3

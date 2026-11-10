@@ -158,3 +158,7 @@ historical failed records remain unchanged.
 ## Evidence retention
 
 The integrity contract applies to the complete retained run tree. `.docker-artifacts` and `/tmp` are disposable storage locations and may be cleared. Preserve required raw segments, exports and checksum manifests in an explicitly retained location; historical path names alone do not establish continued availability.
+
+## Verification policy events
+
+Format 3 adds `ValidityState`, `EvidenceClock`, `CandidateMatch`, `TrustLoss`, `TrustLossDisposed`, and `ValidAdmission`. The fixed event layout and exact integer decoding remain unchanged. Clock mapping, attempt/revision, source comparison origin, freshness eligibility, counter disposition, and separate revocation/publication epochs are structured values. `not_evaluated` appearance and motion hooks reject no candidate. Readers preserve formats 1/2 without inventing these policy fields and reject unknown formats. See the [diagnostics payload guide](../../../src/diagnostics/README.md#format-3-verification-evidence-and-ordered-loss) and [freshness metric contract](metrics.md#freshness-policy-evidence).

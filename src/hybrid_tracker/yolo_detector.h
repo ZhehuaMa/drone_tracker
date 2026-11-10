@@ -1,6 +1,7 @@
 #ifndef YOLOV8DETECTOR_H
 #define YOLOV8DETECTOR_H
 
+#include <array>
 #include <string>
 #include <vector>
 #include <thread>
@@ -16,6 +17,7 @@
 #include "frame/frame.h"
 #include "diagnostics/event.h"
 #include "detection_thread.h"
+#include "output_validity.h"
 #include "preprocess/preprocess_geometry.h"
 
 
@@ -38,6 +40,8 @@ struct Detection
  */
 struct SourceComparison {
     std::uint64_t generation{}, frame_id{}, update_id{}, capture_time_us{};
+    std::uint64_t attempt{}, permission_revision{};
+    tracking::EvidenceClock evidence{};
     int width{}, height{};
     cv::Rect2f tracker_box{}, prediction_box{};
     bool tracker_valid{}, prediction_valid{};
@@ -54,6 +58,9 @@ struct YoloResult
     diagnostics::FrameIdentity source_identity{};
     diagnostics::Reason reason{};
     SourceComparison source{};
+    std::vector<Detection> candidates{};
+    std::uint32_t stage_kind{}, stage_index{};
+    cv::Rect searched_region{};
 };
 
 class YoloV8Detector
@@ -87,6 +94,7 @@ public:
      * @return 如果成功获取了新结果，则为 true
      */
     bool get_result(YoloResult& result);
+    std::array<std::uint64_t, 3> outstandingFrames() const;
 
     /** @brief 获取模型输入尺寸 */
     std::pair<int, int> getInputSize() const;
@@ -150,8 +158,8 @@ private:
         SourceComparison source{};
     } m_next_request;
 
-    void publishResult(const Request &request, bool has_target, const Detection &best, diagnostics::Reason reason);
-    std::uint64_t m_request_counter{}, m_inflight_id{};
+    void publishResult(const Request &request, bool has_target, const Detection &best, diagnostics::Reason reason, const std::vector<Detection> &candidates = {});
+    std::uint64_t m_request_counter{}, m_inflight_id{}, m_inflight_frame{};
     diagnostics::Event m_stage{};
     std::uint32_t m_stage_index{}, m_stage_kind{};
     diagnostics::Reason m_execution_reason{};

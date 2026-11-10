@@ -7,7 +7,7 @@
 #include <type_traits>
 
 namespace diagnostics {
-inline constexpr std::uint16_t FORMAT_VERSION{2};
+inline constexpr std::uint16_t FORMAT_VERSION{3};
 enum class Mode : std::uint8_t { Off, Basic, Detail };
 enum class Producer : std::uint32_t { Node, Camera, Yolo, Control, Dispatcher, Count };
 enum class Type : std::uint16_t {
@@ -55,7 +55,13 @@ enum class Type : std::uint16_t {
     ControlBboxStart,
     ControlBboxEnd,
     ControlLosStart,
-    ControlLosEnd
+    ControlLosEnd,
+    ValidityState,
+    EvidenceClock,
+    CandidateMatch,
+    TrustLoss,
+    TrustLossDisposed,
+    ValidAdmission
 };
 enum class Reason : std::uint16_t {
     None,
@@ -111,7 +117,10 @@ enum Flag : std::uint32_t {
     ErrorCodeKnown = 4096U,
     DecisionDetails = 8192U,
     NanoCounter = 16384U,
-    ControlObservation = 32768U
+    ControlObservation = 32768U,
+    SeedUsed = 65536U,
+    StaleSeedUsed = 131072U,
+    TrustLossObservation = 262144U
 };
 /** @brief 数值身份随原帧传递；零标志表示未知，不持有像素或帧引用。 */
 struct FrameIdentity {
@@ -159,7 +168,7 @@ inline std::array<double, 4> observationValues(const Event &event) noexcept {
     std::memcpy(values.data(), event.values.data() + 2, sizeof(values));
     return values;
 }
-inline bool supportedVersion(std::uint16_t version) noexcept { return version == 1 || version == FORMAT_VERSION; }
+inline bool supportedVersion(std::uint16_t version) noexcept { return version == 1 || version == 2 || version == FORMAT_VERSION; }
 static_assert(sizeof(Event) == 256 && alignof(Event) == 64);
 static_assert(std::is_trivially_copyable<Event>::value && std::is_standard_layout<Event>::value);
 } // namespace diagnostics

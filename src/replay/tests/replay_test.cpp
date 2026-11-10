@@ -53,6 +53,13 @@ void configurations() {
     const auto original{read(REPLAY_EXAMPLE)};
     write(root / "config.yaml", original);
     const auto c{config()};
+    for (const char *name : {"rk3576_sc233hgs_production_params.yaml", "rk3576_ar0234_camera_params.yaml",
+        "rk3576_video_params.yaml", "replay_fp16.yaml", "replay_int8.yaml"}) {
+        const auto text{read(std::filesystem::path{REPLAY_EXAMPLE}.parent_path() / name)};
+        require(text.find("yolo_interval: 1") != std::string::npos, "RK3576 template lost interval-one starting value");
+    }
+    require(c.tracker.confirmation_timeout_ms == 100 && c.tracker.candidate_timeout_ms == 1000
+        && c.tracker.expiry_check_interval_ms == 10, "startup deadline defaults not serialized");
     require(c.fps == 30 && c.tracker.dcf.model_sz == 96 && c.tracker.kf_fx == 800 && c.models.backbone.empty() &&
                 c.tracker.yolo_engine_path.empty(),
             "配置映射不完整");
@@ -76,7 +83,11 @@ void configurations() {
         replace(original, "  fps: 30.0", "  fps: \"30\""),
         replace(original, "  fps: 30.0", "  fps: 30.0\n  mystery: 1"),
         replace(original, "max_frames: 0", "max_frames: 4294967296"),
-        replace(original, "yolo_interval: 4", "yolo_interval: 999999999999999999999999999"),
+        replace(original, "yolo_interval: 1", "yolo_interval: 999999999999999999999999999"),
+        replace(original, "confirmation_timeout_ms: 100", "confirmation_timeout_ms: 0"),
+        replace(original, "candidate_timeout_ms: 1000", "candidate_timeout_ms: -1"),
+        replace(original, "expiry_check_interval_ms: 10", "expiry_check_interval_ms: 101"),
+        replace(original, "confirmation_timeout_ms: 100", "confirmation_timeout_ms: 100.0"),
         replace(original, "enable_dcf: 1", "enable_dcf: true"),
         replace(original, "enable_dcf: 1", "enable_dcf: 2"),
         replace(original, "enable_dcf: 1", "enable_dcf: 1.0"),
@@ -320,6 +331,7 @@ void pipeline(bool dcf) {
     c.directory = root / (dcf ? "dcf-on" : "dcf-off");
     c.tracker.max_position_jump = 10000;
     c.tracker.max_size_jump_ratio = 100;
+    c.tracker.roi_scale_factor = 100;
     auto control{std::make_shared<Control>()};
     ReplayDependencies d{};
     d.factory = [control] { return rk3576::createFactory(assembly(control)); };
@@ -337,20 +349,17 @@ void pipeline(bool dcf) {
     cv::FileStorage result{(c.directory / "run.json").string(), cv::FileStorage::READ};
     require(result["input"]["submitted_frames"].string() == "100", "提交帧数错误");
     require(result["input"]["accepted_frames"].string() == "100", "有效帧计数错误");
-    bool found{}, tracking{}, lost{}, recovered{};
+    bool found{}, tracking{}, recovered{};
+    const bool lost{std::stoull(result["validity"]["loss_event_count"].string()) > 0};
+    int discoveries{};
     for (const auto &event : result["state_transitions"]) {
         const int state{static_cast<int>(event["state"])};
         if (state == 1) {
-            if (lost) {
-                recovered = true;
-            }
+            recovered = ++discoveries > 1;
             found = true;
         }
         if (state == 2) {
             tracking = true;
-        }
-        if (state == 3) {
-            lost = true;
         }
     }
     require(found && tracking && lost && recovered, "自动捕获/跟踪/丢失恢复未覆盖");
@@ -407,6 +416,9 @@ void reports() {
     FrameRecord r{};
     r.index = 9007199254740993ULL;
     r.timestamp_us = 9007199254740993LL;
+    r.submit_ns = 25;
+    r.image_anchor_ns = 5000000000;
+    r.decision_ns = 5010000000;
     r.output.info = "逗号,双引号\"和\n换行";
     r.nano_score = std::numeric_limits<float>::quiet_NaN();
     report.models(std::string(12000, 'x'));
@@ -420,6 +432,20 @@ void reports() {
     require(parsed["input"]["accepted_frames"].string() == "0" && parsed["input"]["submitted_frames"].string() == "1",
             "consumed=false 计数错误");
     require(read(c.directory / "run.json").find("9007199254740993") != std::string::npos, "JSON 整数丢精度");
+    require(parsed["validity"]["window_start_ns"].string() == "5000000000"
+        && parsed["validity"]["window_end_ns"].string() == "5010000000",
+        "replay report mixed relative scheduling time with monotonic evidence windows");
+    c.directory = root / "incomplete-recovery-report";
+    ReplayReport incomplete{c};
+    incomplete.lossEvent({1, 1, 2, tracking::LossReason::Expired, 4990000000, 1000}, 4991000000);
+    incomplete.frame(r);
+    incomplete.finish("eof", 1, 5);
+    // OpenCV's reader rejects JSON null, so inspect the standard-JSON output directly.
+    const auto raw_report{read(c.directory / "run.json")};
+    require(raw_report.find("__REPLAY_NULL__") == std::string::npos
+        && raw_report.find("\"verification_ns\": null") != std::string::npos
+        && raw_report.find("\"to_verification_ms\": null") != std::string::npos,
+        "unrestored recovery serialized missing evidence as sentinel strings");
     write(root / "hash", "abc");
     require(sha256(root / "hash") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
             "SHA-256 错误");

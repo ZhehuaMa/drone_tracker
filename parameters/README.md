@@ -13,3 +13,11 @@ This directory contains ROS parameter templates. Copy a template into your own c
 Camera calibration values in the camera templates are simulated examples. They do not establish measured angular accuracy. Model, capture, clock, display, and recording settings are fixed at startup; restart the node after changing them. The [platform guide](../src/platform/README.md#camera-sources-and-configuration) explains supported fields and constraints.
 
 RK3576 target observations use `publish_prediction=false` and `los.rate_filter_tau=0.12` by default. Both are startup-only parameters. Intrinsics remain explicit input-pixel values, independent of HDMI dimensions. See [platform observations](../src/platform/README.md#rk3576-paired-target-observations) for time modes, message fields, QoS and bag migration.
+
+## Fresh verification and startup deadlines
+
+`tracker.confirmation_timeout_ms` (100), `tracker.candidate_timeout_ms` (1000), and `tracker.expiry_check_interval_ms` (10) are positive integer startup-only settings, in milliseconds. The check interval must not exceed confirmation lifetime. Defaults are engineering starting values, not validated flight limits. Runtime edits require restarting the node. Standalone replay YAML uses the same names inside its `tracker` map and serializes their effective values.
+
+An initialized track stays provisional until a fresh later-image detection uniquely agrees with that attempt's measurement on the same image. Confirmation expires from the image's immutable evidence anchor, including inference and later stalls. `lost_max_count` abandons unsuccessful provisional attempts; it no longer delays the first invalidation. Legacy `max_position_jump`, `max_size_jump_ratio`, and `jump_tolerance` are accepted but inactive. Appearance and motion validators report `not_evaluated`.
+
+RK3576 production camera, AR0234, video, FP16 replay, and INT8 replay templates start with `yolo_interval: 1`. Other positive intervals remain configurable. Searching and provisional acquisition offer each processed image; verified tracking follows the interval. More submission opportunities do not promise more completed inferences. Existing replay FPS values remain unchanged. See the [algorithm clock examples](../docs/architecture/ALGORITHM_REVIEW.md#45-separate-evidence-and-observation-clocks).

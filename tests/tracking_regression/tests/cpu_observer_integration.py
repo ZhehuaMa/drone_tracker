@@ -37,7 +37,7 @@ class CpuObserverIntegrationTests(unittest.TestCase):
                                     events if events is not None else self.events, {})
 
     def test_real_format_two_export_and_legacy_layout(self):
-        self.assertEqual({event['version'] for event in self.events}, {2})
+        self.assertEqual({event['version'] for event in self.events}, {3})
         self.assertEqual([row['writer'] for row in self.metadata['writers']], list(range(5)))
         self.assertTrue(any(point['writer'] == 4 for point in self.points))
         self.assertEqual(self.qualify(), [])

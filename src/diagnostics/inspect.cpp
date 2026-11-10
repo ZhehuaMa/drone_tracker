@@ -16,7 +16,8 @@ const char *typeName(Type type) {
                                          "补跟踪汇总", "输出",     "发布开始", "发布结束",   "跳过发布",   "阶段耗时",
                                          "诊断缺口",   "异常结束", "时钟对应", "健康", "跳变比较", "SourceContext",
         "ObservationBbox", "ObservationLos", "LosPublishStart", "LosPublishEnd", "ObservationSuppressed",
-        "ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd"};
+        "ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd",
+        "ValidityState", "EvidenceClock", "CandidateMatch", "TrustLoss", "TrustLossDisposed", "ValidAdmission"};
     const auto index{static_cast<std::size_t>(type)};
     return index < std::size(names) ? names[index] : "未知事件";
 }
@@ -88,6 +89,35 @@ void json(std::ostream &output, const Event &event) {
             output << payload[index];
         }
         output << ']';
+    }
+    if (event.format_version >= 3) {
+        const char *const *fields{};
+        static constexpr const char *state[]{"attempt", "revision", "seed_frame", "seed_request", "attempt_deadline_ns", "verification_ns", "confirmation_frame"};
+        static constexpr const char *clock[]{"mapping_id", "anchor_ns", "decision_ns", "deadline_ns", "source_us", "attempt", "revision"};
+        static constexpr const char *match[]{"comparison_origin_id", "candidate_count", "overlap_matches", "anchor_ns", "decision_ns", "fresh", "eligible_identity"};
+        static constexpr const char *loss[]{"attempt", "revision", "revocation_ns", "revocation_source_us", "publication_ns", "reserved_5", "reserved_6"};
+        static constexpr const char *admission[]{"attempt", "revision", "admission_ns", "deadline_ns", "observation_id", "reserved_5", "reserved_6"};
+        switch (event.type) {
+        case Type::ValidityState: fields = state; break;
+        case Type::EvidenceClock: fields = clock; break;
+        case Type::CandidateMatch: fields = match; break;
+        case Type::TrustLoss: case Type::TrustLossDisposed: fields = loss; break;
+        case Type::ValidAdmission: fields = admission; break;
+        default: break;
+        }
+        if (fields) {
+            output << ",\"validity\":{\"units\":\"ns; source_us and revocation_source_us use us\"";
+            for (std::size_t index{}; index < 7; ++index) { output << ",\"" << fields[index] << "\":" << event.values[index]; }
+            if (event.type == Type::ValidityState) {
+                output << ",\"phase_id\":" << event.counts[0] << ",\"allowed\":" << event.counts[1]
+                    << ",\"appearance_validator\":\"not_evaluated\",\"motion_validator\":\"not_evaluated\"";
+            }
+            if (event.type == Type::CandidateMatch) {
+                output << ",\"disposition\":\"" << ((event.flags & StaleSeedUsed) ? "stale_seed"
+                    : (event.flags & SeedUsed) ? "fresh_seed" : "verification_or_diagnostic") << "\"";
+            }
+            output << '}';
+        }
     }
     output << "}\n";
 }

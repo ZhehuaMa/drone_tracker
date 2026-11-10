@@ -113,7 +113,7 @@ def semantic_inputs(fixture, config):
              'fixture': digest(semantic_fixture), 'attitude': manifest['files']['attitude.jsonl'],
              'models': {key: algorithm['models'][key]['sha256'] for key in MODEL_KEYS},
              'algorithm': digest(semantic_algorithm),
-             'observations': {'protocol_version': 2,
+             'observations': {'protocol_version': 3, 'clock_mapping': 'capture-monotonic-v1',
                  'publish_prediction': semantic_algorithm['parameters'].get('publish_prediction', False),
                  'rate_filter_tau': semantic_algorithm['parameters'].get('los.rate_filter_tau', 0.12),
                  'image_qos': 'best_effort/depth1', 'bag_topics': 'gimbal/odom/bbox/los/mavros_imu'}}

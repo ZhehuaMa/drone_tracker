@@ -247,3 +247,11 @@ remain unchanged, and earlier failed or diagnostic runs never replace the final 
 ## Evidence retention
 
 Use an explicitly retained external output root for results that must remain available. `.docker-artifacts` and `/tmp` are disposable and may be cleared routinely. Copy required source/build identities, inputs or their retained locators, raw logs, manifests and reports outside those areas before cleanup. Historical paths record provenance and do not promise present availability.
+
+## Freshness clock and metric compatibility
+
+Format-3 events retain explicit verification and revocation policy evidence. `capture-monotonic-v1` includes capture age accrued before production or independently timed regression admission. Slowed standalone replay uses `standalone-admission-v1`: the prepared image receives one immutable monotonic anchor after its scheduled wait, immediately before tracker update. Source timestamps still determine ordering, filter time, and observation reference. Result arrival, catch-up, and newer images never renew an anchor.
+
+At 50 FPS, F1 source time 1000 ms may be admitted at 5000 ms and finish at 5120 ms; F2 source time 1020 ms is admitted after the next wait at 5140 ms. At 5170 ms their ages are 170/30 ms. With a 100 ms lifetime F2 expires at 5240 ms. Standalone decoding/copying/waiting before admission are outside synthetic evidence age. These results establish neither physical-camera timing nor rotation acceptance.
+
+Replay report version 2 appends exact integer permission/attempt/clock fields to CSV and reports consumed-image availability with its sample count and window. Standalone reports have no ROS admission or subscriber-delivery evidence. Regression `validity` metrics independently retain invalid, suppressed, and absent image output, recovery verification/admission milestones, and per-topic outcomes. Historical formats retain their meanings; absent evidence is unavailable. Mapping mismatch rejects affected same-condition timing comparisons. See the [metric contract](../../docs/testing/tracking-regression/metrics.md#freshness-policy-evidence). Without frozen versioned availability/recovery thresholds, performance criteria are unset. Score/motion calibration and manually labeled quality evaluation are deferred.

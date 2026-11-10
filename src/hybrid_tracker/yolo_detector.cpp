@@ -169,7 +169,12 @@ bool YoloV8Detector::get_result(YoloResult& result)
     value.score = result.best.score; diagnostics::emit(value);
     return true;
 }
-void YoloV8Detector::publishResult(const Request &request, bool has_target, const Detection &best, diagnostics::Reason reason) {
+std::array<std::uint64_t, 3> YoloV8Detector::outstandingFrames() const {
+    std::lock_guard<std::mutex> lock{m_mutex};
+    return {m_inflight_frame, m_new_request ? m_next_request.frame_id : 0,
+        m_result_ready ? m_last_result.frame_id : 0};
+}
+void YoloV8Detector::publishResult(const Request &request, bool has_target, const Detection &best, diagnostics::Reason reason, const std::vector<Detection> &candidates) {
     auto overwritten{diagnostics::event(diagnostics::Type::ResultOverwrite, diagnostics::Reason::None, true)};
     {
         std::lock_guard<std::mutex> lock{m_mutex};
@@ -179,7 +184,10 @@ void YoloV8Detector::publishResult(const Request &request, bool has_target, cons
             overwritten.values[0] = request.request_id;
         }
         m_last_result = YoloResult{request.frame_id, has_target, best, request.request_id,
-            request.source_update_id, request.identity, reason, request.source};
+            request.source_update_id, request.identity, reason, request.source, candidates, m_stage_kind, static_cast<std::uint32_t>(m_stage.values[1]),
+            m_stage_kind == 1 ? cv::Rect{0, 0, request.source.width, request.source.height}
+                : cv::Rect{static_cast<int>(m_stage.box[0]), static_cast<int>(m_stage.box[1]),
+                    static_cast<int>(m_stage.box[2]), static_cast<int>(m_stage.box[3])}};
         m_result_ready = true;
     }
     if (overwritten.request_id) { diagnostics::emit(overwritten); }
@@ -260,14 +268,14 @@ void YoloV8Detector::workerThreadLoop()
             m_next_request = Request{};
             m_new_request = false;
             m_executing = true;
-            m_inflight_id = req.request_id;
+            m_inflight_id = req.request_id; m_inflight_frame = req.frame_id;
         } 
         
         // 此守卫先创建，确保会话和请求帧先释放，再发布空闲通知。
         auto complete{[this](void *) {
             std::lock_guard<std::mutex> lock{m_mutex};
             m_executing = false;
-            m_inflight_id = 0;
+            m_inflight_id = 0; m_inflight_frame = 0;
             m_cv_idle.notify_all();
         }};
         std::unique_ptr<void, decltype(complete)> execution{this, complete};
@@ -296,9 +304,11 @@ void YoloV8Detector::workerThreadLoop()
             // 第一个产出目标类别检测的阶段胜出，最终取置信度最高的单框
             Detection best{};
             bool has_target = false;
+            std::vector<Detection> candidates{};
             auto collect_target = [&](const std::vector<Detection>& dets) {
                 for (const auto& det : dets)
                 {
+                    if (det.classId == m_target_class_id) { candidates.push_back(det); }
                     if (det.classId == m_target_class_id && det.score > best.score)
                     {
                         best = det;
@@ -346,7 +356,7 @@ void YoloV8Detector::workerThreadLoop()
 
             // 存储结果：单框 + 帧号（Python 端 new_detections=[best_box], processed_frame_id）
             publishResult(req, has_target, best, has_target ? diagnostics::Reason::None
-                : (m_execution_reason == diagnostics::Reason::None ? diagnostics::Reason::NoTarget : m_execution_reason));
+                : (m_execution_reason == diagnostics::Reason::None ? diagnostics::Reason::NoTarget : m_execution_reason), candidates);
 
             // Release frame reference
             req.frame.reset();

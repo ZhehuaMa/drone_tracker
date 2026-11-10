@@ -82,10 +82,13 @@ ReplayReport::ReplayReport(ReplayConfig config) : config_{std::move(config)} {
     }
     csv_.open(config_.directory / "frames.csv");
     log_.open(config_.directory / "diagnostics.log", std::ios::app);
+    validity_events_.open(config_.directory / "validity-events.jsonl");
+    checkStream(validity_events_);
     csv_ << "frame_index,timestamp_us,now_us,consumed,tracking,state,display_valid,display_cx,display_cy,"
             "display_width,display_height,realtime_valid,realtime_cx,realtime_cy,realtime_width,realtime_height,"
             "nano_valid,nano_x,nano_y,nano_width,nano_height,nano_score,info,decode_ms,convert_copy_ms,update_ms,"
-            "wait_ms,submit_ns,interval_ms,lag_ms\n";
+            "wait_ms,submit_ns,interval_ms,lag_ms,clock_mapping,attempt,permission_revision,phase,"
+            "confirmation_anchor_ns,confirmation_deadline_ns,confirmation_source_us,verification_ns,attempt_deadline_ns,image_anchor_ns,decision_ns\n";
     csv_ << std::setprecision(17);
     checkStream(csv_);
     checkStream(log_);
@@ -115,7 +118,22 @@ void ReplayReport::models(std::string description) {
     description_ = std::move(description);
     summary("running", 0, 0);
 }
+void ReplayReport::lossEvent(const tracking::LossEvent &event, std::int64_t disposition_ns) {
+    recoveries_.push_back({event, 0});
+    validity_events_ << "{\"event\":\"trust_loss\",\"clock_mapping\":\"standalone-admission-v1\",\"round\":"
+        << event.round << ",\"attempt\":" << event.attempt << ",\"revision\":" << event.revision
+        << ",\"revocation_ns\":" << event.revoked_ns << ",\"disposition_ns\":" << disposition_ns
+        << ",\"source_us\":" << event.source_now_us << ",\"reason_id\":" << static_cast<unsigned>(event.reason)
+        << ",\"ros_publication\":\"unavailable\"}\n";
+    checkStream(validity_events_);
+}
 void ReplayReport::frame(const FrameRecord &r) {
+    for (auto &episode : recoveries_) {
+        if (!episode.verification_ns && r.output.permission.attempt > episode.loss.attempt
+            && r.output.permission.verified_ns >= episode.loss.revoked_ns) {
+            episode.verification_ns = r.output.permission.verified_ns;
+        }
+    }
     csv_ << r.index << ',' << r.timestamp_us << ',' << r.timestamp_us << ',' << r.output.consumed << ','
          << r.output.tracking << ',' << static_cast<int>(r.output.state);
     box(csv_, r.output.display_box);
@@ -133,7 +151,15 @@ void ReplayReport::frame(const FrameRecord &r) {
         csv_ << r.nano_score;
     }
     csv_ << ',' << csvEscape(r.output.info) << ',' << r.decode_ms << ',' << r.convert_copy_ms << ',' << r.update_ms
-         << ',' << r.wait_ms << ',' << r.submit_ns << ',' << r.interval_ms << ',' << r.lag_ms << '\n';
+         << ',' << r.wait_ms << ',' << r.submit_ns << ',' << r.interval_ms << ',' << r.lag_ms;
+    const auto &permission{r.output.permission};
+    csv_ << ',' << "standalone-admission-v1" << ',' << permission.attempt << ','
+        << permission.revision << ',' << static_cast<unsigned>(permission.phase) << ',' << permission.evidence.anchor_ns
+        << ',' << permission.deadline_ns << ',' << permission.confirmation_source_us << ',' << permission.verified_ns
+        << ',' << permission.attempt_deadline_ns << ',' << r.image_anchor_ns << ',' << r.decision_ns << '\n';
+    if (r.output.consumed && r.output.tracking) { ++valid_frames_; }
+    if (!submitted_) { window_start_ns_ = r.image_anchor_ns; }
+    window_end_ns_ = r.decision_ns;
     checkStream(csv_);
     ++submitted_;
     if (r.output.consumed) {
@@ -156,7 +182,7 @@ void ReplayReport::diagnostic(const std::string &message) {
 }
 void ReplayReport::summary(const std::string &reason, std::uint64_t read_count, double elapsed_ms) {
     cv::FileStorage out{".json", cv::FileStorage::WRITE | cv::FileStorage::MEMORY | cv::FileStorage::FORMAT_JSON};
-    out << "report_version" << 1 << "integer_encoding" << "decimal strings for counters, frame indices and timestamps"
+    out << "report_version" << 2 << "integer_encoding" << "decimal strings for counters, frame indices and timestamps"
         << "status" << reason << "end_reason" << reason << "platform" << "rk3576"
         << "git_commit" << REPLAY_GIT_COMMIT << "git_dirty_at_build" << REPLAY_GIT_DIRTY << "opencv_version"
         << CV_VERSION << "model_runtime_attributes" << "[";
@@ -193,7 +219,26 @@ void ReplayReport::summary(const std::string &reason, std::uint64_t read_count, 
         integer(out, "frame_index", entry.first);
         out << "state" << entry.second << "}";
     }
-    out << "]" << "elapsed_wall_ms" << elapsed_ms << "timing_note"
+    out << "]" << "validity" << "{" << "metric_version" << 1
+        << "clock_mapping" << "standalone-admission-v1" << "units" << "ns; source timestamps us"
+        << "denominator" << "consumed image outputs; no ROS admission in standalone runner"
+        << "sample_count" << std::to_string(accepted_) << "valid_frames" << std::to_string(valid_frames_)
+        << "window_start_ns" << std::to_string(window_start_ns_) << "window_end_ns" << std::to_string(window_end_ns_)
+        << "valid_frame_ratio" << (accepted_ ? static_cast<double>(valid_frames_) / accepted_ : 0.0)
+        << "ratio_available" << static_cast<int>(accepted_ != 0)
+        << "performance_criteria" << "unset" << "accuracy" << "unmeasured"
+        << "valid_pair_admission" << "unavailable: standalone runner has no ROS publisher"
+        << "subscriber_delivery" << "unmeasured" << "loss_event_count" << std::to_string(recoveries_.size())
+        << "recovery_episodes" << "[";
+    for (const auto &episode : recoveries_) {
+        out << "{" << "attempt" << std::to_string(episode.loss.attempt)
+            << "revocation_ns" << std::to_string(episode.loss.revoked_ns)
+            << "verification_ns" << (episode.verification_ns ? std::to_string(episode.verification_ns) : "__REPLAY_NULL__")
+            << "to_verification_ms" << (episode.verification_ns
+                ? std::to_string((episode.verification_ns - episode.loss.revoked_ns) / 1e6) : "__REPLAY_NULL__")
+            << "valid_pair_admission" << "unavailable: no ROS publisher" << "complete" << 0 << "}";
+    }
+    out << "]" << "}" << "elapsed_wall_ms" << elapsed_ms << "timing_note"
         << "ms; decode/convert_copy/update exclude wait; asynchronous YOLO is not total update time"
         << "timings" << "{";
     const std::array<const char *, 6> names{"decode", "convert_copy", "update", "wait", "interval", "lag"};
@@ -216,7 +261,7 @@ void ReplayReport::summary(const std::string &reason, std::uint64_t read_count, 
     }
     out << "}";
     auto json{out.releaseAndGetString()};
-    for (const std::string key : {"mean_ms", "p95_ms"}) {
+    for (const std::string key : {"mean_ms", "p95_ms", "verification_ns", "to_verification_ms"}) {
         const std::string marker{"\"" + key + "\": \"__REPLAY_NULL__\""};
         const std::string replacement{"\"" + key + "\": null"};
         for (std::size_t at{json.find(marker)}; at != std::string::npos;
@@ -235,6 +280,8 @@ void ReplayReport::summary(const std::string &reason, std::uint64_t read_count, 
     std::filesystem::rename(temporary, config_.directory / "run.json");
 }
 void ReplayReport::finish(const std::string &reason, std::uint64_t read_count, double elapsed_ms) {
+    checkStream(validity_events_); validity_events_.close();
+    if (!validity_events_) { throw std::runtime_error("Validity event report close failed"); }
     checkStream(csv_);
     checkStream(log_);
     csv_.close();

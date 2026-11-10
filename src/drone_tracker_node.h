@@ -148,6 +148,9 @@ private:
         this->declare_parameter<float>("tracker.yolo_conf_threshold", 0.4f);
         this->declare_parameter<float>("tracker.yolo_nms_threshold", 0.4f);
         this->declare_parameter<int>("tracker.yolo_interval", 4);
+        this->declare_parameter<int>("tracker.confirmation_timeout_ms", 100);
+        this->declare_parameter<int>("tracker.candidate_timeout_ms", 1000);
+        this->declare_parameter<int>("tracker.expiry_check_interval_ms", 10);
         this->declare_parameter<float>("tracker.yolo_recall_relax_ratio", 1.0f);
         this->declare_parameter<float>("tracker.iou_reset_threshold", 0.4f);
         this->declare_parameter<float>("tracker.iou_calibrate_threshold", 0.8f);
@@ -286,6 +289,14 @@ private:
     void publishObservations(const cv::Rect2d *box, std::int64_t stamp_ns,
         const cv::Matx33d *rotation, bool reset_los, diagnostics::Event event, bool control);
     void notifyObservationOff();
+    void drainTrustLoss();
+    void publishTrackingObservation(TrackerOutput &output, std::int64_t stamp_ns,
+        const cv::Matx33d *rotation, diagnostics::Event event);
+    void checkTrackingExpiry();
+    std::function<tracking::Nanoseconds()> decision_clock_{tracking::monotonicNow};
+    std::function<void()> after_expiry_revocation_{};
+    std::function<void(const char *)> observation_test_hook_{};
+    rclcpp::TimerBase::SharedPtr expiry_timer_{};
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr los_pub_{};
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr mavros_imu_sub_{};
     std::unique_ptr<BagSession> bag_session_{};
@@ -298,6 +309,7 @@ private:
     std::string recording_config_error_{};
     std::unique_ptr<StatusPublisher> status_publisher_;
 
+    void publishTrackerState(TrackerState state, bool force = false);
     std::shared_ptr<HybridTracker> tracker_;
     std::unique_ptr<FrameSource> mv_camera_;
 

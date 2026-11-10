@@ -46,7 +46,10 @@ drone_tracker_node:
       # 与 airsim_tracker launch.py 对齐（语义已随移植改变）
       yolo_conf_threshold: 0.5
       yolo_nms_threshold: 0.45
-      yolo_interval: 4
+      yolo_interval: 1
+      confirmation_timeout_ms: 100
+      candidate_timeout_ms: 1000
+      expiry_check_interval_ms: 10
       yolo_recall_relax_ratio: 1.0   # 1.0 = 关闭（Python 端无此放宽机制）
       iou_reset_threshold: 0.4       # IoU 低于此值时重置跟踪器
       iou_calibrate_threshold: 0.8   # IoU 高于此值时视为 YOLO 确认，不干预
@@ -54,8 +57,7 @@ drone_tracker_node:
       max_size_jump_ratio: 2.0
       max_box_area_ratio: 0.8
       tracking_roi_scale_factor: 2.0
-      lost_max_count: 5              # 连续未确认判定上限：无检测 / 低IoU重初始化 / 未确认跳变均计数，
-                                     # x yolo_interval(4) ≈ 20 帧 (~0.67s)；持续误检不会再无限重初始化
+      lost_max_count: 5  # Provisional attempt budget; first adverse evidence revokes immediately.
       frame_buffer_size: 30
       jump_tolerance: 3
       enable_dcf: true               # DCF 融合开关（A/B 对比用）；false 时由 kf_r_pos/kf_q_a

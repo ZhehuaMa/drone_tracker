@@ -151,6 +151,7 @@ TrackerOutput scenario(bool legacy, bool fail_init, bool fail_search) {
     auto update{[&](int i) {
         FrameContext context{};
         context.now_us = 1000000 + i * 16667;
+        context.evidence = {tracking::ClockMapping::StandaloneAdmissionV1, tracking::monotonicNow(), true};
         context.frame = rk3576::copyGrayFrame(cv::Mat{80, 100, CV_8UC1, cv::Scalar{42}}, context.now_us);
         return tracker->update(context);
     }};
@@ -169,10 +170,12 @@ TrackerOutput scenario(bool legacy, bool fail_init, bool fail_search) {
         require(output.state == TrackerState::Detecting && !output.tracking && !output.display_box.is_valid,
                 "初始化失败仍发布有效目标");
     } else {
-        require(trace->calls == std::vector<std::uint64_t>{1000000, 1016667, 1033334, 1050001},
-                "补帧顺序变化或中间失败后未继续");
-        require(output.state == TrackerState::TargetFound && output.tracking && output.display_box.is_valid,
-                "恢复成功状态或有效框条件改变");
+        const std::vector<std::uint64_t> expected{fail_search
+            ? std::vector<std::uint64_t>{1000000, 1016667, 1033334}
+            : std::vector<std::uint64_t>{1000000, 1016667, 1033334, 1050001}};
+        require(trace->calls == expected, "catch-up order or strict first-failure stop changed");
+        require(output.state == TrackerState::Detecting && !output.tracking && !output.display_box.is_valid,
+                "initialization or failed catch-up authorized unverified output");
     }
     return output;
 }

@@ -71,8 +71,25 @@ int runReplay(const ReplayConfig &config, ReplayReport &report, const ReplayDepe
             FrameContext context{};
             context.frame = std::move(frame.value);
             context.now_us = record.timestamp_us;
+            context.decision_clock = [&clock] { return clock.now(); };
+            context.evidence = {tracking::ClockMapping::StandaloneAdmissionV1, clock.now(), true};
+            record.image_anchor_ns = context.evidence.anchor_ns;
             record.output = tracker->update(context);
+            const auto validity{tracker->validity()};
+            const auto drain{[&] {
+                while (const auto loss = validity->pending()) {
+                    report.lossEvent(*loss, clock.now());
+                    validity->dispose(*loss);
+                }
+            }};
+            drain();
+            if (record.output.tracking && !validity->admits(record.output.permission, clock.now(), context.now_us)) {
+                record.output.tracking = false; record.output.state = TrackerState::Detecting;
+            }
+            drain();
+            record.output.permission = validity->snapshot();
             const auto update_end{clock.now()};
+            record.decision_ns = update_end;
             record.update_ms = static_cast<double>(update_end - submitted) / 1e6;
             clock.finished();
             record.nano = tracker->lastNanoBox();

@@ -71,6 +71,21 @@ class ObservationEvidenceTests(unittest.TestCase):
                     reasons = collect.qualify(rows, [], CLOCK, {}, {'max_supply_lateness_us': 50000})
                     self.assertTrue(any('observation integrity' in reason for reason in reasons))
 
+    def test_trust_loss_does_not_change_historical_off_count(self):
+        rows = paired_events(control=True, sequence=1)
+        loss = paired_events(control=True, sequence=2)
+        for row in loss:
+            row['version'] = 3
+            row['flags'] |= 262144
+            row['mono_ns'] += 1000000
+            row['stamp_ns'] = 1001000001
+            row['values'] = [2, 1001000001]
+        result = metrics.compute(rows + loss, [], CLOCK)['windows']['full']
+        self.assertEqual(result['off_notification_count']['value'], 1)
+        self.assertEqual(result['trust_loss_notification_count']['value'], 1)
+        historical = metrics.compute(rows, [], CLOCK)['windows']['full']
+        self.assertIsNone(historical['trust_loss_notification_count']['value'])
+
     def test_duplicate_payload_timestamp_and_context_are_rejected(self):
         rows = paired_events()
         mutations = [rows + [dict(rows[1])]]

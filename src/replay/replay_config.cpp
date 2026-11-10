@@ -230,6 +230,10 @@ ReplayConfig readConfig(const std::filesystem::path &path) {
         t.yolo_conf_threshold = real("yolo_conf_threshold", 0, 1);
         t.yolo_nms_threshold = real("yolo_nms_threshold", 0, 1);
         t.yolo_interval = tracker.integer("yolo_interval", 1);
+        t.confirmation_timeout_ms = tracker.integer("confirmation_timeout_ms", 1);
+        t.candidate_timeout_ms = tracker.integer("candidate_timeout_ms", 1);
+        t.expiry_check_interval_ms = tracker.integer("expiry_check_interval_ms", 1);
+        tracking::validateTimeouts(t.confirmation_timeout_ms, t.candidate_timeout_ms, t.expiry_check_interval_ms);
         t.yolo_recall_relax_ratio = real("yolo_recall_relax_ratio", 0, 1, true);
         t.iou_reset_threshold = real("iou_reset_threshold", 0, 1);
         t.iou_calibrate_threshold = real("iou_calibrate_threshold", 0, 1);
@@ -284,6 +288,9 @@ void writeConfig(cv::FileStorage &out, const ReplayConfig &c) {
     out << "yolo_conf_threshold" << t.yolo_conf_threshold;
     out << "yolo_nms_threshold" << t.yolo_nms_threshold;
     out << "yolo_interval" << t.yolo_interval;
+    out << "confirmation_timeout_ms" << t.confirmation_timeout_ms;
+    out << "candidate_timeout_ms" << t.candidate_timeout_ms;
+    out << "expiry_check_interval_ms" << t.expiry_check_interval_ms;
     out << "yolo_recall_relax_ratio" << t.yolo_recall_relax_ratio;
     out << "iou_reset_threshold" << t.iou_reset_threshold;
     out << "iou_calibrate_threshold" << t.iou_calibrate_threshold;

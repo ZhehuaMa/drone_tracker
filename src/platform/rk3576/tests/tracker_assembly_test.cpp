@@ -29,6 +29,14 @@ Sdk fixtures(bool fp16 = false) {
     Model h{};
     h.inputs = {attribute(0, {1, 96, 8, 8}), attribute(1, {1, 96, 16, 16})};
     h.outputs = {attribute(0, {1, 2, 15, 15}), attribute(1, {1, 4, 15, 15})};
+    auto native{[](std::uint32_t index, std::uint32_t side) {
+        auto result{attribute(index, {1, 12, side, side, 8}, RKNN_TENSOR_FLOAT16, RKNN_TENSOR_NC1HWC2)};
+        result.size_with_stride = result.n_elems * 2U;
+        return result;
+    }};
+    x.native_outputs = {native(0, 16)};
+    h.native_inputs = {native(0, 8), native(1, 16)};
+    h.allow_partial = true;
     return {{y, z, x, h}};
 }
 void paths() {
@@ -58,7 +66,7 @@ void failures(bool fp16) {
         auto state{fixtures(fp16)};
         sdk = &state;
         state.models[failure].query_status = -7;
-        auto result{rk3576::assembleTracker(paths, rk3576::productionDependencies(api()))};
+        auto result{rk3576::assembleTracker(paths, rk3576::productionDependencies(api(), {}, sharedApi()))};
         require(!result && !result.value.complete(), "失败仍返回组件");
         require(result.error.component == roles[failure] && result.error.path == files[failure], "失败角色或路径丢失");
         for (int i{0}; i < 4; ++i) {
@@ -68,7 +76,7 @@ void failures(bool fp16) {
     }
     auto state{fixtures(fp16)};
     sdk = &state;
-    auto result{rk3576::assembleTracker(paths, rk3576::productionDependencies(api()))};
+    auto result{rk3576::assembleTracker(paths, rk3576::productionDependencies(api(), {}, sharedApi()))};
     require(result && result.value.complete() && !result.value.description.empty(), "完整装配或属性缺失");
     TrackerSettings settings{};
     settings.target_class_id = 4;
@@ -87,7 +95,7 @@ void compatibleFp16() {
     auto state{fixtures(true)};
     sdk = &state;
     const ModelPaths paths{"y", "", "h", "z", "x"};
-    auto result{rk3576::assembleTracker(paths, rk3576::productionDependencies(api()))};
+    auto result{rk3576::assembleTracker(paths, rk3576::productionDependencies(api(), {}, sharedApi()))};
     require(result && result.value.complete(), "FP16 YOLO 与 NanoTrack 装配失败");
     TrackerSettings settings{};
     settings.target_class_id = 0;

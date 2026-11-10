@@ -7,6 +7,7 @@
 #include <opencv2/core.hpp>
 
 #include "dcf_tracker.h"
+#include "output_validity.h"
 #include "detection_thread.h"
 #include "frame/frame.h"
 #include "platform/platform_factory.h"
@@ -21,13 +22,16 @@ struct TrackerSettings
     float yolo_conf_threshold = 0.4f;
     float yolo_nms_threshold = 0.4f;
     float yolo_recall_relax_ratio = 1.0f;    // ROI 阶段置信度放宽比例（1.0 = 关闭，Python 无此机制）
+    int confirmation_timeout_ms{100};
+    int candidate_timeout_ms{1000};
+    int expiry_check_interval_ms{10};
     int yolo_interval = 4;                   // 每 N 帧运行一次 YOLO 再检测
     float iou_reset_threshold = 0.4f;        // IoU 低于此值时重置跟踪器
     float iou_calibrate_threshold = 0.8f;    // IoU 高于此值时视为 YOLO 确认（不干预跟踪）
     float max_position_jump = 150.0f;        // 最大位置跳变（像素，绝对值）
     float max_size_jump_ratio = 2.0f;        // 最大尺寸跳变比例
     float max_box_area_ratio = 0.8f;         // 检测框边长/图像边长上限
-    int lost_max_count = 5;                  // YOLO 连续未检测到目标的次数上限
+    int lost_max_count = 5;                  // Usable adverse-result budget for a provisional attempt.
     float roi_scale_factor = 2.0f;
     int frame_buffer_size = 30;              // 补帧缓存长度
     int jump_tolerance = 3;                  // 连续跳变多少次后强制重置
@@ -67,7 +71,10 @@ enum class TrackerState : int8_t
 struct FrameContext
 {
     FrameRef frame;
-    int64_t now_us = 0;         // 处理/外推时刻（发布用）
+    tracking::EvidenceClock evidence{};
+    std::function<tracking::Nanoseconds()> decision_clock{tracking::monotonicNow};
+    std::function<std::int64_t()> source_clock_us{};
+    int64_t now_us = 0;         // Observation reference time; never the evidence-age clock.
     cv::Matx33d R_cam_at_frame = cv::Matx33d::eye(); // 帧时刻相机旋转（无云台数据时为单位阵）
     cv::Matx33d R_cam_now = cv::Matx33d::eye();      // 当前相机旋转
 };
@@ -75,7 +82,8 @@ struct FrameContext
 /** @brief 单帧处理结果 */
 struct TrackerOutput
 {
-    bool consumed = false;      // false: 重复帧/时间倒退/持续跳变提前返回（跳过本帧发布）
+    tracking::Permission permission{};
+    bool consumed = false;      // false: invalid input or non-increasing source time; no image publication.
     bool tracking = false;
     BBoxRect display_box{};     // 整数显示框（跟踪器结果，用于可视化）
     BBoxRect realtime_box{};    // KF predict_only(now) 实时预测框（发布这个）
@@ -90,7 +98,7 @@ struct TrackerOutput
  * @class HybridTracker
  * @brief airsim_tracker_node.process_frame_callback 的 C++ 移植：
  * YOLO(TRT 异步) + NanoTrack/DCF 融合 + 旋转补偿回溯卡尔曼滤波，
- * 带补帧缓存、双参考跳变抑制与 YOLO 再检测仲裁。
+ * Provisional replay verification and independently expiring output permission.
  */
 class HybridTracker
 {
@@ -112,6 +120,7 @@ public:
 
     // --- 诊断接口（离线回放/调参用，正常管线不依赖） ---
     /** @brief 本帧 NanoTrack 原始输出框（融合/平滑前）；无有效结果时 width<=0 */
+    virtual std::shared_ptr<tracking::OutputValidity> validity() const { return {}; }
     virtual cv::Rect2f lastNanoBox() const { return {}; }
     /** @brief 本帧 NanoTrack 最优锚点置信度；<=0 表示本帧无推断 */
     virtual float lastNanoScore() const { return -1.0f; }

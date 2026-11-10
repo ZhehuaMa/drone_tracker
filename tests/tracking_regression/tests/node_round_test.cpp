@@ -97,7 +97,7 @@ rclcpp::NodeOptions options() {
         {"tracker.nano_template_backbone", "/models/template.rknn"},
         {"tracker.nano_search_backbone", "/models/search.rknn"}, {"tracker.nano_head", "/models/head.rknn"},
         {"camera.fx", 100.0}, {"camera.fy", 110.0}, {"camera.cx", 50.0}, {"camera.cy", 40.0},
-        {"tracker.enable_dcf", false}, {"tracker.yolo_interval", 1}, {"tracker.lost_max_count", 2},
+        {"tracker.enable_dcf", false}, {"tracker.yolo_interval", 1}, {"tracker.tracking_roi_scale_factor", 100.0}, {"tracker.lost_max_count", 2},
         {"tracker.frame_buffer_size", 8}, {"visualized_result", false}, {"need_save", false},
         {"recording.enabled", false}, {"osd.enabled", false}, {"use_history_timestamp", false},
         {"use_sim_time", false}, {"diagnostics.mode", "off"}});
@@ -151,7 +151,7 @@ void round(int number, const std::filesystem::path &output) {
     }
     const auto captured{events(*region)};
     std::set<std::uint64_t> history{}, requests{}, completed{}, read{};
-    std::size_t valid_outputs{}, publish_count{}, initialize_count{}, history_lookups{};
+    std::size_t valid_outputs{}, publish_count{}, suppressed_count{}, initialize_count{}, history_lookups{};
     bool first_update{}, first_request{}, first_output{};
     for (const auto &event : captured) {
         require(event.run_id == static_cast<std::uint64_t>(::getpid()) && event.round_id == 1,
@@ -189,13 +189,15 @@ void round(int number, const std::filesystem::path &output) {
             }
             if ((event.flags & diagnostics::BoxValid) != 0) { ++valid_outputs; }
         }
+        if (event.type == diagnostics::Type::ObservationSuppressed
+            && !(event.flags & diagnostics::ControlObservation)) { ++suppressed_count; }
         if (event.type == diagnostics::Type::PublishEnd) {
             require((event.flags & diagnostics::Complete) != 0, "production publish call failed");
             ++publish_count;
         }
     }
     require(first_update && first_request && first_output && !history.empty() && !completed.empty()
-        && !read.empty() && publish_count == 30, "round omitted detection, cache, result or publication evidence");
+        && !read.empty() && publish_count + suppressed_count == 30, "round omitted detection, cache, result or publication evidence");
     for (const auto request : completed) {
         require(requests.count(request) != 0, "detector completed inherited request");
     }
@@ -219,7 +221,7 @@ void round(int number, const std::filesystem::path &output) {
     std::ofstream summary{output};
     summary << "{\"pid\":" << ::getpid() << ",\"round\":" << number << ",\"epoch_us\":" << source->epoch
         << ",\"last_frame_us\":" << *source->times.rbegin() << ",\"valid_outputs\":" << valid_outputs
-        << ",\"publish_count\":" << publish_count << "}\n";
+        << ",\"publish_count\":" << publish_count << ",\"suppressed_count\":" << suppressed_count << "}\n";
     require(static_cast<bool>(summary), "round summary write failed");
 }
 void launch(const std::string &executable, int number, const std::filesystem::path &output) {

@@ -29,3 +29,9 @@ ctest --test-dir /tmp/drone-tracker-contracts --output-on-failure
 ```
 
 These checks use the shared tracker with injected dependencies. They do not load actual models or access cameras, NPU devices, or HDMI. Use the [build guide](../../dockerfiles/README.amd64.md#native-portable-checks) for container setup and the [regression tools](../../tests/tracking_regression/README.md) for recording-based comparisons.
+
+## Verified-output permission
+
+Initialization starts provisional tracking. A fresh detection from a later image must uniquely match the same attempt's tracking measurement on that image before output can become valid. The detector returns surviving target-class candidates from its first successful region, whole-image, or tile stage. It retains highest-score seed selection without claiming that other regions were searched.
+
+Every normal update preserves source snapshot, one result read, current submission or interval skip, then saved-result arbitration. Provisional acquisition offers every image; verified tracking uses configurable `yolo_interval`. Outstanding requests retain bounded value-only replay evidence. Models and image history belong to the worker. `OutputValidity` holds only short-locked values and pending loss identities for independent expiry and final publication checks.

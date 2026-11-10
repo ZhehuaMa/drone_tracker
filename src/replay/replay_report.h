@@ -21,6 +21,7 @@ struct FrameRecord {
     double update_ms{};
     double wait_ms{};
     std::int64_t submit_ns{};
+    std::int64_t image_anchor_ns{}, decision_ns{};
     double interval_ms{};
     double lag_ms{};
 };
@@ -31,6 +32,7 @@ public:
     void input(VideoMetadata metadata);
     void models(std::string description);
     void frame(const FrameRecord &record);
+    void lossEvent(const tracking::LossEvent &event, std::int64_t disposition_ns);
     void diagnostic(const std::string &message);
     void finish(const std::string &reason, std::uint64_t read_count, double elapsed_ms);
     const std::filesystem::path &directory() const noexcept { return config_.directory; }
@@ -43,11 +45,16 @@ private:
     std::string description_{};
     std::ofstream csv_{};
     std::ofstream log_{};
+    std::ofstream validity_events_{};
+    struct RecoveryEpisode { tracking::LossEvent loss{}; std::int64_t verification_ns{}; };
+    std::vector<RecoveryEpisode> recoveries_{};
     std::array<std::vector<double>, 6> timings_{};
     std::array<std::uint64_t, 4> states_{};
     std::vector<std::pair<std::uint64_t, int>> transitions_{};
     std::uint64_t submitted_{};
     std::uint64_t accepted_{};
+    std::uint64_t valid_frames_{};
+    std::int64_t window_start_ns_{}, window_end_ns_{};
 };
 /** @brief 同时捕获 C/C++ stdout/stderr；仅主流程创建，检测线程结束后恢复。 */
 class DiagnosticCapture {

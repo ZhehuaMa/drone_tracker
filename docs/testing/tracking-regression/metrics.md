@@ -225,3 +225,17 @@ be attributed to scheduling merely because total duration changed.
 ## Evidence retention
 
 Keep the complete immutable run and comparison tree in an explicitly retained external location when results must remain reproducible. `.docker-artifacts` and `/tmp` are disposable work areas and may be cleared at any time. A recorded historical path does not guarantee that its files still exist.
+
+## Freshness policy evidence
+
+The additive `validity` container has metric version 1. It does not redefine existing metric formulas or their denominators. It is available only for format-3 policy events and qualified complete evidence. Historical age-only data stays observational; missing fields remain unavailable, and unknown formats are rejected.
+
+Each window declares integer nanosecond start/end and `[start,end)` boundaries. Its image denominator is consumed `UpdateEnd` images in that window. Counts distinguish valid bbox image output, ordinary invalid output, timestamp-suppressed output, and absent output. Control-observation loss/OFF event pairs are excluded. Zero valid availability can coexist with passing expiry protocol tests; it is not usable-vision acceptance.
+
+Each recovery episode retains revocation, local verification, first valid-pair admission, and independent bbox/LOS publication outcomes. Revocation at 1090 ms, verification at 1160 ms, and admission at 1180 ms yield 70 ms to verification and 90 ms to admission. Neither measures subscriber delivery. An episode with no restored admission before the window ends is incomplete; unavailable durations are not zero.
+
+Timestamp-suppressed images cannot establish the first valid-pair admission. The existing `off_notification_count` counts only OFF attempts. Format-3 `trust_loss_notification_count` separately counts loss attempts marked with `TrustLossObservation` (262144); that metric is unavailable for older formats.
+
+Clock identity is `capture-monotonic-v1` for production/independently timed regression or synthetic `standalone-admission-v1` for slowed standalone replay. Exact integer anchors, decisions, and deadlines use nanoseconds; original source timestamps use microseconds. Differing mappings make affected timing comparisons incompatible. Other unchanged metrics retain their independent definitions and historical compatibility.
+
+Performance criteria stay `unset` unless a versioned threshold was frozen before the candidate run. Report protocol outcomes separately from availability/recovery measurements. Score/motion calibration and manually labeled quality evaluation are deferred; no accuracy estimate is inferred from unlabelled boxes.

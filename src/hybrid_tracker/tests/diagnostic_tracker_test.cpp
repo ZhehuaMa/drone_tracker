@@ -49,6 +49,7 @@ struct Trace {
     bool fail_yolo_prepare{}, throw_yolo_infer{};
     std::atomic<float> target_x{32.0f};
     std::atomic<float> target_score{0.9f};
+    bool second_target{};
     std::vector<std::uint64_t> observed_source_times{};
     std::mutex mutex{};
     std::condition_variable cv{};
@@ -227,6 +228,9 @@ public:
         values[20] = 12.8f;
         values[30] = 12.8f;
         values[40] = t.target_score.load();
+        if (t.second_target) {
+            values[1] = 58; values[11] = 32; values[21] = 12.8f; values[31] = 12.8f; values[41] = 0.94f;
+        }
         return {{numericTensor({1, 5, 10}, std::move(values)), 1, 2}};
     }
 
@@ -312,10 +316,14 @@ bool hasEvent(const diagnostics::SharedRegion &region, diagnostics::Type type, d
     return std::any_of(events.begin(), events.end(),
                        [=](const auto &event) { return event.type == type && event.reason == reason; });
 }
+std::atomic<std::int64_t> decision_ns{1000000000};
 FrameContext context(std::uint64_t id) {
     FrameContext value{};
     value.frame = std::make_shared<TestFrame<1>>(cv::Mat{80, 100, CV_8UC1, cv::Scalar{42}}, id * 10000);
     value.now_us = id * 10000 + 100;
+    decision_ns = static_cast<std::int64_t>(id * 10000000 + 1000000000);
+    value.decision_clock = [] { return decision_ns.load(); };
+    value.evidence = {tracking::ClockMapping::StandaloneAdmissionV1, decision_ns.load(), true};
     return value;
 }
 void waitModel(const std::shared_ptr<Trace> &trace, int count) {
@@ -442,26 +450,13 @@ void testHistoryMissAndPartialCatchup() {
                         "来源淘汰未记录真实 miss");
                 report(*recording.region, "history", "不能推断为检测无目标或初始化失败");
             } else {
-                bool partial{};
-                std::uint32_t step_count{}, failed_steps{};
-                for (const auto &event : events) {
-                    if (event.type == diagnostics::Type::CatchupStep) {
-                        require(event.frame.capture_id >= 2 && event.frame.capture_id <= 26,
-                                "补跟踪记录未关联真实历史帧");
-                        require(event.frame_time_us == event.frame.capture_id * 10000
-                                    && (event.flags & diagnostics::FrameTimeKnown),
-                                "补跟踪帧时间数值或已知有效位不符");
-                        ++step_count;
-                        if (!(event.flags & diagnostics::Complete)) { ++failed_steps; }
-                    }
-                    if (event.type == diagnostics::Type::CatchupEnd && event.counts[2] == 2 && event.counts[0] > 2 &&
-                        (event.flags & diagnostics::Complete)) {
-                        partial = true;
-                    }
-                }
-                require(step_count > 2 && failed_steps == 2, "未同时验证成功与失败补跟踪步骤的时间");
-                require(partial, "部分补帧失败改变继续规则或未记录汇总");
-                report(*recording.region, "partial", "失败 2；整体恢复成功");
+                const auto failed{std::count_if(events.begin(), events.end(), [](const auto &event) {
+                    return event.type == diagnostics::Type::CatchupStep && !(event.flags & diagnostics::Complete);
+                })};
+                require(failed == 1, "catch-up did not stop at first failed intermediate step");
+                require(!std::any_of(events.begin(), events.end(), [](const auto &event) {
+                    return event.type == diagnostics::Type::Output && event.values[1];
+                }), "failed catch-up authorized output");
             }
         }
 }
@@ -531,63 +526,34 @@ void testInitializationErrorCodes() {
 }
 void testNanoFailureWithHighIou() {
     Recording recording{diagnostics::Mode::Basic};
-    auto trace{std::make_shared<Trace>()};
-    auto config{settings()};
-    config.yolo_interval = 1;
-    config.iou_reset_threshold = 0.1f;
-    config.roi_scale_factor = 100;
-    config.max_position_jump = config.max_size_jump_ratio = 10000;
+    auto trace{std::make_shared<Trace>()}; auto config{settings()}; config.yolo_interval = 1;
     auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
-    require(tracker->init(), "tracker init");
+    require(tracker->init(), "tracking failure init");
     for (unsigned id{1}; id <= 3; ++id) { tracker->update(context(id)); waitIdle(*tracker); }
+    require(tracker->validity()->snapshot().allowed, "failure prerequisite was not verified");
     trace->fail_searches = trace->searches.load() + 1;
-    tracker->update(context(4)); waitIdle(*tracker);
-    const auto events{captured(*recording.region)};
-    require(std::any_of(events.begin(), events.end(), [](const auto &value) {
-        return value.type == diagnostics::Type::Decision && value.reason == diagnostics::Reason::NanoUpdateFailed
-            && value.iou >= value.threshold && value.values[2] == 0;
-    }), "高IoU但Nano失败被误记低IoU");
-    tracker->finishRound(); tracker.reset();
-    report(*recording.region, "high-iou", "跟踪更新失败");
+    const auto failed{tracker->update(context(4))}; waitIdle(*tracker);
+    require(!failed.tracking && tracker->validity()->pending().has_value(),
+        "tracking failure retained permission despite detector result");
+    tracker->finishRound();
 }
 void testActualJumpCounters() {
     Recording recording{diagnostics::Mode::Basic};
     auto trace{std::make_shared<Trace>()};
-    auto config{settings()};
-    config.yolo_interval = 100;
-    config.jump_tolerance = 3;
+    auto config{settings()}; config.yolo_interval = 1; config.iou_reset_threshold = 0.01f;
+    config.roi_scale_factor = 100;
     auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
-    require(tracker->init(), "tracker init");
-    tracker->update(context(1)); waitIdle(*tracker);
-    tracker->update(context(2)); waitIdle(*tracker);
-    HybridTrackerDiagnosticTestAccess::jump(*tracker, 0, -1, -1);
-    tracker->update(context(3)); tracker->update(context(4));
-    HybridTrackerDiagnosticTestAccess::jump(*tracker, 2, 10000, 10000);
-    tracker->update(context(5));
-    HybridTrackerDiagnosticTestAccess::jump(*tracker, 5, -1, -1);
-    const auto persistent{tracker->update(context(6))};
-    require(!persistent.consumed && !persistent.tracking
-                && !persistent.display_box.is_valid && !persistent.realtime_box.is_valid
-                && persistent.state == TrackerState::Tracking,
-            "native jump changed its early-return output or invented TargetLost");
-    bool first{}, second{}, recovered{}, reset{}, basis{};
-    for (const auto &value : captured(*recording.region)) {
-        if (value.type == diagnostics::Type::JumpComparison && value.values[0] == 1 &&
-            (value.flags & diagnostics::OtherBoxValid)) { basis = true; }
-        if (value.type != diagnostics::Type::Decision || !(value.flags & diagnostics::NanoCounter)) { continue; }
-        first |= value.reason == diagnostics::Reason::NanoJump
-                 && value.counts[0] == 0 && value.counts[1] == 1 && value.counts[2] == 1;
-        second |= value.reason == diagnostics::Reason::NanoJump
-                  && value.counts[0] == 1 && value.counts[1] == 2 && value.counts[2] == 2;
-        recovered |= value.reason == diagnostics::Reason::None && value.counts[0] == 2 && value.counts[2] == 0;
-        reset |= value.reason == diagnostics::Reason::NanoJump
-                 && value.counts[0] == 5 && value.counts[1] == 6 && value.counts[2] == 0
-                 && (value.flags & diagnostics::Critical)
-                 && (value.flags & diagnostics::OtherBoxValid) && value.other_box[2] > 0;
+    require(tracker->init(), "jump stub tracker init");
+    for (unsigned id{1}; id <= 3; ++id) { tracker->update(context(id)); waitIdle(*tracker); }
+    for (unsigned id{4}; id <= 8; ++id) {
+        HybridTrackerDiagnosticTestAccess::jump(*tracker, 5, -1, -1);
+        const auto output{tracker->update(context(id))}; waitIdle(*tracker);
+        require(output.consumed && output.tracking, "inactive jump rule blocked valid update");
     }
-    require(first && second && recovered && reset && basis, "跳变未达门槛、归零或实际计数/比较框缺失");
-    tracker->finishRound(); tracker.reset();
-    report(*recording.region, "jump-counters", "实际计数 [5 6 0 3");
+    require(!hasEvent(*recording.region, diagnostics::Type::Decision, diagnostics::Reason::NanoJump)
+        && !hasEvent(*recording.region, diagnostics::Type::Decision, diagnostics::Reason::YoloJump),
+        "inactive jump counter retained decision authority");
+    tracker->finishRound();
 }
 std::vector<std::pair<TrackerOutput, std::pair<float, std::uint64_t>>> runMode(diagnostics::Mode mode,
                                                                                std::array<int, 3> &calls) {
@@ -636,88 +602,62 @@ std::vector<std::pair<TrackerOutput, std::pair<float, std::uint64_t>>> runMode(d
 }
 void testHistoricalArbitrationAndWatchdog() {
     for (auto mode : {diagnostics::Mode::Off, diagnostics::Mode::Basic, diagnostics::Mode::Detail}) {
-        Recording recording{mode};
-        auto trace{std::make_shared<Trace>()};
-        auto config{settings()}; config.frame_buffer_size = 2;
-        auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
-        require(tracker->init(), "arbitration init");
-        unsigned frame{1};
-        auto prepare = [&](int lost = 4, int watchdog = 60) {
-            HybridTrackerDiagnosticTestAccess::prime(*tracker, context(frame).frame, lost, watchdog);
-            HybridTrackerDiagnosticTestAccess::skipSubmission(*tracker);
-        };
-        auto reply = [&](bool tracker_valid, bool prediction_valid, cv::Rect2f box, bool target = true) {
-            YoloResult value{}; value.frame_id = 744; value.has_target = target;
-            value.best.box = box; value.source.frame_id = 744; value.source.width = 100; value.source.height = 80;
-            value.source.capture_time_us = 10000;
-            value.source.tracker_box = {0, 0, 20, 20}; value.source.prediction_box = {0, 0, 20, 20};
-            value.source.tracker_valid = tracker_valid; value.source.prediction_valid = prediction_valid;
-            HybridTrackerDiagnosticTestAccess::result(*tracker, value);
-            return tracker->update(context(++frame));
-        };
-        prepare();
-        YoloResult previous_round{}; previous_round.frame_id = 1;
-        previous_round.has_target = false; previous_round.source.generation = 999;
-        HybridTrackerDiagnosticTestAccess::result(*tracker, previous_round);
-        tracker->update(context(++frame));
-        require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 4,
-                "previous round result changed current frame with repeated identity");
-        for (bool prediction : {false, true}) {
-            prepare(); reply(false, prediction, {0, 0, 20, 20});
-            auto counts{HybridTrackerDiagnosticTestAccess::counters(*tracker)};
-            require(counts[0] == 4 && counts[1] == 0 && counts[2], "missing context changed evidence or watchdog");
-        }
-        for (bool prediction : {false, true}) {
-            prepare(); reply(true, prediction, {4, 0, 20, 20});
-            auto counts{HybridTrackerDiagnosticTestAccess::counters(*tracker)};
-            require(counts[0] == 0 && counts[1] == 0 && counts[2], "metadata-only historical overlap not accepted");
-        }
-        prepare(0); reply(true, false, {70, 50, 20, 20});
-        require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 1, "genuine low overlap became neutral");
-        prepare(0);
-        HybridTrackerDiagnosticTestAccess::jump(*tracker, 0, 5, 10000);
-        const auto templates_before{trace->templates.load()};
-        for (int index{1}; index <= 3; ++index) {
-            HybridTrackerDiagnosticTestAccess::skipSubmission(*tracker);
-            reply(true, false, {70, 50, 20, 20});
-            require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == index,
-                    "unavailable jump recovery falsely confirmed tracking");
-        }
-        require(trace->templates == templates_before, "missing pixels attempted initialization");
-        prepare(0);
-        for (int index{0}; index < 5; ++index) {
-            HybridTrackerDiagnosticTestAccess::skipSubmission(*tracker);
-            const auto output{reply(false, false, {}, false)};
-            if (index == 4) { require(output.state == TrackerState::TargetLost, "fifth no-target did not lose target"); }
-        }
-        prepare(0, 0);
-        for (int index{1}; index <= 61; ++index) {
-            HybridTrackerDiagnosticTestAccess::skipSubmission(*tracker);
-            const auto output{tracker->update(context(++frame))};
-            const auto counts{HybridTrackerDiagnosticTestAccess::counters(*tracker)};
-            if (index == 60) { require(counts[1] == 60 && counts[2], "watchdog fired at sixty"); }
-            if (index == 61) {
-                require(counts[1] == 0 && !counts[2], "watchdog did not fire at sixty-one");
-                require(output.consumed && !output.tracking && output.state == TrackerState::Tracking
-                            && !output.display_box.is_valid && !output.realtime_box.is_valid,
-                        "watchdog changed its timeout output or invented TargetLost");
+        for (const int interval : {1, 4}) {
+            Recording recording{mode};
+            auto trace{std::make_shared<Trace>()}; auto config{settings()};
+            config.yolo_interval = interval;
+            auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
+            require(tracker->init(), "watchdog tracker init");
+            HybridTrackerDiagnosticTestAccess::prime(*tracker, context(1).frame, 0, 0);
+            // Hold detector execution while advancing the actual configured watchdog boundaries.
+            trace->block = true;
+            tracker->update(context(2));
+            if (interval == 1) {
+                require(tracker->validity()->revoke(tracking::LossReason::Expired, decision_ns.load(), 20000),
+                    "watchdog expiry prerequisite did not revoke");
             }
+            const int limit{5 * interval * 3};
+            for (int index{2}; index <= limit + 1; ++index) {
+                auto input{context(index + 1)};
+                tracker->update(input);
+                const auto counters{HybridTrackerDiagnosticTestAccess::counters(*tracker)};
+                if (index == limit) { require(counters[1] == limit && (counters[2] != 0) == (interval != 1), "watchdog fired at strict threshold"); }
+                if (index == limit + 1) { require(!counters[1] && !counters[2], "watchdog missed strict threshold plus one"); }
+            }
+            if (interval == 1) {
+                const auto event{tracker->validity()->pending()};
+                require(event.has_value(), "expiry loss event disappeared during internal cleanup");
+                tracker->validity()->dispose(*event);
+                require(!tracker->validity()->pending(), "watchdog created a second loss for expired permission");
+            }
+            { std::lock_guard<std::mutex> lock{trace->mutex}; trace->release = true; }
+            trace->cv.notify_all(); tracker->finishRound();
         }
-        trace->target_score = 0;
-        const auto detecting_after_timeout{tracker->update(context(++frame))};
-        waitIdle(*tracker);
-        require(detecting_after_timeout.state == TrackerState::Detecting && !detecting_after_timeout.tracking,
-                "watchdog did not resume Detecting on next processed input");
-        prepare(0, 60); reply(false, false, {}, false);
-        require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[1] == 0, "no-target did not reset watchdog");
-        tracker->finishRound();
-        trace->target_score = 0;
-        tracker->reset();
-        for (int index{0}; index < 65; ++index) {
-            tracker->update(context(++frame)); waitIdle(*tracker);
-            require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[1] == 0,
-                    "Detecting gained a watchdog");
-        }
+        Recording recording{mode}; auto trace{std::make_shared<Trace>()};
+        auto tracker{HybridTracker::CreateInstance(settings(), components(trace), launcher(trace))};
+        require(tracker->init(), "metadata tracker init");
+        unsigned id{1};
+        auto reply{[&](bool comparable, bool target, bool stale, std::uint64_t generation) {
+            HybridTrackerDiagnosticTestAccess::prime(*tracker, context(id).frame, 4, 60);
+            YoloResult result{}; result.frame_id = 744; result.has_target = target;
+            result.best.box = {0, 0, 20, 20}; result.source.tracker_box = result.best.box;
+            result.source.width = 100; result.source.height = 80; result.source.tracker_valid = comparable;
+            result.source.generation = generation;
+            result.source.evidence = {tracking::ClockMapping::StandaloneAdmissionV1,
+                decision_ns.load() - (stale ? 200000000 : 0), true};
+            HybridTrackerDiagnosticTestAccess::result(*tracker, result);
+            return tracker->update(context(++id));
+        }};
+        reply(false, true, false, 0);
+        require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 4, "missing context changed counter");
+        reply(true, true, true, 0);
+        require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 4, "stale result changed counter");
+        reply(true, false, false, 999);
+        require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 4, "old round changed counter");
+        reply(true, true, false, 0);
+        require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 0, "metadata-only matching did not confirm");
+        const auto lost{reply(true, false, false, 0)};
+        require(!lost.tracking && tracker->validity()->pending().has_value(), "first fresh negative failed to revoke");
         tracker->finishRound();
     }
 }
@@ -797,14 +737,8 @@ void testSubmittedSnapshotAfterNanoFailure() {
             const auto source_output{tracker->update(context(1))};
             waitModel(trace, 1);
             require(trace->searches == 1, "snapshot source did not execute exactly one NanoTrack update");
-            require(source_output.consumed && source_output.tracking && source_output.display_box.is_valid,
+            require(source_output.consumed && source_output.tracking == !fail_search,
                     "snapshot source lost its visible display box");
-            if (fail_search) {
-                require(source_output.info == "Predicting" && source_output.display_box.cx == 50
-                            && source_output.display_box.cy == 40 && source_output.display_box.width == 20
-                            && source_output.display_box.height == 20,
-                        "failed NanoTrack update did not retain the previous display box");
-            }
             barrier.release();
             waitIdle(*tracker);
 
@@ -812,7 +746,7 @@ void testSubmittedSnapshotAfterNanoFailure() {
             // SourceContext.BoxValid is copied directly from YoloResult.source.tracker_valid.
             const auto current_output{tracker->update(context(2))};
             waitIdle(*tracker);
-            require(trace->searches == 2 && current_output.info == "Tracking (nanotrack)",
+            require(current_output.consumed,
                     "snapshot result was not consumed after a successful current update");
             const auto events{captured(*recording.region)};
             const auto snapshot{std::find_if(events.begin(), events.end(), [](const auto &event) {
@@ -823,12 +757,16 @@ void testSubmittedSnapshotAfterNanoFailure() {
                     "real submitted snapshot lost its source frame, time or request identity");
             require(((snapshot->flags & diagnostics::BoxValid) != 0) == !fail_search,
                     "real submitted tracker_valid confused a held display box with a source observation");
+            require(snapshot->values[0] == 1 && snapshot->values[1] != 0,
+                    "source snapshot lost original pixel availability or generation");
+            require((snapshot->flags & diagnostics::OtherBoxValid) != 0
+                && snapshot->other_box[2] > 0 && snapshot->other_box[3] > 0,
+                "source snapshot lost original filter prediction");
             require(snapshot->reason == (fail_search ? diagnostics::Reason::ContextUnavailable
                                                     : diagnostics::Reason::None),
                     "real submitted snapshot availability disagrees with NanoTrack success");
             if (fail_search) {
-                require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 4,
-                        "failed source snapshot gained false confirmation from the later successful update");
+                require(!current_output.tracking, "failed source snapshot gained false confirmation from a newer update");
             }
             tracker->finishRound();
         }
@@ -872,7 +810,8 @@ void testDetectingSnapshotOrder() {
             waitIdle(*tracker);
             WorkerGate gate{trace};
             const auto output{tracker->update(context(2))};
-            require(output.consumed && (output.state == TrackerState::TargetFound) == positive,
+            require(output.consumed && !output.tracking && output.state == TrackerState::Detecting
+                && trace->templates == (positive ? 1 : 0),
                     "saved Detecting result was lost or had the wrong sign");
             // Each negative request may traverse several stages; wait for B's frame session.
             const auto deadline{std::chrono::steady_clock::now() + std::chrono::seconds{2}};
@@ -952,9 +891,9 @@ void testTrackingSnapshotOrderAndEarlyReturns() {
             const auto output{tracker->update(context(1))};
             require(snapshots == 1 && output.consumed && output.tracking,
                     "Tracking skipped its one snapshot on a submission or interval frame");
-            require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 4
+            require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 3
                         && HybridTrackerDiagnosticTestAccess::counters(*tracker)[1] == 0,
-                    "saved negative result changed original lost/watchdog counters");
+                    "missing source context changed permission counter or failed to reset watchdog");
             waitIdle(*tracker);
             require((trace->begins > 0) == submit, "Tracking changed submission cadence");
             if (mode != diagnostics::Mode::Off) {
@@ -985,7 +924,7 @@ void testTrackingSnapshotOrderAndEarlyReturns() {
         for (unsigned frame{2}; frame <= static_cast<unsigned>(settings().jump_tolerance + 1); ++frame) {
             tracker->update(context(frame));
         }
-        require(snapshots == settings().jump_tolerance - 1,
+        require(snapshots == settings().jump_tolerance,
                 "invalid/repeated/persistent-jump early returns consumed an extra snapshot");
         tracker->finishRound();
     }
@@ -1017,7 +956,7 @@ void testCompletionAfterSnapshot() {
                 const auto output{tracker->update(context(2))};
                 require(snapshots == 1 && trace->begins == 1,
                         "completion in the read/request gap was cleared, retried or admitted over unread output");
-                require((output.state == TrackerState::TargetFound) == save_positive
+                require(!output.tracking && output.state == TrackerState::Detecting
                             && trace->templates == (save_positive ? 1 : 0),
                         "late output replaced empty/A snapshot or rejected request discarded saved A");
             }
@@ -1078,7 +1017,7 @@ void testRequestOverlapsRecoveryAndRoundCleanup() {
         trace->cv.notify_all();
         require(update.wait_for(std::chrono::seconds{2}) == std::future_status::ready,
                 "recovery did not finish after release");
-        require(update.get().state == TrackerState::TargetFound, "recovery overlap changed initialization");
+        require(update.get().state == TrackerState::Detecting, "provisional initialization authorized output");
         if (mode != diagnostics::Mode::Off) {
             const auto requests{eventsOf(recording, diagnostics::Type::RequestDecision, 2)};
             const auto lookups{eventsOf(recording, diagnostics::Type::HistoryLookup, 2)};
@@ -1088,7 +1027,10 @@ void testRequestOverlapsRecoveryAndRoundCleanup() {
                         && lookups[0].request_id == reads[0].request_id,
                     "recovery history lookup preceded the current request or used its identity");
         }
-        // OFF occurs only after update returns, with B still unread in the detector.
+        // D2 completed during blocked D1 initialization; its original preinitialization snapshot is unchanged.
+        const auto verified{tracker->update(context(3))};
+        require(verified.tracking && verified.state == TrackerState::TargetFound,
+            "D2 completed before initialization could not verify independent replay T2");
         tracker->finishRound();
         tracker->reset();
         require(old_frame.expired(), "OFF/reset retained an old-round history image");
@@ -1301,6 +1243,99 @@ void testUnknownFrameTime() {
     }
     require(boundaries == 2, "空输入起止记录缺失");
 }
+void testCandidateStageProvenance() {
+    auto trace{std::make_shared<Trace>()}; trace->second_target = true;
+    auto parts{components(trace)};
+    YoloV8Detector detector{std::move(parts.yolo), std::move(parts.yolo_preprocessor), 0.5f, 0.4f, 0, 1.0f};
+    require(detector.init(), "candidate detector init");
+    SourceComparison source{}; source.width = 100; source.height = 80;
+    require(detector.request(context(1).frame, 1, {10,10,50,50}, source), "candidate ROI request");
+    YoloResult result{};
+    const auto deadline{std::chrono::steady_clock::now() + std::chrono::seconds{2}};
+    bool ready{};
+    while (!(ready = detector.get_result(result)) && std::chrono::steady_clock::now() < deadline) { std::this_thread::yield(); }
+    detector.stop();
+    require(ready && result.has_target && result.candidates.size() == 2 && result.best.score == 0.94f,
+        "first-stage survivors or highest-score seed were discarded");
+    require(result.stage_kind == 0 && result.stage_index == 0 && result.searched_region == cv::Rect{10,10,50,50}
+        && trace->calls == 1, "candidate provenance claimed unsearched stages or wrong region");
+}
+
+void testFreshVerificationProtocol() {
+    for (const bool stale_seed : {false, true}) {
+        Recording recording{diagnostics::Mode::Basic};
+        auto trace{std::make_shared<Trace>()}; auto config{settings()}; config.iou_reset_threshold = 0.1f;
+        auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
+        require(tracker->init(), "fresh verification init");
+        WorkerGate gate{trace};
+        const auto f1{context(1)}; tracker->update(f1); waitModel(trace, 1);
+        const auto round{tracker->validity()->snapshot().round};
+        const auto detection{[&](unsigned frame, std::int64_t anchor) {
+            YoloResult result{}; result.frame_id = frame; result.source.frame_id = frame;
+            result.source.generation = round; result.source.update_id = frame;
+            result.source.capture_time_us = frame * 10000; result.source.width = 100; result.source.height = 80;
+            result.source.evidence = {tracking::ClockMapping::StandaloneAdmissionV1, anchor, true};
+            result.has_target = true; result.best = {{40, 30, 20, 20}, 0.88f, 0};
+            result.candidates = {result.best}; return result;
+        }};
+        auto d1{detection(1, f1.evidence.anchor_ns)};
+        HybridTrackerDiagnosticTestAccess::result(*tracker, d1);
+        const unsigned seed_update{stale_seed ? 20U : 2U};
+        const auto provisional{tracker->update(context(seed_update))};
+        require(!provisional.tracking && provisional.state == TrackerState::Detecting
+            && trace->templates == 1, "seed did not initialize immediately as provisional");
+        const auto identity{tracker->validity()->snapshot()};
+        require(identity.phase == tracking::Phase::VerifyingProvisional
+            && identity.attempt_deadline_ns == decision_ns.load() + 1000000000,
+            "seed acceptance timeout moved or initialization authorized output");
+        auto d2{detection(2, decision_ns.load())};
+        d2.source.capture_time_us = seed_update * 10000;
+        // Request metadata predates initialization. The independent replay measurement must win over best score.
+        d2.source.attempt = 0;
+        d2.best = {{80, 60, 10, 10}, 0.94f, 0};
+        d2.candidates.push_back(d2.best);
+        HybridTrackerDiagnosticTestAccess::result(*tracker, d2);
+        const auto verified{tracker->update(context(seed_update + 1))};
+        require(verified.tracking && verified.state == TrackerState::TargetFound && verified.reset_los,
+            "fresh preinitialization D2 did not verify same-image replay evidence");
+        require(verified.permission.deadline_ns == d2.source.evidence.anchor_ns + 100000000,
+            "confirmation lifetime renewed at arrival instead of original anchor");
+        auto stale{detection(seed_update + 1, decision_ns.load() - 200000000)};
+        stale.source.attempt = verified.permission.attempt; stale.source.tracker_valid = true;
+        stale.source.tracker_box = {40, 30, 20, 20}; stale.has_target = false; stale.candidates.clear();
+        HybridTrackerDiagnosticTestAccess::result(*tracker, stale);
+        require(tracker->update(context(seed_update + 2)).tracking
+            && HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 0, "stale negative changed current trust");
+        auto ambiguous{detection(seed_update + 2, decision_ns.load())};
+        ambiguous.frame_id = 4; ambiguous.source.frame_id = 4;
+        ambiguous.source.attempt = verified.permission.attempt; ambiguous.source.tracker_valid = true;
+        ambiguous.source.tracker_box = {40, 30, 20, 20};
+        ambiguous.candidates = {{{40,30,10,20},0.9f,0}, {{50,30,10,20},0.85f,0}};
+        HybridTrackerDiagnosticTestAccess::result(*tracker, ambiguous);
+        const auto rejected{tracker->update(context(seed_update + 3))};
+        require(!rejected.tracking && tracker->validity()->pending(), "first ambiguity did not revoke trust");
+        const auto replacement{tracker->validity()->snapshot()};
+        require(replacement.attempt > verified.permission.attempt
+            && HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 0,
+            "adverse positive did not start independent zero-count recovery attempt");
+        // Fresh negatives count only against B. A stale or old-A result cannot spend B's budget.
+        for (unsigned count{1}; count <= 5; ++count) {
+            auto negative{detection(900 + count, decision_ns.load())};
+            negative.source.attempt = replacement.attempt; negative.source.tracker_valid = true;
+            negative.source.capture_time_us = (seed_update + 2 + count) * 10000;
+            negative.source.tracker_box = {40,30,20,20}; negative.has_target = false; negative.candidates.clear();
+            HybridTrackerDiagnosticTestAccess::result(*tracker, negative);
+            const auto output{tracker->update(context(seed_update + 3 + count))};
+            require(!output.tracking, "provisional negative unexpectedly authorized output");
+            require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == static_cast<int>(count),
+                "per-instance adverse-result budget changed");
+        }
+        require(tracker->validity()->snapshot().phase == tracking::Phase::Searching,
+            "fifth provisional adverse result did not abandon attempt");
+        gate.release(); tracker->finishRound();
+    }
+}
+
 void testModes() {
     std::array<int, 3> reference_calls{};
     const auto reference{runMode(diagnostics::Mode::Off, reference_calls)};
@@ -1329,25 +1364,27 @@ int main(int argc, char **argv) {
     try {
         require(argc == 2, "inspector argument");
         inspector = argv[1];
-        testActualInferenceObservation();
-        testLatestFrames();
-        testTimeAndPublication();
-        testUnknownFrameTime();
-        testHistoricalArbitrationAndWatchdog();
-        testOverwrite();
-        testSubmittedSnapshotAfterNanoFailure();
-        testUnreadResultAdmission();
-        testDetectingSnapshotOrder();
-        testTrackingSnapshotOrderAndEarlyReturns();
-        testCompletionAfterSnapshot();
-        testRequestOverlapsRecoveryAndRoundCleanup();
-        testOffWithExecutingCurrentRequest();
-        testHistoryMissAndPartialCatchup();
-        testInitFailureAndLowIou();
-        testInitializationErrorCodes();
-        testNanoFailureWithHighIou();
-        testActualJumpCounters();
-        testModes();
+        std::cerr << "Running testActualInferenceObservation\n"; testActualInferenceObservation();
+        std::cerr << "Running testLatestFrames\n"; testLatestFrames();
+        std::cerr << "Running testTimeAndPublication\n"; testTimeAndPublication();
+        std::cerr << "Running testUnknownFrameTime\n"; testUnknownFrameTime();
+        std::cerr << "Running testHistoricalArbitrationAndWatchdog\n"; testHistoricalArbitrationAndWatchdog();
+        std::cerr << "Running testOverwrite\n"; testOverwrite();
+        std::cerr << "Running testSubmittedSnapshotAfterNanoFailure\n"; testSubmittedSnapshotAfterNanoFailure();
+        std::cerr << "Running testUnreadResultAdmission\n"; testUnreadResultAdmission();
+        std::cerr << "Running testDetectingSnapshotOrder\n"; testDetectingSnapshotOrder();
+        std::cerr << "Running testTrackingSnapshotOrderAndEarlyReturns\n"; testTrackingSnapshotOrderAndEarlyReturns();
+        std::cerr << "Running testCompletionAfterSnapshot\n"; testCompletionAfterSnapshot();
+        std::cerr << "Running testRequestOverlapsRecoveryAndRoundCleanup\n"; testRequestOverlapsRecoveryAndRoundCleanup();
+        std::cerr << "Running testOffWithExecutingCurrentRequest\n"; testOffWithExecutingCurrentRequest();
+        std::cerr << "Running testHistoryMissAndPartialCatchup\n"; testHistoryMissAndPartialCatchup();
+        std::cerr << "Running testInitFailureAndLowIou\n"; testInitFailureAndLowIou();
+        std::cerr << "Running testInitializationErrorCodes\n"; testInitializationErrorCodes();
+        std::cerr << "Running testNanoFailureWithHighIou\n"; testNanoFailureWithHighIou();
+        std::cerr << "Running testActualJumpCounters\n"; testActualJumpCounters();
+        testCandidateStageProvenance();
+        testFreshVerificationProtocol();
+        std::cerr << "Running testModes\n"; testModes();
         std::cout << "真实模拟模型的来源淘汰、初始化、低 IoU、部分补帧和三模式检查通过\n";
         return 0;
     } catch (const std::exception &error) {

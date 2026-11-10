@@ -2,6 +2,7 @@
 #include "ros_test_support.h"
 #include "platform/rk3576/video_frame_source.h"
 #include "platform/rk3576/host_frame.h"
+#include "diagnostics/recorder.h"
 
 #include <filesystem>
 #include <future>
@@ -29,6 +30,22 @@ struct DroneTrackerNodeTestAccess {
     static void cameraPose(DroneTrackerNode &node, const sensor_msgs::msg::Imu::SharedPtr &message) {
         node.imu_callback(message);
     }
+    static std::shared_ptr<tracking::OutputValidity> validity(DroneTrackerNode &node) { return node.tracker_->validity(); }
+    static void controlledClock(DroneTrackerNode &node, std::function<tracking::Nanoseconds()> clock) {
+        node.expiry_timer_->cancel(); node.decision_clock_ = std::move(clock);
+    }
+    static void observationHook(DroneTrackerNode &node, std::function<void(const char *)> hook) {
+        node.observation_test_hook_ = std::move(hook);
+    }
+    static void expiryHook(DroneTrackerNode &node, std::function<void()> hook) { node.after_expiry_revocation_ = std::move(hook); }
+    static void checkExpiry(DroneTrackerNode &node) { node.checkTrackingExpiry(); }
+    static void publish(DroneTrackerNode &node, TrackerOutput &output, std::int64_t stamp = 0) {
+        std::lock_guard<std::mutex> lock{node.control_mutex_};
+        const cv::Matx33d rotation{cv::Matx33d::eye()};
+        node.publishTrackingObservation(output, stamp ? stamp : std::max(node.now().nanoseconds(),
+            node.observation_builder_->lastStamp() + 1000), &rotation, diagnostics::event(diagnostics::Type::ObservationBbox));
+    }
+    static std::int64_t lastStamp(const DroneTrackerNode &node) { return node.observation_builder_->lastStamp(); }
     static CameraIntrinsics intrinsics(const DroneTrackerNode &node) { return node.cam_intrinsics_; }
     static BagSession::Status bagStatus(DroneTrackerNode &node) {
         std::lock_guard<std::mutex> lock{node.bag_status_mutex_};
@@ -187,7 +204,8 @@ rclcpp::NodeOptions options(std::vector<rclcpp::Parameter> extra = {}) {
         {"tracker.nano_template_backbone", "template.rknn"}, {"tracker.nano_search_backbone", "search.rknn"},
         {"tracker.nano_head", "head.rknn"}, {"camera.fx", 100.0}, {"camera.fy", 110.0},
         {"camera.cx", 50.0}, {"camera.cy", 40.0}, {"tracker.enable_dcf", false},
-        {"tracker.yolo_interval", 1}, {"tracker.lost_max_count", 2}, {"visualized_result", true}};
+        {"tracker.yolo_interval", 1}, {"tracker.tracking_roi_scale_factor", 100.0},
+        {"tracker.lost_max_count", 2}, {"visualized_result", true}};
     for (const auto &parameter : extra) {
         values.erase(std::remove_if(values.begin(), values.end(), [&](const auto &v) {
             return v.get_name() == parameter.get_name();
@@ -384,6 +402,144 @@ void configuration() {
         require(!h.node->set_parameter(parameter).successful, "startup parameter changed");
     }
 }
+void independentExpiryDuringBlockedNano() {
+    Harness h{options({{"visualized_result", false}})};
+    h.trace->target = true; h.node->run();
+    h.until([&] { return !h.states.empty() && h.states.back() == 2; }, "expiry prerequisite did not verify");
+    const auto state_begin{h.states.size()};
+    {
+        std::lock_guard<std::mutex> lock{h.trace->mutex};
+        h.trace->block_nano = true; h.trace->nano_entered = false; h.trace->release_nano = false;
+    }
+    struct ReleaseNano {
+        std::shared_ptr<Trace> trace;
+        ~ReleaseNano() {
+            { std::lock_guard<std::mutex> lock{trace->mutex}; trace->release_nano = true; }
+            trace->cv.notify_all();
+        }
+    } release{h.trace};
+    h.until([&] { std::lock_guard<std::mutex> lock{h.trace->mutex}; return h.trace->nano_entered; },
+        "NanoTrack did not enter controlled inference barrier");
+    h.until([&] { return std::find(h.states.begin() + state_begin, h.states.end(), 3) != h.states.end(); },
+        "expiry notification waited for blocked inference");
+    require(!DroneTrackerNodeTestAccess::validity(*h.node)->snapshot().allowed,
+        "independent expiry left output permission valid");
+    require(!h.detections.empty() && h.detections.back().header.frame_id.empty()
+        && !h.observations.empty() && h.observations.back().header.frame_id.empty(),
+        "blocked inference did not produce paired invalid observations");
+    {
+        std::lock_guard<std::mutex> lock{h.trace->mutex};
+        h.trace->release_nano = true; h.trace->block_nano = false;
+    }
+    h.trace->cv.notify_all();
+    const auto recovery_begin{h.states.size()};
+    h.until([&] { return h.states.size() > recovery_begin && h.states.back() == 2; }, "fresh recovery did not verify");
+    h.source->warming_up = true;
+    const auto absent_begin{h.states.size()};
+    h.until([&] { return std::find(h.states.begin() + absent_begin, h.states.end(), 3) != h.states.end(); },
+        "absent frames prevented independent expiry");
+    require(!DroneTrackerNodeTestAccess::validity(*h.node)->snapshot().allowed,
+        "absent-input expiry retained permission");
+    h.node->stop();
+}
+
+void controlledLossOrdering() {
+    for (int scenario{}; scenario < 5; ++scenario) {
+        std::mutex calls_mutex{}; std::vector<std::string> calls{};
+        std::atomic<std::int64_t> clock{1000000000};
+        auto hook{[&](const char *name) {
+            std::lock_guard<std::mutex> lock{calls_mutex}; calls.emplace_back(name);
+            if (scenario == 1 && std::string{name} == "observation_bbox") { throw std::runtime_error("injected bbox failure"); }
+            if (scenario == 2 && std::string{name} == "observation_bag") { throw std::runtime_error("injected bag failure"); }
+            if (scenario == 3 && std::string{name} == "observation_bbox") { clock = 1250000000; }
+        }};
+        const auto bag_path{std::filesystem::temp_directory_path() / ("fresh-loss-bag-" + std::to_string(::getpid()))};
+        Harness h{options({{"visualized_result", false}, {"need_save", scenario == 2},
+            {"save_path", bag_path.string()}})};
+        DroneTrackerNodeTestAccess::observationHook(*h.node, hook);
+        h.source->warming_up = true;
+        DroneTrackerNodeTestAccess::controlledClock(*h.node, [&] { return clock.load(); });
+        h.node->run();
+        const auto validity{DroneTrackerNodeTestAccess::validity(*h.node)};
+        auto verify{[&](std::uint64_t seed, std::int64_t anchor, std::int64_t now) {
+            const auto round{validity->snapshot().round};
+            const auto attempt{validity->begin(round, seed, seed, now, 1000)};
+            require(attempt && validity->prepared(*attempt), "controlled provisional preparation");
+            require(validity->confirm(*attempt, seed + 1, 1,
+                {tracking::ClockMapping::CaptureMonotonicV1, anchor, true}, now, 100), "controlled verification");
+            TrackerOutput output{}; output.permission = validity->snapshot(); output.tracking = true;
+            output.state = TrackerState::TargetFound; output.observation_box = {40, 30, 20, 20}; return output;
+        }};
+        auto a{verify(1, 1000000000, 1000000000)};
+        std::promise<void> revoked{}, resume{}; auto release{resume.get_future().share()};
+        DroneTrackerNodeTestAccess::expiryHook(*h.node, [&] { revoked.set_value(); release.wait(); });
+        clock = 1100000000;
+        auto supervisor{std::async(std::launch::async, [&] { DroneTrackerNodeTestAccess::checkExpiry(*h.node); })};
+        struct Resume { std::promise<void> &gate; bool done{}; ~Resume() { if (!done) { gate.set_value(); } } } guard{resume};
+        require(revoked.get_future().wait_for(2s) == std::future_status::ready, "expiry waited for inference/input");
+        require(!validity->snapshot().allowed && validity->pending(), "revocation did not register loss atomically");
+        clock = 1160000000;
+        auto b{verify(3, 1150000000, 1160000000)};
+        clock = 1180000000;
+        if (scenario == 4) {
+            h.node->stop();
+            h.node->run();
+            require(!validity->pending() && !validity->snapshot().allowed, "OFF/ON inherited loss/permission");
+        } else {
+            DroneTrackerNodeTestAccess::publish(*h.node, b);
+            if (scenario == 3) { require(!b.tracking, "B lifetime extended while A notification waited"); }
+            else { require(b.tracking, "fresh B refused after loss attempt"); }
+        }
+        std::size_t before{};
+        { std::lock_guard<std::mutex> lock{calls_mutex}; before = calls.size(); }
+        resume.set_value(); guard.done = true; supervisor.get();
+        { std::lock_guard<std::mutex> lock{calls_mutex};
+            require(calls.size() == before, "duplicate supervisor retried disposed notification");
+            const auto lost{std::find(calls.begin(), calls.end(), "tracker_state_3")};
+            require(lost != calls.end(), "loss state attempt missing");
+            require(std::count(calls.begin(), lost, "observation_bbox") >= 1
+                && std::count(calls.begin(), lost, "observation_los") >= 1, "one failure skipped independent topic attempt");
+            const auto found{std::find(calls.begin(), calls.end(), "tracker_state_1")};
+            require(found == calls.end() || lost < found, "recovery state overtook loss transition");
+        }
+        require(!validity->pending(), "loss event remained pending after attempts");
+        h.node->stop();
+    }
+}
+
+void suppressedPairIsNotRecoveryAdmission() {
+    Harness h{options({{"visualized_result", false}})};
+    h.source->warming_up = true;
+    DroneTrackerNodeTestAccess::controlledClock(*h.node, [] { return 1010000000; });
+    h.node->run();
+    const auto validity{DroneTrackerNodeTestAccess::validity(*h.node)};
+    const auto attempt{validity->begin(validity->snapshot().round, 1, 1, 1000000000, 1000)};
+    require(attempt && validity->prepared(*attempt), "suppressed admission preparation");
+    require(validity->confirm(*attempt, 2, 1000000,
+        {tracking::ClockMapping::CaptureMonotonicV1, 1000000000, true}, 1010000000, 100),
+        "suppressed admission verification");
+    TrackerOutput output{};
+    output.permission = validity->snapshot(); output.tracking = true;
+    output.state = TrackerState::TargetFound; output.observation_box = {40, 30, 20, 20};
+    auto region{std::make_unique<diagnostics::SharedRegion>()};
+    diagnostics::Recorder recorder{*region, -1, diagnostics::Mode::Basic};
+    struct ClearRecorder { ~ClearRecorder() { diagnostics::active.store(nullptr); } } guard{};
+    diagnostics::active.store(&recorder);
+    DroneTrackerNodeTestAccess::publish(*h.node, output);
+    DroneTrackerNodeTestAccess::publish(*h.node, output, DroneTrackerNodeTestAccess::lastStamp(*h.node));
+    diagnostics::active.store(nullptr);
+    std::vector<bool> admissions{};
+    const auto &ring{region->producers[static_cast<std::size_t>(diagnostics::Producer::Node)].normal};
+    for (std::uint64_t index{}; index < ring.write.load(); ++index) {
+        const auto &event{ring.events[index % diagnostics::NORMAL_CAPACITY]};
+        if (event.type == diagnostics::Type::ValidAdmission) { admissions.push_back(event.counts[0]); }
+    }
+    require(admissions == std::vector<bool>{true, false}, "suppressed pair counted as recovery admission");
+    require(output.tracking && output.state == TrackerState::TargetFound,
+        "timestamp suppression changed independent permission or state");
+    h.node->stop();
+}
+
 void messagesAndRestart() {
     Harness h{};
     h.trigger("ON"); h.trigger("ON");
@@ -396,8 +552,10 @@ void messagesAndRestart() {
     require(std::any_of(h.detections.begin(), h.detections.end(), [](const auto &d) {
         return d.header.frame_id == "camera_frame";
     }), "no valid detection");
+    const auto loss_begin{h.states.size()};
     h.trace->target = false; h.trace->nano_ok = false;
-    h.until([&] { return std::find(h.states.begin(), h.states.end(), 3) != h.states.end(); }, "did not lose target");
+    h.until([&] { return std::find(h.states.begin() + loss_begin, h.states.end(), 3) != h.states.end(); },
+        "did not lose target");
     h.trace->target = true; h.trace->nano_ok = true;
     const auto state_count{h.states.size()};
     h.until([&] { return h.states.size() > state_count && h.states.back() == 2; }, "did not recover");
@@ -1507,6 +1665,9 @@ int main(int argc, char **argv) {
         observationTemplates();
         pairedBagAdmission();
         osdCompatibility();
+        independentExpiryDuringBlockedNano();
+        controlledLossOrdering();
+        suppressedPairIsNotRecoveryAdmission();
         messagesAndRestart();
         cleanupAndFailures();
         recording();

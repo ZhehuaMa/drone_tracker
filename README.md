@@ -83,3 +83,13 @@ The ROS interfaces include `/fpv/gimbal`, `/fpv/odom`, `/fpv/tracker_trigger`, `
 Read [AGENTS.md](AGENTS.md) before development. Machine-specific setup belongs in `AGENTS.local.md`. Feature and behavior changes follow the repository's OpenSpec workflow, which records proposals, design decisions, specifications, and implementation tasks.
 
 Host and emulated checks do not establish NPU, camera, HDMI, timing, or flight acceptance. Dated reports apply to their recorded board, binary, models, and input. Build caches and `/tmp` are disposable; retain required release and acceptance evidence separately.
+
+## Fresh verification and trust-loss output
+
+An initialized track stays provisional until a fresh detection from a later image agrees uniquely with the same attempt's measurement on that image. Initial acquisition and recovery therefore publish invalid observations until verification succeeds. Confirmation has a source-evidence lifetime; the default 100 ms is an engineering starting value, not a validated flight limit. See the [algorithm guide](docs/architecture/ALGORITHM_REVIEW.md#45-separate-evidence-and-observation-clocks) and [parameters](parameters/README.md#fresh-verification-and-startup-deadlines).
+
+RK3576 checks expiry independently of image arrival or inference completion. Revocation removes local permission and registers a pending loss event together. At the next publication opportunity, the node attempts an invalid bbox/LOS pair and TargetLost before any later image pair or recovery-state publication. A blocked publisher can delay notification while permission is already revoked. The two topics and enabled paired bag submission have independent outcomes. Completion means publication attempts finished, not that subscribers received an atomic pair. Failed attempts are recorded and disposed before recovery output; they are not retried afterward.
+
+Loss resets LOS angular-rate history and keeps recovery, preview, and enabled recording active. OFF drains pending loss before its separate final notification and round sealing. Valid observations retain capture time by default, or the existing eligible pose time when prediction is enabled. An event that overtakes an image reference suppresses that image pair rather than changing its timestamp.
+
+Already published observations cannot be retracted. The unchanged controller can continue prediction-based guidance after invalid vision. This tracker policy does not change mission or controller behavior.

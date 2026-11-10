@@ -42,7 +42,7 @@ maps it, initializes its atomic objects and touches the allocated pages. This is
 memory, not persistent storage. The receiver validates peer user identity, protocol
 version, length, descriptors and region size before mapping. It never reinitializes it.
 
-Current format 2 has five producers: Node, Camera, Yolo, Control and Dispatcher.
+Current format 3 has five producers: Node, Camera, Yolo, Control and Dispatcher.
 Each producer has one writer and separate ordinary/critical SPSC rings, meaning one
 writer and one reader per ring. Critical slots occupy one third of slot capacity.
 The persistent preview dispatcher owns Dispatcher; tracking owns Node; control/OFF
@@ -203,3 +203,15 @@ record hashes/path remapping and execute the actual run-diagnostics -> cpu-polic
 diagnostic-launch.py chain. A replacement worker records arguments, CPU mask and scheduling;
 affinity failure must return nonzero without executing it. Isolated checks do not modify
 formal launch entries.
+
+## Format 3: verification evidence and ordered loss
+
+Format 3 preserves the 256-byte event layout and five serialized producers. Readers accept formats 1 and 2 with their original meanings; unknown formats fail parsing. Historical age-only events do not acquire a rejection policy. Missing verification fields remain unavailable. No display-text parsing or integer display box can supply missing observation evidence.
+
+New value records use exact integers. `ValidityState` stores attempt, permission revision, seed frame/request, attempt deadline, verification time, and confirming frame. Counts store phase, permission, and the two `not_evaluated` validator statuses. `EvidenceClock` stores mapping identifier (1=`capture-monotonic-v1`, 2=`standalone-admission-v1`), original anchor, decision time, deadline, confirmation source time, attempt, and revision. Execution times are nanoseconds; source time is microseconds. `CandidateMatch` retains submitted/replay comparison origin, candidate and matching counts, original anchor, decision time, freshness/identity eligibility, counter before/after, and successful stage identity.
+
+`TrustLoss` and `TrustLossDisposed` identify revoked attempt/revision, revocation execution time, source-clock time sampled at revocation, construction/disposition execution time, and reason. All loss/OFF pairs carry `ControlObservation` (32768). Loss pairs additionally carry `TrustLossObservation` (262144); OFF pairs do not. `ValidAdmission` records attempt/revision, actual admission time, deadline, expected observation sequence, and eligibility. A timestamp-suppressed image is not a valid-pair admission. Existing per-topic start/end outcomes remain independent. These records establish attempted ordering and local timing, not subscriber receipt.
+
+The older decision table above describes formats 1 and 2. In format 3, YOLO `Decision` retains overlap operands, maximum IoU, reset/calibration thresholds, and counter before/after values. Its `values[0..2]` identify comparison origin, candidate count, and overlap-match count. Jump counters stay zero. `SourceContext` preserves the original submitted tracker and prediction rectangles with their validity flags; `values[0..2]` retain source-pixel availability, source generation, and the no-result count. Replay measurements never rewrite that original provenance.
+
+Synthetic standalone anchors start after decoding, copying, and scheduled waiting. They survive result arrival and catch-up unchanged. Production/regression anchors include pre-admission capture age. Mapping differences prevent affected same-condition timing comparisons. The [metrics contract](../../docs/testing/tracking-regression/metrics.md#freshness-policy-evidence) defines denominator/window handling, incomplete recoveries, and unset performance criteria. Score/motion calibration and manually labeled accuracy evaluation remain deferred.

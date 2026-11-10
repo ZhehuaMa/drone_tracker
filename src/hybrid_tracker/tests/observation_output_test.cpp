@@ -10,6 +10,7 @@ int main() {
         TrackerSettings settings{};
         settings.enable_dcf = false;
         settings.yolo_interval = 1000;
+        settings.roi_scale_factor = 100;
         settings.kf_fx = 100;
         settings.kf_fy = 110;
         settings.kf_cx0 = 50;
@@ -23,6 +24,7 @@ int main() {
             context.frame = std::make_shared<ros_test::TestFrame<1>>(
                 cv::Mat{80, 100, CV_8UC1, cv::Scalar{42}}, capture);
             context.now_us = capture + 30000;
+            context.evidence = {tracking::ClockMapping::StandaloneAdmissionV1, tracking::monotonicNow(), true};
             context.R_cam_now = prediction_rotation;
             return tracker->update(context);
         }};
@@ -41,8 +43,8 @@ int main() {
         const cv::Matx33d turned{std::cos(yaw), -std::sin(yaw), 0,
             std::sin(yaw), std::cos(yaw), 0, 0, 0, 1};
         output = update(turned);
-        model_test::require(output.tracking && output.display_box.is_valid,
-            "offscreen observation changed tracker arbitration or display");
+        model_test::require(!output.tracking && !output.display_box.is_valid,
+            "offscreen geometry failed to revoke output permission");
         model_test::require(output.observation_box.empty(), "fully offscreen prediction remained valid");
         tracker->finishRound();
     } catch (const std::exception &error) {

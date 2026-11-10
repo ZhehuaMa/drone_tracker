@@ -139,3 +139,16 @@ Historical board results are in the archived
 `.docker-artifacts` and `/tmp` may be cleared routinely. Preserve required raw results,
 source/binary identities and manifests in an explicitly retained external location.
 Historical paths are provenance, not guaranteed current storage.
+
+The comparison command accepts each independent directory with its own option:
+
+```bash
+./nanotrackv3_benchmark_compare \
+  --baseline baseline-observed-1 --baseline baseline-observed-2 --baseline baseline-observed-3 \
+  --baseline baseline-total-1 --baseline baseline-total-2 --baseline baseline-total-3 \
+  --direct search-direct-observed-1 --direct search-direct-observed-2 --direct search-direct-observed-3 \
+  --direct search-direct-total-1 --direct search-direct-total-2 --direct search-direct-total-3 \
+  --report comparison-report
+```
+
+Use this historical comparison interface only after establishing the recorded handoff identities described above.

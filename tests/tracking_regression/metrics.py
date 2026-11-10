@@ -10,6 +10,7 @@ import json
 import math
 from pathlib import Path
 import sys
+import validity_metrics
 
 SCHEMA_VERSION = 1
 METRIC_VERSION = 1
@@ -25,6 +26,7 @@ TYPE_NAMES = (
     "AbnormalEnd", "ClockRelation", "Health", "JumpComparison", "SourceContext",
     "ObservationBbox", "ObservationLos", "LosPublishStart", "LosPublishEnd", "ObservationSuppressed",
     "ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd",
+    "ValidityState", "EvidenceClock", "CandidateMatch", "TrustLoss", "TrustLossDisposed", "ValidAdmission",
 )
 TYPE_ZH = (
     "运行开始", "运行结束", "轮次开始", "轮次结束", "采集", "节点跳过",
@@ -35,6 +37,7 @@ TYPE_ZH = (
     "诊断缺口", "异常结束", "时钟对应", "健康", "跳变比较", "SourceContext",
     "ObservationBbox", "ObservationLos", "LosPublishStart", "LosPublishEnd", "ObservationSuppressed",
     "ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd",
+    "ValidityState", "EvidenceClock", "CandidateMatch", "TrustLoss", "TrustLossDisposed", "ValidAdmission",
 )
 REASON_NAMES = (
     "None", "Unknown", "InvalidInput", "RepeatedTime", "Stopped", "Cleaning",
@@ -273,6 +276,8 @@ def compute(events, inputs, clock, complete=True, windows=None):
     sequences = set()
     for index, original in enumerate(events):
         event = dict(original)
+        if event.get("version", 1) not in (1, 2, 3):
+            raise ValueError("event: unsupported diagnostic format")
         _number(event.get("mono_ns"), f"events[{index}].mono_ns")
         event["_type"], event["_reason"] = event_type(event), event_reason(event)
         if event["_type"] in ("Gap", "AbnormalEnd"):
@@ -491,12 +496,19 @@ def compute(events, inputs, clock, complete=True, windows=None):
             count(label, len(ids), identities=ids)
         for label, kind in (("los_publication_count", "LosPublishEnd"),
                             ("observation_suppressed_count", "ObservationSuppressed"),
-                            ("off_notification_count", "ControlBboxEnd")):
+                            ("off_notification_count", "ControlBboxEnd"),
+                            ("trust_loss_notification_count", "ControlBboxEnd")):
             chosen = [e for e in normalized if e["_type"] == kind and inside(e)]
+            if label == "off_notification_count":
+                chosen = [e for e in chosen if not e.get("flags", 0) & 262144]
+            elif label == "trust_loss_notification_count":
+                chosen = [e for e in chosen if e.get("flags", 0) & 262144]
             descriptor = _descriptor(window, "count", len(chosen), record_complete,
                                      value=len(chosen), samples=[evidence(e) for e in chosen])
             descriptor["metric_version"] = 3
             if not observation_v2:
+                descriptor.update(availability="unavailable", reason="historical_field_absent", value=None)
+            if label == "trust_loss_notification_count" and not any(e.get("version", 1) >= 3 for e in normalized):
                 descriptor.update(availability="unavailable", reason="historical_field_absent", value=None)
             metrics[label] = descriptor
         los_pubs = [e for e in normalized if e["_type"] == "LosPublishEnd" and inside(e)]
@@ -628,6 +640,9 @@ def compute(events, inputs, clock, complete=True, windows=None):
                 frame_ids.append(source.get("fixture_frame_id") if source else event.get("fixture_frame_id"))
             count(label, len(selected), identities=frame_ids)
         result["windows"][window_name] = metrics
+    result["validity"] = {name: validity_metrics.compute(normalized,
+        m0 + start * 1000, m0 + end * 1000, record_complete)
+        for name, (start, end) in selected_windows.items()}
     return result
 
 

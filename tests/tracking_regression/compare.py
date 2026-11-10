@@ -194,6 +194,12 @@ def compare(baseline_path, candidate_paths, threshold_path=None, affinity_experi
         else:
             result["differences"].extend(baseline.field_differences(
                 manifest["comparison_group"], run["identity"]["comparison_group"], f"candidate.runs[{index}].comparison_group"))
+        for prior in reference:
+            left = prior.get('metrics', {}).get('validity', {}).get('full', {}).get('clock_mappings')
+            right = run.get('metrics', {}).get('validity', {}).get('full', {}).get('clock_mappings')
+            if left != right and (left or right):
+                result['differences'].append({'field': 'validity.clock_mappings',
+                    'reason': 'incompatible_evidence_timing', 'reference': left, 'candidate': right})
         for field in ("source_sha256", "binary_sha256", "project_libraries"):
             if candidates[0]["identity"]["code"].get(field, {}) != run["identity"]["code"].get(field, {}):
                 result["differences"].append({"field": f"candidate.runs[{index}].code.{field}",
