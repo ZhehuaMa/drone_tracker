@@ -11,6 +11,7 @@ import math
 from pathlib import Path
 import sys
 import validity_metrics
+import scheduler_metrics
 
 SCHEMA_VERSION = 1
 METRIC_VERSION = 1
@@ -26,7 +27,7 @@ TYPE_NAMES = (
     "AbnormalEnd", "ClockRelation", "Health", "JumpComparison", "SourceContext",
     "ObservationBbox", "ObservationLos", "LosPublishStart", "LosPublishEnd", "ObservationSuppressed",
     "ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd",
-    "ValidityState", "EvidenceClock", "CandidateMatch", "TrustLoss", "TrustLossDisposed", "ValidAdmission",
+    "ValidityState", "EvidenceClock", "CandidateMatch", "TrustLoss", "TrustLossDisposed", "ValidAdmission", "PlanOutcome", "StageDisposition", "DetectorControl", "SchedulerTiming", "CleanupPolicy", "RegionHint", "PlanCancelled",
 )
 TYPE_ZH = (
     "运行开始", "运行结束", "轮次开始", "轮次结束", "采集", "节点跳过",
@@ -37,7 +38,7 @@ TYPE_ZH = (
     "诊断缺口", "异常结束", "时钟对应", "健康", "跳变比较", "SourceContext",
     "ObservationBbox", "ObservationLos", "LosPublishStart", "LosPublishEnd", "ObservationSuppressed",
     "ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd",
-    "ValidityState", "EvidenceClock", "CandidateMatch", "TrustLoss", "TrustLossDisposed", "ValidAdmission",
+    "ValidityState", "EvidenceClock", "CandidateMatch", "TrustLoss", "TrustLossDisposed", "ValidAdmission", "PlanOutcome", "StageDisposition", "DetectorControl", "SchedulerTiming", "CleanupPolicy", "RegionHint", "PlanCancelled",
 )
 REASON_NAMES = (
     "None", "Unknown", "InvalidInput", "RepeatedTime", "Stopped", "Cleaning",
@@ -46,7 +47,7 @@ REASON_NAMES = (
     "YoloJump", "NanoJump", "NoResultTimeout", "HistoryMiss", "InitFailed",
     "ImagePrepareFailed", "InferenceException", "PublishException", "NotConsumed",
     "BufferFull", "StorageError", "SyncError", "SpaceProtection", "Incomplete",
-    "NanoUpdateFailed", "Superseded", "ContextUnavailable", "RecoveryUnavailable", "PreviousRound",
+    "NanoUpdateFailed", "Superseded", "ContextUnavailable", "RecoveryUnavailable", "PreviousRound", "Disposed", "InvalidClock", "ActiveReplacement", "PartialCoverage", "CandidateExpired", "StaleEvidence",
 )
 REASON_ZH = (
     "无", "未知", "输入无效", "时间重复或倒退", "已停止", "正在清理", "待检测槽占用",
@@ -54,7 +55,7 @@ REASON_ZH = (
     "队列满", "取最新帧跳过", "无目标", "低IoU", "检测跳变", "跟踪跳变",
     "没有新结果超限", "缓存未命中", "初始化失败", "图像准备失败", "推理异常",
     "发布异常", "输入未消费", "记录缓冲满", "写入失败", "同步失败", "空间保护",
-    "不完整", "跟踪更新失败", "Superseded", "ContextUnavailable", "RecoveryUnavailable", "PreviousRound",
+    "不完整", "跟踪更新失败", "Superseded", "ContextUnavailable", "RecoveryUnavailable", "PreviousRound", "Disposed", "InvalidClock", "ActiveReplacement", "PartialCoverage", "CandidateExpired", "StaleEvidence",
 )
 CLEAR_REASONS = {"NoTarget", "LowIou", "YoloJump", "NanoJump", "NoResultTimeout", "NanoUpdateFailed"}
 
@@ -276,7 +277,7 @@ def compute(events, inputs, clock, complete=True, windows=None):
     sequences = set()
     for index, original in enumerate(events):
         event = dict(original)
-        if event.get("version", 1) not in (1, 2, 3):
+        if event.get("version", 1) not in (1, 2, 3, 4):
             raise ValueError("event: unsupported diagnostic format")
         _number(event.get("mono_ns"), f"events[{index}].mono_ns")
         event["_type"], event["_reason"] = event_type(event), event_reason(event)
@@ -297,7 +298,9 @@ def compute(events, inputs, clock, complete=True, windows=None):
     normalized.sort(key=lambda item: item["mono_ns"])
     issues.extend(observation_issues(normalized))
     updates = _pair(normalized, "UpdateStart", "UpdateEnd", "update_id", issues)
-    detects = _pair(normalized, "DetectStart", "DetectEnd", "request_id", issues)
+    # Historic request timing described a complete cascade. New jobs have a separate denominator.
+    detects = _pair([row for row in normalized if row.get('version', 1) < 4],
+                    "DetectStart", "DetectEnd", "request_id", issues)
     initializations = _pair(normalized, "InitializeStart", "InitializeEnd", "update_id", issues, _initialization_detail)
     _pair(normalized, "PublishStart", "PublishEnd", "update_id", issues)
     outputs = {}
@@ -566,7 +569,8 @@ def compute(events, inputs, clock, complete=True, windows=None):
             window, "count", len(rejected), record_complete,
             value={reason: len(ids) for reason, ids in sorted(rejection_reasons.items())})
         stages = [e for e in normalized if e["_type"] == "DetectStage" and
-                  identity(e, "request_id") in detect_starts and inside(detect_starts[identity(e, "request_id")])]
+                  ((e.get("version", 1) >= 4 and inside(e)) or
+                   (identity(e, "request_id") in detect_starts and inside(detect_starts[identity(e, "request_id")])))]
         infer_stages = [e for e in stages if e.get("flags", 0) & 2048]
         count("detector_stage_count", len(stages))
         count("detector_inference_count", len(infer_stages))
@@ -639,8 +643,17 @@ def compute(events, inputs, clock, complete=True, windows=None):
                 source = input_by_time.get(event.get("frame_time_us"))
                 frame_ids.append(source.get("fixture_frame_id") if source else event.get("fixture_frame_id"))
             count(label, len(selected), identities=frame_ids)
+        if any(row.get('version', 1) >= 4 for row in normalized):
+            for label in ('request_executed_count', 'request_completed_count', 'result_read_count',
+                          'detection_execution_ms', 'request_queue_wait_ms'):
+                metrics[label].update(availability='unavailable', value=None,
+                                      reason='whole_cascade_metric_incompatible_with_one_call_jobs')
         result["windows"][window_name] = metrics
-    result["validity"] = {name: validity_metrics.compute(normalized,
+    canonical = [dict(row, type=row['_type'], reason=row['_reason']) for row in normalized]
+    result["scheduler"] = {name: scheduler_metrics.compute(canonical,
+        m0 + start * 1000, m0 + end * 1000, record_complete)
+        for name, (start, end) in selected_windows.items()}
+    result["validity"] = {name: validity_metrics.compute(canonical,
         m0 + start * 1000, m0 + end * 1000, record_complete)
         for name, (start, end) in selected_windows.items()}
     return result

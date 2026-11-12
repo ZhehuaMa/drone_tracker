@@ -26,6 +26,7 @@ struct Options {
     int target{-1};
     int constant{-1};
     cv::Rect roi{};
+    float confidence{0.5f}, nms{0.5f}, relax{0.5f};
 };
 int integer(const std::string &text) {
     std::size_t consumed{0};
@@ -53,6 +54,15 @@ Options parse(int argc, char **argv) {
             options.mode = value;
         } else if (key == "--dump") {
             options.dump = value;
+        } else if (key == "--confidence" || key == "--nms" || key == "--relax") {
+            std::size_t consumed{};
+            const float number{std::stof(value, &consumed)};
+            if (consumed != value.size() || !std::isfinite(number) || number <= 0 || number > 1) {
+                throw std::invalid_argument{"Threshold must be in (0,1]"};
+            }
+            if (key == "--confidence") { options.confidence = number; }
+            else if (key == "--nms") { options.nms = number; }
+            else { options.relax = number; }
         } else if (key == "--target") {
             options.target = integer(value);
         } else if (key == "--constant") {
@@ -73,7 +83,7 @@ Options parse(int argc, char **argv) {
     if (options.model.empty()) {
         throw std::invalid_argument("--model is required");
     }
-    if (options.mode != "query" && options.mode != "region" && options.mode != "detect") {
+    if (options.mode != "query" && options.mode != "region" && options.mode != "detect" && options.mode != "crop") {
         throw std::invalid_argument("--mode must be query, region or detect");
     }
     if (options.mode != "query") {
@@ -85,7 +95,7 @@ Options parse(int argc, char **argv) {
         if (options.mode == "region" && (!options.video.empty() || options.dump.empty())) {
             throw std::invalid_argument("region mode requires --image/--constant and --dump prefix");
         }
-        if (options.mode == "detect" && options.target < 0) {
+        if ((options.mode == "detect" || options.mode == "crop") && options.target < 0) {
             throw std::invalid_argument("detect requires --target >= 0");
         }
     }
@@ -133,7 +143,7 @@ int main(int argc, char **argv) {
         } else {
             image = options.constant >= 0
                         ? cv::Mat(640, 640, CV_8UC1, cv::Scalar{static_cast<double>(options.constant)})
-                        : cv::imread(options.image, cv::IMREAD_COLOR);
+                        : cv::imread(options.image, cv::IMREAD_GRAYSCALE);
             image = grayImage(image);
         }
         if (options.mode == "region") {
@@ -169,10 +179,10 @@ int main(int argc, char **argv) {
         }
         YoloV8Detector detector{std::make_unique<rk3576::RknnYoloBackend>(std::move(runtime.value)),
                                 std::make_unique<rk3576::YoloPreprocessor>(),
-                                0.5f,
-                                0.5f,
+                                options.confidence,
+                                options.nms,
                                 options.target,
-                                0.5f};
+                                options.relax};
         if (!detector.init()) {
             throw std::runtime_error("Detector initialization failed");
         }
@@ -189,23 +199,31 @@ int main(int argc, char **argv) {
             if (!detector.request(rk3576::copyGrayFrame(image), frame_id, options.roi)) {
                 throw std::runtime_error("Detector rejected request");
             }
-            YoloResult result;
-            while (!detector.get_result(result)) {
-                std::this_thread::sleep_for(std::chrono::milliseconds{1});
-            }
-            std::cout << "frame=" << result.frame_id << " hit=" << result.has_target;
-            if (result.has_target) {
-                std::cout << " class=" << result.best.classId << " score=" << result.best.score
-                          << " box=" << result.best.box;
-            }
-            std::cout << '\n';
+            YoloResult result{};
+            do {
+                while (!detector.get_result(result)) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds{1});
+                }
+                std::cout << "frame=" << result.frame_id << " job=" << result.job_id
+                    << " plan=" << result.plan_id << " stage=" << result.stage_kind
+                    << " region=" << result.searched_region << " complete=" << result.complete_coverage
+                    << " hit=" << result.has_target << " candidates=" << result.candidates.size();
+                for (const auto &candidate : result.candidates) {
+                    std::cout << " class=" << candidate.classId << " score=" << candidate.score
+                        << " box=" << candidate.box;
+                }
+                std::cout << '\n';
+            } while (options.mode != "crop" && !result.has_target && !result.complete_coverage
+                && result.reason == diagnostics::Reason::NoTarget);
+            DetectorControl disposition{}; disposition.rejected_job = result.job_id;
+            detector.control(disposition);
         } while (video.isOpened());
         detector.stop();
         return 0;
     } catch (const std::exception &error) {
-        std::cerr << error.what() << "\n用法：--model path --mode query|region|detect "
+        std::cerr << error.what() << "\n用法：--model path --mode query|region|detect|crop "
                   << "[--target id] [--image path|--video path|--constant 0..255] "
-                  << "[--roi x y w h] [--dump prefix]\n";
+                  << "[--roi x y w h] [--dump prefix] [--confidence value] [--nms value] [--relax value]\n";
         return 1;
     }
 }

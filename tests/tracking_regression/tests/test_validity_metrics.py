@@ -68,3 +68,12 @@ class ValidityTests(unittest.TestCase):
         output = validity.compute(rows, 0, 10000000, True)['frame_output']
         self.assertEqual([output[key] for key in ('valid','invalid','suppressed','absent')], [1,1,1,1])
         self.assertEqual(output['valid_ratio'], 0.25)
+class VerificationBeforeAdmissionExpiry(unittest.TestCase):
+    def test_expired_permission_keeps_local_verification_milestone(self):
+        rows = [event('TrustLoss', 1090, [1, 2, 1090000000, 1090000, 1091000000, 0, 0]),
+                event('ValidityState', 1260, [2, 4, 1, 1, 2000000000, 1160000000, 2], [0, 0, 0, 0])]
+        result = validity.compute(rows, 1000000000, 1300000000, True)
+        episode = result['recovery_episodes'][0]
+        self.assertEqual(episode['to_verification_ms'], 70)
+        self.assertIsNone(episode['admission_ns'])
+        self.assertFalse(episode['complete'])

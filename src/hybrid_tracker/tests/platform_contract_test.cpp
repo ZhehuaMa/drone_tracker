@@ -225,6 +225,7 @@ void testCompatibilityAndDestruction() {
     require(trace->begins == 0 && trace->calls == 0, "错配帧触发了检测");
     Builder first{}, independent{};
     context.frame = independent.copyFrom(image, 1000000).value;
+    context.evidence = {tracking::ClockMapping::StandaloneAdmissionV1, tracking::monotonicNow(), true};
     require(tracker->update(context).consumed, "错配帧占用了时间戳或拒绝独立创建器");
     {
         std::unique_lock<std::mutex> lock{trace->mutex};
@@ -235,6 +236,7 @@ void testCompatibilityAndDestruction() {
     for (const auto &count : trace->destroyed) { require(count == 0, "reset 卸载了模型或预处理器"); }
     require(tracker->init() && trace->starts == 1, "复用时重复创建检测线程");
     context.frame = first.copyFrom(image, 1000000).value;
+    context.evidence = {tracking::ClockMapping::StandaloneAdmissionV1, tracking::monotonicNow(), true};
     require(tracker->update(context).consumed, "reset 未重置时间戳");
     auto destroy{std::async(std::launch::async, [owned = std::move(tracker)]() mutable { owned.reset(); })};
     require(destroy.wait_for(std::chrono::milliseconds{30}) == std::future_status::timeout,

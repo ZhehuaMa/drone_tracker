@@ -10,6 +10,9 @@
 #include <atomic>
 #include <memory>
 #include <cstdint>
+#include <functional>
+#include <optional>
+#include <utility>
 #include <opencv2/opencv.hpp>
 
 #include "preprocess/image_preprocessor.h"
@@ -61,6 +64,22 @@ struct YoloResult
     std::vector<Detection> candidates{};
     std::uint32_t stage_kind{}, stage_index{};
     cv::Rect searched_region{};
+    std::uint64_t job_id{}, plan_id{}, fallback_plan_id{};
+    std::uint64_t dispatch_attempt{}, dispatch_revision{};
+    bool targeted{}, complete_coverage{true};
+    // Eligibility sampled at publication/take; original stage/source identity stays unchanged.
+    diagnostics::Reason plan_cancellation_reason{diagnostics::Reason::None};
+};
+
+/** @brief Value-only worker purpose. Original submitted metadata is never rewritten.
+ * Seed acceptance is sent before template preparation; taking a result separately frees capacity.
+ */
+struct DetectorControl {
+    tracking::Permission permission{};
+    std::uint64_t oldest_frame{}, accepted_job{}, rejected_job{}, agreement_frame{}, partial_job{};
+    cv::Rect hint{};
+    int confirmation_timeout_ms{100};
+    std::function<tracking::Nanoseconds()> clock{tracking::monotonicNow};
 };
 
 class YoloV8Detector
@@ -94,7 +113,9 @@ public:
      * @return 如果成功获取了新结果，则为 true
      */
     bool get_result(YoloResult& result);
-    std::array<std::uint64_t, 3> outstandingFrames() const;
+    std::array<std::uint64_t, 4> outstandingFrames() const;
+    /** @brief Publish a short phase/disposition snapshot without waiting for inference. */
+    void control(const DetectorControl &control);
 
     /** @brief 获取模型输入尺寸 */
     std::pair<int, int> getInputSize() const;
@@ -112,6 +133,10 @@ private:
     friend struct HybridTrackerDiagnosticTestAccess;
     /** @brief 工作线程的主循环 */
     void workerThreadLoop();
+    /** @brief Cancel the one plan under m_mutex, retaining its terminal reason before releasing pixels. */
+    void cancelPlan(diagnostics::Reason reason);
+    /** @brief Read bounded cancellation values while m_mutex is held. */
+    diagnostics::Reason planCancellationReason(std::uint64_t plan_id) const;
 
     void detectOnImage(YoloFrameSession &session, const cv::Rect &region, std::vector<Detection> &results);
 
@@ -157,6 +182,27 @@ private:
         diagnostics::FrameIdentity identity{};
         SourceComparison source{};
     } m_next_request;
+
+    struct Plan {
+        Request request{};
+        std::vector<cv::Rect> regions{};
+        std::size_t next{};
+        std::uint64_t id{}, waiting_job{}, initial_job{};
+        bool waiting{}, searching{}, fallback{};
+    };
+    std::optional<Plan> m_plan{};
+    // At most an active, unread and locally consumed result can reference cancelled plans.
+    std::array<std::pair<std::uint64_t, diagnostics::Reason>, 4> m_cancelled_plans{};
+    std::size_t m_cancelled_plan_cursor{};
+    DetectorControl m_control{};
+    bool m_control_set{};
+    std::uint64_t m_job_counter{}, m_plan_counter{};
+    std::size_t m_tile_rotation{};
+    unsigned m_targeted_burst{};
+    std::uint64_t m_job_id{}, m_plan_id{}, m_fallback_plan_id{};
+    std::uint64_t m_dispatch_attempt{}, m_dispatch_revision{};
+    bool m_targeted{}, m_complete_coverage{};
+    std::uint64_t m_prepare_ns{}, m_infer_ns{}, m_postprocess_ns{};
 
     void publishResult(const Request &request, bool has_target, const Detection &best, diagnostics::Reason reason, const std::vector<Detection> &candidates = {});
     std::uint64_t m_request_counter{}, m_inflight_id{}, m_inflight_frame{};

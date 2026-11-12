@@ -51,6 +51,14 @@ find_package(rosbag2_cpp REQUIRED)
 
 find_package(OpenCV REQUIRED)
 find_package(Threads REQUIRED)
+# Each configured test run has an isolated DDS domain. Preserve an explicitly selected random run domain.
+if(DEFINED ENV{ROS_DOMAIN_ID} AND NOT "$ENV{ROS_DOMAIN_ID}" STREQUAL "")
+    set(DRONE_TRACKER_TEST_ROS_DOMAIN_ID "$ENV{ROS_DOMAIN_ID}")
+else()
+    string(RANDOM LENGTH 4 ALPHABET 0123456789abcdef DRONE_TRACKER_TEST_DOMAIN_RANDOM)
+    math(EXPR DRONE_TRACKER_TEST_ROS_DOMAIN_ID "0x${DRONE_TRACKER_TEST_DOMAIN_RANDOM} % 200 + 20")
+endif()
+
 option(DRONE_TRACKER_BUILD_TESTS "Build hybrid tracker unit tests" OFF)
 if(DRONE_TRACKER_BUILD_TESTS)
     enable_testing()
@@ -184,7 +192,7 @@ if(DRONE_TRACKER_BUILD_TESTS AND DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/run_ros_transport_test.py ${ROS_TRANSPORT_TEST_PROGRAM}
         --samples 100 --period-ms 5 --contention)
     set_tests_properties(ros_transport_tests ros_transport_contention_tests PROPERTIES TIMEOUT 60
-        RUN_SERIAL TRUE ENVIRONMENT "ROS_DOMAIN_ID=183;ROS_LOCALHOST_ONLY=1")
+        RUN_SERIAL TRUE ENVIRONMENT "ROS_DOMAIN_ID=${DRONE_TRACKER_TEST_ROS_DOMAIN_ID};ROS_LOCALHOST_ONLY=1")
     add_executable(target_observation_tests src/tests/target_observation_test.cpp)
     target_link_libraries(target_observation_tests drone_tracker_ros)
     add_test(NAME target_observation_tests COMMAND target_observation_tests)
@@ -202,10 +210,10 @@ if(DRONE_TRACKER_BUILD_TESTS AND DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/run_ros_transport_test.py $<TARGET_FILE:ros_video_tests>
         --node-initialization)
     set_tests_properties(ros_affinity_initialization_tests PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE
-        ENVIRONMENT "ROS_DOMAIN_ID=184;ROS_LOCALHOST_ONLY=1")
+        ENVIRONMENT "ROS_DOMAIN_ID=${DRONE_TRACKER_TEST_ROS_DOMAIN_ID};ROS_LOCALHOST_ONLY=1")
     add_test(NAME ros_continuous_camera_tests COMMAND ros_video_tests --continuous-camera)
     set_tests_properties(ros_continuous_camera_tests PROPERTIES TIMEOUT 45
-        ENVIRONMENT "ROS_DOMAIN_ID=189;ROS_LOCALHOST_ONLY=1")
+        ENVIRONMENT "ROS_DOMAIN_ID=${DRONE_TRACKER_TEST_ROS_DOMAIN_ID};ROS_LOCALHOST_ONLY=1")
     add_test(NAME ros_initialization_tests COMMAND ${CMAKE_COMMAND}
         -DPROGRAM=$<TARGET_FILE:drone_tracker_node> -DOSD_BUILT=${DRONE_TRACKER_BUILD_OSD}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/ros_initialization_test.cmake)
@@ -218,7 +226,7 @@ if(DRONE_TRACKER_BUILD_TESTS AND DRONE_TRACKER_PLATFORM STREQUAL "rk3576")
     add_executable(jetson_config_tests src/tests/jetson_config_test.cpp)
     target_link_libraries(jetson_config_tests drone_tracker_jetson_config)
     add_test(NAME jetson_config_tests COMMAND jetson_config_tests)
-    set_tests_properties(ros_video_tests PROPERTIES FIXTURES_REQUIRED ros_video_files TIMEOUT 60 ENVIRONMENT "ROS_DOMAIN_ID=187;ROS_LOCALHOST_ONLY=1")
+    set_tests_properties(ros_video_tests PROPERTIES FIXTURES_REQUIRED ros_video_files TIMEOUT 60 ENVIRONMENT "ROS_DOMAIN_ID=${DRONE_TRACKER_TEST_ROS_DOMAIN_ID};ROS_LOCALHOST_ONLY=1")
 endif()
 
 ament_package()

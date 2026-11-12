@@ -206,9 +206,12 @@ void round(int number, const std::filesystem::path &output) {
     }
     for (const auto &event : captured) {
         if (event.type == diagnostics::Type::HistoryLookup) {
-            require(event.reason != diagnostics::Reason::HistoryMiss
-                && history.count(event.source_tracker_frame_id) != 0,
+            require(history.count(event.source_tracker_frame_id) != 0,
                 "lookup used history identity outside the current round");
+            if (event.reason == diagnostics::Reason::HistoryMiss) {
+                require(event.source_tracker_frame_id < event.values[0],
+                    "history miss did not identify an actually evicted source image");
+            }
         }
     }
     if (number == 1) {

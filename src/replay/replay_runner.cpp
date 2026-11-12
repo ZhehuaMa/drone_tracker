@@ -71,7 +71,8 @@ int runReplay(const ReplayConfig &config, ReplayReport &report, const ReplayDepe
             FrameContext context{};
             context.frame = std::move(frame.value);
             context.now_us = record.timestamp_us;
-            context.decision_clock = [&clock] { return clock.now(); };
+            // The detector retains this callable until round shutdown. Do not borrow the local ReplayClock.
+            context.decision_clock = d.clock.now;
             context.evidence = {tracking::ClockMapping::StandaloneAdmissionV1, clock.now(), true};
             record.image_anchor_ns = context.evidence.anchor_ns;
             record.output = tracker->update(context);

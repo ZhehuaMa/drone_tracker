@@ -357,12 +357,16 @@ void checkYolo(int hit_call, float score, bool fail_prepare = false, bool fail_m
     YoloResult result;
     const auto deadline{std::chrono::steady_clock::now() + std::chrono::seconds{5}};
     bool received{false};
-    while (!(received = detector.get_result(result)) && std::chrono::steady_clock::now() < deadline) {
-        std::this_thread::sleep_for(std::chrono::milliseconds{1});
+    while (std::chrono::steady_clock::now() < deadline) {
+        if (!detector.get_result(result)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds{1}); continue;
+        }
+        received = true;
+        if (result.has_target || result.complete_coverage || result.reason != diagnostics::Reason::NoTarget) { break; }
     }
     detector.stop(); // join 后再读 trace，避免测试自身产生数据竞争。
     require(received && result.frame_id == 77, "异步结果未返回原帧号");
-    require(trace->begins == 1, "一次请求建立了多个快照");
+    require(trace->begins == static_cast<int>(trace->regions.size()), "one-call session count differs from searched regions");
     require(trace->regions.front() == roi, "ROI 未优先执行");
     const bool expected_hit{!fail_prepare && !fail_model && hit_call > 0 && score >= (hit_call == 1 ? 0.25f : 0.5f)};
     require(result.has_target == expected_hit, "检测阈值或目标选择发生变化");

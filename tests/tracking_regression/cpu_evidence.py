@@ -19,7 +19,7 @@ def qualify(config, metadata, points, snapshots, clock, events, supervision):
         # Schema 1 predates the appended Dispatcher slot. The diagnostic format,
         # rather than the CPU schema number, identifies the producer layout.
         formats = {event['version'] for event in events}
-        if formats not in ({1}, {2}, {3}):
+        if formats not in ({1}, {2}, {3}, {4}):
             return errors + ['cpu_observation: missing/mixed/unsupported diagnostic format']
         slots = set(range(4 if formats == {1} else 5))
         if len(metadata['writers']) != len(slots) or set(writers) != slots:

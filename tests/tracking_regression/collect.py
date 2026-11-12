@@ -27,7 +27,7 @@ FIELDS = ['version','byte_length','type_id','reason_id','flags','producer_id','r
 def decode_event(data):
     values = EVENT.unpack(data)
     row = dict(zip(FIELDS, values[:22]))
-    if row['version'] not in (1, 2, 3) or row['byte_length'] != 256 or row['producer_id'] >= (4 if row['version'] == 1 else 5):
+    if row['version'] not in (1, 2, 3, 4) or row['byte_length'] != 256 or row['producer_id'] >= (4 if row['version'] == 1 else 5):
         raise ValueError('event: unsupported version, byte_length or producer_id')
     if row['type_id'] >= len(metrics.TYPE_NAMES) or row['reason_id'] >= len(metrics.REASON_NAMES):
         raise ValueError('event: unknown type_id or reason_id')
@@ -57,7 +57,7 @@ def scan(file):
                 errors.append(f'{file}: partial record header at {offset}')
                 break
             magic, version, kind, length, crc, endian = HEADER.unpack(raw)
-            if magic != 0x44544731 or version not in (1, 2, 3) or endian != 0x01020304 or length > 1048576:
+            if magic != 0x44544731 or version not in (1, 2, 3, 4) or endian != 0x01020304 or length > 1048576:
                 errors.append(f'{file}: unsupported header at {offset}')
                 break
             data = stream.read(length)

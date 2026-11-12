@@ -22,6 +22,34 @@ An acquisition attempt comprises target-template initialization, buffered replay
 - **WHEN** output is invalid and a usable detection has its original image available
 - **THEN** provisional reinitialization starts without waiting for another detector result or the unconfirmed-result threshold
 
+### Requirement: Expired-attempt positives have separate seed eligibility
+
+Seeding starts a provisional instance; confirmation supports existing permission. The system SHALL evaluate these uses separately. While Searching with invalid output and no active provisional or verified replacement, an otherwise eligible positive result submitted during expired or abandoned A SHALL be allowed to seed new B. Its original attempt tag alone MUST NOT reject that seed. Confirmation still requires fresh same-image evidence for its applicable instance.
+
+#### Scenario: Frame-32 positive arrives after A expires
+- **WHEN** A expires around frame 35, an undisposed positive D32 is first consumed while frame 42 is processed, its request names A, and its original F32 pixels and other seed checks are available while no replacement is active
+- **THEN** D32 starts provisional B from F32, A stays revoked, B catches up through buffered images, and output remains invalid until separate fresh later-image verification
+
+#### Scenario: Active replacement is protected
+- **WHEN** B is preparing, verifying, or verified when a late positive result associated only with A is consumed
+- **THEN** that result cannot use the seed rule to replace B or change B's permission, counter, or candidate deadline
+
+### Requirement: New seeds retain source and disposition checks
+
+An undisposed request has no previous terminal use or rejection. Seeding SHALL require current-round membership, valid source-image identity, an undisposed request, finite positive geometry, a valid source-clock relation, and original source pixels. An eligible stale positive SHALL retain the same restricted seed use. The accepted seed MUST NOT revive A, confirm B, or alter an existing instance's permission or counter.
+
+#### Scenario: Duplicate seed or missing source pixels
+- **WHEN** the result was already disposed, belongs to another round, has invalid source identity or clock relation, or no longer has its original pixels
+- **THEN** it cannot seed B, cannot substitute another image, and cannot restore A's permission
+
+### Requirement: New-attempt initialization preserves independent evidence
+
+The new attempt SHALL have a distinct identity, its own zero unconfirmed count, and a candidate deadline measured from seed acceptance. Original request provenance SHALL remain unchanged. B SHALL initialize on the detection's original image and independently produce its replay measurements. Every required catch-up step SHALL succeed. A's submitted tracker or prediction box MUST NOT substitute for B's comparison evidence.
+
+#### Scenario: Later request predates B initialization
+- **WHEN** D32 seeds B, D41 was submitted before B initialized, and B replayed F41 successfully
+- **THEN** a fresh D41 with one qualifying match may verify B against B's T41; it cannot use A's F41 box, and D32 cannot verify the attempt it seeded
+
 ### Requirement: Second detection verifies the same-image provisional measurement
 
 Verification SHALL require a detection from a strictly later source image than the seed. It SHALL agree uniquely with the provisional measurement on that image. The detection MUST NOT correct or reinitialize that measurement before the comparison. Reusing the seed or its repeated result MUST NOT count as a second detection.
@@ -80,10 +108,10 @@ Standalone replay SHALL retain source timestamps for ordering and observation re
 
 ### Requirement: First usable adverse evidence revokes permission
 
-The system SHALL revoke permission on the first usable same-image detector disagreement, ambiguous association, completed no-target search, tracking execution failure, invalid measurement geometry, or confirmation expiry. It MUST NOT wait for a counter threshold. Missing comparison context SHALL neither confirm nor independently demonstrate disagreement.
+The system SHALL revoke permission on the first fresh applicable closing ambiguity or completed same-image disagreement/no-target plan verdict, actual tracking execution failure, invalid measurement geometry, or confirmation expiry. It MUST NOT wait for a counter threshold. Partial regional misses, unrelated partial candidates, and missing comparison context SHALL neither renew permission nor independently establish disagreement.
 
 #### Scenario: First disagreement with count below five
-- **WHEN** the current verified track receives a usable disagreement while its unconfirmed count is zero
+- **WHEN** the current verified track receives a fresh applicable completed-plan disagreement while its unconfirmed count is zero
 - **THEN** output becomes invalid and recovery begins immediately; count five is not a prerequisite
 
 #### Scenario: Missing comparison data
@@ -100,10 +128,10 @@ Recovery is the process after a verified track loses trust. It SHALL begin at re
 
 ### Requirement: Unconfirmed counter manages unsuccessful attempts
 
-The YOLO unconfirmed counter SHALL count distinct usable disagreements and completed no-target results against the active track instance. Missing context, stale results, repeated results, and absent replies SHALL not increment it. Verified confirmation SHALL clear it. Reaching `lost_max_count` SHALL abandon an unsuccessful provisional attempt, not delay revocation or recovery entry.
+The YOLO unconfirmed counter SHALL count at most one eligible completed-plan disagreement/no-target verdict or closing ambiguity per plan and applicable instance. Partial stages, errors, superseded plans, missing context, stale/repeated results, and absent replies SHALL not increment it. Verified confirmation SHALL clear it. `lost_max_count` SHALL abandon an unsuccessful provisional attempt, not delay initial revocation.
 
 #### Scenario: Five-result attempt budget
-- **WHEN** a provisional attempt accumulates five unconfirmed results with `lost_max_count=5`
+- **WHEN** a provisional attempt accumulates five distinct eligible adverse plan verdicts or closing ambiguities with `lost_max_count=5`
 - **THEN** that attempt is discarded and searching resumes; output was already invalid before result five
 
 ### Requirement: Counter reset cannot revive an abandoned instance
@@ -136,11 +164,15 @@ Appearance-score and motion-limit validation SHALL return allow with diagnostic 
 
 ### Requirement: Attempt timeout is separate from confirmation lifetime
 
-A provisional attempt SHALL expire after `candidate_timeout_ms` of monotonic elapsed time from accepting its seed. Initialization completion and partial detector progress MUST NOT restart that timeout. Timeout SHALL abandon the attempt and keep observations invalid. Waiting for a detector MUST NOT block initialization or normal provisional updates.
+A provisional attempt SHALL expire at seed acceptance plus `candidate_timeout_ms` in monotonic time. The worker SHALL abandon it at its first servicing opportunity at or after that deadline. Initialization, replies, and progress MUST NOT restart the deadline. Waiting for results MUST NOT block normal provisional updates or abandon the attempt by frame count. Usable adverse-result limits and genuine execution or geometry failures retain separate abandonment conditions.
 
 #### Scenario: Missing second detection
 - **WHEN** initialization completes at 200 ms but the attempt reaches its 1000 ms limit without verification
 - **THEN** the attempt is discarded at the first servicing opportunity at or after its deadline, and searching continues with invalid output
+
+#### Scenario: Legacy frame boundaries do not discard provisional work
+- **WHEN** a structurally valid provisional attempt receives no completed result across updates 15 and 16 with interval 1, or updates 60 and 61 with interval 4, while injected elapsed time remains before its candidate deadline
+- **THEN** the attempt and its eligible measurements remain available; advancing the injected clock to the candidate deadline causes abandonment without a frame-count prerequisite
 
 ### Requirement: Trusted motion state excludes rejected measurements
 
@@ -160,7 +192,7 @@ RK3576 observation permission SHALL be checked independently of image-processing
 
 ### Requirement: Round and attempt identities protect delayed work
 
-Every provisional track and retained verification measurement SHALL identify its round and attempt. Results associated only with an abandoned attempt MUST NOT confirm or revoke a replacement. An undisposed preinitialization request SHALL be eligible for explicit reassociation only when its image is later than the new seed and has matching replay evidence. Original request metadata SHALL remain unchanged.
+Every provisional track and retained verification measurement SHALL identify its round and attempt. An abandoned instance's comparison evidence MUST NOT confirm or revoke a replacement. Seed use SHALL follow the separate seed-eligibility requirement. An undisposed preinitialization request SHALL be eligible for reassociation only when its image is later than the new seed and has matching replay evidence. Original request metadata SHALL remain unchanged.
 
 #### Scenario: Old result arrives after recovery
 - **WHEN** B has replaced A and an A-associated result without eligible B replay evidence is later consumed
@@ -168,7 +200,7 @@ Every provisional track and retained verification measurement SHALL identify its
 
 ### Requirement: Stale results cannot act as current adverse evidence
 
-Result eligibility SHALL be checked separately for seeding and changes to permission or counters. A stale result has source age at or beyond `confirmation_timeout_ms`. Stale results MUST NOT verify acquisition, renew or independently revoke permission, or change an existing instance's unconfirmed counter. Already disposed, wrong-round, and inapplicable-attempt results SHALL remain diagnostic only.
+Seed use and existing-instance effects SHALL be checked separately. Evidence is stale at or beyond `confirmation_timeout_ms`. Stale results MUST NOT verify, renew or independently revoke permission, or change an existing counter. Wrong-round and disposed results SHALL remain diagnostic only. A result inapplicable to an instance SHALL stay neutral for it; an expired-attempt tag alone MUST NOT prevent a separately eligible seed.
 
 #### Scenario: Delayed but still fresh mismatch
 - **WHEN** D1 describes 1000 ms, is consumed at 1090 ms, belongs to the applicable instance, and the confirmation lifetime is 100 ms
@@ -196,7 +228,7 @@ While searching with invalid output, an otherwise eligible stale positive result
 
 ### Requirement: Seed age exception preserves identity and clock checks
 
-The stale-seed exception SHALL retain source identity, result disposition, geometry, and clock-relation checks. Wrong-round, already disposed, and inapplicable-attempt results MUST NOT seed an attempt. Future source timestamps and unresolvable clock discontinuities MUST NOT use the exception.
+Stale seeding SHALL retain source identity, disposition, geometry, and clock checks. Wrong-round, disposed, invalid-clock, and missing-original-pixel results MUST NOT seed. An expired-attempt tag alone MUST NOT reject an otherwise eligible seed while Searching. The exception MUST NOT replace an active instance, authorize output, or accept future source timestamps or unresolvable clock discontinuities.
 
 #### Scenario: Old positive belongs to the previous round
 - **WHEN** searching receives an old positive result with available pixels but its request belongs to a previous round
@@ -233,6 +265,38 @@ Diagnostics SHALL identify source frame, round, attempt, detector request, compa
 #### Scenario: Delayed mismatch diagnosis
 - **WHEN** D1 from 1000 ms disagrees at 1090 ms after an observation at 1080 ms
 - **THEN** evidence records all three epochs and the revocation event; it does not claim to retract the earlier observation
+
+### Requirement: Seed diagnostics retain original and new attempt identities
+
+Seed diagnostics SHALL distinguish eligibility for new initialization from permission confirmation. They SHALL preserve the original request-attempt identity and any newly seeded attempt identity. Each consumed stage job SHALL record one terminal use or rejection with its reason. Parent-plan finalization SHALL be recorded separately without duplicating the job or adverse action. A seed MUST NOT be reported as verification or restored output.
+
+#### Scenario: Expired-track detection is used only as a seed
+- **WHEN** a result submitted during A is first disposed as B's seed after A expires
+- **THEN** diagnostics retain both identities, mark new-attempt seeding separately from rejected confirmation, and do not count the result as verification or revived output
+
+### Requirement: Seed acceptance enables detector overlap before initialization completes
+
+After accepting a seed, the tracker SHALL publish a short control with round, new attempt/revision, seed identity, and search hint before expensive initialization or catch-up. This control SHALL not authorize output or rewrite earlier submitted metadata. Later-image checks SHALL remain eligible for replay-based verification. Full initialization completion MUST NOT be a prerequisite for detector dispatch.
+
+#### Scenario: Preparation overlaps a later-image check
+- **WHEN** D10 is accepted as B's seed and F20 was already submitted before initialization
+- **THEN** early acceptance enables its check while B prepares; D20 waits safely if needed and verifies only using B's independently produced T20 while fresh
+
+### Requirement: Capacity release and semantic controls have different authority
+
+Taking a detector result SHALL release unread-mailbox capacity before tracker arbitration completes. That release MUST NOT itself confirm, revoke, or accept a seed. A positive Searching plan SHALL pause only its remaining stages for seed disposition; other eligible work SHALL remain schedulable. Full tracker decisions MUST NOT be required after every model call. Control events SHALL be round/attempt identified.
+
+#### Scenario: An empty region continues without a decision barrier
+- **WHEN** an empty partial result has been taken and its fixed-image plan has remaining coverage
+- **THEN** another eligible call can start under the scheduling policy without waiting for a full tracking-state decision; existing permission still expires independently
+
+### Requirement: Cancellation and supersession cannot revive permission
+
+Job/plan cancellation and newer-agreement supersession SHALL affect pending work without granting permission or changing evidence anchors. Queued expired-instance confirmation jobs SHALL be cancelled. A running call SHALL finish safely and its returned result SHALL be evaluated under original identity and current separate seed/confirmation eligibility. A superseded old-plan adverse verdict MUST NOT revoke newer agreement.
+
+#### Scenario: A expires with one call still running
+- **WHEN** confirmation for A expires while its detector call runs and no replacement exists
+- **THEN** output is revoked independently; a later positive can only seed new provisional work if separately eligible, and cannot silently renew A
 
 ### Requirement: Missing-vision policy does not control the mission
 

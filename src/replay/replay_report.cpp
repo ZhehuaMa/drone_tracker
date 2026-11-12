@@ -182,7 +182,7 @@ void ReplayReport::diagnostic(const std::string &message) {
 }
 void ReplayReport::summary(const std::string &reason, std::uint64_t read_count, double elapsed_ms) {
     cv::FileStorage out{".json", cv::FileStorage::WRITE | cv::FileStorage::MEMORY | cv::FileStorage::FORMAT_JSON};
-    out << "report_version" << 2 << "integer_encoding" << "decimal strings for counters, frame indices and timestamps"
+    out << "report_version" << 3 << "integer_encoding" << "decimal strings for counters, frame indices and timestamps"
         << "status" << reason << "end_reason" << reason << "platform" << "rk3576"
         << "git_commit" << REPLAY_GIT_COMMIT << "git_dirty_at_build" << REPLAY_GIT_DIRTY << "opencv_version"
         << CV_VERSION << "model_runtime_attributes" << "[";
@@ -220,6 +220,10 @@ void ReplayReport::summary(const std::string &reason, std::uint64_t read_count, 
         out << "state" << entry.second << "}";
     }
     out << "]" << "validity" << "{" << "metric_version" << 1
+        << "scheduler_policy" << "one-call-2-targeted-1-discovery-v1"
+        << "no_result_frame_cleanup" << "inactive"
+        << "seed_disposition_evidence" << "unavailable: use paired format-4 diagnostics"
+        << "job_plan_counts" << "unavailable: standalone frame report does not infer detector jobs"
         << "clock_mapping" << "standalone-admission-v1" << "units" << "ns; source timestamps us"
         << "denominator" << "consumed image outputs; no ROS admission in standalone runner"
         << "sample_count" << std::to_string(accepted_) << "valid_frames" << std::to_string(valid_frames_)

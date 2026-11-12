@@ -129,7 +129,11 @@ struct Rk3576VideoFrameSource::Impl {
                 if (!dependencies.clock->waitUntil(deadline, stopped) || stopped.load()) {
                     break;
                 }
-                auto frame{copyGrayFrame(sample.gray, static_cast<std::uint64_t>(timestamp))};
+                // One-based decoded image identity permits exact source windows without inferring
+                // skipped images from wall-clock publication times. It owns no additional pixels.
+                const diagnostics::FrameIdentity identity{record.frame_index, affinity_round, 0,
+                    diagnostics::CaptureKnown};
+                auto frame{copyGrayFrame(sample.gray, static_cast<std::uint64_t>(timestamp), identity)};
                 if (queue->try_enqueue(std::move(frame))) {
                     ++record.enqueued;
                 } else {

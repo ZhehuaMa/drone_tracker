@@ -25,7 +25,7 @@
 
 bool HybridTrackerDiagnosticTestAccess::unreadResult(const YoloV8Detector &detector, YoloResult &result) {
     std::lock_guard<std::mutex> lock{detector.m_mutex};
-    if (detector.m_executing || detector.m_new_request || !detector.m_result_ready) {
+    if (detector.m_executing || !detector.m_result_ready) {
         return false;
     }
     result = detector.m_last_result;
@@ -475,8 +475,11 @@ void testInitFailureAndLowIou() {
     config.lost_max_count = 5;
     auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
     require(tracker->init(), "tracker init");
-    for (unsigned frame{1}; frame <= 25; ++frame) {
-        tracker->update(context(frame));
+    for (unsigned frame{1}; frame <= 200; ++frame) {
+        auto input{context(frame)};
+        input.decision_clock = [] { return 1000000000LL; };
+        input.evidence.anchor_ns = 1000000000;
+        tracker->update(input);
         waitIdle(*tracker);
     }
     tracker->finishRound();
@@ -603,35 +606,52 @@ std::vector<std::pair<TrackerOutput, std::pair<float, std::uint64_t>>> runMode(d
 void testHistoricalArbitrationAndWatchdog() {
     for (auto mode : {diagnostics::Mode::Off, diagnostics::Mode::Basic, diagnostics::Mode::Detail}) {
         for (const int interval : {1, 4}) {
-            Recording recording{mode};
-            auto trace{std::make_shared<Trace>()}; auto config{settings()};
-            config.yolo_interval = interval;
-            auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
-            require(tracker->init(), "watchdog tracker init");
-            HybridTrackerDiagnosticTestAccess::prime(*tracker, context(1).frame, 0, 0);
-            // Hold detector execution while advancing the actual configured watchdog boundaries.
-            trace->block = true;
-            tracker->update(context(2));
-            if (interval == 1) {
-                require(tracker->validity()->revoke(tracking::LossReason::Expired, decision_ns.load(), 20000),
-                    "watchdog expiry prerequisite did not revoke");
+            for (const bool delayed_match : {false, true}) {
+                Recording recording{mode};
+                auto trace{std::make_shared<Trace>()}; auto config{settings()};
+                config.yolo_interval = interval;
+                auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
+                require(tracker->init(), "elapsed candidate tracker init");
+                HybridTrackerDiagnosticTestAccess::prime(*tracker, context(1).frame);
+                const auto old{tracker->validity()->snapshot()};
+                require(tracker->validity()->revoke(tracking::LossReason::Expired, decision_ns.load(), 10000),
+                    "expiry prerequisite did not revoke");
+                const auto attempt{tracker->validity()->begin(old.round, 0, 0, decision_ns.load(), 1000)};
+                require(attempt && tracker->validity()->prepared(*attempt), "provisional test setup");
+                trace->block = true;
+                const int limit{5 * interval * 3};
+                for (int index{1}; index <= limit + 1; ++index) {
+                    tracker->update(context(index + 1));
+                    const auto counters{HybridTrackerDiagnosticTestAccess::counters(*tracker)};
+                    require(counters[1] == 0 && counters[2] != 0,
+                        "missing detector reply abandoned provisional work by frame count");
+                }
+                auto input{context(limit + 3)};
+                if (delayed_match) {
+                    YoloResult reply{}; reply.frame_id = 500; reply.has_target = true;
+                    reply.best = {{40, 30, 20, 20}, 0.9f, 0};
+                    reply.source.frame_id = reply.frame_id; reply.source.generation = old.round;
+                    reply.source.capture_time_us = input.frame->timestampUs();
+                    reply.source.attempt = attempt->attempt; reply.source.width = 100; reply.source.height = 80;
+                    reply.source.tracker_valid = true; reply.source.tracker_box = reply.best.box;
+                    reply.source.evidence = input.evidence;
+                    HybridTrackerDiagnosticTestAccess::result(*tracker, reply);
+                    require(tracker->update(input).tracking,
+                        "eligible delayed result could not verify before elapsed candidate deadline");
+                } else {
+                    decision_ns = attempt->attempt_deadline_ns;
+                    input.evidence.anchor_ns = decision_ns.load();
+                    require(!tracker->update(input).tracking
+                        && HybridTrackerDiagnosticTestAccess::counters(*tracker)[2] == 0,
+                        "candidate was not abandoned at exact elapsed deadline");
+                }
+                const auto loss{tracker->validity()->pending()};
+                require(loss.has_value(), "original expiry event disappeared");
+                tracker->validity()->dispose(*loss);
+                require(!tracker->validity()->pending(), "candidate cleanup emitted duplicate loss");
+                { std::lock_guard<std::mutex> lock{trace->mutex}; trace->release = true; }
+                trace->cv.notify_all(); tracker->finishRound();
             }
-            const int limit{5 * interval * 3};
-            for (int index{2}; index <= limit + 1; ++index) {
-                auto input{context(index + 1)};
-                tracker->update(input);
-                const auto counters{HybridTrackerDiagnosticTestAccess::counters(*tracker)};
-                if (index == limit) { require(counters[1] == limit && (counters[2] != 0) == (interval != 1), "watchdog fired at strict threshold"); }
-                if (index == limit + 1) { require(!counters[1] && !counters[2], "watchdog missed strict threshold plus one"); }
-            }
-            if (interval == 1) {
-                const auto event{tracker->validity()->pending()};
-                require(event.has_value(), "expiry loss event disappeared during internal cleanup");
-                tracker->validity()->dispose(*event);
-                require(!tracker->validity()->pending(), "watchdog created a second loss for expired permission");
-            }
-            { std::lock_guard<std::mutex> lock{trace->mutex}; trace->release = true; }
-            trace->cv.notify_all(); tracker->finishRound();
         }
         Recording recording{mode}; auto trace{std::make_shared<Trace>()};
         auto tracker{HybridTracker::CreateInstance(settings(), components(trace), launcher(trace))};
@@ -686,19 +706,25 @@ void testOverwrite() {
             std::this_thread::yield();
         }
         YoloResult result{};
-        require(detector.get_result(result) && result.frame_id == 3, "replacement result identity incorrect");
+        require(detector.get_result(result) && result.frame_id == 1, "unread first result was overwritten");
+        DetectorControl accepted{}; accepted.accepted_job = result.job_id;
+        detector.control(accepted);
+        const auto next_deadline{std::chrono::steady_clock::now() + std::chrono::seconds{2}};
+        while (!HybridTrackerDiagnosticTestAccess::unreadResult(detector, ready)
+            && std::chrono::steady_clock::now() < next_deadline) { std::this_thread::yield(); }
+        require(detector.get_result(result) && result.frame_id == 3, "latest pending result identity incorrect");
         detector.stop();
         require(trace->observed_source_times == std::vector<std::uint64_t>{10000, 30000},
                 "replacement changed executing pixels or picked superseded input");
         if (mode != diagnostics::Mode::Off) {
-            require(hasEvent(*recording.region, diagnostics::Type::ResultOverwrite, diagnostics::Reason::None),
-                    "覆盖原因不可见");
+            require(!hasEvent(*recording.region, diagnostics::Type::ResultOverwrite, diagnostics::Reason::None),
+                    "protected unread result was overwritten");
             const auto events{captured(*recording.region)};
             require(std::count_if(events.begin(), events.end(), [](const auto &event) {
                 return event.type == diagnostics::Type::RequestCancel
                     && event.reason == diagnostics::Reason::Superseded && event.source_tracker_frame_id == 2;
             }) == 1, "pending replacement was not accounted exactly once");
-            report(*recording.region, "overwrite", "结果覆盖");
+            report(*recording.region, "overwrite", "Superseded");
         }
     }
 }
@@ -1026,6 +1052,12 @@ void testRequestOverlapsRecoveryAndRoundCleanup() {
                         && requests[0].mono_ns <= lookups[0].mono_ns
                         && lookups[0].request_id == reads[0].request_id,
                     "recovery history lookup preceded the current request or used its identity");
+            const auto controls{eventsOf(recording, diagnostics::Type::DetectorControl, 2)};
+            const auto starts{eventsOf(recording, diagnostics::Type::InitializeStart, 2)};
+            require(starts.size() == 1 && std::any_of(controls.begin(), controls.end(), [&](const auto &event) {
+                return event.values[3] != 0 && event.counts[0] == static_cast<std::uint32_t>(tracking::Phase::PreparingProvisional)
+                    && event.mono_ns <= starts[0].mono_ns;
+            }), "SeedAccepted feedback waited for expensive preparation");
         }
         // D2 completed during blocked D1 initialization; its original preinitialization snapshot is unchanged.
         const auto verified{tracker->update(context(3))};
@@ -1137,7 +1169,13 @@ void testUnreadResultAdmission() {
                     && event.values[2] == 1 && !(event.flags & diagnostics::Complete);
             }), "unread-result rejection reason was not recorded");
         }
-        require(detector.request(context(2).frame, 202), "result consumption did not restore request admission");
+        DetectorControl rejected{}; rejected.permission.round = source.generation;
+        rejected.rejected_job = before.job_id;
+        detector.control(rejected);
+        auto next_source{source}; next_source.frame_id = 202; next_source.capture_time_us = 20000;
+        next_source.evidence = context(2).evidence;
+        require(detector.request(context(2).frame, 202, {}, next_source),
+            "result consumption did not restore request admission");
         wait_unread(after);
         require(detector.get_result(after) && after.frame_id == 202 && after.request_id != before.request_id,
                 "admission did not resume with the new request identity after consumption");
@@ -1310,6 +1348,7 @@ void testFreshVerificationProtocol() {
         ambiguous.frame_id = 4; ambiguous.source.frame_id = 4;
         ambiguous.source.attempt = verified.permission.attempt; ambiguous.source.tracker_valid = true;
         ambiguous.source.tracker_box = {40, 30, 20, 20};
+        ambiguous.complete_coverage = false;
         ambiguous.candidates = {{{40,30,10,20},0.9f,0}, {{50,30,10,20},0.85f,0}};
         HybridTrackerDiagnosticTestAccess::result(*tracker, ambiguous);
         const auto rejected{tracker->update(context(seed_update + 3))};
@@ -1334,6 +1373,479 @@ void testFreshVerificationProtocol() {
             "fifth provisional adverse result did not abandon attempt");
         gate.release(); tracker->finishRound();
     }
+}
+
+void testVerifiedIntervalOneAndFour() {
+    for (const int interval : {1, 4}) {
+        Recording recording{diagnostics::Mode::Basic};
+        auto trace{std::make_shared<Trace>()}; auto config{settings()}; config.yolo_interval = interval;
+        auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
+        require(tracker->init(), "configured cadence init");
+        HybridTrackerDiagnosticTestAccess::prime(*tracker, context(1).frame);
+        WorkerGate gate{trace};
+        for (unsigned image{1}; image <= 8; ++image) {
+            require(tracker->update(context(image)).tracking, "cadence changed verified permission");
+            if (image == static_cast<unsigned>(interval)) { waitModel(trace, 1); }
+        }
+        const auto events{captured(*recording.region)};
+        std::vector<std::uint64_t> offered{};
+        for (const auto &event : events) {
+            if (event.type == diagnostics::Type::RequestDecision) { offered.push_back(event.source_tracker_frame_id); }
+        }
+        const std::vector<std::uint64_t> expected{interval == 1
+            ? std::vector<std::uint64_t>{1, 2, 3, 4, 5, 6, 7, 8} : std::vector<std::uint64_t>{4, 8}};
+        require(offered == expected, "configured interval changed submission opportunities");
+        gate.release(); tracker->finishRound();
+    }
+}
+
+void testRegionalPlanVerdicts() {
+    Recording recording{diagnostics::Mode::Basic};
+    auto trace{std::make_shared<Trace>()}; auto config{settings()}; config.yolo_interval = 1;
+    config.confirmation_timeout_ms = 1000; // Isolate plan verdicts from separately tested expiry boundaries.
+    auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
+    require(tracker->init(), "regional verdict init");
+    HybridTrackerDiagnosticTestAccess::prime(*tracker, context(1).frame);
+    const auto identity{tracker->validity()->snapshot()};
+    WorkerGate gate{trace}; tracker->update(context(2)); waitModel(trace, 1);
+    std::uint64_t request{9000}; unsigned image{2};
+    const auto regional{[&](std::uint64_t frame, std::uint64_t plan, bool complete, bool comparable, bool match,
+                           diagnostics::Reason cancellation = diagnostics::Reason::None, bool ambiguous = false) {
+        YoloResult result{}; result.request_id = ++request; result.frame_id = frame; result.plan_id = plan;
+        result.complete_coverage = complete; result.source.frame_id = frame;
+        result.plan_cancellation_reason = cancellation;
+        result.source.generation = identity.round; result.source.attempt = identity.attempt;
+        result.source.capture_time_us = 20000; result.source.width = 100; result.source.height = 80;
+        result.source.evidence = {tracking::ClockMapping::StandaloneAdmissionV1, 1020000000, true};
+        result.source.tracker_valid = comparable; result.source.tracker_box = {40, 30, 20, 20};
+        result.has_target = true; result.best = {{0, 0, 10, 10}, 0.94f, 0};
+        result.candidates = {result.best};
+        if (match) { result.candidates.push_back({{40, 30, ambiguous ? 10.0f : 20.0f, 20}, 0.88f, 0}); }
+        if (ambiguous) { result.candidates.push_back({{50, 30, 10, 20}, 0.87f, 0}); }
+        HybridTrackerDiagnosticTestAccess::result(*tracker, result);
+        return tracker->update(context(++image));
+    }};
+    require(regional(700, 77, false, true, false).tracking
+        && HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 0,
+        "unrelated positive partial region revoked permission");
+    require(regional(700, 77, false, true, true).tracking,
+        "later unique match lost to unrelated higher score");
+    require(regional(699, 76, true, true, false).tracking
+        && HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 0,
+        "superseded old complete plan overrode newer agreement");
+    require(regional(701, 78, false, true, false).tracking
+        && regional(702, 78, true, true, false).tracking,
+        "coverage on different source images was combined");
+    require(regional(703, 79, false, false, false).tracking
+        && regional(703, 79, true, true, false).tracking,
+        "missing comparison stage became a completed adverse verdict");
+    require(regional(704, 80, true, true, false, diagnostics::Reason::HistoryMiss).tracking
+        && HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 0,
+        "cancelled plan's retained fresh comparison revoked permission or spent its budget");
+    require(regional(705, 81, false, true, true, diagnostics::Reason::HistoryMiss, true).tracking
+        && HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 0,
+        "cancelled regional ambiguity revoked permission or spent its budget");
+    require(regional(706, 82, false, true, true, diagnostics::Reason::HistoryMiss).tracking
+        && tracker->validity()->snapshot().confirmation_frame == 706,
+        "cancelled plan erased separately eligible unique positive confirmation");
+    require(!regional(707, 83, true, true, false).tracking
+        && HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 1
+        && tracker->validity()->pending(),
+        "first applicable complete disagreement failed to revoke exactly once");
+    regional(707, 83, true, true, false);
+    require(HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 1,
+        "one completed plan spent the adverse budget twice");
+    gate.release(); tracker->finishRound();
+    const auto events{captured(*recording.region)};
+    require(std::none_of(events.begin(), events.end(), [](const auto &event) {
+        return event.type == diagnostics::Type::PlanOutcome && event.values[0] >= 80 && event.values[0] <= 82;
+    }), "cancelled plan received a second parent verdict from separately eligible stage evidence");
+}
+
+void testSeparateSeedRejectionGuards() {
+    for (unsigned rejection{0}; rejection < 6; ++rejection) {
+        auto trace{std::make_shared<Trace>()}; auto config{settings()};
+        config.frame_buffer_size = rejection == 3 ? 1 : 30;
+        auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
+        require(tracker->init(), "seed rejection init");
+        WorkerGate gate{trace}; const auto first{context(1)};
+        tracker->update(first); waitModel(trace, 1); tracker->update(context(2));
+        const auto round{tracker->validity()->snapshot().round};
+        YoloResult seed{}; seed.frame_id = 1; seed.request_id = 10000;
+        seed.source.frame_id = 1; seed.source.generation = round;
+        seed.source.capture_time_us = 10000; seed.source.width = 100; seed.source.height = 80;
+        seed.source.evidence = first.evidence; seed.source.attempt = 77;
+        seed.has_target = true; seed.best = {{40, 30, 20, 20}, .9f, 0}; seed.candidates = {seed.best};
+        if (rejection == 0) { seed.source.generation = round + 1; }
+        if (rejection == 1) { seed.source.evidence.anchor_ns = 2000000000; }
+        if (rejection == 2) { seed.source.frame_id = 99; }
+        if (rejection == 4) { seed.best.box.width = 0; }
+        if (rejection == 5) { seed.source.capture_time_us = 20000; }
+        HybridTrackerDiagnosticTestAccess::result(*tracker, seed);
+        require(!tracker->update(context(3)).tracking && trace->templates == 0
+            && tracker->validity()->snapshot().phase == tracking::Phase::Searching,
+            "wrong-round/future-clock/identity/evicted-pixel/geometry seed was accepted");
+        if (rejection == 4) {
+            seed.best.box.width = 20;
+            HybridTrackerDiagnosticTestAccess::result(*tracker, seed);
+            tracker->update(context(4));
+            require(trace->templates == 0 && tracker->validity()->snapshot().phase == tracking::Phase::Searching,
+                "disposed rejected job was reused as a seed");
+        }
+        gate.release(); tracker->finishRound();
+    }
+}
+
+void testExpiredAttemptSeedAndReplay() {
+    Recording recording{diagnostics::Mode::Basic};
+    auto trace{std::make_shared<Trace>()}; auto config{settings()};
+    config.frame_buffer_size = 60; config.iou_reset_threshold = 0.1f;
+    auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
+    require(tracker->init(), "expired-attempt seed init");
+    HybridTrackerDiagnosticTestAccess::prime(*tracker, context(1).frame);
+    const auto a{tracker->validity()->snapshot()};
+    WorkerGate gate{trace};
+    for (unsigned image{2}; image <= 41; ++image) {
+        if (image == 35) {
+            require(tracker->validity()->revoke(tracking::LossReason::Expired, decision_ns.load(), 350000),
+                "A did not expire");
+        }
+        tracker->update(context(image));
+    }
+    YoloResult d32{}; d32.request_id = 10000; d32.frame_id = 31; // Tracker's frame 1 was source image 2.
+    d32.source.frame_id = d32.frame_id; d32.source.generation = a.round;
+    d32.source.capture_time_us = 320000; d32.source.update_id = 31;
+    d32.source.attempt = a.attempt; d32.source.permission_revision = a.revision;
+    d32.source.width = 100; d32.source.height = 80;
+    d32.source.evidence = {tracking::ClockMapping::StandaloneAdmissionV1, 1320000000, true};
+    d32.source.tracker_valid = true; d32.source.tracker_box = {0, 0, 10, 10};
+    d32.has_target = true; d32.best = {{40, 30, 20, 20}, 0.9f, 0}; d32.candidates = {d32.best};
+    const auto provenance{d32.source};
+    HybridTrackerDiagnosticTestAccess::result(*tracker, d32);
+    const auto seeded{tracker->update(context(42))};
+    const auto b{tracker->validity()->snapshot()};
+    require(!seeded.tracking && b.attempt > a.attempt && b.phase == tracking::Phase::VerifyingProvisional
+        && b.attempt_deadline_ns == 2420000000 && HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 0,
+        "expired A's stale positive did not seed a distinct zero-count B at frame 42");
+    require(d32.source.attempt == provenance.attempt && d32.source.permission_revision == provenance.permission_revision
+        && d32.source.evidence.anchor_ns == provenance.evidence.anchor_ns,
+        "new seed rewrote original request provenance");
+    auto late{d32}; late.request_id = 10001; late.frame_id = 30; late.source.frame_id = 30;
+    late.source.capture_time_us = 310000;
+    HybridTrackerDiagnosticTestAccess::result(*tracker, late);
+    tracker->update(context(43));
+    require(tracker->validity()->snapshot().attempt == b.attempt
+        && HybridTrackerDiagnosticTestAccess::counters(*tracker)[0] == 0,
+        "old A positive replaced active B or spent its budget");
+    auto d41{d32}; d41.request_id = 10002; d41.frame_id = 40; d41.source.frame_id = 40;
+    d41.source.capture_time_us = 410000;
+    d41.source.evidence.anchor_ns = 1410000000;
+    HybridTrackerDiagnosticTestAccess::result(*tracker, d41);
+    const auto verified{tracker->update(context(44))};
+    require(verified.tracking && verified.permission.attempt == b.attempt && verified.reset_los,
+        "fresh D41 could not verify B's independent replay T41 using immutable old-A request metadata");
+    require(verified.permission.deadline_ns == 1510000000,
+        "D41 verification renewed the old source anchor");
+    HybridTrackerDiagnosticTestAccess::result(*tracker, d32);
+    tracker->update(context(45));
+    require(tracker->validity()->snapshot().attempt == b.attempt,
+        "duplicate old seed changed B");
+    gate.release(); tracker->finishRound();
+}
+
+void testRepeatedSearchingControlsPreserveCoverage() {
+    auto trace{std::make_shared<Trace>()}; trace->target_score = 0;
+    YoloV8Detector detector{std::make_unique<Yolo>(trace), std::make_unique<YoloPre>(trace),
+        .5f, .45f, 0, 1.0f};
+    require(detector.init(), "repeated Searching control init");
+    DetectorControl control{}; control.permission.round = 4; control.permission.attempt = 7;
+    control.permission.revision = 2; control.permission.phase = tracking::Phase::Searching;
+    detector.control(control);
+    SourceComparison source{}; source.generation = 4; source.frame_id = 1;
+    source.capture_time_us = 10000; source.width = 100; source.height = 80;
+    source.evidence = context(1).evidence;
+    require(detector.request(context(1).frame, 1, {}, source), "Searching source admission");
+    YoloResult result{}; std::uint64_t plan{};
+    for (unsigned stage{0}; stage < 7; ++stage) {
+        bool ready{}; const auto end{std::chrono::steady_clock::now() + std::chrono::seconds{2}};
+        while (!(ready = detector.get_result(result)) && std::chrono::steady_clock::now() < end) {
+            std::this_thread::yield();
+        }
+        require(ready && result.frame_id == 1 && (stage == 0 || result.plan_id == plan),
+            "unchanged Searching control restarted or cancelled fixed-image coverage");
+        plan = result.plan_id;
+        detector.control(control);
+    }
+    require(result.complete_coverage && trace->calls == 7,
+        "repeated Searching feedback prevented terminal discovery coverage");
+    detector.stop();
+}
+
+void testExpiredTargetedPruningAndOldControl() {
+    auto trace{std::make_shared<Trace>()}; trace->target_score = 0; trace->block = true;
+    YoloV8Detector detector{std::make_unique<Yolo>(trace), std::make_unique<YoloPre>(trace),
+        0.5f, 0.45f, 0, 1.0f};
+    require(detector.init(), "expired targeted init");
+    DetectorControl control{}; control.permission.round = 4; control.permission.attempt = 7;
+    control.permission.revision = 1; control.permission.phase = tracking::Phase::VerifyingProvisional;
+    control.permission.attempt_deadline_ns = 10000000000;
+    control.clock = [] { return decision_ns.load(); }; detector.control(control);
+    const auto submit{[&](unsigned id, bool targeted) {
+        const auto input{context(id)};
+        SourceComparison source{}; source.generation = 4; source.frame_id = id;
+        source.width = 100; source.height = 80; source.capture_time_us = input.frame->timestampUs();
+        source.evidence = input.evidence; source.attempt = 7;
+        require(detector.request(input.frame, id, targeted ? cv::Rect{10, 10, 50, 50} : cv::Rect{}, source),
+            "expired targeted submission");
+    }};
+    const auto read{[&] {
+        YoloResult result{}; bool ready{};
+        const auto end{std::chrono::steady_clock::now() + std::chrono::seconds{2}};
+        while (!(ready = detector.get_result(result)) && std::chrono::steady_clock::now() < end) {
+            std::this_thread::yield();
+        }
+        require(ready, "old control cancelled current discovery or result timed out"); return result;
+    }};
+    submit(10, false); waitModel(trace, 1); submit(11, true);
+    decision_ns += 200000000;
+    { std::lock_guard<std::mutex> lock{trace->mutex}; trace->release = true; }
+    trace->cv.notify_all();
+    const auto first{read()};
+    auto obsolete{control}; obsolete.permission.round = 3; obsolete.permission.revision = 999;
+    obsolete.rejected_job = first.job_id + 1; detector.control(obsolete);
+    const auto second{read()}; const auto third{read()};
+    require(first.frame_id == 10 && second.frame_id == 10 && third.frame_id == 10
+        && third.source.generation == 4 && !second.targeted
+        && second.source.evidence.anchor_ns == first.source.evidence.anchor_ns,
+        "stale targeted input ran, source anchor renewed, or old control changed current round");
+    detector.stop();
+    require(std::find(trace->observed_source_times.begin(), trace->observed_source_times.end(), 110000)
+        == trace->observed_source_times.end(), "expired targeted check was dispatched");
+}
+
+void testOneCallSchedulingAndCapacity() {
+    Recording recording{diagnostics::Mode::Detail};
+    auto trace{std::make_shared<Trace>()}; trace->target_score = 0; trace->block = true;
+    YoloV8Detector detector{std::make_unique<Yolo>(trace), std::make_unique<YoloPre>(trace),
+        0.5f, 0.45f, 0, 1.0f};
+    require(detector.init(), "one-call scheduler init");
+    DetectorControl control{};
+    control.permission.round = 1; control.permission.attempt = 7; control.permission.revision = 1;
+    control.permission.phase = tracking::Phase::VerifyingProvisional;
+    control.permission.attempt_deadline_ns = 10000000000;
+    control.clock = [] { return decision_ns.load(); };
+    detector.control(control);
+    const auto submit{[&](unsigned id, bool targeted) {
+        const auto input{context(id)};
+        SourceComparison source{}; source.generation = 1; source.frame_id = id;
+        source.capture_time_us = input.frame->timestampUs(); source.width = 100; source.height = 80;
+        source.evidence = input.evidence; source.attempt = 7;
+        require(detector.request(input.frame, id, targeted ? cv::Rect{10, 10, 50, 50} : cv::Rect{}, source),
+            "scheduler admission unexpectedly failed");
+    }};
+    const auto release{[&] {
+        { std::lock_guard<std::mutex> lock{trace->mutex}; trace->release = true; }
+        trace->cv.notify_all();
+    }};
+    const auto read{[&] {
+        YoloResult result{};
+        const auto deadline{std::chrono::steady_clock::now() + std::chrono::seconds{2}};
+        // First observe completion without releasing the next call's capacity.
+        while (!HybridTrackerDiagnosticTestAccess::unreadResult(detector, result)
+            && std::chrono::steady_clock::now() < deadline) { std::this_thread::yield(); }
+        require(result.job_id != 0, "one-call completion timeout");
+        { std::lock_guard<std::mutex> lock{trace->mutex}; trace->release = false; }
+        require(detector.get_result(result), "protected result disappeared");
+        return result;
+    }};
+    submit(10, false); waitModel(trace, 1);
+    submit(11, true); submit(12, true); release();
+    const auto initial{read()};
+    require(initial.frame_id == 10 && !initial.targeted && !initial.complete_coverage,
+        "whole-image miss claimed complete tile coverage");
+    std::vector<YoloResult> results{};
+    for (unsigned index{0}; index < 20; ++index) {
+        waitModel(trace, index + 2);
+        submit(index + 13, true);
+        release(); results.push_back(read());
+    }
+    require(results[0].targeted && results[0].frame_id == 12
+        && results[1].targeted && !results[2].targeted
+        && results[3].targeted && results[4].targeted && !results[5].targeted,
+        "eligible service did not follow T/T/D or latest pending replacement");
+    for (const auto &result : results) {
+        if (!result.targeted) {
+            require(result.frame_id == 10 && result.plan_id == initial.plan_id,
+                "new images restarted discovery or mixed source coverage");
+        }
+    }
+    require(std::any_of(results.begin(), results.end(), [](const auto &result) {
+        return result.frame_id == 10 && result.complete_coverage;
+    }), "constant pending replacements starved final discovery coverage");
+    // A local result and a protected unread result coexist; a third call must wait.
+    release();
+    const auto deadline{std::chrono::steady_clock::now() + std::chrono::seconds{2}};
+    YoloResult unread{};
+    while (!HybridTrackerDiagnosticTestAccess::unreadResult(detector, unread)
+        && std::chrono::steady_clock::now() < deadline) { std::this_thread::yield(); }
+    require(unread.job_id > results.back().job_id, "next result did not overlap local arbitration");
+    const auto calls{trace->calls.load()};
+    require(!detector.request(context(50).frame, 50), "unread result admission protection changed");
+    require(trace->calls == calls && unread.job_id != results.back().job_id,
+        "full result mailbox dispatched extra device work");
+    detector.finishRound(); detector.stop();
+    require(trace->active == 0 && trace->unsafe_destroy == 0, "OFF released active device resources");
+    require(!hasEvent(*recording.region, diagnostics::Type::ResultOverwrite, diagnostics::Reason::None),
+        "one-call mailbox overwrote an unread result");
+}
+
+/** @brief Barrier-controlled calls with a protected unread result between releases. */
+struct SchedulerProbe {
+    std::shared_ptr<Trace> trace{std::make_shared<Trace>()};
+    YoloV8Detector detector{std::make_unique<Yolo>(trace), std::make_unique<YoloPre>(trace),
+        0.5f, 0.45f, 0, 1.0f};
+    DetectorControl control{};
+    int calls{};
+    SchedulerProbe() {
+        context(1);
+        trace->target_score = 0; trace->block = true;
+        require(detector.init(), "scheduler probe init");
+        control.permission.round = 4; control.permission.attempt = 7;
+        control.permission.revision = 1;
+        control.permission.phase = tracking::Phase::VerifyingProvisional;
+        control.permission.attempt_deadline_ns = 10000000000;
+        control.clock = [] { return decision_ns.load(); };
+        detector.control(control);
+    }
+    ~SchedulerProbe() {
+        { std::lock_guard<std::mutex> lock{trace->mutex}; trace->release = true; }
+        trace->cv.notify_all(); detector.stop();
+    }
+    void submit(unsigned image, const cv::Rect &roi = {}) {
+        const auto input{context(image)};
+        SourceComparison source{}; source.generation = 4; source.frame_id = image;
+        source.capture_time_us = input.frame->timestampUs(); source.width = 100; source.height = 80;
+        source.attempt = 7; source.permission_revision = 1; source.evidence = input.evidence;
+        require(detector.request(input.frame, image, roi, source), "scheduler probe submission");
+    }
+    void entered() { waitModel(trace, ++calls); }
+    YoloResult finish() {
+        { std::lock_guard<std::mutex> lock{trace->mutex}; trace->release = true; }
+        trace->cv.notify_all();
+        YoloResult result{};
+        const auto deadline{std::chrono::steady_clock::now() + std::chrono::seconds{2}};
+        while (!HybridTrackerDiagnosticTestAccess::unreadResult(detector, result)
+            && std::chrono::steady_clock::now() < deadline) { std::this_thread::yield(); }
+        require(result.job_id != 0, "scheduler probe completion timeout");
+        { std::lock_guard<std::mutex> lock{trace->mutex}; trace->release = false; }
+        require(detector.get_result(result), "scheduler probe result disappeared");
+        return result;
+    }
+};
+
+void testCancelledLastStageIsNotCompleteEvidence() {
+    SchedulerProbe probe{};
+    probe.submit(10);
+    std::uint64_t plan{};
+    for (unsigned stage{0}; stage < 6; ++stage) {
+        probe.entered();
+        const auto result{probe.finish()};
+        plan = result.plan_id;
+        require(result.frame_id == 10 && !result.complete_coverage, "early discovery completion");
+    }
+    probe.entered(); // Last tile owns the device; cancel without interrupting its input storage.
+    probe.control.oldest_frame = 11;
+    probe.detector.control(probe.control);
+    probe.submit(11);
+    const auto cancelled{probe.finish()};
+    require(cancelled.frame_id == 10 && cancelled.plan_id == plan
+        && cancelled.source.attempt == 7 && !cancelled.complete_coverage
+        && cancelled.plan_cancellation_reason == diagnostics::Reason::HistoryMiss,
+        "cancelled last in-flight tile advertised completed adverse coverage");
+}
+
+void testCancellationAfterPublicationPreservesUnreadIdentity() {
+    SchedulerProbe probe{};
+    probe.trace->target_score = 0.9f;
+    probe.submit(10, {10, 10, 50, 50}); probe.entered();
+    { std::lock_guard<std::mutex> lock{probe.trace->mutex}; probe.trace->release = true; }
+    probe.trace->cv.notify_all();
+    YoloResult published{};
+    const auto deadline{std::chrono::steady_clock::now() + std::chrono::seconds{2}};
+    while (!HybridTrackerDiagnosticTestAccess::unreadResult(probe.detector, published)
+        && std::chrono::steady_clock::now() < deadline) { std::this_thread::yield(); }
+    require(published.job_id != 0 && published.has_target, "unread cancellation prerequisite");
+    probe.control.oldest_frame = 11;
+    probe.detector.control(probe.control);
+    YoloResult taken{};
+    require(probe.detector.get_result(taken) && taken.job_id == published.job_id
+        && taken.source.attempt == published.source.attempt && taken.best.box == published.best.box
+        && taken.has_target && taken.plan_cancellation_reason == diagnostics::Reason::HistoryMiss,
+        "post-publication cancellation lost immutable positive evidence or its cancellation disposition");
+}
+
+void testFirstMissFallbackAndPartialFeedback() {
+    {
+        SchedulerProbe probe{};
+        const cv::Rect roi{10, 10, 50, 50};
+        probe.submit(10, roi); probe.entered(); probe.submit(11, roi);
+        const auto initial{probe.finish()};
+        require(initial.targeted && initial.plan_id == 0 && initial.fallback_plan_id != 0,
+            "first targeted miss did not retain its one immutable fallback link");
+        probe.entered(); probe.submit(12, roi);
+        const auto later_miss{probe.finish()};
+        require(later_miss.targeted && later_miss.frame_id == 11 && later_miss.fallback_plan_id == 0,
+            "later-image miss appended another fallback plan");
+        probe.entered();
+        const auto broad{probe.finish()};
+        require(!broad.targeted && broad.frame_id == 10 && broad.plan_id == initial.fallback_plan_id
+            && broad.stage_kind == 1 && !broad.complete_coverage,
+            "first-miss fallback changed source, initial-job link or coverage");
+        bool completed{};
+        for (unsigned call{0}; call < 7; ++call) {
+            probe.entered();
+            const auto result{probe.finish()};
+            if (result.targeted) {
+                require(result.frame_id == 12 && result.fallback_plan_id == 0,
+                    "pending miss displaced the active fallback");
+            } else {
+                require(result.frame_id == 10 && result.plan_id == initial.fallback_plan_id,
+                    "fallback mixed later-image coverage");
+                completed = completed || result.complete_coverage;
+            }
+        }
+        require(completed, "fallback failed to complete its fixed-image coverage");
+    }
+    {
+        SchedulerProbe probe{};
+        probe.trace->target_score = 0.9f;
+        probe.submit(10, {10, 10, 50, 50}); probe.entered();
+        const auto initial{probe.finish()};
+        require(initial.has_target && initial.fallback_plan_id != 0, "positive fallback missing");
+        probe.control.partial_job = initial.job_id;
+        probe.detector.control(probe.control);
+        probe.entered();
+        const auto broad{probe.finish()};
+        require(broad.frame_id == 10 && broad.plan_id == initial.fallback_plan_id && broad.stage_kind == 1,
+            "nonmatching-positive feedback did not enable same-image fallback asynchronously");
+    }
+}
+
+void testCancelledRestartRotatesFirstTile() {
+    SchedulerProbe probe{};
+    probe.submit(10); probe.entered(); probe.submit(11);
+    const auto whole{probe.finish()};
+    probe.entered();
+    probe.control.oldest_frame = 11;
+    probe.detector.control(probe.control);
+    const auto old_tile{probe.finish()};
+    probe.entered(); const auto restarted{probe.finish()};
+    probe.entered(); const auto new_tile{probe.finish()};
+    require(old_tile.frame_id == 10 && old_tile.plan_id == whole.plan_id
+        && restarted.frame_id == 11 && restarted.plan_id != whole.plan_id && restarted.stage_kind == 1
+        && new_tile.frame_id == 11 && new_tile.plan_id == restarted.plan_id
+        && old_tile.searched_region != new_tile.searched_region,
+        "cancelled restart reused source coverage or failed to rotate its first tile");
 }
 
 void testModes() {
@@ -1382,6 +1894,17 @@ int main(int argc, char **argv) {
         std::cerr << "Running testInitializationErrorCodes\n"; testInitializationErrorCodes();
         std::cerr << "Running testNanoFailureWithHighIou\n"; testNanoFailureWithHighIou();
         std::cerr << "Running testActualJumpCounters\n"; testActualJumpCounters();
+        testVerifiedIntervalOneAndFour();
+        testRegionalPlanVerdicts();
+        testSeparateSeedRejectionGuards();
+        testExpiredAttemptSeedAndReplay();
+        testRepeatedSearchingControlsPreserveCoverage();
+        testExpiredTargetedPruningAndOldControl();
+        testOneCallSchedulingAndCapacity();
+        testCancelledLastStageIsNotCompleteEvidence();
+        testCancellationAfterPublicationPreservesUnreadIdentity();
+        testFirstMissFallbackAndPartialFeedback();
+        testCancelledRestartRotatesFirstTile();
         testCandidateStageProvenance();
         testFreshVerificationProtocol();
         std::cerr << "Running testModes\n"; testModes();

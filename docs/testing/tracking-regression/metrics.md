@@ -239,3 +239,11 @@ Timestamp-suppressed images cannot establish the first valid-pair admission. The
 Clock identity is `capture-monotonic-v1` for production/independently timed regression or synthetic `standalone-admission-v1` for slowed standalone replay. Exact integer anchors, decisions, and deadlines use nanoseconds; original source timestamps use microseconds. Differing mappings make affected timing comparisons incompatible. Other unchanged metrics retain their independent definitions and historical compatibility.
 
 Performance criteria stay `unset` unless a versioned threshold was frozen before the candidate run. Report protocol outcomes separately from availability/recovery measurements. Score/motion calibration and manually labeled quality evaluation are deferred; no accuracy estimate is inferred from unlabelled boxes.
+
+## One-call scheduler metrics
+
+The additive `scheduler` container uses metric version 1 with format-4 evidence. It counts executed/completed jobs and parent verdicts separately, retains stage service order, original/new seed identities, capacity-release times, and measured preprocessing/inference/postprocessing components. Missing components and historical fields remain unavailable. It detects duplicate job dispositions rather than treating a repeated seed as another verification.
+
+Historical `request_executed_count`, `request_completed_count`, `result_read_count`, `detection_execution_ms`, and `request_queue_wait_ms` describe whole-cascade requests. They are unavailable for format-4 one-call jobs under those old formulas. Other compatible metrics remain usable with their original denominators. `NoResultTimeout` counts retain the old frame-count cleanup meaning; no elapsed candidate-timeout count is inferred from them.
+
+Availability, recovery verification, valid admission, independent topic outcomes, and subscriber delivery retain their separate meanings. Report first-four-second and full-eight-second source windows independently for crop/scheduler experiments. Zero availability and incomplete recovery are explicit outcomes. Performance criteria remain unset until a versioned threshold is supplied before a candidate run.

@@ -72,6 +72,8 @@ struct FrameContext
 {
     FrameRef frame;
     tracking::EvidenceClock evidence{};
+    // May be sampled by the detector worker until finishRound()/destruction; captures must outlive it
+    // and support concurrent reads. Production uses the process monotonic clock.
     std::function<tracking::Nanoseconds()> decision_clock{tracking::monotonicNow};
     std::function<std::int64_t()> source_clock_us{};
     int64_t now_us = 0;         // Observation reference time; never the evidence-age clock.

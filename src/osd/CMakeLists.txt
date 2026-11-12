@@ -77,6 +77,6 @@ if(rclcpp_FOUND)
         endif()
         add_test(NAME ros_osd_telemetry_tests COMMAND ros_osd_telemetry_tests)
         set_tests_properties(ros_osd_telemetry_tests PROPERTIES TIMEOUT 15
-            ENVIRONMENT "ROS_DOMAIN_ID=93;ROS_LOCALHOST_ONLY=1")
+            ENVIRONMENT "ROS_DOMAIN_ID=${DRONE_TRACKER_TEST_ROS_DOMAIN_ID};ROS_LOCALHOST_ONLY=1")
     endif()
 endif()

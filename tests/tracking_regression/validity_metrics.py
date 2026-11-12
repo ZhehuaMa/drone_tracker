@@ -60,7 +60,7 @@ def compute(events, start_ns, end_ns, complete):
         seen.add(identity)
         verification = next((record for row, record in states if row.get('round_id') == event.get('round_id')
                              and record['verification_ns'] >= loss['revocation_ns']
-                             and record['attempt'] > loss['attempt'] and record['allowed']), None)
+                             and record['attempt'] > loss['attempt'] and record['verification_ns'] > 0), None)
         admission = next(((row, record) for row, record in admissions
                           if row.get('round_id') == event.get('round_id')
                           and record['admission_ns'] >= loss['revocation_ns']

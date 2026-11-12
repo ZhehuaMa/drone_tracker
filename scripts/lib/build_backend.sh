@@ -159,7 +159,7 @@ drone_run_repository_build() {
     --env "DRONE_BUILD_JOBS=$DRONE_BUILD_JOBS" --env "DRONE_PRIVATE_TOOLS=$private_tools" \
     --env "DRONE_PREPARE_TOOLS_COMMAND=$prepare_command" \
     --env "DRONE_BUILD_IMAGE_ID=$DRONE_IMAGE_ID" --env PYTHONDONTWRITEBYTECODE=1 \
-    --env "DRONE_HOST_ARCH=$(uname -m)" \
+    --env "DRONE_HOST_ARCH=$(uname -m)" --env "ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-}" \
     --env GIT_CONFIG_COUNT=1 --env GIT_CONFIG_KEY_0=safe.directory --env "GIT_CONFIG_VALUE_0=$DRONE_REPO_DIR" \
     "$DRONE_IMAGE_ID" bash -c '
       set -e

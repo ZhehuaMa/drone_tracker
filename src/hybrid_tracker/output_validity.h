@@ -81,7 +81,7 @@ public:
         std::uint64_t seed_request, Nanoseconds now, int timeout_ms) {
         std::lock_guard<std::mutex> lock{mutex_};
         const auto deadline{addTime(now, static_cast<Nanoseconds>(timeout_ms) * 1000000)};
-        if (closed_ || state_.round != round || state_.allowed || !deadline) { return {}; }
+        if (closed_ || state_.round != round || state_.allowed || state_.phase != Phase::Searching || !deadline) { return {}; }
         state_.attempt = ++next_attempt_; state_.revision = ++revision_;
         state_.seed_frame = seed_frame; state_.seed_request = seed_request;
         state_.confirmation_frame = 0; state_.confirmation_source_us = 0; state_.evidence = {};

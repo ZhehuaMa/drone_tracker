@@ -17,7 +17,7 @@ const char *typeName(Type type) {
                                          "诊断缺口",   "异常结束", "时钟对应", "健康", "跳变比较", "SourceContext",
         "ObservationBbox", "ObservationLos", "LosPublishStart", "LosPublishEnd", "ObservationSuppressed",
         "ControlBboxStart", "ControlBboxEnd", "ControlLosStart", "ControlLosEnd",
-        "ValidityState", "EvidenceClock", "CandidateMatch", "TrustLoss", "TrustLossDisposed", "ValidAdmission"};
+        "ValidityState", "EvidenceClock", "CandidateMatch", "TrustLoss", "TrustLossDisposed", "ValidAdmission", "PlanOutcome", "StageDisposition", "DetectorControl", "SchedulerTiming", "CleanupPolicy", "RegionHint", "PlanCancelled"};
     const auto index{static_cast<std::size_t>(type)};
     return index < std::size(names) ? names[index] : "未知事件";
 }
@@ -28,7 +28,7 @@ const char *reasonName(Reason reason) {
         "驱动序号缺口", "队列满",         "取最新帧跳过", "无目标",         "低IoU",        "检测跳变",
         "跟踪跳变",     "没有新结果超限", "缓存未命中",   "初始化失败",     "图像准备失败", "推理异常",
         "发布异常",     "输入未消费",     "记录缓冲满",   "写入失败",       "同步失败",     "空间保护",
-        "不完整", "跟踪更新失败", "Superseded", "ContextUnavailable", "RecoveryUnavailable", "PreviousRound"};
+        "不完整", "跟踪更新失败", "Superseded", "ContextUnavailable", "RecoveryUnavailable", "PreviousRound", "Disposed", "InvalidClock", "ActiveReplacement", "PartialCoverage", "CandidateExpired", "StaleEvidence"};
     const auto index{static_cast<std::size_t>(reason)};
     return index < std::size(names) ? names[index] : "未知理由";
 }
@@ -115,6 +115,51 @@ void json(std::ostream &output, const Event &event) {
             if (event.type == Type::CandidateMatch) {
                 output << ",\"disposition\":\"" << ((event.flags & StaleSeedUsed) ? "stale_seed"
                     : (event.flags & SeedUsed) ? "fresh_seed" : "verification_or_diagnostic") << "\"";
+            }
+            output << '}';
+        }
+    }
+    if (event.format_version >= 4) {
+        const char *const *fields{};
+        static constexpr const char *disposition[]{"job_id", "plan_id", "fallback_plan_id", "request_attempt",
+            "seed_attempt", "applicable_attempt", "original_revision"};
+        static constexpr const char *plan[]{"plan_id", "attempt", "source_frame", "terminal_job", "counter_after",
+            "reserved_5", "reserved_6"};
+        static constexpr const char *control[]{"round", "attempt", "revision", "accepted_job", "rejected_job",
+            "agreement_frame", "oldest_frame"};
+        static constexpr const char *timing[]{"job_id", "plan_id", "preprocessing_ns", "inference_ns",
+            "postprocess_ns", "reserved_5", "reserved_6"};
+        static constexpr const char *take[]{"job_id", "plan_id", "take_ns", "reserved_3",
+            "reserved_4", "reserved_5", "reserved_6"};
+        static constexpr const char *waiting[]{"job_id", "plan_id", "wait_start_ns", "wait_end_ns",
+            "reserved_4", "reserved_5", "reserved_6"};
+        static constexpr const char *hint[]{"job_id", "source_frame", "hint_attempt", "request_attempt",
+            "stage_kind", "stage_index", "policy_version"};
+        static constexpr const char *cancelled[]{"plan_id", "request_id", "source_frame", "attempt",
+            "revision", "next_region", "reserved_6"};
+        static constexpr const char *policy[]{"policy_version", "frame_cleanup_active", "candidate_timeout_ms",
+            "confirmation_timeout_ms", "yolo_interval", "targeted_share", "discovery_share"};
+        switch (event.type) {
+        case Type::StageDisposition: fields = disposition; break;
+        case Type::PlanOutcome: fields = plan; break;
+        case Type::DetectorControl: fields = control; break;
+        case Type::SchedulerTiming:
+            fields = event.counts[0] == 1 ? take : event.counts[0] >= 2 ? waiting : timing;
+            break;
+        case Type::CleanupPolicy: fields = policy; break;
+        case Type::RegionHint: fields = hint; break;
+        case Type::PlanCancelled: fields = cancelled; break;
+        default: break;
+        }
+        if (fields) {
+            output << ",\"scheduler\":{\"metric_version\":1";
+            for (std::size_t index{}; index < 7; ++index) {
+                output << ",\"" << fields[index] << "\":" << event.values[index];
+            }
+            if (event.type == Type::StageDisposition) {
+                output << ",\"seed_eligible\":" << event.counts[0]
+                    << ",\"confirmation_eligible\":" << event.counts[1]
+                    << ",\"seed_used\":" << event.counts[2];
             }
             output << '}';
         }

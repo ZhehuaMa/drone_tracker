@@ -13,6 +13,20 @@
 
 #define TILE_OVERLAP_RATIO  0.2f  // 切片重叠比例
 
+namespace {
+void cancelledResult(const YoloResult &result, diagnostics::Reason reason) {
+    if (!result.job_id) { return; }
+    auto event{diagnostics::event(diagnostics::Type::StageDisposition, reason)};
+    event.request_id = result.request_id;
+    event.source_tracker_frame_id = result.frame_id; event.source_update_id = result.source_update_id;
+    event.frame = result.source_identity;
+    event.values = {result.job_id, result.plan_id, result.fallback_plan_id, result.source.attempt,
+        0, 0, result.source.permission_revision};
+    event.counts[3] = result.complete_coverage ? 1U : 0U;
+    diagnostics::emit(event);
+}
+} // namespace
+
 YoloV8Detector::YoloV8Detector(std::unique_ptr<model::YoloBackend> model,
     std::unique_ptr<YoloPreprocessor> preprocessor, float conf_thresh, float nms_thresh,
                                int target_class_id, float recall_relax_ratio, float max_box_area_ratio, DetectionThreadLauncher launcher)
@@ -80,9 +94,19 @@ void YoloV8Detector::stop()
     diagnostics::current_producer = diagnostics::Producer::Control;
     if (cancelled.request_id) { diagnostics::emit(cancelled); }
     diagnostics::current_producer = previous;
-    m_cv_request.notify_one();
+    m_cv_request.notify_all();
     if (m_worker_thread.joinable()) { m_worker_thread.join(); }
     std::lock_guard<std::mutex> lock{m_mutex};
+    if (m_result_ready) {
+        const auto producer{diagnostics::current_producer};
+        diagnostics::current_producer = diagnostics::Producer::Control;
+        cancelledResult(m_last_result, diagnostics::Reason::Stopped);
+        diagnostics::current_producer = producer;
+    }
+    const auto producer{diagnostics::current_producer};
+    diagnostics::current_producer = diagnostics::Producer::Control;
+    cancelPlan(diagnostics::Reason::Stopped);
+    diagnostics::current_producer = producer;
     m_next_request = {}; m_new_request = false;
     m_last_result = {}; m_result_ready = false;
 }
@@ -133,17 +157,22 @@ bool YoloV8Detector::request(const FrameRef& frame, uint64_t frame_id, const cv:
 void YoloV8Detector::finishRound() {
     auto pending{diagnostics::event(diagnostics::Type::RequestCancel, diagnostics::Reason::Cleaning)};
     auto unread{pending};
+    YoloResult cancelled{};
     {
         std::unique_lock<std::mutex> lock{m_mutex};
         m_cleaning = true;
         if (m_new_request) { pending.request_id = m_next_request.request_id; pending.source_tracker_frame_id = m_next_request.frame_id; pending.source_update_id = m_next_request.source_update_id; pending.frame = m_next_request.identity; }
-        m_new_request = false; m_next_request = {};
+        m_new_request = false; m_next_request = {}; cancelPlan(diagnostics::Reason::Cleaning);
+        m_cv_request.notify_all();
         m_cv_idle.wait(lock, [this] { return !m_executing; });
-        if (m_result_ready) { unread.request_id = m_last_result.request_id; unread.source_tracker_frame_id = m_last_result.frame_id; unread.source_update_id = m_last_result.source_update_id; unread.frame = m_last_result.source_identity; }
+        if (m_result_ready) { unread.request_id = m_last_result.request_id; unread.source_tracker_frame_id = m_last_result.frame_id; unread.source_update_id = m_last_result.source_update_id; unread.frame = m_last_result.source_identity; cancelled = m_last_result; }
         m_last_result = {}; m_result_ready = false; m_cleaning = false;
+        m_control = {}; m_control_set = false; m_targeted_burst = 0;
+        m_cancelled_plans = {}; m_cancelled_plan_cursor = 0;
     }
     if (pending.request_id) { diagnostics::emit(pending); }
     if (unread.request_id) { diagnostics::emit(unread); }
+    cancelledResult(cancelled, diagnostics::Reason::Cleaning);
 }
 
 bool YoloV8Detector::isBusy() const
@@ -158,7 +187,13 @@ bool YoloV8Detector::get_result(YoloResult& result)
         std::lock_guard<std::mutex> lock{m_mutex};
         if (!m_result_ready || m_cleaning) { return false; }
         result = m_last_result; m_last_result = {}; m_result_ready = false;
+        const auto cancellation{planCancellationReason(result.plan_id ? result.plan_id : result.fallback_plan_id)};
+        if (cancellation != diagnostics::Reason::None) {
+            result.plan_cancellation_reason = cancellation;
+            result.complete_coverage = false;
+        }
     }
+    m_cv_request.notify_all();
     auto value{diagnostics::event(diagnostics::Type::ResultRead, result.reason)};
     value.request_id = result.request_id; value.source_update_id = result.source_update_id;
     value.frame_time_us = result.source.capture_time_us;
@@ -167,17 +202,24 @@ bool YoloV8Detector::get_result(YoloResult& result)
     if (result.has_target) { value.flags |= diagnostics::HasTarget | diagnostics::BoxValid; }
     value.box = {result.best.box.x, result.best.box.y, result.best.box.width, result.best.box.height};
     value.score = result.best.score; diagnostics::emit(value);
+    auto credit{diagnostics::event(diagnostics::Type::SchedulerTiming)};
+    credit.values = {result.job_id, result.plan_id, diagnostics::monotonicNs(), 0, 0, 0, 0};
+    credit.counts[0] = 1; // Take releases capacity, independently of subsequent arbitration.
+    diagnostics::emit(credit);
     return true;
 }
-std::array<std::uint64_t, 3> YoloV8Detector::outstandingFrames() const {
+std::array<std::uint64_t, 4> YoloV8Detector::outstandingFrames() const {
     std::lock_guard<std::mutex> lock{m_mutex};
     return {m_inflight_frame, m_new_request ? m_next_request.frame_id : 0,
-        m_result_ready ? m_last_result.frame_id : 0};
+        m_result_ready ? m_last_result.frame_id : 0, m_plan ? m_plan->request.frame_id : 0};
 }
 void YoloV8Detector::publishResult(const Request &request, bool has_target, const Detection &best, diagnostics::Reason reason, const std::vector<Detection> &candidates) {
     auto overwritten{diagnostics::event(diagnostics::Type::ResultOverwrite, diagnostics::Reason::None, true)};
+    bool complete_coverage{};
     {
         std::lock_guard<std::mutex> lock{m_mutex};
+        const auto cancellation{planCancellationReason(m_plan_id ? m_plan_id : m_fallback_plan_id)};
+        complete_coverage = m_complete_coverage && cancellation == diagnostics::Reason::None;
         if (m_result_ready) {
             overwritten.request_id = m_last_result.request_id;
             overwritten.source_tracker_frame_id = m_last_result.frame_id;
@@ -185,9 +227,12 @@ void YoloV8Detector::publishResult(const Request &request, bool has_target, cons
         }
         m_last_result = YoloResult{request.frame_id, has_target, best, request.request_id,
             request.source_update_id, request.identity, reason, request.source, candidates, m_stage_kind, static_cast<std::uint32_t>(m_stage.values[1]),
-            m_stage_kind == 1 ? cv::Rect{0, 0, request.source.width, request.source.height}
+            m_stage_kind == 1 ? cv::Rect{0, 0, request.frame ? request.frame->width() : request.source.width,
+                request.frame ? request.frame->height() : request.source.height}
                 : cv::Rect{static_cast<int>(m_stage.box[0]), static_cast<int>(m_stage.box[1]),
-                    static_cast<int>(m_stage.box[2]), static_cast<int>(m_stage.box[3])}};
+                    static_cast<int>(m_stage.box[2]), static_cast<int>(m_stage.box[3])},
+            m_job_id, m_plan_id, m_fallback_plan_id, m_dispatch_attempt, m_dispatch_revision,
+            m_targeted, complete_coverage, cancellation};
         m_result_ready = true;
     }
     if (overwritten.request_id) { diagnostics::emit(overwritten); }
@@ -198,8 +243,12 @@ void YoloV8Detector::publishResult(const Request &request, bool has_target, cons
     value.box = {best.box.x, best.box.y, best.box.width, best.box.height}; value.score = best.score;
     value.flags |= diagnostics::Complete | diagnostics::ScoreKnown;
     if (has_target) { value.flags |= diagnostics::HasTarget | diagnostics::BoxValid; }
-    value.values[0] = m_stage_kind; value.values[1] = m_stage_index;
+    value.values = {m_job_id, m_plan_id, m_fallback_plan_id, m_dispatch_attempt,
+        m_dispatch_revision, m_targeted ? 1U : 0U, complete_coverage ? 1U : 0U};
     diagnostics::emit(value);
+    auto timing{diagnostics::event(diagnostics::Type::SchedulerTiming)};
+    timing.values = {m_job_id, m_plan_id, m_prepare_ns, m_infer_ns, m_postprocess_ns, 0, 0};
+    diagnostics::emit(timing);
 }
 
 std::vector<cv::Rect> YoloV8Detector::createOverlappingTiles(int width, int height, float overlap_ratio)
@@ -249,36 +298,170 @@ std::pair<int, int> YoloV8Detector::getInputSize() const
 }
 
 
-void YoloV8Detector::workerThreadLoop()
-{
+void YoloV8Detector::cancelPlan(diagnostics::Reason reason) {
+    if (!m_plan) { return; }
+    m_cancelled_plans[m_cancelled_plan_cursor++ % m_cancelled_plans.size()] = {m_plan->id, reason};
+    auto event{diagnostics::event(diagnostics::Type::PlanCancelled, reason)};
+    event.values = {m_plan->id, m_plan->request.request_id, m_plan->request.frame_id,
+        m_control.permission.attempt, m_control.permission.revision, m_plan->next, 0};
+    event.frame = m_plan->request.identity;
+    diagnostics::emit(event); m_plan.reset(); ++m_tile_rotation;
+}
+
+diagnostics::Reason YoloV8Detector::planCancellationReason(std::uint64_t plan_id) const {
+    if (plan_id) {
+        for (const auto &cancelled : m_cancelled_plans) {
+            if (cancelled.first == plan_id) { return cancelled.second; }
+        }
+    }
+    return diagnostics::Reason::None;
+}
+
+void YoloV8Detector::control(const DetectorControl &control) {
+    std::lock_guard<std::mutex> lock{m_mutex};
+    if (m_cleaning || m_stop_requested
+        || (m_control_set && (control.permission.round < m_control.permission.round
+            || (control.permission.round == m_control.permission.round
+                && control.permission.revision < m_control.permission.revision)))) { return; }
+    if (m_plan) {
+        if (m_plan->waiting_job == control.partial_job && !m_plan->searching) {
+            m_plan->waiting = false;
+        }
+        const bool different_round{m_plan->request.source.generation != control.permission.round};
+        const bool history_lost{control.oldest_frame && m_plan->request.frame_id < control.oldest_frame};
+        const bool superseded{control.agreement_frame && control.agreement_frame >= m_plan->request.frame_id
+            && control.permission.attempt == m_control.permission.attempt};
+        const bool abandoned{m_control_set && m_control.permission.attempt
+            && (control.permission.attempt != m_control.permission.attempt
+                || (control.permission.phase == tracking::Phase::Searching
+                    && m_control.permission.phase != tracking::Phase::Searching))};
+        const bool disposed{m_plan->waiting_job && (m_plan->waiting_job == control.accepted_job
+            || m_plan->waiting_job == control.rejected_job)};
+        if (different_round || history_lost || superseded || abandoned || disposed) {
+            cancelPlan(superseded ? diagnostics::Reason::Superseded
+                : history_lost ? diagnostics::Reason::HistoryMiss
+                : different_round ? diagnostics::Reason::PreviousRound : diagnostics::Reason::Cleaning);
+        }
+    }
+    m_control = control; m_control_set = true;
+    auto event{diagnostics::event(diagnostics::Type::DetectorControl)};
+    event.values = {control.permission.round, control.permission.attempt, control.permission.revision,
+        control.accepted_job, control.rejected_job, control.agreement_frame, control.oldest_frame};
+    event.counts = {static_cast<std::uint32_t>(control.permission.phase), 0, 0, 0};
+    diagnostics::emit(event);
+    m_cv_request.notify_all();
+}
+
+void YoloV8Detector::workerThreadLoop() {
     diagnostics::current_producer = diagnostics::Producer::Yolo;
     diagnostics::positionPoint(200);
-    std::cout << "YOLO worker thread started." << std::endl;
-    
-    while (true)
-    {
-        Request req;
+    while (true) {
+        Request req{};
+        cv::Rect region{};
         {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            m_cv_request.wait(lock, [this] { return m_new_request || m_stop_requested; });
-
-            if (m_stop_requested) break;
-
-            req = std::move(m_next_request);
-            m_next_request = Request{};
-            m_new_request = false;
-            m_executing = true;
-            m_inflight_id = req.request_id; m_inflight_frame = req.frame_id;
-        } 
-        
-        // 此守卫先创建，确保会话和请求帧先释放，再发布空闲通知。
-        auto complete{[this](void *) {
-            std::lock_guard<std::mutex> lock{m_mutex};
-            m_executing = false;
-            m_inflight_id = 0; m_inflight_frame = 0;
-            m_cv_idle.notify_all();
-        }};
-        std::unique_ptr<void, decltype(complete)> execution{this, complete};
+            std::unique_lock<std::mutex> lock{m_mutex};
+            const auto runnable{[this] {
+                return m_stop_requested || (!m_cleaning && !m_result_ready
+                    && ((m_new_request && (!m_plan || (m_control_set
+                        && m_control.permission.phase != tracking::Phase::Searching)))
+                        || (m_plan && !m_plan->waiting)));
+            }};
+            while (!runnable()) {
+                const std::uint32_t cause{m_result_ready ? 2U : m_plan && m_plan->waiting ? 3U : 4U};
+                const auto wait_start{diagnostics::monotonicNs()};
+                m_cv_request.wait(lock);
+                auto waiting{diagnostics::event(diagnostics::Type::SchedulerTiming)};
+                waiting.values = {m_job_id, m_plan ? m_plan->id : 0, wait_start,
+                    diagnostics::monotonicNs(), 0, 0, 0};
+                waiting.counts = {cause, m_new_request ? 1U : 0U, m_plan ? 1U : 0U,
+                    m_result_ready ? 1U : 0U};
+                diagnostics::emit(waiting);
+            }
+            if (m_stop_requested) { break; }
+            const auto now{m_control.clock()};
+            const bool expired_purpose{m_control_set && ((m_control.permission.allowed
+                && now >= m_control.permission.deadline_ns)
+                || (m_control.permission.phase != tracking::Phase::Searching
+                    && !m_control.permission.allowed && now >= m_control.permission.attempt_deadline_ns))};
+            const bool searching{!m_control_set || m_control.permission.phase == tracking::Phase::Searching
+                || expired_purpose};
+            if (expired_purpose && m_plan && !m_plan->searching) {
+                cancelPlan(m_control.permission.allowed ? diagnostics::Reason::StaleEvidence
+                    : diagnostics::Reason::CandidateExpired);
+            }
+            if (m_plan && m_control_set && m_control.permission.round
+                && !tracking::usableClock(m_plan->request.source.evidence, now)) {
+                cancelPlan(diagnostics::Reason::InvalidClock);
+            }
+            if (m_new_request && !searching && m_next_request.roi.empty() && !m_control.hint.empty()) {
+                m_next_request.roi = m_control.hint & cv::Rect{0, 0,
+                    m_next_request.frame->width(), m_next_request.frame->height()};
+            }
+            if (m_new_request && m_control_set
+                && (m_next_request.source.generation != m_control.permission.round
+                    || (m_control.oldest_frame && m_next_request.frame_id < m_control.oldest_frame)
+                    || (m_control.permission.round && !tracking::usableClock(m_next_request.source.evidence, now))
+                    || (!searching && !tracking::fresh(m_next_request.source.evidence, now,
+                        m_control.confirmation_timeout_ms)))) {
+                auto cancelled{diagnostics::event(diagnostics::Type::RequestCancel,
+                    m_next_request.source.generation != m_control.permission.round
+                        ? diagnostics::Reason::PreviousRound
+                        : m_control.oldest_frame && m_next_request.frame_id < m_control.oldest_frame
+                            ? diagnostics::Reason::HistoryMiss
+                            : !tracking::usableClock(m_next_request.source.evidence, now)
+                                ? diagnostics::Reason::InvalidClock : diagnostics::Reason::StaleEvidence)};
+                cancelled.request_id = m_next_request.request_id;
+                cancelled.source_tracker_frame_id = m_next_request.frame_id;
+                cancelled.source_update_id = m_next_request.source_update_id;
+                cancelled.frame = m_next_request.identity; diagnostics::emit(cancelled);
+                m_next_request = {}; m_new_request = false;
+            }
+            const auto create_plan{[&](const Request &source, bool fallback) {
+                Plan plan{};
+                plan.request = source; plan.id = ++m_plan_counter; plan.searching = searching;
+                plan.fallback = fallback;
+                plan.regions.push_back({});
+                auto tiles{createOverlappingTiles(source.frame->width(), source.frame->height(), TILE_OVERLAP_RATIO)};
+                if (!tiles.empty()) {
+                    std::rotate(tiles.begin(), tiles.begin() + m_tile_rotation % tiles.size(), tiles.end());
+                }
+                plan.regions.insert(plan.regions.end(), tiles.begin(), tiles.end());
+                if (!fallback && !source.roi.empty()) { plan.regions.insert(plan.regions.begin(), source.roi); }
+                m_plan = std::move(plan);
+            }};
+            if (!m_plan && m_new_request && (searching || m_next_request.roi.empty())) {
+                create_plan(m_next_request, false);
+                m_next_request = {}; m_new_request = false;
+            }
+            const bool targeted{m_new_request && !searching && !m_next_request.roi.empty()};
+            const bool discovery{m_plan && !m_plan->waiting};
+            if (!targeted && !discovery) { continue; }
+            m_targeted = targeted && (!discovery || m_targeted_burst < 2);
+            m_job_id = ++m_job_counter; m_plan_id = 0; m_fallback_plan_id = 0;
+            m_complete_coverage = false;
+            m_dispatch_attempt = m_control.permission.attempt;
+            m_dispatch_revision = m_control.permission.revision;
+            if (m_targeted) {
+                req = std::move(m_next_request); m_next_request = {}; m_new_request = false;
+                region = req.roi; m_stage_kind = 0; m_stage_index = 0;
+                m_targeted_burst = std::min(2U, m_targeted_burst + 1);
+                if (!m_plan) {
+                    create_plan(req, true);
+                    m_plan->initial_job = m_job_id;
+                    m_plan->waiting = true; m_plan->waiting_job = m_job_id;
+                    m_fallback_plan_id = m_plan->id;
+                }
+            } else {
+                req = m_plan->request; region = m_plan->regions[m_plan->next];
+                m_stage_index = static_cast<std::uint32_t>(m_plan->next);
+                m_stage_kind = region.empty() ? 1 : (m_plan->next == 0 && region == req.roi ? 0 : 2);
+                ++m_plan->next; m_plan_id = m_plan->id;
+                m_complete_coverage = m_plan->next == m_plan->regions.size();
+                m_targeted_burst = 0;
+            }
+            // The mutex reserves the single empty result slot for this one active call.
+            m_executing = true; m_inflight_id = req.request_id; m_inflight_frame = req.frame_id;
+        }
         diagnostics::current_request = req.request_id;
         diagnostics::current_update = req.source_update_id;
         diagnostics::current_tracker_frame = req.frame_id;
@@ -286,94 +469,62 @@ void YoloV8Detector::workerThreadLoop()
         auto started{diagnostics::event(diagnostics::Type::DetectStart)};
         started.frame = req.identity; started.source_update_id = req.source_update_id;
         started.source_tracker_frame_id = req.frame_id;
+        started.values = {m_job_id, m_plan_id, m_fallback_plan_id, m_dispatch_attempt,
+            m_dispatch_revision, m_targeted ? 1U : 0U, m_targeted_burst};
         diagnostics::emit(started);
-        m_stage_index = 0; m_execution_reason = diagnostics::Reason::None;
+        m_execution_reason = diagnostics::Reason::None;
+        m_prepare_ns = 0; m_infer_ns = 0; m_postprocess_ns = 0;
+        std::vector<Detection> candidates{};
+        Detection best{};
+        std::unique_ptr<YoloFrameSession> session{};
         try {
-            if (!req.frame) { publishResult(req, false, {}, diagnostics::Reason::InvalidInput); continue; }
-
-            auto session_result{preprocessor_->beginFrame(req.frame, input_contract_)};
-            req.frame.reset();
-            if (!session_result || !session_result.value) {
-                std::cerr << "YOLO beginFrame failed: " << session_result.message << std::endl;
-                publishResult(req, false, {}, diagnostics::Reason::ImagePrepareFailed);
-                continue;
-            }
-            auto &session{*session_result.value};
-
-            // 检测级联（与 Python 端 trt_worker 一致）：ROI -> 全图 -> 自适应切片，
-            // 第一个产出目标类别检测的阶段胜出，最终取置信度最高的单框
-            Detection best{};
-            bool has_target = false;
-            std::vector<Detection> candidates{};
-            auto collect_target = [&](const std::vector<Detection>& dets) {
-                for (const auto& det : dets)
-                {
-                    if (det.classId == m_target_class_id) { candidates.push_back(det); }
-                    if (det.classId == m_target_class_id && det.score > best.score)
-                    {
-                        best = det;
-                        has_target = true;
+            const auto snapshot_start{diagnostics::monotonicNs()};
+            auto prepared{preprocessor_->beginFrame(req.frame, input_contract_)};
+            m_prepare_ns = diagnostics::monotonicNs() - snapshot_start;
+            if (prepared && prepared.value) {
+                session = std::move(prepared.value);
+                m_conf_thresh_current = m_stage_kind == 0 ? m_conf_thresh * m_relax_ratio : m_conf_thresh;
+                std::vector<Detection> detections{};
+                detectOnImage(*session, region, detections);
+                for (const auto &detection : detections) {
+                    if (detection.classId == m_target_class_id) {
+                        candidates.push_back(detection);
+                        if (detection.score > best.score) { best = detection; }
                     }
                 }
-            };
-
-            // 1. ROI 优先（置信度阈值放宽以提高召回率）
-            if (req.roi.width > 0 && req.roi.height > 0)
-            {
-                m_conf_thresh_current = m_conf_thresh * m_relax_ratio;
-                std::vector<Detection> roi_detections;
-                m_stage_kind = 0;
-                detectOnImage(session, req.roi, roi_detections);
-                collect_target(roi_detections);
-            }
-
-            // 2. ROI 未找到目标，全图检测
-            if (!has_target)
-            {
-                m_conf_thresh_current = m_conf_thresh;
-                std::vector<Detection> full_detections;
-                m_stage_kind = 1;
-                detectOnImage(session, {}, full_detections);
-                collect_target(full_detections);
-            }
-
-            // 3. 全图仍然失败，自适应切片检测（一旦找到目标就停止）
-            if (!has_target)
-            {
-                m_conf_thresh_current = m_conf_thresh;
-                const int w{session.sourceSize().width};
-                const int h{session.sourceSize().height};
-                for (const auto& tile : createOverlappingTiles(w, h, TILE_OVERLAP_RATIO))
-                {
-                    std::vector<Detection> tile_detections;
-                    m_stage_kind = 2;
-                    detectOnImage(session, tile, tile_detections);
-                    collect_target(tile_detections);
-                    if (has_target)
-                        break;
+            } else { m_execution_reason = diagnostics::Reason::ImagePrepareFailed; }
+        } catch (const std::exception &) { m_execution_reason = diagnostics::Reason::InferenceException; }
+        {
+            std::lock_guard<std::mutex> lock{m_mutex};
+            if (m_plan && (m_plan->id == m_plan_id || m_plan->id == m_fallback_plan_id)) {
+                if (m_execution_reason != diagnostics::Reason::None) { cancelPlan(m_execution_reason); }
+                else if (m_complete_coverage) { m_plan.reset(); }
+                else if (m_fallback_plan_id && candidates.empty()) { m_plan->waiting = false; }
+                else if (!candidates.empty() && (m_plan->searching || m_fallback_plan_id)) {
+                    m_plan->waiting = true; m_plan->waiting_job = m_job_id;
                 }
             }
-
-            // 存储结果：单框 + 帧号（Python 端 new_detections=[best_box], processed_frame_id）
-            publishResult(req, has_target, best, has_target ? diagnostics::Reason::None
-                : (m_execution_reason == diagnostics::Reason::None ? diagnostics::Reason::NoTarget : m_execution_reason), candidates);
-
-            // Release frame reference
-            req.frame.reset();
-        } catch (const std::exception &error) {
-            req.frame.reset();
-            std::cerr << "YOLO request failed: " << error.what() << std::endl;
-            publishResult(req, false, {}, diagnostics::Reason::InferenceException);
+        }
+        // Device execution has completed. Release the session before allowing another call.
+        publishResult(req, !candidates.empty(), best, m_execution_reason != diagnostics::Reason::None
+            ? m_execution_reason : candidates.empty() ? diagnostics::Reason::NoTarget : diagnostics::Reason::None,
+            candidates);
+        session.reset();
+        req.frame.reset();
+        {
+            std::lock_guard<std::mutex> lock{m_mutex};
+            m_executing = false; m_inflight_id = 0; m_inflight_frame = 0;
+            m_cv_idle.notify_all();
         }
     }
-
-    // std::cout << "TensorRT worker thread finished." << std::endl;
 }
 
 void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &region,
                                    std::vector<Detection> &results) {
     m_stage = diagnostics::event(diagnostics::Type::DetectStage);
     m_stage.values[0] = m_stage_kind; m_stage.values[1] = m_stage_index++;
+    m_stage.values[2] = m_job_id; m_stage.values[3] = m_plan_id;
+    m_stage.values[4] = m_fallback_plan_id;
     m_stage.box = {static_cast<float>(region.x), static_cast<float>(region.y),
         static_cast<float>(region.width), static_cast<float>(region.height)};
     m_stage.threshold = m_conf_thresh_current;
@@ -385,7 +536,9 @@ void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &re
     }};
     std::unique_ptr<void, decltype(finish_stage)> stage_guard{this, finish_stage};
     diagnostics::positionPoint(100, m_stage.values[1]);
+    const auto prepare_start{diagnostics::monotonicNs()};
     auto prepared{session.prepare(region)};
+    m_prepare_ns += diagnostics::monotonicNs() - prepare_start;
     diagnostics::positionPoint(101, m_stage.values[1]);
     if (!prepared || !prepared.value.input) {
         m_stage.reason = diagnostics::Reason::ImagePrepareFailed;
@@ -396,7 +549,9 @@ void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &re
         // Observed marks an actual inference attempt, including a thrown model call.
         m_stage.flags |= diagnostics::Observed;
         diagnostics::positionPoint(102, m_stage.values[1]);
+        const auto infer_start{diagnostics::monotonicNs()};
         const auto output{model_->infer(prepared.value.input)};
+        m_infer_ns = diagnostics::monotonicNs() - infer_start;
         diagnostics::positionPoint(103, m_stage.values[1]);
         if (!output) {
             m_stage.reason = diagnostics::Reason::InferenceException;
@@ -417,8 +572,10 @@ void YoloV8Detector::detectOnImage(YoloFrameSession &session, const cv::Rect &re
             static_cast<float>(resolved.value.width), static_cast<float>(resolved.value.height)};
         m_stage.flags |= diagnostics::BoxValid;
         diagnostics::positionPoint(104, m_stage.values[1]);
+        const auto postprocess_start{diagnostics::monotonicNs()};
         postprocess(view.data(), dims, prepared.value.transform,
                     resolved.value.size(), cv::Point2f(resolved.value.x, resolved.value.y), results);
+        m_postprocess_ns = diagnostics::monotonicNs() - postprocess_start;
         diagnostics::positionPoint(105, m_stage.values[1]);
     } catch (const std::exception &error) {
         m_stage.reason = diagnostics::Reason::InferenceException;

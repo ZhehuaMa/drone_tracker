@@ -96,6 +96,9 @@ void queueAndOwnership() {
         require(stats.state == VideoState::Eof && stats.read == 100 && stats.dropped > 0
             && stats.enqueued + stats.dropped == 100, "Queue accounting or EOF");
         require(source.tryFrame(held) && held->timestampUs() == 1700000000000000, "Queue evicted oldest frame");
+        require(held->diagnosticIdentity().capture_id == 1
+            && (held->diagnosticIdentity().flags & diagnostics::CaptureKnown),
+            "decoded source image identity is unavailable");
         view = held->mapRead();
         lifetime = held;
         require(view->mat().at<unsigned char>(0, 0) == 0, "Decode buffer reused without copy");

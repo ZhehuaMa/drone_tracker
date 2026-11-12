@@ -16,5 +16,8 @@ int main() {
             == cv::Rect{50, 20, 100, 60}, "minimum region moved center");
         model_test::require(tracking::searchRegion(box, 90, 50, 2, {200, 100})
             == cv::Rect{0, 0, 90, 50}, "oversized minimum region");
+        model_test::require(tracking::searchRegion({883.951599f, 398.333038f, 41.190922f, 34.928795f},
+            1920, 1200, 0, {739, 666}) == cv::Rect{535, 82, 739, 666},
+            "successful crop scale/aspect was not recentered at the genuine source measurement");
     } catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 1; }
 }

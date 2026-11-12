@@ -162,3 +162,11 @@ The integrity contract applies to the complete retained run tree. `.docker-artif
 ## Verification policy events
 
 Format 3 adds `ValidityState`, `EvidenceClock`, `CandidateMatch`, `TrustLoss`, `TrustLossDisposed`, and `ValidAdmission`. The fixed event layout and exact integer decoding remain unchanged. Clock mapping, attempt/revision, source comparison origin, freshness eligibility, counter disposition, and separate revocation/publication epochs are structured values. `not_evaluated` appearance and motion hooks reject no candidate. Readers preserve formats 1/2 without inventing these policy fields and reject unknown formats. See the [diagnostics payload guide](../../../src/diagnostics/README.md#format-3-verification-evidence-and-ordered-loss) and [freshness metric contract](metrics.md#freshness-policy-evidence).
+
+## One-call scheduling protocol version 4
+
+Format 4 appends job/plan, stage disposition, phase-control, component-timing, and cleanup-policy evidence. The [payload guide](../../../src/diagnostics/README.md#format-4-scheduler-and-seed-evidence) defines exact integer fields. Original request-attempt identity and newly seeded attempt identity remain separate. For example, D32 requested during expired A may seed B at F42; it is neither an A confirmation nor a B verification. B's independent T41 is required for a later fresh D41.
+
+Regional misses and unrelated positives are partial evidence. Complete single-image coverage or closing ambiguity can supply at most one eligible adverse verdict. Newer agreement supersedes older discovery. Result take releases capacity before arbitration, while only positive Searching plans pause for short seed disposition. Results and controls retain values, not pixels. Fixed-image plans and the latest-image mailbox bound pixel ownership.
+
+`CleanupPolicy` reports no-result frame-count cleanup inactive. Missing historical policy/disposition records remain unavailable, and historical watchdog events retain their frame-count meaning. Unknown diagnostic formats remain errors. Comparison claims must identify whether crop-only, scheduler-only, or combined policy was exercised; formal defaults and temporary profiles retain separate identities.

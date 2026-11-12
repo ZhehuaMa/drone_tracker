@@ -336,10 +336,10 @@ void pipeline(bool dcf) {
     ReplayDependencies d{};
     d.factory = [control] { return rk3576::createFactory(assembly(control)); };
     d.video = [](const std::string &) { return std::make_unique<Source>(100, 100); };
-    std::int64_t time{};
-    d.clock = {[&] { return time; },
+    std::atomic<std::int64_t> time{};
+    d.clock = {[&] { return time.load(); },
                [&](std::int64_t target) {
-                   time = std::max(time, target);
+                   time.store(std::max(time.load(), target));
                    // 仅测试时钟让后台线程取得 CPU；生产回放不等待检测结果。
                    std::this_thread::sleep_for(std::chrono::milliseconds{15});
                    ++control->frame;

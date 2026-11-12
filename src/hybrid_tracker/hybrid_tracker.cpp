@@ -97,6 +97,18 @@ private:
                         const std::vector<FrameRef>& catchup_frames,
                         const cv::Rect2f& yolo_box);
 
+    void rememberHint(const YoloResult &result, std::uint64_t attempt) {
+        if (result.searched_region.empty()) { return; }
+        m_region_hint = result.searched_region; m_region_hint_attempt = attempt;
+        m_region_hint_job = result.job_id; m_region_hint_source = result.frame_id;
+        m_detector_control.hint = result.searched_region;
+        auto hint{diagnostics::event(diagnostics::Type::RegionHint)};
+        hint.values = {m_region_hint_job, m_region_hint_source, attempt, result.source.attempt,
+            result.stage_kind, result.stage_index, 1};
+        hint.box = diagnosticBox(cv::Rect2f{m_region_hint}); hint.flags |= diagnostics::BoxValid;
+        hint.frame = result.source_identity; diagnostics::emit(hint);
+    }
+
     /** @brief 计算两个矩形的 IoU */
     static float calculateIOU(const cv::Rect2f& boxA, const cv::Rect2f& boxB);
 
@@ -139,7 +151,6 @@ private:
 
     // --- 状态 ---
     bool m_tracker_initialized = false;
-    bool m_watchdog_active{false};
     cv::Rect2f m_display_box;          // 整数化显示框（Python: tuple(map(int, ...))）
     bool m_has_display_box = false;
     cv::Rect2f m_previous_box;
@@ -157,7 +168,6 @@ private:
     int m_yolo_jump_count = 0;         // YOLO 检测连续跳变计数
     int m_yolo_lost = 0;               // YOLO 连续未确认次数（无目标/低IoU重初始化/未确认跳变）
     int m_init_fail_streak = 0;         // 检测初始化连续失败次数（防死循环保护）
-    int m_no_detection_frames = 0;     // 未收到任何检测信号的帧数（TRT 卡死保护）
     TrackerState m_state = TrackerState::Detecting;
 
     std::deque<BufferedFrame> m_frame_buffer;
@@ -172,7 +182,16 @@ private:
     std::deque<Measurement> m_measurements{};
     std::shared_ptr<tracking::OutputValidity> m_validity{std::make_shared<tracking::OutputValidity>()};
     std::function<tracking::Nanoseconds()> m_clock{tracking::monotonicNow};
-    std::uint64_t m_attempt_start_update{}, m_last_disposed_request{};
+    std::uint64_t m_last_disposed_request{}, m_last_agreement_frame{}, m_last_finalized_plan{};
+    struct PlanDisposition {
+        std::uint64_t id{}, attempt{}, frame{}, capture_us{};
+        bool usable{true}, positive{}, closed{};
+    };
+    std::deque<PlanDisposition> m_plans{};
+    DetectorControl m_detector_control{};
+    cv::Rect m_region_hint{};
+    std::uint64_t m_region_hint_attempt{};
+    std::uint64_t m_region_hint_job{}, m_region_hint_source{};
 
 
     // --- 组件 ---
@@ -270,11 +289,13 @@ void HybridTrackerImp::reset()
     // 只清空跟踪状态，TRT 引擎保留（Python can_reuse_nanotrack 的等价物）
     m_tracker->reset();
 
-    m_tracker_initialized = false; m_watchdog_active = false;
+    m_tracker_initialized = false;
     clearBoxes();
     ++m_generation;
     m_validity->reset(m_generation);
-    m_measurements.clear(); m_last_disposed_request = 0;
+    m_measurements.clear(); m_last_disposed_request = 0; m_last_agreement_frame = 0; m_last_finalized_plan = 0;
+    m_plans.clear(); m_detector_control = {};
+    m_region_hint = {}; m_region_hint_attempt = 0;
     m_frame_count = 0;
     m_frame_id_counter = 0;
     m_last_timestamp_us = 0;
@@ -283,7 +304,6 @@ void HybridTrackerImp::reset()
     m_yolo_jump_count = 0;
     m_yolo_lost = 0;
     m_init_fail_streak = 0;
-    m_no_detection_frames = 0;
     m_state = TrackerState::Detecting;
     m_display_info = "Detecting...";
     m_display_color = cv::Scalar(0, 255, 255); // 黄色 (BGR)
@@ -389,6 +409,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext &ctx) {
     if (m_tracker_initialized && (permission.phase == tracking::Phase::Searching
         || (permission.phase != tracking::Phase::VerifiedTracking && m_clock() >= permission.attempt_deadline_ns))) {
         m_validity->abandon(permission); m_tracker_initialized = false; clearBoxes(); m_measurements.clear();
+        m_region_hint = {}; m_region_hint_attempt = 0; m_detector_control.hint = {};
     }
     permission = m_validity->snapshot();
     cv::Vec4d prediction{};
@@ -432,6 +453,16 @@ TrackerOutput HybridTrackerImp::update(const FrameContext &ctx) {
     source.tracker_box = measured_box; source.tracker_valid = measured;
     source.prediction_box = prediction_box; source.prediction_valid = predicted;
     m_frame_buffer.back().tracker_box = measured_box; m_frame_buffer.back().has_tracker_box = measured;
+    auto policy{diagnostics::event(diagnostics::Type::CleanupPolicy)};
+    policy.values = {1, 0, static_cast<std::uint64_t>(m_settings.candidate_timeout_ms),
+        static_cast<std::uint64_t>(m_settings.confirmation_timeout_ms),
+        static_cast<std::uint64_t>(m_settings.yolo_interval), 2, 1};
+    diagnostics::emit(policy);
+    m_detector_control.permission = m_validity->snapshot();
+    m_detector_control.oldest_frame = m_frame_buffer.front().frame_id;
+    m_detector_control.confirmation_timeout_ms = m_settings.confirmation_timeout_ms;
+    m_detector_control.clock = m_clock;
+    m_detector->control(m_detector_control);
     // Exactly one snapshot. Current submission precedes all saved-result initialization and arbitration.
     YoloResult result{};
     const bool has_result{m_detector->get_result(result)};
@@ -444,12 +475,16 @@ TrackerOutput HybridTrackerImp::update(const FrameContext &ctx) {
         const auto base{predicted ? prediction_box : (m_has_display_box ? m_display_box : cv::Rect2f{})};
         if (tracking::validRectangle(base)) {
             const auto [width, height]{m_detector->getInputSize()};
-            roi = calculateROI(base, frame_w, frame_h, m_settings.roi_scale_factor, {width / 2, height / 2});
+            if (m_region_hint_attempt == permission.attempt && !m_region_hint.empty()) {
+                // Preserve the evaluated successful scale/aspect; only its center follows current evidence.
+                roi = calculateROI(base, frame_w, frame_h, 0, m_region_hint.size());
+            } else {
+                roi = calculateROI(base, frame_w, frame_h, m_settings.roi_scale_factor, {width / 2, height / 2});
+            }
         }
         m_detector->request(ctx.frame, current_frame_id, roi, source);
     } else { diagnostics::emit(diagnostics::event(diagnostics::Type::RequestSkipped, diagnostics::Reason::Interval)); }
     if (has_result) {
-        m_no_detection_frames = 0;
         diagnostics::current_request = result.request_id;
         auto decision{diagnostics::event(diagnostics::Type::Decision)};
         decision.source_tracker_frame_id = result.frame_id; decision.source_update_id = result.source_update_id;
@@ -461,14 +496,17 @@ TrackerOutput HybridTrackerImp::update(const FrameContext &ctx) {
             result.source.tracker_valid ? diagnostics::Reason::None : diagnostics::Reason::ContextUnavailable)};
         original.source_tracker_frame_id = result.frame_id; original.source_update_id = result.source_update_id;
         original.frame_time_us = result.source.capture_time_us; original.flags |= diagnostics::FrameTimeKnown;
+        original.frame = result.source_identity;
         original.box = diagnosticBox(result.source.tracker_box);
         original.other_box = diagnosticBox(result.source.prediction_box);
         if (result.source.tracker_valid) { original.flags |= diagnostics::BoxValid; }
         if (result.source.prediction_valid) { original.flags |= diagnostics::OtherBoxValid; }
         original.values[1] = result.source.generation;
-        original.values[2] = m_no_detection_frames;
-        const bool undisposed{result.request_id > m_last_disposed_request};
-        m_last_disposed_request = std::max(m_last_disposed_request, result.request_id);
+        original.values[2] = result.source.attempt;
+        original.values[3] = result.source.permission_revision;
+        const auto job_id{result.job_id ? result.job_id : result.request_id};
+        const bool undisposed{job_id > m_last_disposed_request};
+        m_last_disposed_request = std::max(m_last_disposed_request, job_id);
         const auto now{m_clock()};
         const bool clock_ok{tracking::usableClock(result.source.evidence, now)
             && result.source.capture_time_us <= ctx.frame->timestampUs()};
@@ -478,8 +516,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext &ctx) {
             && result.source.capture_time_us > 0 && result.source.capture_time_us <= ctx.frame->timestampUs()};
         const bool completed_search{result.reason == diagnostics::Reason::None || result.reason == diagnostics::Reason::NoTarget};
         permission = m_validity->snapshot();
-        const bool previous_attempt{result.source.attempt && result.source.attempt != permission.attempt
-            && result.source.update_id > m_attempt_start_update};
+
         auto history{std::find_if(m_frame_buffer.begin(), m_frame_buffer.end(), [&](const auto &entry) {
             return entry.frame_id == result.frame_id;
         })};
@@ -492,23 +529,40 @@ TrackerOutput HybridTrackerImp::update(const FrameContext &ctx) {
         lookup.source_tracker_frame_id = result.frame_id; lookup.source_update_id = result.source_update_id;
         if (result.has_target) { diagnostics::emit(lookup); }
         // The seed exception is limited to searching, original pixels and eligible undisposed identities.
-        const auto seed{[&](bool revoked_seed = false) {
-            if (!undisposed || !same_round || !source_identity || !clock_ok || !completed_search || previous_attempt || !result.has_target
-                || (result.source.attempt && !revoked_seed)
-                || history == m_frame_buffer.end() || !tracking::validRectangle(result.best.box)
+        bool seed_eligible{};
+        bool confirmation_eligible{};
+        std::uint64_t seeded_attempt{};
+        bool closes_plan{};
+        const auto seed{[&] {
+            if (m_tracker_initialized || m_validity->snapshot().phase != tracking::Phase::Searching
+                || !undisposed || !same_round || !source_identity || !clock_ok || !completed_search || !result.has_target
+                || history == m_frame_buffer.end()
+                || history->frame->timestampUs() != result.source.capture_time_us
+                || !tracking::validRectangle(result.best.box)
                 || (result.best.box & cv::Rect2f{0, 0, static_cast<float>(result.source.width),
                     static_cast<float>(result.source.height)}).empty()) { return false; }
+            seed_eligible = true;
             const auto begun{m_validity->begin(m_generation, result.frame_id, result.request_id,
                 m_clock(), m_settings.candidate_timeout_ms)};
             if (!begun) { return false; }
-            m_attempt_start_update = m_update_counter; m_yolo_lost = 0; m_measurements.clear();
+            seeded_attempt = begun->attempt;
+            decision.flags |= diagnostics::SeedUsed;
+            if (!fresh) { decision.flags |= diagnostics::StaleSeedUsed; }
+            closes_plan = true; m_yolo_lost = 0; m_measurements.clear();
+            m_last_agreement_frame = 0; m_plans.clear();
+            m_detector_control.permission = *begun;
+            m_detector_control.accepted_job = job_id;
+            m_detector_control.agreement_frame = 0;
+            m_detector_control.hint = result.searched_region;
+            rememberHint(result, begun->attempt);
+            m_detector->control(m_detector_control); // Before any model/template/catch-up work.
             std::vector<FrameRef> replay{};
             for (auto entry{std::next(history)}; entry != m_frame_buffer.end(); ++entry) { replay.push_back(entry->frame); }
             if (!catchupTracker(*history, replay, result.best.box)) {
+                decision.reason = diagnostics::Reason::InitFailed;
                 m_validity->abandon(*begun); m_tracker_initialized = false; clearBoxes(); return false;
             }
             m_tracker_initialized = m_validity->prepared(*begun);
-            m_watchdog_active = m_tracker_initialized;
             if (m_clock() >= begun->attempt_deadline_ns) {
                 m_validity->abandon(*begun); m_tracker_initialized = false; clearBoxes();
             }
@@ -518,10 +572,22 @@ TrackerOutput HybridTrackerImp::update(const FrameContext &ctx) {
             }
             return m_tracker_initialized;
         }};
-        if (!undisposed || !same_round || !source_identity || previous_attempt || !clock_ok || !completed_search) {
-            decision.reason = same_round ? diagnostics::Reason::ContextUnavailable : diagnostics::Reason::PreviousRound;
+        if (!undisposed || !same_round || !source_identity || !clock_ok || !completed_search) {
+            decision.reason = !undisposed ? diagnostics::Reason::Disposed
+                : !same_round ? diagnostics::Reason::PreviousRound
+                : !clock_ok ? diagnostics::Reason::InvalidClock
+                : !completed_search ? result.reason : diagnostics::Reason::InvalidInput;
         } else if (!m_tracker_initialized) {
-            seed();
+            if (!result.has_target) {
+                decision.reason = result.complete_coverage ? diagnostics::Reason::NoTarget
+                    : diagnostics::Reason::PartialCoverage;
+            } else if (!seed()) {
+                if (decision.reason != diagnostics::Reason::InitFailed) {
+                    decision.reason = history == m_frame_buffer.end() ? diagnostics::Reason::HistoryMiss
+                        : diagnostics::Reason::InvalidInput;
+                }
+                m_detector_control.rejected_job = job_id;
+            }
         } else if (fresh) {
             permission = m_validity->snapshot();
             cv::Rect2f comparison{};
@@ -537,7 +603,25 @@ TrackerOutput HybridTrackerImp::update(const FrameContext &ctx) {
                 comparison = result.source.tracker_box; comparable = true;
             }
             const bool later{result.frame_id > permission.seed_frame};
-            if (comparable && later) {
+            const auto parent_id{result.plan_id ? result.plan_id : result.fallback_plan_id};
+            auto plan{std::find_if(m_plans.begin(), m_plans.end(), [&](const auto &entry) {
+                return entry.id == parent_id && entry.attempt == permission.attempt;
+            })};
+            if (parent_id && plan == m_plans.end()) {
+                // Only one worker plan plus its in-flight terminal result can be outstanding.
+                while (m_plans.size() >= 3) { m_plans.pop_front(); }
+                m_plans.push_back({parent_id, permission.attempt, result.frame_id, result.source.capture_time_us});
+                plan = std::prev(m_plans.end());
+            }
+            const bool superseded{result.frame_id < m_last_agreement_frame};
+            confirmation_eligible = comparable && later && !superseded
+                && (plan == m_plans.end() || (!plan->closed && plan->frame == result.frame_id
+                    && plan->capture_us == result.source.capture_time_us));
+            if (plan != m_plans.end()) {
+                plan->usable = plan->usable && confirmation_eligible;
+                plan->positive = plan->positive || result.has_target;
+            }
+            if (confirmation_eligible) {
                 const cv::Rect2f source_bounds{0, 0, static_cast<float>(result.source.width),
                     static_cast<float>(result.source.height)};
                 comparison &= source_bounds;
@@ -564,22 +648,65 @@ TrackerOutput HybridTrackerImp::update(const FrameContext &ctx) {
                     if (m_validity->confirm(permission, result.frame_id, result.source.capture_time_us,
                         result.source.evidence, m_clock, m_settings.confirmation_timeout_ms, sourceNow())) {
                         m_yolo_lost = 0; reset_filter = !verified_before;
+                        m_last_agreement_frame = std::max(m_last_agreement_frame, result.frame_id);
+                        m_detector_control.agreement_frame = m_last_agreement_frame;
+                        if (!result.searched_region.empty()) {
+                            rememberHint(result, permission.attempt);
+                        }
+                        if (plan != m_plans.end()) { plan->closed = true; closes_plan = true; }
                         m_state = verified_before ? TrackerState::Tracking : TrackerState::TargetFound;
                     }
-                } else {
+                } else if (result.plan_cancellation_reason != diagnostics::Reason::None) {
+                    // Cancellation removes adverse authority, not the original positive evidence.
+                    decision.reason = result.plan_cancellation_reason;
+                    if (plan != m_plans.end()) { plan->closed = true; }
+                } else if (matches > 1 || (result.complete_coverage
+                    && (plan == m_plans.end() || (plan->usable && !plan->closed)))) {
+                    if (plan != m_plans.end()) { plan->closed = true; closes_plan = true; }
                     ++m_yolo_lost;
-                    decision.reason = !result.has_target ? diagnostics::Reason::NoTarget : diagnostics::Reason::LowIou;
-                    const auto reason{!result.has_target ? tracking::LossReason::NoTarget
+                    const bool any_positive{result.has_target || (plan != m_plans.end() && plan->positive)};
+                    decision.reason = !any_positive ? diagnostics::Reason::NoTarget : diagnostics::Reason::LowIou;
+                    const auto reason{!any_positive ? tracking::LossReason::NoTarget
                         : matches > 1 ? tracking::LossReason::Ambiguous : tracking::LossReason::Disagreement};
                     const bool revoked{m_validity->revoke(reason, m_clock(), sourceNow(), permission)};
                     if (revoked || m_yolo_lost >= m_settings.lost_max_count) {
                         decision.flags |= diagnostics::Critical;
                         m_validity->abandon(m_validity->snapshot()); m_tracker_initialized = false; clearBoxes();
-                        if (revoked && result.has_target) { seed(true); }
+                        if (revoked && result.has_target) { seed(); }
                     }
+                } else {
+                    decision.reason = diagnostics::Reason::PartialCoverage;
+                    m_detector_control.partial_job = job_id;
                 }
-            } else { decision.reason = diagnostics::Reason::ContextUnavailable; }
+            } else {
+                decision.reason = superseded ? diagnostics::Reason::Superseded
+                    : result.source.attempt && result.source.attempt != permission.attempt
+                        ? diagnostics::Reason::ActiveReplacement : diagnostics::Reason::ContextUnavailable;
+                m_detector_control.partial_job = job_id;
+            }
+        } else {
+            decision.reason = diagnostics::Reason::StaleEvidence;
+            m_detector_control.partial_job = job_id;
         }
+        const auto parent_id{result.plan_id ? result.plan_id : result.fallback_plan_id};
+        if (parent_id > m_last_finalized_plan && result.plan_cancellation_reason == diagnostics::Reason::None
+            && (closes_plan || result.complete_coverage)) {
+            auto verdict{diagnostics::event(diagnostics::Type::PlanOutcome, decision.reason)};
+            verdict.values = {parent_id, permission.attempt, result.frame_id, job_id,
+                static_cast<std::uint64_t>(m_yolo_lost), seeded_attempt, 0};
+            verdict.counts = {seeded_attempt ? 1U : closes_plan ? 2U : 3U,
+                m_yolo_lost > static_cast<int>(decision.counts[0]) ? 1U : 0U, 0, 0};
+            verdict.frame = result.source_identity; diagnostics::emit(verdict);
+            m_last_finalized_plan = parent_id;
+        }
+        auto disposition{diagnostics::event(diagnostics::Type::StageDisposition, decision.reason)};
+        disposition.values = {job_id, result.plan_id, result.fallback_plan_id, result.source.attempt,
+            seeded_attempt, permission.attempt, result.source.permission_revision};
+        disposition.counts = {seed_eligible ? 1U : 0U, confirmation_eligible ? 1U : 0U,
+            (decision.flags & diagnostics::SeedUsed) ? 1U : 0U, result.complete_coverage ? 1U : 0U};
+        disposition.source_tracker_frame_id = result.frame_id; disposition.source_update_id = result.source_update_id;
+        disposition.frame = result.source_identity;
+        diagnostics::emit(disposition);
         decision.counts[1] = m_yolo_lost; decision.counts[2] = 0; decision.counts[3] = 0;
         auto association{decision}; association.type = diagnostics::Type::CandidateMatch;
         association.values[3] = static_cast<std::uint64_t>(result.source.evidence.anchor_ns);
@@ -588,18 +715,9 @@ TrackerOutput HybridTrackerImp::update(const FrameContext &ctx) {
         association.counts[2] = result.stage_kind; association.counts[3] = result.stage_index;
         diagnostics::emit(association);
         diagnostics::emit(decision);
-    } else if (m_watchdog_active) {
-        ++m_no_detection_frames;
-        const auto limit{static_cast<std::int64_t>(m_settings.lost_max_count) * m_settings.yolo_interval * 3};
-        if (m_no_detection_frames > limit) {
-            // Cleanup has no authority to extend permission or emit another loss after expiry.
-            m_validity->revoke(tracking::LossReason::TrackingFailure, m_clock(), sourceNow());
-            m_validity->abandon(m_validity->snapshot()); m_tracker_initialized = false; clearBoxes();
-            auto timeout{diagnostics::event(diagnostics::Type::Decision, diagnostics::Reason::NoResultTimeout)};
-            timeout.counts[0] = m_no_detection_frames; timeout.values[0] = limit; diagnostics::emit(timeout);
-            m_no_detection_frames = 0; m_watchdog_active = false; m_tracker->reset();
-        }
     }
+    m_detector_control.permission = m_validity->snapshot();
+    m_detector->control(m_detector_control);
     m_jump_counter = 0; m_yolo_jump_count = 0; // Motion and appearance validators are nonblocking, not_evaluated.
     m_validity->expire(m_clock(), sourceNow());
     permission = m_validity->snapshot();
@@ -698,7 +816,7 @@ void HybridTrackerDiagnosticTestAccess::prime(HybridTracker &tracker, const Fram
     auto &value{dynamic_cast<HybridTrackerImp &>(tracker)};
     value.m_detector->finishRound();
     value.m_tracker->init(frame, {40, 30, 20, 20});
-    value.m_tracker_initialized = true; value.m_watchdog_active = true;
+    value.m_tracker_initialized = true;
     value.m_clock = [anchor = static_cast<std::int64_t>(frame->timestampUs() * 1000 + 1000000000)] { return anchor; };
     value.m_kf->initialize({50, 40, 20, 20}, frame->timestampUs(), cv::Matx33d::eye());
     const auto old{value.m_validity->snapshot()};
@@ -710,7 +828,7 @@ void HybridTrackerDiagnosticTestAccess::prime(HybridTracker &tracker, const Fram
         value.m_validity->confirm(*attempt, 1, frame->timestampUs(),
             {tracking::ClockMapping::StandaloneAdmissionV1, value.m_clock(), true}, value.m_clock(), 1000000);
     }
-    value.m_yolo_lost = lost; value.m_no_detection_frames = watchdog;
+    value.m_yolo_lost = lost; (void)watchdog;
     value.m_settings.max_position_jump = 10000;
     value.m_settings.max_size_jump_ratio = 10000;
     value.m_display_box = {40, 30, 20, 20}; value.m_has_display_box = true;
@@ -738,12 +856,12 @@ void HybridTrackerDiagnosticTestAccess::result(HybridTracker &tracker, YoloResul
 }
 std::array<int, 3> HybridTrackerDiagnosticTestAccess::counters(const HybridTracker &tracker) {
     const auto &value{dynamic_cast<const HybridTrackerImp &>(tracker)};
-    return {value.m_yolo_lost, value.m_no_detection_frames, value.m_tracker_initialized};
+    return {value.m_yolo_lost, 0, value.m_tracker_initialized};
 }
 bool HybridTrackerDiagnosticTestAccess::idle(const HybridTracker &tracker) {
     const auto &implementation{dynamic_cast<const HybridTrackerImp &>(tracker)};
     const auto &detector{*implementation.m_detector};
     std::lock_guard<std::mutex> lock{detector.m_mutex};
-    return !detector.m_executing && !detector.m_new_request;
+    return !detector.m_executing && (!detector.m_new_request || detector.m_result_ready);
 }
 #endif
