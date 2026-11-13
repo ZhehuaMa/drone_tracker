@@ -19,6 +19,7 @@
   <depend>vision_msgs</depend>
   <depend>mavros_msgs</depend>
   <depend>rosbag2_cpp</depend>
+  <depend>quadrotor_msgs</depend>
 
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>

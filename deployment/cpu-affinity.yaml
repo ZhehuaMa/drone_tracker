@@ -1,8 +1,9 @@
-# RK3576 生产板已验证的职责映射。修改后重启节点生效。
+# Standard RK3576 installation policy. Restart the node after changing roles.
 version: 1
 mode: role-pinned
-allowed_cpus: [4, 5, 6, 7]
+allowed_cpus: [2, 4, 5, 6, 7]
 roles:
+  topic_recording: 2
   ros_transport: 6
   control: 4
   tracking: 4

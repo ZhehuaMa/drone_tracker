@@ -4,6 +4,17 @@
 
 This directory contains ROS parameter templates. Copy a template into your own configuration before filling model paths, input-image calibration, and the actual camera topology.
 
+RK3576 templates include the complete startup `bag.*` profile. `need_save` controls
+ON/OFF message sessions; `recording.*` independently controls original-camera
+video. `bag.topics.<id>.name` selects a fixed typed input. Zero `max_hz` retains
+every received message. A 200 Hz IMU limited to 100 Hz selects samples at least
+10 ms apart; reception and decoding still consume resources. Sampling uses
+elapsed monotonic time, while bag indexing preserves valid source time and uses
+captured system-clock receipt time only for headerless messages or diagnosed
+invalid stamps. Use `bag.observations.max_hz` for the bbox/LOS pair. All recording
+settings require restart. See the [session recording guide](../docs/operations/RK3576_SESSION_RECORDING.md)
+for the catalog, protected events, image byte limits, queue limits and storage policy.
+
 | Template | Input and defaults |
 |---|---|
 | [rk3576_video_params.yaml](rk3576_video_params.yaml) | Local MJPEG video; model paths and calibration must be supplied |

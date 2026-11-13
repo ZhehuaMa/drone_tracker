@@ -15,6 +15,7 @@ usage() {
 选项:
   --camera-config 绝对路径   使用指定相机配置，逐字节纳入包
   --install-root 绝对路径    使用指定 ARM64 安装目录
+  --message-install PATH   Matching target quadrotor_msgs installation
   --cpu-policy 绝对路径      使用指定 CPU 策略
   --without-models          省略模型文件，仍校验并记录模型 SHA-256
   --help                    显示帮助
@@ -26,6 +27,7 @@ repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 image=drone-tracker-rk3576:humble-arm64-rknn2.3.2
 camera_config=$repo_dir/parameters/rk3576_sc233hgs_production_params.yaml
 install_root=$repo_dir/.docker-artifacts/install/drone_tracker
+message_install=
 cpu_policy=$repo_dir/deployment/cpu-affinity.yaml
 model_root=
 without_models=0
@@ -34,7 +36,7 @@ while (($#)); do
     case "$1" in
         --help|-h) usage; exit 0 ;;
         --without-models) without_models=1; shift ;;
-        --model-root|--camera-config|--install-root|--cpu-policy)
+        --model-root|--camera-config|--install-root|--cpu-policy|--message-install)
             (($# >= 2)) || fail "$1 缺少路径"
             option=$1; value=$2; shift 2
             [[ $value == /* ]] || fail "$option 必须是绝对路径"
@@ -42,6 +44,7 @@ while (($#)); do
                 --model-root) model_root=$value ;;
                 --camera-config) camera_config=$value ;;
                 --install-root) install_root=$value ;;
+                --message-install) message_install=$value ;;
                 --cpu-policy) cpu_policy=$value ;;
             esac ;;
         --*) fail "未知选项: $1" ;;
@@ -56,6 +59,9 @@ done
 [[ -f $cpu_policy ]] || fail "CPU 策略不存在: $cpu_policy"
 model_root=$(cd -- "$model_root" && pwd -P)
 install_root=$(cd -- "$install_root" && pwd -P)
+if [[ -z $message_install ]]; then message_install="$(dirname -- "$install_root")/quadrotor_msgs"; fi
+[[ -f $message_install/share/quadrotor_msgs/package.xml ]] || fail "Missing target quadrotor_msgs installation: $message_install"
+message_install=$(cd -- "$message_install" && pwd -P)
 camera_config=$(cd -- "$(dirname -- "$camera_config")" && pwd -P)/$(basename -- "$camera_config")
 cpu_policy=$(cd -- "$(dirname -- "$cpu_policy")" && pwd -P)/$(basename -- "$cpu_policy")
 command -v docker >/dev/null || fail '未找到 Docker'
@@ -74,6 +80,7 @@ docker run --rm --network none --platform linux/arm64 \
     --mount "type=bind,src=$camera_config,dst=/inputs/camera.yaml,readonly" \
     --mount "type=bind,src=$cpu_policy,dst=/inputs/cpu-affinity.yaml,readonly" \
     --mount "type=bind,src=$install_root,dst=/inputs/install,readonly" \
+    --mount "type=bind,src=$message_install,dst=/inputs/messages,readonly" \
     --mount "type=bind,src=$model_root,dst=/inputs/models,readonly" \
     --mount "type=bind,src=$output,dst=/output" \
     --env "PACKAGE_CAMERA_SOURCE=$camera_config" \

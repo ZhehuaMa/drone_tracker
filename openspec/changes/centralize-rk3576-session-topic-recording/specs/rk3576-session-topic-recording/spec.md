@@ -78,7 +78,7 @@ The recorder SHALL honor startup topic-name overrides and ROS remappings. It SHA
 
 ### Requirement: Recording uses explicit operating sessions
 
-With `need_save=true`, a newly established ON round SHALL open one new recording session. OFF, EOF, a round-ending failure, or normal service termination SHALL stop admission and close that session. Service startup and preview alone MUST NOT open a bag. MISSION and DISMISS SHALL be recordable events without independently opening or closing a tracking recording session.
+With `need_save=true`, a newly established ON round SHALL open one new recording session. OFF, EOF, a round-ending failure, or normal service termination SHALL stop admission and close that session. Service startup and preview alone MUST NOT open a bag. MISSION and DISMISS SHALL be recordable events without independently opening or closing a tracking recording session. Thread placement SHALL follow the topic-recording role contract in `rk3576-thread-affinity`.
 
 #### Scenario: Preview followed by two sessions
 - **WHEN** the camera previews for ten seconds, then runs ON/OFF twice
@@ -91,6 +91,10 @@ With `need_save=true`, a newly established ON round SHALL open one new recording
 #### Scenario: Recording disabled
 - **WHEN** `need_save=false` and the service previews or receives ON/OFF
 - **THEN** no recording subscriptions or recording executor thread are started and no bag writer or bag files are created
+
+#### Scenario: Installed topic role across two rounds
+- **WHEN** the standard installed policy selects topic-recording CPU 2 and an enabled service runs ON/OFF twice
+- **THEN** the dedicated callback executor and each round's writer confirm CPU 2, preview still creates no bag, and the two rounds retain distinct session boundaries
 
 ### Requirement: Session boundaries retain authoritative control events
 

@@ -66,6 +66,14 @@ auto output{tracker->update(context)};
 
 `finishRound()` must run after updates stop. It cancels pending detection, waits for in-flight frame access, and clears unread results. `reset()` starts fresh algorithm state while preserving loaded models. Old requests/results cannot enter the next round. Jetson retains its frame-source recording boundary; RK3576 uses `need_save` for ROS bags and `recording.*` for independent SC233HGS video recording.
 
+The standard installed `topic_recording` CPU role selects CPU 2 for both the
+recording subscription executor and every session bag writer. ROS communication
+resources retain their transport role, and camera-video controllers/encoders
+retain their separate recording role. Older direct runtime policies without the
+optional topic role preserve their per-thread legacy bindings. See the
+[session recording guide](../../docs/operations/RK3576_SESSION_RECORDING.md) and
+[deployment policy](../../deployment/README.md#configuration-devices-and-cpu-policy).
+
 ## Standalone YOLO
 
 The standalone build needs C++17, OpenCV core/imgproc/dnn/video/imgcodecs/videoio, threads, and the ARM64 RKNN SDK. It does not require ROS or Jetson SDKs. A native ARM64 SDK example is:
@@ -293,7 +301,13 @@ BBox/LOS use reliable depth 10. Gimbal uses best-effort depth 10, MAVROS IMU bes
 ros2 topic echo /fpv/tracker_image --qos-reliability best_effort
 ```
 
-Debug images require `visualized_result=true` and an active round that actually consumes input. `need_save` controls an independent asynchronous ROS bag containing gimbal, odometry, bbox, LOS, and MAVROS IMU. Bags never register or write `/fpv/tracker_image`, for either visualization setting. Independent original-camera video uses `recording.enabled`.
+Debug images require `visualized_result=true` and an active round that actually
+consumes input. `need_save` controls the unified asynchronous session recorder's
+fixed application catalog. Published debug images are eligible under its separate
+rate/byte policy during ON; a session without admitted images has no image topic
+metadata. Recording does not enable publication or generate preview images.
+Independent original-camera video uses `recording.enabled`. See the
+[session topic recording guide](../../docs/operations/RK3576_SESSION_RECORDING.md).
 
 Bag admission is bounded to 256 messages and 64 MiB. A bbox/LOS pair consumes two slots and is admitted together or rejected together; rejection marks the bag incomplete. A disk error can still leave half a pair written and fails the bag. Open/write/close/collision failures leave healthy tracking, HDMI, and independent camera recording running. Per-round bag directories never overwrite earlier sessions.
 

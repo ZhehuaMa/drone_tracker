@@ -58,7 +58,26 @@ RK3576 ROS input supports local MJPEG files and explicit AR0234 or SC233HGS came
 
 For a camera with `osd.enabled=true`, service startup begins capture and HDMI preview after initialization. ON creates a tracking round and explicitly enabled recording sessions. OFF rejects further old-round results, clears target decoration, and resumes fresh preview while model/recording cleanup completes. It does not reopen or stop the camera. Camera failure ends the service with a nonzero result; safe service shutdown releases the devices. Finite video, cameras without OSD, independent input tools, and Jetson retain their specified ON/OFF and EOF lifecycles.
 
-`need_save` controls RK3576 ROS bag recording. Bags contain the configured non-image observation and attitude topics; `/fpv/tracker_image` is never recorded. `visualized_result` independently enables live debug images for consumed tracking frames. `recording.enabled` controls SC233HGS original-camera H.264/TS video in an independent process; its failure does not stop otherwise healthy tracking or display.
+`need_save` controls RK3576 ROS bag recording. `src/recording/RecordingManager`
+owns the fixed application catalog, subscriptions and a dedicated callback
+executor. One asynchronous `BagSession` worker writes each ON/OFF session.
+The tracker directly forwards authoritative triggers and paired bbox/LOS
+observations. Published debug images are eligible for sampled recording only
+during ON; recording never enables their publication or creates preview images.
+`visualized_result` independently enables live debug images for consumed tracking
+frames and remains false in the normal production profile. `recording.enabled`
+controls SC233HGS original-camera H.264/TS video in an independent process.
+See the [session guide](../operations/RK3576_SESSION_RECORDING.md) for policy,
+ownership, source-time and storage boundaries.
+
+The standard installation adds a dedicated `topic_recording: 2` role for the
+recording callback executor and each bag writer, with allowed CPUs
+`[2, 4, 5, 6, 7]`. ROS resource creation remains on its transport role and
+camera-video controllers/encoders remain on their recording role. Explicit
+custom and inherited policies remain supported. Legacy direct runtime policies
+without the optional topic role keep the old executor/writer split. Each new
+worker confirms affinity before work; historical manually pinned measurements
+do not validate a new automatic-binding binary.
 
 RK3576 bbox and LOS observations share one reference timestamp. LOS means the camera-to-target direction and its rotation-compensated angular rates. Default `publish_prediction=false` uses capture time; prediction mode selects an eligible pose time or falls back to capture time. Preserve the separate image capture timestamp, floating observation precision, validity rules, and QoS. Tracking states remain `Detecting=0`, `TargetFound=1`, `Tracking=2`, and `TargetLost=3`; preview does not create another algorithm state.
 

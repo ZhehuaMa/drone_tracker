@@ -7,7 +7,7 @@
 #include <thread>
 #include <vector>
 namespace cpu_affinity {
-enum class Role { Control, Tracking, Yolo, Display, Capture, Recording, RosTransport };
+enum class Role { Control, Tracking, Yolo, Display, Capture, Recording, RosTransport, TopicRecording };
 enum class Mode { Inherit, RolePinned };
 struct Policy {
     bool configured{};
@@ -15,6 +15,7 @@ struct Policy {
     std::vector<int> allowed_cpus{};
     int control{-1}, tracking{-1}, yolo{-1}, display{-1}, capture{-1}, recording{-1};
     int ros_transport{-1};
+    int topic_recording{-1};
 };
 /** @brief Explicit restoration keeps errors out of destructors during exception unwinding. */
 class Transition {
@@ -34,6 +35,9 @@ void initializeControl();
 const Policy &current();
 const char *name(Role role) noexcept;
 int core(const Policy &policy, Role role) noexcept;
+/** @brief Missing optional topic policy preserves each caller's legacy role. */
+Role topicRecordingRole(const Policy &policy, Role legacy_role) noexcept;
+Role topicRecordingRole(Role legacy_role);
 std::string apply(const Policy &policy, Role role, std::uint64_t round = 0);
 void apply(Role role, std::uint64_t round = 0);
 Transition enter(const Policy &policy, Role role);

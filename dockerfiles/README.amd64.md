@@ -104,6 +104,14 @@ The historical 2026-10-15 ordinary `./build.sh --test` run passed 57/57 CTests i
 
 From the tracker repository, `./build.sh` defaults to this x86_64 image and generates ARM64 deployment binaries. It checks the installed executable's ELF machine type before reporting success. Use `./build.sh --test` for the full existing CTest suite. The established helper `bash tests/tracking_regression/run_sdk_tests.sh` delegates to the same build policy; `--regression-only` explicitly selects its regression subset.
 
+The unified RK3576 message recorder requires real `quadrotor_msgs` sources even
+with the OSD feedback adapter disabled. The workflow builds that package for the
+same target before `drone_tracker`. Its default source is `../quadrotor_msgs`;
+worktrees can use `--quadrotor-msgs /absolute/quadrotor_msgs`. The source is mounted
+read-only and code generation runs natively. Generated ARM64 libraries stay in
+the selected backend's `install/quadrotor_msgs` prefix. Tests receive a freshly
+generated ROS domain ID on every build invocation and use localhost discovery.
+
 ```bash
 ./build.sh --test --artifacts-dir /tmp/tracker-build
 ./build.sh --backend arm64 --test --artifacts-dir /tmp/tracker-build

@@ -36,9 +36,13 @@ elif arguments[0] == 'run':
         self.environment = dict(os.environ, PATH=str(self.bin) + os.pathsep + os.environ["PATH"],
                                 FAKE_DOCKER_CALLS=str(self.calls))
         self.artifacts = self.root / "artifacts"
+        self.messages = self.root / "quadrotor_msgs"
+        self.messages.mkdir()
+        (self.messages / "package.xml").write_text('<package><name>quadrotor_msgs</name></package>')
 
     def run_build(self, *arguments, **environment):
         return subprocess.run(["bash", str(REPO / "build.sh"), "--artifacts-dir", str(self.artifacts),
+                               "--quadrotor-msgs", str(self.messages),
                                *arguments], env=dict(self.environment, **environment), text=True,
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 

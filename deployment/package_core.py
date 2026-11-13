@@ -22,6 +22,23 @@ MODEL_KEYS = ('yolo_engine', 'nano_template_backbone', 'nano_search_backbone', '
 PACKAGER = Path('/packager')
 INPUTS = Path('/inputs')
 ROS_LIB = Path('/opt/ros/humble/lib')
+RECORDING_MESSAGE_PACKAGES = ('sensor_msgs', 'geometry_msgs', 'nav_msgs', 'vision_msgs',
+                              'std_msgs', 'mavros_msgs', 'quadrotor_msgs', 'builtin_interfaces')
+
+
+def recording_libraries(message_install):
+    """Require real generated target libraries, including dynamically loaded type support."""
+    result = []
+    for package in RECORDING_MESSAGE_PACKAGES:
+        root = message_install / 'lib' if package == 'quadrotor_msgs' else ROS_LIB
+        libraries = [path for path in sorted(root.glob(f'lib{package}*.so'))
+                     if 'generator_py' not in path.name]
+        if not libraries or not any('typesupport_cpp' in path.name for path in libraries):
+            raise RuntimeError(f'Missing generated recording libraries: {package} in {root}')
+        for library in libraries:
+            aarch64(library)
+        result.extend(libraries)
+    return result
 
 
 def digest(path):
@@ -116,9 +133,13 @@ def make_bundle(bundle, source_info):
     camera = INPUTS / 'camera.yaml'
     policy = INPUTS / 'cpu-affinity.yaml'
     install = INPUTS / 'install'
+    messages = INPUTS / 'messages'
     model_root = INPUTS / 'models'
     params = parse_camera(camera)
-    run('python3', str(PACKAGER / 'cpu-policy.py'), str(policy))
+    protocol_env = os.environ.copy()
+    protocol_env['LD_LIBRARY_PATH'] = f"{messages / 'lib'}:/opt/rknn-runtime/lib:{protocol_env.get('LD_LIBRARY_PATH', '')}"
+    run('python3', str(PACKAGER / 'cpu-policy.py'), str(policy), '--offline', '--camera-config', str(camera),
+        '--node', str(install / 'lib/drone_tracker/drone_tracker_node'), env=protocol_env)
     diagnostics = PACKAGER / 'diagnostics.yaml'
     run('python3', '-c', 'import importlib.machinery,sys; m=importlib.machinery.SourceFileLoader("diagnostic_launch","/packager/diagnostic-launch.py").load_module(); m.parse(sys.argv[1])', str(diagnostics))
     diagnostic_record = copy(diagnostics, bundle / 'config/diagnostics.yaml')
@@ -133,8 +154,6 @@ def make_bundle(bundle, source_info):
     (bundle / 'run-diagnostics').chmod(0o755)
     (bundle / 'rollback.sh').chmod(0o755)
 
-    protocol_env = os.environ.copy()
-    protocol_env['LD_LIBRARY_PATH'] = f"/opt/rknn-runtime/lib:{protocol_env.get('LD_LIBRARY_PATH', '')}"
     program_records = {}
     program_dir = bundle / 'payload/lib/drone_tracker'
     for name in PROGRAMS:
@@ -169,15 +188,23 @@ def make_bundle(bundle, source_info):
     private = bundle / 'payload/lib/bundled-ros'
     private.mkdir(parents=True)
     seeds = [ROS_LIB / 'libcv_bridge.so']
-    seeds += [path for path in sorted(ROS_LIB.glob('libvision_msgs*.so'))
-              if 'generator_py' not in path.name]
+    seeds += recording_libraries(messages)
     if len(seeds) < 2 or any(not path.is_file() for path in seeds):
         raise RuntimeError('ARM64 镜像缺少 cv_bridge 或 vision_msgs 类型支持库')
     pending = list(program_dir.iterdir())
     seen = set()
     library_records = {}
     dependency_env = os.environ.copy()
-    dependency_env['LD_LIBRARY_PATH'] = f"/opt/rknn-runtime/lib:{dependency_env.get('LD_LIBRARY_PATH', '')}"
+    dependency_env['LD_LIBRARY_PATH'] = f"{messages / 'lib'}:/opt/rknn-runtime/lib:{dependency_env.get('LD_LIBRARY_PATH', '')}"
+    for package in RECORDING_MESSAGE_PACKAGES:
+        prefix = messages if package == 'quadrotor_msgs' else ROS_LIB.parent
+        for resource in (Path('share/ament_index/resource_index/packages') / package,
+                         Path('share/ament_index/resource_index/rosidl_interfaces') / package,
+                         Path('share') / package / 'package.xml'):
+            source = prefix / resource
+            if not source.is_file():
+                raise RuntimeError(f'Missing recording package discovery resource: {source}')
+            copy(source, bundle / 'payload' / resource)
 
     def include_library(name, source):
         if name == 'librknnrt.so' or source.name == 'librknnrt.so':
@@ -206,7 +233,7 @@ def make_bundle(bundle, source_info):
             if match:
                 name, resolved = match.groups()
                 dependency = Path(resolved)
-                if dependency.is_relative_to(ROS_LIB):
+                if dependency.is_relative_to(ROS_LIB) or dependency.is_relative_to(messages / 'lib'):
                     include_library(name, dependency)
     env = os.environ.copy()
     env['LD_LIBRARY_PATH'] = f"{private}:/opt/rknn-runtime/lib:{env.get('LD_LIBRARY_PATH', '')}"

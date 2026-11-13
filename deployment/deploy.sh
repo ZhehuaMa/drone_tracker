@@ -28,7 +28,7 @@ cd "$bundle"
 sha256sum --check --quiet SHA256SUMS || fail '部署包校验失败'
 runtime_hash=d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8
 [[ $(sha256sum /usr/lib/librknnrt.so | cut -d' ' -f1) == "$runtime_hash" ]] || fail '系统 RKNN Runtime 与生产基线不同'
-cpus=$(python3 "$bundle/cpu-policy.py" "$bundle/config/cpu-affinity.yaml") || fail 'CPU 策略无效'
+cpus=$(python3 "$bundle/cpu-policy.py" "$bundle/config/cpu-affinity.yaml" --camera-config "$bundle/config/camera.yaml") || fail 'CPU 策略无效'
 IFS=, read -ra policy_cores <<< "$cpus"
 for cpu in "${policy_cores[@]}"; do
     taskset -c "$cpu" true || fail "CPU $cpu 不可用"
@@ -57,6 +57,9 @@ for program in drone_tracker_node rk3576_recording_worker rk3576_recording_inspe
         fail "动态库不匹配: $program: $links"
     fi
 done
+python3 "$bundle/cpu-policy.py" "$bundle/config/cpu-affinity.yaml" \
+    --camera-config "$bundle/config/camera.yaml" --node "$bundle/payload/lib/drone_tracker/drone_tracker_node" \
+    >/dev/null || fail 'Selected node does not support the topic-recording CPU policy; rebuild this release'
 python3 -c 'import importlib.machinery; m=importlib.machinery.SourceFileLoader("diagnostic_launch", "diagnostic-launch.py").load_module(); m.parse("config/diagnostics.yaml")' || fail '诊断配置无效'
 [[ $("$bundle/payload/lib/drone_tracker/drone_tracker_node" --diagnostic-protocol-version) == 2 ]] || fail '主业务诊断协议不兼容'
 for program in rk3576_diagnostic_worker rk3576_diagnostic_inspect; do

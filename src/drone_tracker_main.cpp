@@ -2,12 +2,22 @@
 #include "platform/cpu_affinity.h"
 #include "diagnostics/measurement.h"
 
+#include <cstdlib>
 #include <iostream>
+#include <string>
 
 int main(int argc, char *argv[]) {
 #ifdef DRONE_TRACKER_RK3576
     if (argc == 2 && std::string{argv[1]} == "--diagnostic-protocol-version") {
-        std::cout << diagnostics::FORMAT_VERSION << '\n'; return 0;
+        const char *capabilities{std::getenv("DRONE_TRACKER_RELEASE_CAPABILITIES")};
+        if (capabilities && std::string{capabilities} == "1") {
+            // Reuse an old safe inspection exit: unsupported probes must never start devices.
+            std::cout << "{\"diagnostic_protocol_version\":" << diagnostics::FORMAT_VERSION
+                      << ",\"topic_recording_affinity\":1}\n";
+        } else {
+            std::cout << diagnostics::FORMAT_VERSION << '\n';
+        }
+        return 0;
     }
 #endif
     int result{0};

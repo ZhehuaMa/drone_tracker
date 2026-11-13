@@ -123,6 +123,17 @@ still covers only the measured inputs/models.
 `--baseline DIRECTORY` and `--direct DIRECTORY` arguments, with detailed and total-only
 observation for both sides and at least `--min-rounds` (default 3) runs per group.
 `--report FILE` writes the report. Each option accepts exactly one directory.
+For three runs in each required group, invoke the comparator from its install directory:
+
+```bash
+./nanotrackv3_benchmark_compare \
+  --baseline baseline-observed-1 --baseline baseline-observed-2 --baseline baseline-observed-3 \
+  --baseline baseline-total-1 --baseline baseline-total-2 --baseline baseline-total-3 \
+  --direct search-direct-observed-1 --direct search-direct-observed-2 --direct search-direct-observed-3 \
+  --direct search-direct-total-1 --direct search-direct-total-2 --direct search-direct-total-3 \
+  --report comparison.json
+```
+
 The tool checks board/system/host, CPU mask, input/model/library hashes, actual precision,
 code/compiler/options/dependencies, time base, Runtime/driver, initial box, warmup,
 limits, rounds and environment sampling. Missing/different conditions prevent its

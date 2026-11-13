@@ -32,6 +32,10 @@ check(dict(base, roles=dict(base["roles"], ros_transport=cpus[0])), True)
 for value in (None, True, "0", 1.5, -1, max(cpus) + 1):
     check(dict(base, roles=dict(base["roles"], ros_transport=value)), False)
 check(dict(base, mode="inherit", roles={"ros_transport": None}), True)
+check(dict(base, roles=dict(base["roles"], topic_recording=cpus[0])), True)
+for value in (None, True, "0", 1.5, -1, max(cpus) + 1):
+    check(dict(base, roles=dict(base["roles"], topic_recording=value)), False)
+check(dict(base, mode="inherit", roles={"topic_recording": None}), True)
 for field, value in (("version", 2), ("mode", "invalid"), ("allowed_cpus", []),
                      ("allowed_cpus", [cpus[0], cpus[0]]), ("allowed_cpus", [-1])):
     changed = dict(base)
@@ -47,8 +51,8 @@ del changed["roles"]
 check(changed, True)
 template = yaml.safe_load((deployment / "cpu-affinity.yaml").read_text())
 assert template == {
-    "version": 1, "mode": "role-pinned", "allowed_cpus": [4, 5, 6, 7],
-    "roles": {"ros_transport": 6, "control": 4, "tracking": 4, "yolo": 5, "display": 6, "capture": 7, "recording": 7},
+    "version": 1, "mode": "role-pinned", "allowed_cpus": [2, 4, 5, 6, 7],
+    "roles": {"topic_recording": 2, "ros_transport": 6, "control": 4, "tracking": 4, "yolo": 5, "display": 6, "capture": 7, "recording": 7},
 }
 service = (deployment / "drone-tracker.service").read_text()
 runner = (deployment / "run-camera").read_text()
@@ -63,3 +67,34 @@ installer = (deployment / "deploy.sh").read_text()
 assert "--cpu-policy" in packager and "deployment/cpu-affinity.yaml" in packager
 assert "config/cpu-affinity.yaml" in package_core and "'cpu_policy': policy_record" in package_core
 assert "config/cpu-affinity.yaml" in installer and "cpu-policy.py" in installer
+
+# Run the real helper against safe inspection-only binaries. A diagnostic
+# protocol version alone does not establish support for the topic role.
+with tempfile.TemporaryDirectory() as directory:
+    fixture = pathlib.Path(directory)
+    policy = fixture / 'policy.yaml'
+    camera = fixture / 'camera.yaml'
+    node = fixture / 'node'
+    policy.write_text(yaml.safe_dump(dict(base, roles=dict(base['roles'], topic_recording=cpus[0]))))
+    camera.write_text(yaml.safe_dump({'drone_tracker_node': {'ros__parameters': {'need_save': True}}}))
+    for response, valid in [('2', False), ('null', False), ('{}', False),
+                            ('{"topic_recording_affinity":true}', False),
+                            ('{"topic_recording_affinity":1}', True)]:
+        node.write_text('#!/bin/sh\n[ "$1" = --diagnostic-protocol-version ] || exit 8\n'
+                        '[ "$DRONE_TRACKER_RELEASE_CAPABILITIES" = 1 ] || exit 9\n'
+                        'printf "%s\\n" ' + "'" + response + "'\n")
+        node.chmod(0o755)
+        result = subprocess.run([sys.executable, str(helper), str(policy), '--offline',
+                                 '--camera-config', str(camera), '--node', str(node)],
+                                text=True, capture_output=True)
+        assert (result.returncode == 0) == valid, result.stderr
+        if not valid:
+            assert 'roles.topic_recording' in result.stderr and '--install-root' in result.stderr
+    node.write_text('#!/bin/sh\nexit 8\n')
+    for enabled, mode in ((True, 'inherit'), (False, 'role-pinned')):
+        camera.write_text(yaml.safe_dump({'drone_tracker_node': {'ros__parameters': {'need_save': enabled}}}))
+        policy.write_text(yaml.safe_dump(dict(base, mode=mode)))
+        result = subprocess.run([sys.executable, str(helper), str(policy), '--offline',
+                                 '--camera-config', str(camera), '--node', str(node)],
+                                text=True, capture_output=True)
+        assert result.returncode == 0, result.stderr

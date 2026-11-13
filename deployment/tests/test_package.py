@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import struct
 from unittest import mock
 
 DEPLOYMENT = Path(__file__).resolve().parents[1]
@@ -34,6 +35,33 @@ class ModelMappingTest(unittest.TestCase):
             params['tracker']['nano_head'] = '/opt/drone_tracker/models/escape.rknn'
             with self.assertRaises(RuntimeError):
                 package_core.model_sources(params, root)
+
+
+class RecordingLibraryTest(unittest.TestCase):
+    @staticmethod
+    def elf(path, machine=183):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        identification = b'\x7fELF' + bytes((2, 1, 1)) + bytes(9)
+        path.write_bytes(struct.pack('<16sHHIQQQIHHHHHH', identification, 3, machine,
+                                     1, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0))
+
+    def test_complete_missing_and_wrong_architecture(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ros = root / 'ros/lib'
+            messages = root / 'messages'
+            for package in package_core.RECORDING_MESSAGE_PACKAGES:
+                prefix = messages / 'lib' if package == 'quadrotor_msgs' else ros
+                self.elf(prefix / f'lib{package}__rosidl_typesupport_cpp.so')
+            with mock.patch.object(package_core, 'ROS_LIB', ros):
+                self.assertEqual(len(package_core.recording_libraries(messages)), 8)
+                target = messages / 'lib/libquadrotor_msgs__rosidl_typesupport_cpp.so'
+                self.elf(target, machine=62)
+                with self.assertRaisesRegex(RuntimeError, 'AArch64'):
+                    package_core.recording_libraries(messages)
+                target.unlink()
+                with self.assertRaisesRegex(RuntimeError, 'quadrotor_msgs'):
+                    package_core.recording_libraries(messages)
 
 
 class EntryTest(unittest.TestCase):
@@ -69,6 +97,9 @@ class EntryTest(unittest.TestCase):
             shutil.copytree(DEPLOYMENT, fixture / 'deployment')
             shutil.copytree(DEPLOYMENT.parent / 'parameters', fixture / 'parameters')
             (fixture / '.docker-artifacts/install/drone_tracker').mkdir(parents=True)
+            package = fixture / '.docker-artifacts/install/quadrotor_msgs/share/quadrotor_msgs/package.xml'
+            package.parent.mkdir(parents=True)
+            package.write_text('<package/>')
         return subprocess.run([str(fixture / 'deployment/package.sh'), *arguments],
                               env=self.env, text=True, capture_output=True)
 
@@ -85,6 +116,9 @@ class EntryTest(unittest.TestCase):
             (self.root / name).write_text('test')
         install = self.root / 'install'
         install.mkdir()
+        message_package = self.root / 'quadrotor_msgs/share/quadrotor_msgs/package.xml'
+        message_package.parent.mkdir(parents=True)
+        message_package.write_text('<package/>')
         explicit = self.invoke(output, '--model-root', str(self.models),
                                '--camera-config', str(self.root / 'camera.yaml'),
                                '--cpu-policy', str(self.root / 'policy.yaml'),

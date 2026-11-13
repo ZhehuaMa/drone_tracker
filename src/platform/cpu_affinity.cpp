@@ -51,6 +51,7 @@ const char *name(Role role) noexcept {
     case Role::Capture: return "capture";
     case Role::Recording: return "recording";
     case Role::RosTransport: return "ros_transport";
+    case Role::TopicRecording: return "topic_recording";
     }
     return "unknown";
 }
@@ -63,9 +64,14 @@ int core(const Policy &p, Role role) noexcept {
     case Role::Capture: return p.capture;
     case Role::Recording: return p.recording;
     case Role::RosTransport: return p.ros_transport < 0 ? p.control : p.ros_transport;
+    case Role::TopicRecording: return p.topic_recording;
     }
     return -1;
 }
+Role topicRecordingRole(const Policy &policy, Role legacy_role) noexcept {
+    return policy.topic_recording >= 0 ? Role::TopicRecording : legacy_role;
+}
+Role topicRecordingRole(Role legacy_role) { return topicRecordingRole(current(), legacy_role); }
 Policy load(const std::string &path) {
     Policy p{};
     if (path.empty()) { return p; }
@@ -111,14 +117,22 @@ Policy load(const std::string &path) {
                 throw std::invalid_argument("CPU policy role outside allowed_cpus: ros_transport");
             }
         }
+        if (map["topic_recording"].IsDefined()) {
+            p.topic_recording = readCore(map["topic_recording"], "topic_recording", true);
+            if (std::find(p.allowed_cpus.begin(), p.allowed_cpus.end(), p.topic_recording) == p.allowed_cpus.end()) {
+                throw std::invalid_argument("CPU policy role topic_recording outside allowed_cpus");
+            }
+        }
     }
     for (const int value : p.allowed_cpus) {
         const std::string dir{"/sys/devices/system/cpu/cpu" + std::to_string(value)};
-        if (::access(dir.c_str(), F_OK)) { throw std::invalid_argument("CPU policy unavailable CPU: " + std::to_string(value)); }
+        if (::access(dir.c_str(), F_OK)) { throw std::invalid_argument("CPU policy unavailable CPU"
+            + std::string{value == p.topic_recording ? " for topic_recording: " : ": "} + std::to_string(value)); }
         std::ifstream state{dir + "/online"};
         if (state) {
             int online{}; state >> online;
-            if (online != 1) { throw std::invalid_argument("CPU policy offline CPU: " + std::to_string(value)); }
+            if (online != 1) { throw std::invalid_argument("CPU policy offline CPU"
+                + std::string{value == p.topic_recording ? " for topic_recording: " : ": "} + std::to_string(value)); }
         }
     }
     p.configured = true;
@@ -141,6 +155,9 @@ std::string apply(const Policy &p, Role role, std::uint64_t round) {
     if (!p.configured || p.mode == Mode::Inherit) { return "inherited"; }
 #ifdef DRONE_TRACKER_RK3576
     const int requested{core(p, role)};
+    if (requested < 0 || requested >= CPU_SETSIZE) {
+        throw std::runtime_error(std::string{"CPU affinity missing or invalid core for role="} + name(role));
+    }
     cpu_set_t target{}; CPU_ZERO(&target); CPU_SET(requested, &target);
     if (::sched_setaffinity(0, sizeof(target), &target)) {
         throw std::runtime_error(std::string{"CPU affinity role="} + name(role) + " core="

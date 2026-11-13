@@ -16,6 +16,11 @@ For the supported RK3576 build workflow, prepare:
 
 Use the [image and build guide](dockerfiles/README.amd64.md) to provision or rebuild those images. Routine builds run offline and require the selected image to exist locally.
 
+RK3576 recording also requires the real `quadrotor_msgs` source package. The build
+defaults to `../quadrotor_msgs`; pass `--quadrotor-msgs /absolute/source` when using
+a worktree or another layout. This dependency applies with the optional OSD
+feedback adapter disabled as well.
+
 Run from the repository root:
 
 ```bash

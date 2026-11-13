@@ -9,6 +9,112 @@ drone_tracker_node:
     diagnostics:
       mode: "basic"
       socket: /run/drone_tracker/diagnostics.sock
+    # ROS bag policy is independent of original-camera video recording.* settings.
+    bag:
+      bench_profile: false
+      observations:
+        max_hz: 0.0
+      image:
+        bytes_per_second: 16777216
+        burst_bytes: 16777216
+      max_file_bytes: 268435456
+      max_total_bytes: 5368709120
+      min_free_bytes: 5368709120
+      topics:
+        body_imu:
+          name: /mavros/imu/data
+          max_hz: 100.0
+        gimbal:
+          name: /fpv/gimbal
+          max_hz: 100.0
+        odom:
+          name: /fpv/odom
+          max_hz: 50.0
+        rc_in:
+          name: /mavros/rc/in
+          max_hz: 25.0
+        flight_state:
+          name: /mavros/state
+          max_hz: 0.0
+        extended_state:
+          name: /mavros/extended_state
+          max_hz: 0.0
+        battery:
+          name: /mavros/battery
+          max_hz: 0.0
+        pressure:
+          name: /fpv/static_pressure
+          max_hz: 25.0
+        temperature:
+          name: /fpv/temperature_baro
+          max_hz: 25.0
+        low_level_feedback:
+          name: /fpv/low_level_feedback
+          max_hz: 0.0
+        gimbal_mode:
+          name: /fpv/gimbal_mode
+          max_hz: 0.0
+        trigger:
+          name: /fpv/tracker_trigger
+          max_hz: 0.0
+        altitude:
+          name: /fpv/altitude
+          max_hz: 25.0
+        gps_raw:
+          name: /mavros/gpsstatus/gpsraw
+          max_hz: 0.0
+        gps_fix:
+          name: /mavros/global_position/global
+          max_hz: 0.0
+        failsafe:
+          name: /fpv/failsafe
+          max_hz: 0.0
+        motor_rpm:
+          name: /fpv/motor_rpm
+          max_hz: 25.0
+        control:
+          name: /fpv/control_command
+          max_hz: 0.0
+        control_raw:
+          name: /fpv/control_command_raw
+          max_hz: 0.0
+        arm:
+          name: /fpv/arm
+          max_hz: 0.0
+        offboard:
+          name: /fpv/offboard
+          max_hz: 0.0
+        tracker_state:
+          name: /fpv/tracker_state
+          max_hz: 0.0
+        radar_state:
+          name: /fpv/radar_state
+          max_hz: 0.0
+        mission_state:
+          name: /fpv/mission_state
+          max_hz: 0.0
+        mission_start:
+          name: /fpv/mission_start
+          max_hz: 0.0
+        target_bbox:
+          name: /fpv/target_bbox
+        target_los:
+          name: /fpv/target_los
+        tracker_image:
+          name: /fpv/tracker_image
+          max_hz: 2.0
+        status_text:
+          name: /mavros/statustext/send
+          max_hz: 0.0
+        radar_target:
+          name: /fpv/radar/target
+          max_hz: 0.0
+        radar_interceptor:
+          name: /fpv/radar/interceptor
+          max_hz: 0.0
+        bench_status:
+          name: /bench_pid_tuner/status
+          max_hz: 0.0
     need_save: true
     save_path: /var/lib/drone_tracker/recordings
     visualized_result: false

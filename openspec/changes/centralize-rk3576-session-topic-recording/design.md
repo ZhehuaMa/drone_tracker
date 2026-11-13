@@ -6,6 +6,8 @@ The current recording omits application messages needed to explain a flight sess
 
 The inspected baseline is `drone_tracker` rk3576 revision `e17c43e`, with interface evidence from `apm_bridge` `31b00e8`, `drone_interceptor` `73c605c`, and shared `quadrotor_msgs` `bc8bf6c`. These are source-review identities, not a hardware acceptance claim.
 
+The later CPU-placement refinement selects CPU 2 for both topic-recorder threads in the standard installation. CPU affinity is the set of cores on which a thread may run; it does not reserve or isolate a core. The [2026-11-13 production measurements](../../../docs/reports/performance/RECORDER_CORE_AFFINITY_20261113.md) motivate that placement. They used temporary thread binding and are not acceptance evidence for the new automatic role or installer behavior.
+
 At this baseline:
 
 - `src/bag_session.h` owns a worker thread and a queue limited to 256 messages and 64 MiB of estimated payload. Its thread alone opens, writes, and closes the bag. Its current byte accounting stops charging an item before its write completes and generally uses `sizeof(Message)` for non-image data; neither accounts fully for retained dynamic payload.
@@ -23,6 +25,7 @@ At this baseline:
 - Keep source-time evidence and observation pairing correct across asynchronous recording and rapid session changes.
 - Bound recording work before it can consume unlimited memory or wait for storage in an algorithm callback.
 - Make the effective topic coverage and each kind of omission inspectable after a session.
+- Install a standard policy that automatically binds both topic-recorder threads to CPU 2 without moving camera-video recording or general ROS communication work.
 
 **Non-Goals:**
 
@@ -41,13 +44,17 @@ Use a dedicated recording callback group on the existing ROS node. A callback gr
 
 Create subscription resources during controlled initialization, but start the recording executor only after node construction has succeeded. Start it for every enabled RK3576 input mode before tracking can establish a session, rather than hiding it behind the continuous-preview-only startup branch.
 
-Create recording ROS resources through the existing ROS-transport affinity boundary. Start the recording executor with the existing `RosTransport` role and the writer with the existing `Recording` role. Keep the configured allowed CPU set; do not add a hardcoded CPU mask or new role policy in this change. A recording-role failure reports the recorder unavailable without stopping healthy tracking. Measure the additional workload on those roles before claiming a performance benefit.
+Create and destroy recording ROS resources through the existing ROS-transport affinity boundary. For an explicit `roles.topic_recording`, start both the dedicated recording executor and every session writer through that topic-recording role. The standard role-pinned deployment policy selects CPU 2. Keep ROS resource creation and its middleware helper inheritance on `RosTransport`; keep camera-video controllers and encoder processes on `Recording`. These remain CPU 6 and CPU 7 respectively in the standard policy. Do not implement production binding through thread-ID scans, creation-order guesses, or an external `taskset` adjustment after startup.
+
+Each topic thread applies and reads back its selected mask before running callbacks or writer work. Its creator treats it as ready only after that confirmation. A topic-thread binding failure propagates through the existing recorder-unavailable or session-failure path, cleans up any created thread, and leaves healthy tracking usable. Global CPU-policy syntax errors retain their existing startup-failure behavior. No affinity change alters priorities, frequency settings, kernel isolation, other existing threads, or other processes.
 
 **Why.** This consolidates ownership and moves recording callback work away from tracker control scheduling, while retaining the already implemented writer isolation.
 
-**Rejected alternative.** Keeping old recording calls and adding a second collector for missing topics leaves two architectures. A separate recorder process adds communication and session-coordination work that is unnecessary for the accepted scope.
+**Rejected alternative.** Keeping old recording calls and adding a second collector for missing topics leaves two architectures. A separate recorder process adds communication and session-coordination work that is unnecessary for the accepted scope. Changing the shared `Recording` or `RosTransport` role to CPU 2 would also move camera-video or general ROS work; hardcoding CPU 2 in worker code would bypass explicit policy overrides.
 
 **Consequence.** There is one bag writer per active session, not a legacy writer plus a new writer. The independent camera-video worker and diagnostic process remain separate. The same-process recorder still shares CPU, heap, and filesystem pressure with tracking.
+
+The CPU 2 default is a deployment policy, not a hardcoded core in worker code. Add an optional version-1 `topic_recording` role to the shared CPU-policy representation and validators. When explicitly provided in role-pinned mode, it must be an integer in the allowed set and available on the target. A missing field in a legacy policy used directly at runtime preserves the two old bindings separately: recording callbacks use `RosTransport`, while the bag writer uses `Recording`. A single generic fallback core cannot represent that legacy split. No explicit policy, or explicit `mode: inherit`, continues to inherit affinity without promising CPU 2. Logs identify the actual requested role and readback, so these compatibility paths cannot be mistaken for the standard installed policy.
 
 ### 2. A typed startup registry owns every ordinary recording subscription
 
@@ -232,11 +239,23 @@ When a check detects a quota or low-space limit, atomically seal bag admission w
 
 Put startup policy in the existing ROS parameter configuration, including compiled defaults and explicit profile/rate/storage values in the RK3576 templates. A session records the effective expanded configuration fingerprint. Release packaging retains the exact selected configuration and its fingerprint rather than synthesizing different defaults. Enabling the bench profile adds only its known status topic; it does not start the bench tool. Framework topics and test publishers remain outside the application profile.
 
+The standard `deployment/cpu-affinity.yaml` adds `topic_recording: 2` and changes `allowed_cpus` to `[2, 4, 5, 6, 7]`. The other role assignments stay unchanged. Packaging records the selected policy's source and fingerprint. Fresh installation and upgrade both install that exact policy; any independent camera-configuration retention rule must not leave the previous CPU-policy file in use. The service and direct launcher continue to obtain the complete allowed set from this one installed policy, without another hardcoded mask.
+
+Keep explicit `--cpu-policy` selection as an operator override. A new recorder-enabled, role-pinned package requires an explicit `topic_recording` role, including for a custom policy; omission fails with instructions to add the field and its core to `allowed_cpus`. An explicit alternative valid core is honored byte for byte. Explicit custom `mode: inherit` remains an intentional unpinned override and does not claim CPU 2. With `need_save=false`, a legacy policy does not need an unused topic-recording role. Do not silently patch selected input files. A later operator-edited legacy runtime policy keeps the compatibility behavior in decision 1.
+
+Separate policy structure from target availability. Offline packaging checks types, required fields, mode, and allowed-set membership without requiring the build host to expose the target's CPU numbers. Installation preflight and startup check actual target cores. `deploy.sh --check` or installation must reject an unavailable selected core before changing installed files or services. Runtime and Python policy validation agree on explicit-field rules. Backup and rollback restore the matching prior binary, policy, configuration, and launcher.
+
+The normal installation path is:
+
+1. Select the repository default policy, or an explicit custom policy, and validate its structure against the selected recorder setting.
+2. Package the unchanged selected policy with its content fingerprint; preflight the package against the actual board before installation changes anything.
+3. Install the policy on fresh installation or upgrade. The launcher derives its allowed set from that file, and each newly created topic thread confirms its configured role before work.
+
 **Why.** The catalog includes ControlCommand and LowLevelFeedback even when display feedback is not built. The current packager's message-library seeding must be checked for this expanded dependency set.
 
 **Rejected alternative.** Assuming the sibling source exists at runtime or copying generated message headers does not deliver the needed libraries. Keeping a hidden legacy writer switch creates competing implementations.
 
-**Consequence.** Implementation edits remain in drone_tracker. Sibling source revisions are validation inputs, not files to modify. Rollback restores the previous binary and matching configuration, leaving all evidence intact; `need_save=false` is the immediate recording-disable option, not a second old-recorder path.
+**Consequence.** Implementation edits remain in drone_tracker. Sibling source revisions are validation inputs, not files to modify. Rollback restores the previous binary and matching configuration, leaving all evidence intact; `need_save=false` is the immediate recording-disable option, not a second old-recorder path. Standard installation gains CPU 2 automatically, while custom inherited policies and legacy direct-runtime policies retain their documented behavior.
 
 ### 12. Validate behavior before making a performance claim
 
@@ -250,7 +269,9 @@ Use separate, matched performance runs, each no longer than 180 seconds. Preserv
 
 **Rejected alternative.** Comparing configured camera FPS or nominal HDMI refresh rates hides dropped work. Combining unmatched old reports cannot validate the new recorder.
 
-**Consequence.** Normal declared-load runs must have no unexpected recorder loss or unexplained resource growth; deliberate sampling is visible. Report absolute and relative performance differences without inventing a zero-overhead guarantee. Unavailable hardware or missing baseline evidence leaves the related acceptance tasks open. This planning delivery performs none of those implementation checks.
+**Consequence.** Normal declared-load runs must have no unexpected recorder loss or unexplained resource growth; deliberate sampling is visible. Report absolute and relative performance differences without inventing a zero-overhead guarantee. Unavailable hardware or missing baseline evidence leaves the related acceptance tasks open. Actual implementation checks and their revision boundaries are recorded in [validation.md](validation.md).
+
+For the CPU 2 refinement, add focused policy/parser, thread-readiness/failure, package, installation, and rollback checks. Preserve the historical performance measurements. Fresh production-board evidence must identify the revised binary and packaged policy, exercise camera and target-video ON/OFF rounds, and show both topic threads on CPU 2 without runtime thread scanning or manual rebinding. Read back the resulting bags and confirm camera-video recording still uses CPU 7. Recreated session writers must each reapply the role. Historical CPU 2 masks from temporary benchmark binding do not complete these new tasks.
 
 ## Risks / Trade-offs
 
@@ -261,12 +282,14 @@ Use separate, matched performance runs, each no longer than 180 seconds. Preserv
 - [Publisher configuration drifts from the frozen catalog] -> Ship explicit resolved names and type identities, audit sibling interfaces during implementation, and test profile/name overrides and delivery incompatibilities.
 - [A writer or summary fails after only half a pair reaches disk] -> Preserve atomic pair admission but report failed/incomplete file results; never describe two separate ROS messages as a disk transaction.
 - [Shared storage crosses a threshold between observations] -> Check in the writer at bounded intervals and split points, account for actual usage, and report the guard as an observed protection rather than an atomic filesystem reservation.
+- [A legacy or custom policy is mistaken for the CPU 2 default] -> Require an explicit topic role in newly packaged role-pinned recorder profiles, preserve custom inheritance and direct-runtime legacy behavior explicitly, and inspect per-thread readbacks rather than the policy-loaded message.
+- [Offline packaging mistakes build-host CPUs for board CPUs] -> Check policy structure during packaging and defer actual online/accessible-core checks to board preflight and startup.
 
 ## Migration Plan
 
 1. Implement against these deltas without changing durable main specifications until the normal synchronization/archive step. Preserve the old recorder binary and its source/configuration identity for comparison.
 2. Build the RK3576 target with the real shared-message package, verify all recorder libraries in the release, and run policy, transport, lifecycle, and readback tests. Leave Jetson behavior unchanged.
 3. Run the identified production-board comparisons and retain evidence outside disposable build caches. Tune only explicitly configurable recording policies if needed; preserve protected events and paired observation semantics.
-4. Package the selected configuration, including names consistent with the bridge and interceptor launch profiles. Keep debug-image publication off in the ordinary production profile. Review the separate video/bag quotas and actual filesystem capacity.
+4. Package the selected configuration, including names consistent with the bridge and interceptor launch profiles. Include the standard CPU 2 topic-recording policy, or validate an explicitly selected custom policy under decision 11. Keep debug-image publication off in the ordinary production profile. Review the separate video/bag quotas and actual filesystem capacity.
 5. Deploy only through the normal separately authorized deployment workflow. Verify one ON/OFF bag, its catalog/summary, and its split-file readback before operational use.
 6. If rollback is required, stop the service safely and restore the prior binary and matching configuration. Do not delete or overwrite recordings from either version. Disabling `need_save` after restart can isolate recording while other investigation continues.

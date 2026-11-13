@@ -61,14 +61,24 @@ int main() {
     std::ifstream legacy_input{valid};
     const std::string legacy{std::istreambuf_iterator<char>{legacy_input}, {}};
     assert(p.ros_transport == first);
+    assert(p.topic_recording == -1);
+    assert(topicRecordingRole(p, Role::RosTransport) == Role::RosTransport);
+    assert(topicRecordingRole(p, Role::Recording) == Role::Recording);
     for (const auto &invalid : {"null", "true", "1.5", "'0'", "-1", "99999"}) {
         rejects(legacy + "  ros_transport: " + invalid + "\n");
+        rejects(legacy + "  topic_recording: " + invalid + "\n");
     }
     const auto explicit_policy{writePolicy(legacy + "  ros_transport: "
         + std::to_string(second >= 0 ? second : first) + "\n")};
     const auto explicit_value{load(explicit_policy)};
     ::unlink(explicit_policy.c_str());
     assert(explicit_value.ros_transport == (second >= 0 ? second : first));
+    const auto topic_path{writePolicy(legacy + "  topic_recording: " + std::to_string(first) + "\n")};
+    const auto topic_policy{load(topic_path)};
+    ::unlink(topic_path.c_str());
+    assert(topic_policy.topic_recording == first);
+    assert(topicRecordingRole(topic_policy, Role::RosTransport) == Role::TopicRecording);
+    assert(topicRecordingRole(topic_policy, Role::Recording) == Role::TopicRecording);
     ::unlink(valid.c_str());
     assert(p.configured && p.mode == Mode::RolePinned);
     rejects("version: 1\nmode: role-pinned\nallowed_cpus: [" + std::to_string(first)
@@ -124,6 +134,48 @@ int main() {
         try { auto thread{start(impossible, Role::Capture, [&] { worked = true; })}; thread.join(); }
         catch (const std::exception &) { failed = true; }
         assert(failed && !worked);
+        // Both topic clients select the explicit role on every recreated worker.
+        for (const auto fallback : {Role::RosTransport, Role::Recording}) {
+            for (int round{}; round < 2; ++round) {
+                worked = false;
+                auto topic{start(topic_policy, topicRecordingRole(topic_policy, fallback), [&] {
+                    const auto actual{mask()};
+                    worked = CPU_COUNT(&actual) == 1 && CPU_ISSET(first, &actual);
+                })};
+                topic.join();
+                assert(worked);
+            }
+            Policy rejected{topic_policy};
+            rejected.topic_recording = CPU_SETSIZE - 1;
+            worked = false;
+            failed = false;
+            try { auto topic{start(rejected, topicRecordingRole(rejected, fallback), [&] { worked = true; })};
+                topic.join(); }
+            catch (const std::exception &) { failed = true; }
+            assert(failed && !worked);
+            // Legacy executor and writer retain their independently selected cores.
+            worked = false;
+            Policy legacy_roles{p};
+            legacy_roles.ros_transport = first;
+            auto legacy_thread{start(legacy_roles, topicRecordingRole(legacy_roles, fallback), [&] {
+                const auto actual{mask()};
+                worked = CPU_COUNT(&actual) == 1
+                    && CPU_ISSET(fallback == Role::RosTransport ? first : second, &actual);
+            })};
+            legacy_thread.join();
+            assert(worked);
+        }
+        const auto caller{mask()};
+        Policy inherited{topic_policy};
+        inherited.mode = Mode::Inherit;
+        worked = false;
+        auto inherited_thread{start(inherited, Role::TopicRecording, [&] {
+            const auto actual{mask()};
+            worked = CPU_EQUAL(&caller, &actual);
+        })};
+        inherited_thread.join();
+        const auto unchanged_caller{mask()};
+        assert(worked && CPU_EQUAL(&caller, &unchanged_caller));
         apply(p, Role::Recording, 3);
         std::thread writer{[&] {
             const auto actual{mask()};

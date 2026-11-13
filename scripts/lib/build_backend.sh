@@ -5,6 +5,7 @@ drone_build_usage() {
   cat <<'EOF'
 Usage: ./build.sh [--backend amd64|arm64] [--image IMAGE] [--test]
                   [--regression-only] [--clean] [--artifacts-dir ROOT] [--jobs N]
+                  [--quadrotor-msgs SOURCE]
 
 Default: linux/amd64 compiler image, RK3576 Release, ARM64 deployment output.
   --backend arm64   Explicitly use the existing ARM64 compiler image.
@@ -14,6 +15,7 @@ Default: linux/amd64 compiler image, RK3576 Release, ARM64 deployment output.
   --clean           Back up only this backend's build/install/log directories.
   --artifacts-dir   Artifact root (default: REPOSITORY/.docker-artifacts).
   --jobs N          Parallel compiler jobs (default: 6).
+  --quadrotor-msgs   Real quadrotor_msgs source package (default: ../quadrotor_msgs).
   --help            Show this help.
 
 Caches: ROOT/backends/BACKEND/{build,install,log}; legacy caches stay untouched.
@@ -39,18 +41,20 @@ drone_build_defaults() {
   DRONE_BUILD_TESTS=OFF
   DRONE_TEST_REGEX=
   DRONE_BUILD_JOBS=6
+  DRONE_QUADROTOR_SOURCE="$(dirname -- "$DRONE_REPO_DIR")/quadrotor_msgs"
 }
 
 drone_parse_build_options() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --backend|--image|--artifacts-dir|--jobs)
+      --backend|--image|--artifacts-dir|--jobs|--quadrotor-msgs)
         [[ $# -ge 2 && -n "$2" && "$2" != --* ]] || { printf '%s requires a value.\n' "$1" >&2; return 2; }
         case "$1" in
           --backend) DRONE_BACKEND=$2 ;;
           --image) DRONE_IMAGE=$2 ;;
           --artifacts-dir) DRONE_ARTIFACT_ROOT=$2 ;;
           --jobs) DRONE_BUILD_JOBS=$2 ;;
+          --quadrotor-msgs) DRONE_QUADROTOR_SOURCE=$2 ;;
         esac
         shift 2 ;;
       --clean) DRONE_CLEAN=true; shift ;;
@@ -86,6 +90,11 @@ drone_check_build_image() {
 }
 
 drone_run_repository_build() {
+  if [[ ! -f "$DRONE_QUADROTOR_SOURCE/package.xml" ]]; then
+    printf 'The RK3576 recorder requires real quadrotor_msgs source. Pass --quadrotor-msgs SOURCE. Missing: %s\n' "$DRONE_QUADROTOR_SOURCE" >&2
+    return 1
+  fi
+  DRONE_QUADROTOR_SOURCE="$(cd -- "$DRONE_QUADROTOR_SOURCE" && pwd -P)"
   local cache_key container_name lock_dir git_dir common_dir metadata backup_dir directory prepare_command expected_environment environment_file
   cache_key="$(printf '%s' "$DRONE_BACKEND_DIR" | cksum | cut -d ' ' -f 1)"
   container_name="drone-tracker-$DRONE_BACKEND-$cache_key"
@@ -130,6 +139,7 @@ drone_run_repository_build() {
   mkdir -p "$DRONE_BACKEND_DIR"/{build,install,log}
   printf '%s\n' "$expected_environment" > "$environment_file"
   local mounts=(--mount "type=bind,src=$DRONE_REPO_DIR,dst=$DRONE_REPO_DIR,readonly"
+    --mount "type=bind,src=$DRONE_QUADROTOR_SOURCE,dst=$DRONE_QUADROTOR_SOURCE,readonly"
     --mount "type=bind,src=$DRONE_BACKEND_DIR/build,dst=/work/ros2_ws/build"
     --mount "type=bind,src=$DRONE_BACKEND_DIR/install,dst=/work/ros2_ws/install"
     --mount "type=bind,src=$DRONE_BACKEND_DIR/log,dst=/work/ros2_ws/log")
@@ -159,6 +169,7 @@ drone_run_repository_build() {
     --env "DRONE_BUILD_JOBS=$DRONE_BUILD_JOBS" --env "DRONE_PRIVATE_TOOLS=$private_tools" \
     --env "DRONE_PREPARE_TOOLS_COMMAND=$prepare_command" \
     --env "DRONE_BUILD_IMAGE_ID=$DRONE_IMAGE_ID" --env PYTHONDONTWRITEBYTECODE=1 \
+    --env "DRONE_QUADROTOR_SOURCE=$DRONE_QUADROTOR_SOURCE" \
     --env "DRONE_HOST_ARCH=$(uname -m)" \
     --env GIT_CONFIG_COUNT=1 --env GIT_CONFIG_KEY_0=safe.directory --env "GIT_CONFIG_VALUE_0=$DRONE_REPO_DIR" \
     "$DRONE_IMAGE_ID" bash -c '

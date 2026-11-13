@@ -20,6 +20,7 @@
 #include <limits>
 #ifdef DRONE_TRACKER_RK3576
 #include "bag_session.h"
+#include "recording/recording_manager.h"
 #include "target_observation.h"
 #include "diagnostics/client.h"
 #else
@@ -128,6 +129,8 @@ private:
         declare_parameter<int>("osd.battery_cells", 0);
 
 #ifdef DRONE_TRACKER_RK3576
+        try { recording::declareParameters(*this); }
+        catch (const std::exception &error) { bag_config_error_ = error.what(); }
         declare_parameter<bool>("publish_prediction", false);
         declare_parameter<double>("los.rate_filter_tau", 0.12);
         this->declare_parameter<std::string>("tracker.yolo_engine", "");
@@ -228,14 +231,15 @@ private:
     std::chrono::steady_clock::time_point last_acquisition_report_{};
     std::string last_camera_phase_{};
     void openRecording(const builtin_interfaces::msg::Time &stamp);
-    void sealRecording() noexcept;
+    void runWithTrigger(const builtin_interfaces::msg::Time &stamp,
+        const std_msgs::msg::Header *trigger, std::int64_t receipt_ns);
+    void stopWithTrigger(const std_msgs::msg::Header *trigger, std::int64_t receipt_ns);
+    void sealRecording(const std::string &reason = "round_end") noexcept;
     void closeRecording() noexcept;
+#ifndef DRONE_TRACKER_RK3576
     template<typename Message> void record(std::shared_ptr<Message> message, const std::string &topic,
                                            const rclcpp::Time &stamp, std::size_t bytes = sizeof(Message)) {
         std::lock_guard<std::mutex> lock{bag_mutex_};
-#ifdef DRONE_TRACKER_RK3576
-        if (bag_session_) { bag_session_->submit(std::move(message), topic, stamp, bytes); }
-#else
         (void)bytes;
         if (!rosbag_writer_) { return; }
         try {
@@ -247,8 +251,8 @@ private:
             running = false;
             wait_cv_.notify_all();
         }
-#endif
     }
+#endif
     enum class RunState { Idle, Starting, Running, Stopping };
     std::atomic<RunState> run_state_{RunState::Idle};
     mutable std::mutex control_mutex_{}; // 仅控制侧持有；worker 收尾不需要此锁。
@@ -287,8 +291,9 @@ private:
         const cv::Matx33d *rotation, bool reset_los, diagnostics::Event event, bool control);
     void notifyObservationOff();
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr los_pub_{};
-    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr mavros_imu_sub_{};
-    std::unique_ptr<BagSession> bag_session_{};
+    void reportBagStatus(const BagSession::Status &status);
+    std::unique_ptr<recording::RecordingManager> recording_manager_{};
+    std::string bag_config_error_{};
     std::unique_ptr<diagnostics::Client> diagnostic_client_{};
     rclcpp::TimerBase::SharedPtr diagnostic_timer_{};
     std::uint64_t diagnostic_last_report_{};

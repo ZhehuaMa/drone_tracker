@@ -61,7 +61,7 @@ add_executable(tracking_regression_round_tests tests/node_round_test.cpp)
 target_link_libraries(tracking_regression_round_tests PRIVATE drone_tracker_ros yaml-cpp)
 add_test(NAME tracking_regression_round_tests COMMAND tracking_regression_round_tests)
 set_tests_properties(tracking_regression_round_tests PROPERTIES TIMEOUT 30
-    ENVIRONMENT "ROS_DOMAIN_ID=188;ROS_LOCALHOST_ONLY=1")
+    ENVIRONMENT "ROS_DOMAIN_ID=${DRONE_TEST_ROS_DOMAIN_ID};ROS_LOCALHOST_ONLY=1")
 add_executable(tracking_regression_cpu_observer_fixture tests/cpu_observer_fixture.cpp)
 target_link_libraries(tracking_regression_cpu_observer_fixture PRIVATE drone_diagnostics pthread)
 drone_target_test_program(tracking_regression_cpu_observer_fixture cpu_observer_fixture_program)

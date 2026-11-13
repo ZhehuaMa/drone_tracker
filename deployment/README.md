@@ -11,6 +11,28 @@ RKNN models. Required ROS libraries and non-Python vision_msgs type support are 
 under each release's `lib/bundled-ros`. Startup prefers those libraries without overwriting
 system ROS. Source, benchmark programs, RKNN Runtime and base system libraries are excluded.
 
+The tracker contains the unified session-topic recorder; deployment adds no bag
+recorder service. Its real generated `quadrotor_msgs` libraries are required
+independently of the optional OSD feedback adapter. Package the matching
+`install/quadrotor_msgs` prefix alongside the selected tracker installation.
+Use `--message-install /absolute/install/quadrotor_msgs` when it is not beside
+the selected tracker prefix. Packaging rejects missing or non-ARM64 generated
+libraries and includes the full catalog's non-Python type-support and ROS
+package-discovery resources. The board needs no sibling source checkout.
+The selected camera YAML, including all `bag.*` overrides, is copied byte for
+byte and fingerprinted. Rollback must restore the prior program and its matching
+configuration, without deleting either version's evidence.
+
+See the [session recording guide](../docs/operations/RK3576_SESSION_RECORDING.md)
+for intervals and retention. A 256 MiB file split continues the same session;
+the default 5 GiB total bag quota also counts old/incomplete bags and summaries.
+The production video quota remains a separate 20 GiB setting. Both writers use
+their actual filesystem's observed free space, with a default 5 GiB threshold;
+space is not atomically reserved across writers. Storage guards stop bag
+recording independently. Startup preview creates no bag, and post-OFF responses
+are outside the sealed interval. Normal exit attempts to drain accepted work;
+abrupt power loss has no guaranteed final-message retention interval.
+
 ## Board clock synchronization
 
 Attach the intended board over ADB and verify the development host's clock first:
@@ -95,17 +117,62 @@ the same policy to the node. Systemd supervises the node directly. Abnormal exit
 until five failures within one minute exhaust the limit; after repair use
 `sudo systemctl reset-failed drone-tracker.service` before restarting.
 
-`allowed_cpus` is the complete permitted range. The role-pinned production template uses:
+`allowed_cpus` is the complete permitted range. The standard installed policy uses
+`[2, 4, 5, 6, 7]`. The role-pinned production template uses:
 
 | Role | CPU | Responsibility |
 |---|---:|---|
-| ros_transport | 6 | ROS initialization, node construction and communication creation |
+| topic_recording | 2 | Topic-recording callback executor and each session bag writer |
+| ros_transport | 6 | ROS initialization, node construction, communication and executor-resource creation |
 | control | 4 | Models and single-threaded ROS callback executor |
 | tracking | 4 | Tracking worker |
 | yolo | 5 | Detection worker |
 | display | 6 | HDMI display |
 | capture | 7 | Capture and persistent frame dispatcher |
-| recording | 7 | Recording process and helpers |
+| recording | 7 | Independent camera-video controller, encoder process and helpers |
+
+Fresh installation and upgrade install the selected CPU-policy bytes, with a
+matching content fingerprint. Both service and direct startup read that same
+installed file; no second hardcoded allowed mask is used. CPU-policy replacement
+is independent of any camera-configuration retention behavior.
+
+The default selects `topic_recording: 2`. An explicit `--cpu-policy` remains an
+operator override: another valid topic core is honored, and custom `mode: inherit`
+intentionally leaves workers unpinned. For `need_save=true`, a new role-pinned
+release must explicitly include `roles.topic_recording` and its core in
+`allowed_cpus`. Packaging and installer preflight reject an omitted field before
+installation or service mutation. `need_save=false` does not require an unused
+role. Selected inputs are never silently rewritten.
+
+Packaging and installer preflight also ask the selected node whether it implements
+the topic role. An older binary that only understands the legacy executor/writer
+split is rejected for a recorder-enabled role-pinned release. Rebuild the revised
+source and pass its matching `--install-root` to packaging. The check uses the
+existing `--diagnostic-protocol-version` inspection exit with
+`DRONE_TRACKER_RELEASE_CAPABILITIES=1`; it never starts ROS or camera resources,
+including when an older binary returns only its diagnostic version. Ordinary
+diagnostic-version output remains unchanged. Inherited-mode and recorder-disabled
+releases do not require an unused topic-role capability.
+
+Offline packaging validates policy structure without consulting build-host CPU
+topology. Deployment preflight, including `deploy.sh --check`, checks the actual
+target's online/usable cores before changing services or installed files. For a
+structural-only check, run:
+
+```bash
+python3 deployment/cpu-policy.py /absolute/policy.yaml \
+  --offline --camera-config /absolute/camera.yaml
+```
+
+The normal launcher retains runtime legacy compatibility; new-package completeness checks
+are stricter. Backups and rollback restore the previous policy with its matching
+binary, launcher, and configuration.
+
+A legacy version-1 policy used directly at runtime without `topic_recording`
+keeps the executor on `ros_transport` and the writer on `recording`; it does not
+claim CPU 2. Explicit topic values reject null, strings, Booleans, invalid numbers,
+and cores outside `allowed_cpus`. Both topic threads apply/read back the role
+before work; a recreated writer repeats the handshake.
 
 Version-1 policies omitting ros_transport use control for communication creation.
 Explicit transport values must be online allowed integers; null/strings/booleans fail.

@@ -126,7 +126,7 @@ DroneTrackerNode::DroneTrackerNode(cpu_affinity::Transition transition, const rc
                 result.successful = false; result.reason = "Diagnostics startup configuration cannot change at runtime";
                 break;
             }
-            if (name.rfind("recording.", 0) == 0) {
+            if (name.rfind("recording.", 0) == 0 || name.rfind("bag.", 0) == 0) {
                 result.successful = false;
                 result.reason = "Recording startup parameters cannot change at runtime; restart the node: " + name;
                 break;
@@ -175,7 +175,33 @@ DroneTrackerNode::~DroneTrackerNode() {
 void DroneTrackerNode::run() { run(static_cast<builtin_interfaces::msg::Time>(now())); }
 
 void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
+    runWithTrigger(stamp, nullptr, 0);
+}
+
+void DroneTrackerNode::runWithTrigger(const builtin_interfaces::msg::Time &stamp,
+    const std_msgs::msg::Header *trigger, std::int64_t receipt_ns) {
     std::lock_guard<std::mutex> control{control_mutex_};
+#ifdef DRONE_TRACKER_RK3576
+    // Finite-input cleanup can finish concurrently. Use one state for forwarding and the start decision.
+    const auto state_before_start{run_state_.load()};
+    if (trigger && recording_manager_) {
+        const bool defer_on{continuous_preview_
+            ? service_started_ && !service_shutdown_ && service_running_
+                && (state_before_start != RunState::Running || !desired_on_ || !running)
+            : state_before_start == RunState::Idle};
+        recording_manager_->observeTrigger(*trigger, receipt_ns, defer_on);
+    }
+    if (recording_manager_) {
+        try { recording_manager_->startExecutor(); }
+        catch (const std::exception &error) {
+            RCLCPP_ERROR(get_logger(), "Bag executor unavailable: %s; tracking continues", error.what());
+            recording_manager_.reset();
+        }
+    }
+#else
+    (void)trigger;
+    (void)receipt_ns;
+#endif
     if (continuous_preview_) {
         if (!service_started_ || service_shutdown_) { return; }
         if (!desired_on_) { desired_stamp_ = stamp; }
@@ -184,7 +210,11 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
         control_changed_.notify_all();
         return;
     }
+#ifdef DRONE_TRACKER_RK3576
+    if (state_before_start != RunState::Idle) {
+#else
     if (run_state_.load() != RunState::Idle) {
+#endif
         if (osd_presenter_) { osd_presenter_->showTrigger(osd_round_, true); }
         return;
     }
@@ -233,6 +263,10 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
     } catch (const std::exception &error) {
         running = false;
         if (osd_presenter_) { osd_presenter_->endRound(osd_round_, osd::DisplayStatus::InputFailure); }
+#ifdef DRONE_TRACKER_RK3576
+        if (recording_manager_) { recording_manager_->cancelPendingStart(); }
+#endif
+        sealRecording("round_start_failure");
         closeRecording();
         run_state_ = RunState::Idle;
         RCLCPP_ERROR(get_logger(), "Round start failed: %s", error.what());
@@ -240,8 +274,22 @@ void DroneTrackerNode::run(const builtin_interfaces::msg::Time &stamp) {
 }
 
 void DroneTrackerNode::stop() {
+    stopWithTrigger(nullptr, 0);
+}
+
+void DroneTrackerNode::stopWithTrigger(const std_msgs::msg::Header *trigger, std::int64_t receipt_ns) {
     const auto before{std::chrono::steady_clock::now()};
     std::unique_lock<std::mutex> control{control_mutex_};
+#ifdef DRONE_TRACKER_RK3576
+    if (trigger && recording_manager_) {
+        recording_manager_->observeTrigger(*trigger, receipt_ns);
+        if (recording_hook_) { recording_hook_("off_forwarded"); }
+    }
+    if (recording_manager_) { recording_manager_->cancelPendingStart(); }
+#else
+    (void)trigger;
+    (void)receipt_ns;
+#endif
     if (continuous_preview_) {
         desired_on_ = false;
         running = false;
@@ -258,7 +306,7 @@ void DroneTrackerNode::stop() {
 #ifdef DRONE_TRACKER_RK3576
         notifyObservationOff();
 #endif
-        sealRecording();
+        sealRecording("user_off");
         control_changed_.notify_all();
         RCLCPP_INFO(get_logger(), "Tracking OFF accepted stream=%lu round=%lu accept_us=%ld video=running",
             static_cast<unsigned long>(stream_id_), static_cast<unsigned long>(osd_round_), static_cast<long>(
@@ -275,7 +323,7 @@ void DroneTrackerNode::stop() {
 #ifdef DRONE_TRACKER_RK3576
     notifyObservationOff();
 #endif
-    sealRecording();
+    sealRecording("user_off");
     // A worker can be waiting at the publication boundary when OFF arrives.
     control.unlock();
     if (worker_thread_.joinable()) { worker_thread_.join(); }
@@ -290,6 +338,15 @@ std::string DroneTrackerNode::serviceFailure() const {
     return service_failure_;
 }
 void DroneTrackerNode::startService() {
+#ifdef DRONE_TRACKER_RK3576
+    if (recording_manager_) {
+        try { recording_manager_->startExecutor(); }
+        catch (const std::exception &error) {
+            RCLCPP_ERROR(get_logger(), "Bag executor unavailable: %s; tracking continues", error.what());
+            recording_manager_.reset();
+        }
+    }
+#endif
     if (!continuous_preview_) { return; }
     {
         std::lock_guard<std::mutex> lock{control_mutex_};
@@ -319,6 +376,23 @@ void DroneTrackerNode::startService() {
     }
 }
 void DroneTrackerNode::shutdown() noexcept {
+#ifdef DRONE_TRACKER_RK3576
+    if (recording_manager_) {
+        {
+            std::lock_guard<std::mutex> lock{control_mutex_};
+            // Freeze the accepted control intent before callback-executor shutdown can yield to a prepared worker.
+            desired_on_ = false;
+            running = false;
+            ready_request_ = false;
+            notifyObservationOff();
+            recording_manager_->cancelPendingStart();
+            sealRecording("service_exit");
+        }
+        try { if (recording_hook_) { recording_hook_("after_recording_seal"); } }
+        catch (...) { /* Test synchronization cannot prevent final shutdown. */ }
+        recording_manager_->stopExecutor();
+    }
+#endif
     if (continuous_preview_) {
         std::optional<TrackingTask> discarded{};
         {
@@ -334,7 +408,7 @@ void DroneTrackerNode::shutdown() noexcept {
             if (mv_camera_) {
                 if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false, RecordingEndReason::ServiceExit); }
             }
-            sealRecording();
+            sealRecording("service_exit");
         }
         control_changed_.notify_all();
         if (mv_camera_ && !mv_camera_->stop()) {
@@ -355,6 +429,9 @@ void DroneTrackerNode::shutdown() noexcept {
         if (mv_camera_) { mv_camera_->stop(); }
         closeRecording();
     }
+#ifdef DRONE_TRACKER_RK3576
+    if (recording_manager_) { recording_manager_->stopExecutor(); }
+#endif
     osd_telemetry_.reset();
     if (osd_presenter_) { osd_presenter_->shutdown(); osd_presenter_->reportTiming(); }
 }
@@ -415,7 +492,10 @@ void DroneTrackerNode::dispatchFrames() noexcept {
             desired_on_ = false;
             running = false;
             if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false, RecordingEndReason::CameraFailure); }
-            sealRecording();
+#ifdef DRONE_TRACKER_RK3576
+            if (recording_manager_) { recording_manager_->cancelPendingStart(); }
+#endif
+            sealRecording("camera_failure");
             osd_presenter_->endStream(stream_id_, osd::DisplayStatus::InputFailure);
         }
         RCLCPP_ERROR(get_logger(), "Video service failed: %s", error.what());
@@ -478,6 +558,9 @@ void DroneTrackerNode::continuousWorker() noexcept {
                 round_metrics_start_ = std::chrono::steady_clock::now();
                 round_display_start_ = osd_presenter_->counters();
             }
+#ifdef DRONE_TRACKER_RK3576
+            if (recording_manager_ && recording_hook_) { recording_hook_("before_round_open"); }
+#endif
             {
                 std::lock_guard<std::mutex> lock{control_mutex_};
                 if (running && desired_on_) {
@@ -506,7 +589,12 @@ void DroneTrackerNode::continuousWorker() noexcept {
             std::lock_guard<std::mutex> lock{control_mutex_};
             running = false;
             ready_request_ = false;
-            if (failed) { desired_on_ = false; }
+            if (failed) {
+                desired_on_ = false;
+#ifdef DRONE_TRACKER_RK3576
+                if (recording_manager_) { recording_manager_->cancelPendingStart(); }
+#endif
+            }
             if (!round_source_end_) {
             round_source_end_ = mv_camera_->status();
             round_dispatch_end_ = std::make_pair(dispatched_, tracking_replaced_);
@@ -517,7 +605,7 @@ void DroneTrackerNode::continuousWorker() noexcept {
                 failed ? osd::TrackingPhase::Failed : osd::TrackingPhase::Idle);
             if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false,
                 failed ? RecordingEndReason::TrackingFailure : RecordingEndReason::UserOff); }
-            sealRecording();
+            sealRecording(failed ? "tracking_failure" : "round_end");
         }
         tracker_->finishRound();
         closeRecording();
@@ -546,8 +634,29 @@ void DroneTrackerNode::openRecording(const builtin_interfaces::msg::Time &stamp)
     if (!enabled) { return; }
     const auto path{std::filesystem::path{directory} / ("drone_rosbag_" + prefix)};
 #ifdef DRONE_TRACKER_RK3576
-    bag_session_ = std::make_unique<BagSession>(path.string(), recording_hook_,
-        [this](const BagSession::Status &status) {
+    if (recording_manager_) {
+        try {
+            if (recording_hook_) { recording_hook_("before_session_open"); }
+            recording_manager_->open(continuous_preview_ ? osd_round_.load() : round_number_.load() + 1,
+                rclcpp::Clock{RCL_SYSTEM_TIME}.now().nanoseconds());
+        }
+        catch (const std::exception &error) {
+            recording_manager_->cancelPendingStart();
+            RCLCPP_ERROR(get_logger(), "Bag unavailable: %s; tracking continues", error.what());
+            recording_failed_ = true;
+        }
+    }
+#else
+    if (std::filesystem::exists(path)) { throw std::runtime_error("Recording directory already exists: " + path.string()); }
+    if (recording_hook_) { recording_hook_("open"); }
+    rosbag_writer_ = std::make_unique<rosbag2_cpp::Writer>();
+    rosbag_writer_->open(path.string());
+    rosbag_writer_->create_topic({TOPIC_ODOM, "nav_msgs/msg/Odometry", rmw_get_serialization_format(), ""});
+#endif
+}
+
+#ifdef DRONE_TRACKER_RK3576
+void DroneTrackerNode::reportBagStatus(const BagSession::Status &status) {
             {
                 std::lock_guard<std::mutex> lock{bag_status_mutex_};
                 last_bag_status_ = status;
@@ -572,31 +681,21 @@ void DroneTrackerNode::openRecording(const builtin_interfaces::msg::Time &stamp)
                 status_publisher_->publish(mavros_msgs::msg::StatusText::WARNING, 1,
                     "Bag " + status.phase + ": " + status.reason, true);
             }
-        });
-#else
-    if (std::filesystem::exists(path)) { throw std::runtime_error("Recording directory already exists: " + path.string()); }
-    if (recording_hook_) { recording_hook_("open"); }
-    rosbag_writer_ = std::make_unique<rosbag2_cpp::Writer>();
-    rosbag_writer_->open(path.string());
-    rosbag_writer_->create_topic({TOPIC_ODOM, "nav_msgs/msg/Odometry", rmw_get_serialization_format(), ""});
-#endif
 }
+#endif
 
-void DroneTrackerNode::sealRecording() noexcept {
+void DroneTrackerNode::sealRecording(const std::string &reason) noexcept {
 #ifdef DRONE_TRACKER_RK3576
     std::lock_guard<std::mutex> lock{bag_mutex_};
-    if (bag_session_) { bag_session_->seal(); }
+    if (recording_manager_) { recording_manager_->seal(reason); }
+#else
+    (void)reason;
 #endif
 }
 
 void DroneTrackerNode::closeRecording() noexcept {
 #ifdef DRONE_TRACKER_RK3576
-    std::unique_ptr<BagSession> session{};
-    {
-        std::lock_guard<std::mutex> lock{bag_mutex_};
-        session = std::move(bag_session_);
-    }
-    if (session) { session->stop(); }
+    if (recording_manager_) { recording_manager_->close(); }
 #else
     std::lock_guard<std::mutex> lock{bag_mutex_};
     if (!rosbag_writer_) { return; }
@@ -944,19 +1043,17 @@ void DroneTrackerNode::setupRos() {
         std::bind(&DroneTrackerNode::imu_callback, this, std::placeholders::_1)
     );
 
+#ifndef DRONE_TRACKER_RK3576
     odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
         TOPIC_ODOM, 
         rclcpp::QoS(rclcpp::KeepLast(10)).best_effort(), 
         std::bind(&DroneTrackerNode::odom_callback, this, std::placeholders::_1));
+#endif
 
     detection_pub_ = this->create_publisher<vision_msgs::msg::Detection2D>(
         TOPIC_TARGET_BBOX, 10);
 #ifdef DRONE_TRACKER_RK3576
     los_pub_ = create_publisher<geometry_msgs::msg::TwistStamped>("/fpv/target_los", rclcpp::QoS{10}.reliable());
-    mavros_imu_sub_ = create_subscription<sensor_msgs::msg::Imu>("/mavros/imu/data",
-        rclcpp::QoS{100}.best_effort(), [this](sensor_msgs::msg::Imu::SharedPtr msg) {
-            record(msg, "/mavros/imu/data", rclcpp::Time{msg->header.stamp});
-        });
     image_pub_ = create_publisher<sensor_msgs::msg::Image>(TOPIC_TRACKER_IMAGE, rclcpp::QoS{1}.best_effort());
 #else
     image_pub_ = create_publisher<sensor_msgs::msg::Image>(TOPIC_TRACKER_IMAGE, 10);
@@ -970,18 +1067,48 @@ void DroneTrackerNode::setupRos() {
         TOPIC_TRACKER_TRIGGER, rclcpp::QoS(rclcpp::KeepLast(1)).best_effort(),
         [this](const std_msgs::msg::Header::SharedPtr msg)
         {
+#ifdef DRONE_TRACKER_RK3576
+            const auto receipt_ns{rclcpp::Clock{RCL_SYSTEM_TIME}.now().nanoseconds()};
+            if (msg->frame_id == "OFF" && recording_manager_ && recording_hook_) {
+                recording_hook_("off_received");
+            }
+            if (recording_manager_ && msg->frame_id != "ON" && msg->frame_id != "OFF") {
+                recording_manager_->observeTrigger(*msg, receipt_ns);
+            }
+#endif
             RCLCPP_INFO(get_logger(), "Tracker trigger received frame_id=\"%s\" round=%lu",
                 msg->frame_id.c_str(), static_cast<unsigned long>(osd_round_));
             if (osd_presenter_ && (msg->frame_id == "OFF" || msg->frame_id == "DISMISS")) {
                 osd_presenter_->cancelMission(msg->frame_id == "DISMISS");
             }
             if (msg->frame_id == "ON") {
+#ifdef DRONE_TRACKER_RK3576
+                // Forward under the same control lock that selects the established round.
+                runWithTrigger(msg->stamp, msg.get(), receipt_ns);
+#else
                 run(msg->stamp);
+#endif
             } else if (msg->frame_id == "OFF") {
+#ifdef DRONE_TRACKER_RK3576
+                stopWithTrigger(msg.get(), receipt_ns);
+#else
                 stop();
+#endif
             }
         }
     );
+#ifdef DRONE_TRACKER_RK3576
+    if (get_parameter("need_save").as_bool()) {
+        try {
+            if (!bag_config_error_.empty()) { throw std::invalid_argument(bag_config_error_); }
+            recording_manager_ = std::make_unique<recording::RecordingManager>(*this, recording::readConfig(*this),
+                recording_hook_, [this](const BagSession::Status &status) { reportBagStatus(status); });
+        } catch (const std::exception &error) {
+            RCLCPP_ERROR(get_logger(), "Bag configuration unavailable: %s; tracking continues", error.what());
+            recording_failed_ = true;
+        }
+    }
+#endif
 }
 
 void DroneTrackerNode::worker() {
@@ -990,6 +1117,7 @@ void DroneTrackerNode::worker() {
     auto round{diagnostics::event(diagnostics::Type::RoundStart)};
     round.prediction_us = now().nanoseconds() / 1000; round.flags |= diagnostics::PredictionKnown;
     diagnostics::emit(round); round.type = diagnostics::Type::ClockRelation; diagnostics::emit(round);
+    bool failed{};
     try {
         if (running) {
             if (!mv_camera_->start()) {
@@ -1001,12 +1129,13 @@ void DroneTrackerNode::worker() {
             processFrames();
         }
     } catch (const std::exception &error) {
+        failed = true;
         RCLCPP_ERROR(get_logger(), "Round failed: %s", error.what());
         if (osd_presenter_) { osd_presenter_->endRound(osd_round_, osd::DisplayStatus::InputFailure); }
     }
     run_state_ = RunState::Stopping;
     running = false;
-    sealRecording();
+    sealRecording(failed ? "round_failure" : mv_camera_->status().state == FrameSourceState::Eof ? "eof" : "round_end");
     const auto stop_begin{std::chrono::steady_clock::now()};
     const bool source_stopped{mv_camera_->stop()};
     if (!source_stopped) { RCLCPP_ERROR(get_logger(), "Input cleanup failed: %s", mv_camera_->status().reason.c_str()); }
@@ -1466,7 +1595,8 @@ void DroneTrackerNode::publishObservations(const cv::Rect2d *box, std::int64_t s
     emit(value);
     {
         std::lock_guard<std::mutex> lock{bag_mutex_};
-        if (bag_session_) { bag_session_->submitPair(bbox, los, rclcpp::Time{bbox->header.stamp}); }
+        if (recording_manager_) { recording_manager_->submitObservationPair(
+            continuous_preview_ ? osd_round_.load() : round_number_.load(), bbox, los, control); }
     }
     // Each call has its own outcome. One failure must not erase the other call's evidence.
     auto publish{[&](bool is_los) {
@@ -1507,19 +1637,18 @@ void DroneTrackerNode::notifyObservationOff() {
 }
 #endif
 
+#ifndef DRONE_TRACKER_RK3576
 void DroneTrackerNode::odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
     record(msg, TOPIC_ODOM, rclcpp::Time(msg->header.stamp));
 }
 
+#endif
 void DroneTrackerNode::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
 {
     // /fpv/gimbal 携带相机到世界的姿态（FLU 约定，由 apm_bridge 发布）。
     // 跟踪器 KF 只使用相对旋转 R_new^T * R_old，世界系约定无关紧要。
     // 无论是否 running 都持续积累，保证触发 ON 时历史已就绪。
-#ifdef DRONE_TRACKER_RK3576
-    record(msg, TOPIC_GIMBAL, rclcpp::Time(msg->header.stamp));
-#endif
     const auto& q = msg->orientation;
 #ifdef DRONE_TRACKER_RK3576
     if (!std::isfinite(q.w) || !std::isfinite(q.x) || !std::isfinite(q.y) || !std::isfinite(q.z)) { return; }
