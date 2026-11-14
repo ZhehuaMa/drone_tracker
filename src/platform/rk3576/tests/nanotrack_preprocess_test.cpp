@@ -223,7 +223,35 @@ void observationPixels() {
     }
 }
 } // namespace
+void recordingReceipts() {
+    auto frame{rk3576::copyGrayFrame(cv::Mat{5, 7, CV_8UC1, cv::Scalar{17}}, 123,
+        {0x100000011ULL, 0, 17, diagnostics::CaptureKnown | diagnostics::DriverKnown})};
+    const auto original{frame->mapRead()};
+    RecordingReceipt receipt{RecordingDisposition::Accepted, {71, 2, 9}, 0x100000011ULL, 123, 17};
+    auto decorated{rk3576::withRecordingReceipt(frame, receipt)};
+    require(rk3576::isHostGrayFrame(decorated), "Receipt changed concrete storage compatibility");
+    require(frame->recordingReceipt().disposition == RecordingDisposition::Unavailable,
+        "Attaching a receipt mutated an already published frame");
+    auto view{decorated->mapRead()};
+    require(view->mat().data == original->mat().data && decorated->timestampUs() == 123,
+        "Receipt copied pixels or changed capture time");
+    receipt.request.generation = 10;
+    require(decorated->recordingReceipt().acceptedFor({71, 2, 9})
+        && !decorated->recordingReceipt().acceptedFor(receipt.request), "Receipt alias changed immutable request");
+    auto wrapped{rk3576::withRecordingReceipt(frame,
+        {RecordingDisposition::Accepted, {71, 2, 9}, 17, 123, 17})};
+    require(wrapped->recordingReceipt().capture_id != decorated->recordingReceipt().capture_id,
+        "Driver sequence wrap erased capture identity");
+    rk3576::NanoTrackPreprocessor preprocessor{};
+    require(static_cast<bool>(preprocessor.prepareTemplate(decorated, {2, 2}, 5, {{1, 3, 127, 127}})),
+        "Receipt broke model preprocessing");
+    frame.reset(); decorated.reset(); wrapped.reset();
+    require(view->mat().at<unsigned char>(0, 0) == 17, "Read view lost retained pixel storage");
+    require(std::make_shared<TestFrame>(std::make_shared<Trace>())->recordingReceipt().disposition
+        == RecordingDisposition::Unavailable, "Default frame unexpectedly requires recording");
+}
 int main() {
+    recordingReceipts();
     matrix();
     reuseAndFailures();
     observationPixels();

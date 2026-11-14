@@ -57,6 +57,7 @@ std::string configJson(const FrameSourceConfig &config, const CameraFormat &f, s
         << ",\"bitrate_bps\":" << c.bitrate_bps << ",\"segment_seconds\":" << c.segment_seconds
         << ",\"sync_interval_ms\":" << c.sync_interval_ms << ",\"max_total_bytes\":" << c.max_total_bytes
         << ",\"min_free_bytes\":" << c.min_free_bytes << ",\"round\":" << round
+        << ",\"request_generation\":" << c.request_generation
         << ",\"stream_id\":" << c.stream_id << ",\"tracking_round\":" << c.tracking_round
         << ",\"width\":" << f.width << ",\"height\":" << f.height << ",\"stride\":" << f.stride
         << ",\"cpu_policy_version\":" << (policy.configured ? 1 : 0)
@@ -139,6 +140,7 @@ struct Session::Impl {
     std::int64_t terminate_us{};
     CameraRecordingStatus record{};
     FrameSourceStatus start_status{};
+    RecordingStartupEvidence startup{};
 
     Impl(FrameSourceConfig input, std::string worker, ReapProcess reap_process)
         : config{std::move(input)}, executable{std::move(worker)}, reap{std::move(reap_process)} {
@@ -187,6 +189,8 @@ struct Session::Impl {
     }
     void spawn(const CameraFormat &format) {
         slots = std::make_shared<RecordingSlots>(format.width, format.height, ++round);
+        slots->setRequest({config.camera_recording.stream_id, config.camera_recording.tracking_round,
+                           config.camera_recording.request_generation});
         const auto text{configJson(config, format, round)};
         int config_fd{::memfd_create("recording-config", MFD_CLOEXEC)};
         std::array<int, 2> sockets{{-1, -1}};
@@ -319,8 +323,11 @@ void Session::stop(const FrameSourceStatus &camera, const std::string &reason) n
         auto &h{impl_->slots->header()};
         if (h.stopping.load() && impl_->record.stop_us != 0) { return; }
         if (!h.stopping.load()) {
-            const auto text{cameraSummary(camera, impl_->start_status,
+            auto text{cameraSummary(camera, impl_->start_status,
                 impl_->config.camera_recording.stream_id, impl_->config.camera_recording.tracking_round, reason)};
+            text.pop_back();
+            text += ",\"startup\":" + startupSummary(impl_->startup) + "}";
+            if (text.size() >= h.camera_summary.size()) { throw std::runtime_error("Startup metadata exceeds bound"); }
             std::copy(text.begin(), text.end(), h.camera_summary.begin());
             h.summary_size.store(text.size(), std::memory_order_release);
             h.stopping.store(true, std::memory_order_release);
@@ -343,8 +350,18 @@ void Session::stop(const FrameSourceStatus &camera, const std::string &reason) n
     if (impl_->pid > 0) { ::kill(impl_->pid, SIGTERM); }
     impl_->record.stop_us = RecordingSlots::monotonicUs() - begin;
 }
-void Session::setContext(std::uint64_t stream, std::uint64_t tracking_round, FrameSourceStatus start) {
+void Session::setStartupEvidence(const RecordingStartupEvidence &evidence) noexcept {
     std::lock_guard<std::mutex> lock{impl_->mutex};
+    if (evidence.request.matches({impl_->config.camera_recording.stream_id,
+        impl_->config.camera_recording.tracking_round, impl_->config.camera_recording.request_generation})) {
+        impl_->startup = evidence;
+    }
+}
+void Session::setContext(std::uint64_t stream, std::uint64_t tracking_round, FrameSourceStatus start,
+                         std::uint64_t request_generation) {
+    std::lock_guard<std::mutex> lock{impl_->mutex};
+    impl_->startup = {};
+    impl_->config.camera_recording.request_generation = request_generation;
     impl_->config.camera_recording.stream_id = stream;
     impl_->config.camera_recording.tracking_round = tracking_round;
     impl_->start_status = std::move(start);

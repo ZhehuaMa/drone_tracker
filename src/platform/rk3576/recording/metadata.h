@@ -23,9 +23,44 @@ inline std::string quote(const std::string &value) {
 }
 inline std::string identityFields(const RecordingSlots::Identity &id) {
     return "\"round\":" + std::to_string(id.round) + ",\"sequence\":" + std::to_string(id.sequence)
+        + ",\"capture_id\":" + std::to_string(id.capture_id)
+        + ",\"stream_id\":" + std::to_string(id.stream_id)
+        + ",\"tracking_round\":" + std::to_string(id.tracking_round)
+        + ",\"request_generation\":" + std::to_string(id.request_generation)
         + ",\"driver_seconds\":" + std::to_string(id.driver_seconds)
         + ",\"driver_microseconds\":" + std::to_string(id.driver_microseconds)
         + ",\"flags\":" + std::to_string(id.flags) + ",\"timestamp_us\":" + std::to_string(id.timestamp_us);
+}
+inline std::string sourceSummary(const AlgorithmSource &source) {
+    const auto &r{source.receipt};
+    return "{\"stream_id\":" + std::to_string(r.request.stream)
+        + ",\"tracking_round\":" + std::to_string(r.request.round)
+        + ",\"request_generation\":" + std::to_string(r.request.generation)
+        + ",\"capture_id\":" + std::to_string(source.capture_id)
+        + ",\"timestamp_us\":" + std::to_string(source.timestamp_us)
+        + ",\"sequence\":" + std::to_string(r.driver_sequence)
+        + ",\"request_id\":" + std::to_string(source.request_id)
+        + ",\"update_id\":" + std::to_string(source.update_id)
+        + ",\"algorithm_generation\":" + std::to_string(source.generation)
+        + ",\"accepted\":" + (r.disposition == RecordingDisposition::Accepted ? "true" : "false") + "}";
+}
+inline std::string startupSummary(const RecordingStartupEvidence &e) {
+    return "{\"stream_id\":" + std::to_string(e.request.stream)
+        + ",\"tracking_round\":" + std::to_string(e.request.round)
+        + ",\"request_generation\":" + std::to_string(e.request.generation)
+        + ",\"outcome\":" + quote(e.fallback ? "unavailable" : e.cancelled && !e.yolo_known ? "cancelled" : "accepted")
+        + ",\"initialization_outcome\":" + quote(e.initialization_known ? e.fallback ? "unavailable" : "accepted" : "not-applicable")
+        + ",\"cancelled\":" + (e.cancelled ? "true" : "false")
+        + ",\"fallback\":" + (e.fallback ? "true" : "false")
+        + ",\"first_yolo\":" + (e.yolo_known ? sourceSummary(e.first_yolo) : "null")
+        + ",\"first_initialization\":" + (e.initialization_known ? sourceSummary(e.first_initialization) : "null")
+        + ",\"preparation_omitted\":" + std::to_string(e.preparation_omitted)
+        + ",\"dispatch_withheld\":" + std::to_string(e.dispatch_withheld)
+        + ",\"dispatch_rejected\":" + std::to_string(e.dispatch_rejected)
+        + ",\"pending_replaced\":" + std::to_string(e.pending_replaced)
+        + ",\"on_mono_us\":" + std::to_string(e.on_mono_us)
+        + ",\"first_eligible_mono_us\":" + std::to_string(e.first_eligible_mono_us)
+        + ",\"initialization_mono_us\":" + std::to_string(e.initialization_mono_us) + "}";
 }
 inline std::string cameraSummary(const FrameSourceStatus &status) {
     const auto &c{status.camera};

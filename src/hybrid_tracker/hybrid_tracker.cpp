@@ -59,6 +59,13 @@ public:
     virtual bool init() override;
     virtual void reset() override;
     void finishRound() override { if (m_detector) { m_detector->finishRound(); } }
+    void setSourceObserver(std::function<void(bool, const AlgorithmSource &)> observer) override {
+        m_source_observer = std::move(observer);
+        m_detector->setSourceObserver(m_source_observer
+            ? std::function<void(const AlgorithmSource &)>{[hook = m_source_observer](const AlgorithmSource &source) {
+                hook(false, source);
+            }} : std::function<void(const AlgorithmSource &)>{});
+    }
     virtual TrackerOutput update(const FrameContext& ctx) override;
     virtual cv::Rect2f lastNanoBox() const override { return m_tracker ? m_tracker->lastNanoBox() : cv::Rect2f(); }
     virtual float lastNanoScore() const override { return m_tracker ? m_tracker->lastScore() : -1.0f; }
@@ -79,7 +86,7 @@ private:
     /** @brief 用历史帧初始化跟踪器并对后续帧前向追踪以追平进度 */
     bool catchupTracker(const BufferedFrame& hist,
                         const std::vector<FrameRef>& catchup_frames,
-                        const cv::Rect2f& yolo_box);
+                        const cv::Rect2f& yolo_box, std::uint64_t request_id);
 
     /** @brief 计算两个矩形的 IoU */
     static float calculateIOU(const cv::Rect2f& boxA, const cv::Rect2f& boxB);
@@ -134,6 +141,7 @@ private:
     int m_frame_count = 0;
     uint64_t m_frame_id_counter = 0;
     uint64_t m_update_counter{};
+    std::function<void(bool, const AlgorithmSource &)> m_source_observer{};
     std::uint64_t m_generation{};
     int64_t m_last_timestamp_us = 0;
     int m_jump_counter = 0;            // 跟踪框连续跳变计数
@@ -254,7 +262,7 @@ void HybridTrackerImp::reset()
 
 bool HybridTrackerImp::catchupTracker(const BufferedFrame& hist,
                                        const std::vector<FrameRef>& catchup_frames,
-                                       const cv::Rect2f& yolo_box)
+                                       const cv::Rect2f& yolo_box, std::uint64_t request_id)
 {
     auto initialization{diagnostics::event(diagnostics::Type::InitializeStart)};
     initialization.frame = hist.frame->diagnosticIdentity(); initialization.source_tracker_frame_id = hist.frame_id;
@@ -272,6 +280,13 @@ bool HybridTrackerImp::catchupTracker(const BufferedFrame& hist,
     {
         m_tracker->reset();
         return false;
+    }
+    if (m_source_observer) {
+        try {
+            m_source_observer(true, {hist.frame->recordingReceipt(), hist.frame->timestampUs(),
+                hist.frame->diagnosticIdentity().capture_id, hist.frame_id, hist.update_id,
+                request_id, m_generation});
+        } catch (...) { /* Observations cannot change tracker initialization. */ }
     }
     m_display_box = toIntRect(yolo_box);
     m_has_display_box = true;
@@ -459,7 +474,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                 for (size_t i = idx + 1; i < m_frame_buffer.size(); ++i)
                     catchup_frames.push_back(m_frame_buffer[i].frame);
 
-                if (catchupTracker(m_frame_buffer[idx], catchup_frames, res.best.box))
+                if (catchupTracker(m_frame_buffer[idx], catchup_frames, res.best.box, res.request_id))
                 {
                     m_yolo_lost = 0;
                     m_init_fail_streak = 0;
@@ -748,7 +763,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                     if (m_yolo_jump_count >= m_settings.jump_tolerance)
                     {
                         std::cout << "Accepting jumped YOLO detection after consecutive jumps" << std::endl;
-                        if (hist && catchupTracker(*hist, catchup_frames, best_match_box))
+                        if (hist && catchupTracker(*hist, catchup_frames, best_match_box, res.request_id))
                         {
                             m_display_info = "Re-initialized (jump accept)";
                             m_display_color = cv::Scalar(255, 255, 0); // 青色
@@ -775,7 +790,7 @@ TrackerOutput HybridTrackerImp::update(const FrameContext& ctx)
                     // 重新初始化追踪器（复用已加载的 TRT 引擎）
                     if (hist)
                     {
-                        if (catchupTracker(*hist, catchup_frames, best_match_box))
+                        if (catchupTracker(*hist, catchup_frames, best_match_box, res.request_id))
                         {
                             m_display_info = "Re-initialized (nanotrack)";
                             m_display_color = cv::Scalar(255, 255, 0); // 青色

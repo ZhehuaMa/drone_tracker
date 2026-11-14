@@ -2,6 +2,7 @@
 #define HYBRIDTRACKER_H
 
 #include <string>
+#include <functional>
 #include <memory>
 #include <cstdint>
 #include <opencv2/core.hpp>
@@ -107,6 +108,8 @@ public:
     /** @brief 无并发 update 时结束本轮；保留模型，等待检测不再访问旧帧。 */
     virtual void finishRound() = 0;
 
+    /** @brief Install between rounds after finishRound(); default callers need no observations. */
+    virtual void setSourceObserver(std::function<void(bool, const AlgorithmSource &)>) {}
     /** @brief 处理单个视频帧 */
     virtual TrackerOutput update(const FrameContext& ctx) = 0;
 

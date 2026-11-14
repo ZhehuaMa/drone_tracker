@@ -1,0 +1,190 @@
+Backend: amd64; target: ARM64; image: sha256:025d0aa88983b0646a1b7a4d25cbc13dc96a6206e0148475bbfd5fad15057421
+Install: /home/mzh/nickluo/worktrees/drone_tracker-align-recording-start/.docker-artifacts/backends/amd64/install/drone_tracker
+Logs: /home/mzh/nickluo/worktrees/drone_tracker-align-recording-start/.docker-artifacts/backends/amd64/log
+Starting >>> quadrotor_msgs
+Finished <<< quadrotor_msgs [0.28s]
+Starting >>> drone_tracker
+Finished <<< drone_tracker [2.10s]
+
+Summary: 2 packages finished [2.56s]
+install/drone_tracker/lib/drone_tracker/drone_tracker_node: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (GNU/Linux), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID[sha1]=837354530f922514db51749186497a3fb44636ac, for GNU/Linux 3.7.0, not stripped
+-- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found rclcpp: 16.0.21 (/opt/ros/humble/share/rclcpp/cmake)
+-- Found rosidl_generator_c: 3.1.9 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+-- Found rosidl_adapter: 3.1.9 (/opt/ros/humble/share/rosidl_adapter/cmake)
+-- Found rosidl_generator_cpp: 3.1.9 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found rmw_implementation_cmake: 6.1.4 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 6.2.10 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Found sensor_msgs: 4.9.2 (/opt/ros/humble/share/sensor_msgs/cmake)
+-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2") found components: Crypto 
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /work/ros2_ws/build/native-resource-limit
+Consolidate compiler generated dependencies of target tracking_regression_native_resource_limit
+[100%] Built target tracking_regression_native_resource_limit
+Internal ctest changing into directory: /work/ros2_ws/build/native-resource-limit
+Test project /work/ros2_ws/build/native-resource-limit
+    Start 1: tracking_regression_native_resource_limit
+1/1 Test #1: tracking_regression_native_resource_limit ...   Passed    0.29 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.29 sec
+Internal ctest changing into directory: /work/ros2_ws/build/drone_tracker
+Test project /work/ros2_ws/build/drone_tracker
+      Start  1: sc233hgs_camera_tests
+ 1/73 Test  #1: sc233hgs_camera_tests ..........................   Passed    0.15 sec
+      Start  2: cpu_affinity_tests
+ 2/73 Test  #2: cpu_affinity_tests .............................   Passed    0.06 sec
+      Start  3: recording_release_capabilities
+ 3/73 Test  #3: recording_release_capabilities .................   Passed    0.20 sec
+      Start  4: deployment_cpu_policy_tests
+ 4/73 Test  #4: deployment_cpu_policy_tests ....................   Passed    1.12 sec
+      Start  5: deployment_package_tests
+ 5/73 Test  #5: deployment_package_tests .......................   Passed    0.18 sec
+      Start  6: deployment_diagnostics_tests
+ 6/73 Test  #6: deployment_diagnostics_tests ...................   Passed    5.68 sec
+      Start  7: deployment_install_policy_tests
+ 7/73 Test  #7: deployment_install_policy_tests ................   Passed    2.13 sec
+      Start  8: ros_transport_tests
+ 8/73 Test  #8: ros_transport_tests ............................   Passed   21.90 sec
+      Start  9: ros_transport_contention_tests
+ 9/73 Test  #9: ros_transport_contention_tests .................   Passed    1.51 sec
+      Start 10: target_observation_tests
+10/73 Test #10: target_observation_tests .......................   Passed    0.02 sec
+      Start 11: ros_video_generate_fixtures
+11/73 Test #11: ros_video_generate_fixtures ....................   Passed    0.28 sec
+      Start 12: ros_video_tests
+12/73 Test #12: ros_video_tests ................................   Passed   25.68 sec
+      Start 13: ros_affinity_initialization_tests
+13/73 Test #13: ros_affinity_initialization_tests ..............   Passed    0.86 sec
+      Start 14: ros_continuous_camera_tests
+14/73 Test #14: ros_continuous_camera_tests ....................   Passed   12.17 sec
+      Start 15: ros_initialization_tests
+15/73 Test #15: ros_initialization_tests .......................   Passed    1.82 sec
+      Start 16: jetson_config_tests
+16/73 Test #16: jetson_config_tests ............................   Passed    0.64 sec
+      Start 17: diagnostic_tests
+17/73 Test #17: diagnostic_tests ...............................   Passed    6.65 sec
+      Start 18: recording_catalog_policy_tests
+18/73 Test #18: recording_catalog_policy_tests .................   Passed    0.02 sec
+      Start 19: recording_transport_tests
+19/73 Test #19: recording_transport_tests ......................   Passed    0.69 sec
+      Start 20: recording_affinity_tests
+20/73 Test #20: recording_affinity_tests .......................   Passed    0.17 sec
+      Start 21: recording_writer_tests
+21/73 Test #21: recording_writer_tests .........................   Passed    0.22 sec
+      Start 22: observation_output_tests
+22/73 Test #22: observation_output_tests .......................   Passed    0.09 sec
+      Start 23: target_los_tests
+23/73 Test #23: target_los_tests ...............................   Passed    0.02 sec
+      Start 24: yolo_output_adapter_tests
+24/73 Test #24: yolo_output_adapter_tests ......................   Passed    8.06 sec
+      Start 25: model_contract_tests
+25/73 Test #25: model_contract_tests ...........................   Passed    0.03 sec
+      Start 26: preprocess_common_tests
+26/73 Test #26: preprocess_common_tests ........................   Passed    0.02 sec
+      Start 27: preprocess_contract_tests
+27/73 Test #27: preprocess_contract_tests ......................   Passed    0.23 sec
+      Start 28: hybrid_tracker_tests
+28/73 Test #28: hybrid_tracker_tests ...........................   Passed    0.10 sec
+      Start 29: platform_contract_tests
+29/73 Test #29: platform_contract_tests ........................   Passed    0.10 sec
+      Start 30: diagnostic_tracker_tests
+30/73 Test #30: diagnostic_tracker_tests .......................   Passed    4.95 sec
+      Start 31: rknn_preprocess_tests
+31/73 Test #31: rknn_preprocess_tests ..........................   Passed    0.13 sec
+      Start 32: recovery_regression_tests
+32/73 Test #32: recovery_regression_tests ......................   Passed    0.09 sec
+      Start 33: platform_selection_tests
+33/73 Test #33: platform_selection_tests .......................   Passed    0.17 sec
+      Start 34: recording_startup_inspect_tests
+34/73 Test #34: recording_startup_inspect_tests ................   Passed    0.95 sec
+      Start 35: osd_yaml_tests
+35/73 Test #35: osd_yaml_tests .................................   Passed    0.05 sec
+      Start 36: osd_mission_state_tests
+36/73 Test #36: osd_mission_state_tests ........................   Passed    0.02 sec
+      Start 37: osd_pipeline_state_tests
+37/73 Test #37: osd_pipeline_state_tests .......................   Passed    0.02 sec
+      Start 38: osd_config_tests
+38/73 Test #38: osd_config_tests ...............................   Passed    0.02 sec
+      Start 39: osd_timing_tests
+39/73 Test #39: osd_timing_tests ...............................   Passed    0.02 sec
+      Start 40: osd_presenter_tests
+40/73 Test #40: osd_presenter_tests ............................   Passed    1.07 sec
+      Start 41: osd_geometry_tests
+41/73 Test #41: osd_geometry_tests .............................   Passed    0.02 sec
+      Start 42: osd_layout_tests
+42/73 Test #42: osd_layout_tests ...............................   Passed    7.56 sec
+      Start 43: osd_short_text_tests
+43/73 Test #43: osd_short_text_tests ...........................   Passed    0.02 sec
+      Start 44: osd_hud_style_tests
+44/73 Test #44: osd_hud_style_tests ............................   Passed    1.40 sec
+      Start 45: osd_rssi_tests
+45/73 Test #45: osd_rssi_tests .................................   Passed    1.23 sec
+      Start 46: osd_telemetry_tests
+46/73 Test #46: osd_telemetry_tests ............................   Passed    0.03 sec
+      Start 47: ros_osd_telemetry_tests
+47/73 Test #47: ros_osd_telemetry_tests ........................   Passed    1.10 sec
+      Start 48: nanotrack_baseline_tests
+48/73 Test #48: nanotrack_baseline_tests .......................   Passed    0.08 sec
+      Start 49: nanotrack_baseline_help
+49/73 Test #49: nanotrack_baseline_help ........................   Passed    0.07 sec
+      Start 50: baseline_rknn_session_tests
+50/73 Test #50: baseline_rknn_session_tests ....................   Passed    0.03 sec
+      Start 51: baseline_rknn_nanotrack_backend_tests
+51/73 Test #51: baseline_rknn_nanotrack_backend_tests ..........   Passed    0.14 sec
+      Start 52: baseline_nanotrack_preprocess_tests
+52/73 Test #52: baseline_nanotrack_preprocess_tests ............   Passed    0.75 sec
+      Start 53: baseline_video_fixtures
+53/73 Test #53: baseline_video_fixtures ........................   Passed    0.26 sec
+      Start 54: baseline_video_observation
+54/73 Test #54: baseline_video_observation .....................   Passed    0.15 sec
+      Start 55: baseline_runner_tests
+55/73 Test #55: baseline_runner_tests ..........................   Passed    1.53 sec
+      Start 56: baseline_code_identity_tests
+56/73 Test #56: baseline_code_identity_tests ...................   Passed    2.79 sec
+      Start 57: search_direct_direct_backend_tests
+57/73 Test #57: search_direct_direct_backend_tests .............   Passed    0.15 sec
+      Start 58: search_direct_direct_failure_tests
+58/73 Test #58: search_direct_direct_failure_tests .............   Passed    0.10 sec
+      Start 59: search_direct_help
+59/73 Test #59: search_direct_help .............................   Passed    0.07 sec
+      Start 60: search_direct_probe_help
+60/73 Test #60: search_direct_probe_help .......................   Passed    0.03 sec
+      Start 61: search_direct_probe_missing_models
+61/73 Test #61: search_direct_probe_missing_models .............   Passed    0.03 sec
+      Start 62: search_direct_missing_config
+62/73 Test #62: search_direct_missing_config ...................   Passed    0.06 sec
+      Start 63: search_direct_video_fixtures
+63/73 Test #63: search_direct_video_fixtures ...................   Passed    0.26 sec
+      Start 64: search_direct_runner_tests
+64/73 Test #64: search_direct_runner_tests .....................   Passed    1.35 sec
+      Start 65: nanotrack_window_tests
+65/73 Test #65: nanotrack_window_tests .........................   Passed    2.73 sec
+      Start 66: nanotrack_window_help
+66/73 Test #66: nanotrack_window_help ..........................   Passed    0.12 sec
+      Start 67: nanotrack_window_performance_tests
+67/73 Test #67: nanotrack_window_performance_tests .............   Passed    0.02 sec
+      Start 68: nanotrack_window_performance_exit_tests
+68/73 Test #68: nanotrack_window_performance_exit_tests ........   Passed    0.17 sec
+      Start 69: tracking_regression_python
+69/73 Test #69: tracking_regression_python .....................   Passed   10.93 sec
+      Start 70: tracking_regression_source_tests
+70/73 Test #70: tracking_regression_source_tests ...............   Passed   65.78 sec
+      Start 71: tracking_regression_round_tests
+71/73 Test #71: tracking_regression_round_tests ................   Passed    2.74 sec
+      Start 72: tracking_regression_cpu_observer_integration
+72/73 Test #72: tracking_regression_cpu_observer_integration ...   Passed    0.16 sec
+      Start 73: tracking_regression_preflight
+73/73 Test #73: tracking_regression_preflight ..................   Passed    1.15 sec
+
+100% tests passed, 0 tests failed out of 73
+
+Total Test time (real) = 201.30 sec
+Build succeeded. ARM64 install: /home/mzh/nickluo/worktrees/drone_tracker-align-recording-start/.docker-artifacts/backends/amd64/install/drone_tracker
+For packaging pass --install-root /home/mzh/nickluo/worktrees/drone_tracker-align-recording-start/.docker-artifacts/backends/amd64/install/drone_tracker explicitly.

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "frame/recording_receipt.h"
 
 /** @brief 独立相机录像启动配置；单位为字节、秒及毫秒，不含平台 SDK 类型。 */
 struct CameraRecordingConfig {
@@ -18,11 +19,13 @@ struct CameraRecordingConfig {
     std::string identity{};
     /** @brief 身份等录像专属准备失败；本轮报告失败，不阻止健康的跟踪启动。 */
     std::string preparation_error{};
-    std::uint64_t stream_id{}, tracking_round{};
+    std::uint64_t stream_id{}, tracking_round{}, request_generation{};
 };
 
 /** @brief 与跟踪状态独立的录像快照；同步未知时不得把落后量当作零。 */
 struct CameraRecordingStatus {
+    RecordingRequest request{};
+    bool terminal{};
     bool enabled{};
     std::string phase{"disabled"};
     std::string reason{};
@@ -55,6 +58,10 @@ enum class RecordingEndReason { UserOff, TrackingFailure, CameraFailure, Service
 class CameraRecordingControl {
 public:
     virtual ~CameraRecordingControl() = default;
+    /** @brief Current request snapshot cannot inherit readiness from a previous session. */
+    virtual CameraRecordingStatus recordingRequestStatus() const { return {}; }
+    /** @brief Freeze value-only evidence before requesting OFF; performs no file I/O. */
+    virtual void setStartupEvidence(const RecordingStartupEvidence &) noexcept {}
     virtual void useSessionControl(std::uint64_t stream) = 0;
     /** @brief Final shutdown waits for the serial controller's bounded close, never from OFF. */
     virtual void finishRecording() noexcept {}

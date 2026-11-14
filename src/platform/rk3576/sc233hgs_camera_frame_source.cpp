@@ -54,6 +54,7 @@ void Sc233hgsCameraFrameSource::requestRecording(std::uint64_t round, bool enabl
     std::lock_guard<std::mutex> lock{recording_mutex_};
     if (recording_desired_ == enabled && (!enabled || tracking_round_ == round)) { return; }
     if (!enabled) {
+        dispatcher_.endRequest();
         dispatcher_.detach();
         recording_->stopAccepting();
         end_snapshot_ = implementation_->status();
@@ -61,11 +62,42 @@ void Sc233hgsCameraFrameSource::requestRecording(std::uint64_t round, bool enabl
             : reason == RecordingEndReason::CameraFailure ? "camera_failed"
             : reason == RecordingEndReason::TrackingFailure ? "tracking_failed" : "user_off";
     }
-    if (enabled) { start_snapshot_ = implementation_->status(); }
+    if (enabled) {
+        dispatcher_.beginRequest();
+        start_snapshot_ = implementation_->status();
+        request_status_ = {};
+        request_status_.enabled = true;
+        request_status_.phase = "pending";
+        request_status_.request = {stream_id_, round, request_version_ + 1};
+        desired_evidence_ = {};
+        desired_evidence_.request = request_status_.request;
+    } else { request_status_.terminal = true; }
+
     tracking_round_ = round;
     recording_desired_ = enabled;
     ++request_version_;
     recording_changed_.notify_all();
+}
+CameraRecordingStatus Sc233hgsCameraFrameSource::recordingRequestStatus() const {
+    std::lock_guard<std::mutex> lock{recording_mutex_};
+    auto status{request_status_};
+    if (recording_ && active_request_.matches(status.request)) {
+        const auto actual{recording_->status()};
+        if (actual.phase != "idle" && status.phase != "pending" && status.phase != "preparing") {
+            status = actual;
+            status.request = request_status_.request;
+            status.terminal = actual.phase == "failed" || actual.phase == "finished" || request_status_.terminal;
+        }
+    }
+    return status;
+}
+void Sc233hgsCameraFrameSource::setStartupEvidence(const RecordingStartupEvidence &evidence) noexcept {
+    std::lock_guard<std::mutex> lock{recording_mutex_};
+    if (evidence.request.matches(active_request_)) {
+        active_evidence_ = evidence;
+        active_evidence_.preparation_omitted = dispatcher_.preparationOmitted();
+    }
+    if (evidence.request.matches(request_status_.request)) { desired_evidence_ = evidence; }
 }
 void Sc233hgsCameraFrameSource::finishRecording() noexcept {
     std::unique_lock<std::mutex> lock{recording_mutex_};
@@ -86,12 +118,16 @@ void Sc233hgsCameraFrameSource::recordingLoop() noexcept {
             round = tracking_round_;
             start = start_snapshot_;
             recording_busy_ = true;
+            active_request_ = request_status_.request;
+            active_evidence_ = desired_evidence_;
+            request_status_.phase = "preparing";
         }
-        recording_->setContext(stream_id_, round, std::move(start));
+        recording_->setContext(stream_id_, round, std::move(start), version);
         recording_->start(implementation_->diagnostic().format);
         {
             std::unique_lock<std::mutex> lock{recording_mutex_};
             if (!recording_exit_ && recording_desired_ && request_version_ == version) {
+                request_status_.phase = recording_->status().phase;
                 dispatcher_.attach(recording_->sharedSink());
                 recording_changed_.wait(lock, [&] { return recording_exit_ || request_version_ != version; });
             }
@@ -103,6 +139,7 @@ void Sc233hgsCameraFrameSource::recordingLoop() noexcept {
         std::string reason{};
         {
             std::lock_guard<std::mutex> lock{recording_mutex_};
+            recording_->setStartupEvidence(active_evidence_);
             snapshot = end_snapshot_;
             reason = end_reason_;
         }

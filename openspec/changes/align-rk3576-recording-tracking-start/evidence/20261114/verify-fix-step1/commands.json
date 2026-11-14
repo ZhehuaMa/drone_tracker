@@ -1,0 +1,50 @@
+[
+  {
+    "command": "openspec status --change align-rk3576-recording-tracking-start --json",
+    "exit_status": 0
+  },
+  {
+    "command": "openspec instructions apply --change align-rk3576-recording-tracking-start --json",
+    "exit_status": 0
+  },
+  {
+    "command": "openspec list --json",
+    "exit_status": 0
+  },
+  {
+    "command": "python3 inspect_test.py retained/recording-inspect-native-final (offline selected image)",
+    "exit_status": 1,
+    "expected_failure": "Missing first_yolo key was classified not-applicable"
+  },
+  {
+    "command": "python3 accepted_false_repro.py retained/recording-inspect-native-final (offline selected image)",
+    "exit_status": 1,
+    "expected_failure": "accepted:false was classified accepted"
+  },
+  {
+    "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -I/src/src -I/src/src/hybrid_tracker $(pkg-config --cflags opencv4) /src/src/platform/rk3576/recording/inspect.cpp -lyaml-cpp -o /out/recording-inspect-step1",
+    "exit_status": 0
+  },
+  {
+    "command": "python3 /src/src/platform/rk3576/recording/inspect_test.py /out/recording-inspect-step1",
+    "exit_status": 0
+  },
+  {
+    "command": "/out/recording-inspect-step1 /recordings/recordings /out/inspection-readback.jsonl --verify-video",
+    "exit_status": 0
+  },
+  {
+    "command": "./build.sh --test --quadrotor-msgs /home/mzh/nickluo/quadrotor_msgs",
+    "exit_status": 0,
+    "ctests": "73/73",
+    "test_seconds": 201.3
+  },
+  {
+    "command": "openspec validate align-rk3576-recording-tracking-start --strict",
+    "exit_status": 0
+  },
+  {
+    "command": "git diff --check",
+    "exit_status": 0
+  }
+]

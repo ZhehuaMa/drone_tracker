@@ -503,7 +503,7 @@ CameraSample Rk3576CameraCaptureBase::next(int timeout_ms, bool compare_pixels, 
         }
         if (recording) {
             recording->stage({pixels, plane.bytesused - plane.data_offset, format_, timestamp,
-                              sample.seconds, sample.microseconds, sample.flags, sample.sequence});
+                              sample.seconds, sample.microseconds, sample.flags, sample.sequence, sample.capture_id});
         }
         PlaneBuffer returned{buffer.index};
         check(system_->ioctl(fd_, VIDIOC_QBUF, &returned.buffer), "return QBUF" + metadata(dequeued));

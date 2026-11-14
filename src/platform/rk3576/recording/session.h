@@ -21,7 +21,9 @@ public:
     Session(const Session &) = delete;
     Session &operator=(const Session &) = delete;
     void start(const CameraFormat &format) noexcept;
-    void setContext(std::uint64_t stream, std::uint64_t tracking_round, FrameSourceStatus start);
+    void setContext(std::uint64_t stream, std::uint64_t tracking_round, FrameSourceStatus start,
+                    std::uint64_t request_generation = 0);
+    void setStartupEvidence(const RecordingStartupEvidence &evidence) noexcept;
     std::shared_ptr<CameraNv12Sink> sharedSink() noexcept;
     void stopAccepting() noexcept;
     void stop(const FrameSourceStatus &camera, const std::string &reason = "source_stopped") noexcept;
@@ -38,9 +40,24 @@ private:
  */
 class SessionDispatcher final : public CameraNv12Sink {
 public:
+    void beginRequest() noexcept {
+        std::lock_guard<std::mutex> lock{mutex_};
+        preparing_ = true;
+        ++preparation_epoch_;
+        preparation_omitted_ = 0;
+    }
+    void endRequest() noexcept {
+        std::lock_guard<std::mutex> lock{mutex_};
+        preparing_ = false;
+    }
+    std::uint64_t preparationOmitted() noexcept {
+        std::lock_guard<std::mutex> lock{mutex_};
+        return preparation_omitted_;
+    }
     void attach(std::shared_ptr<CameraNv12Sink> sink) {
         std::lock_guard<std::mutex> lock{mutex_};
         current_ = std::move(sink);
+        preparing_ = false;
     }
     void detach() noexcept {
         std::lock_guard<std::mutex> lock{mutex_};
@@ -58,13 +75,19 @@ public:
             std::lock_guard<std::mutex> lock{mutex_};
             visiting_ = true;
             frame_ = current_;
+            frame_preparing_ = preparing_;
+            frame_epoch_ = preparation_epoch_;
         }
         if (frame_) { frame_->stage(view); }
+    }
+    RecordingReceipt recordingReceipt() const noexcept override {
+        return frame_ ? frame_->recordingReceipt() : RecordingReceipt{};
     }
     void publish() noexcept override {
         // Linearize final acceptance with detach; pixel staging never holds this lock.
         std::lock_guard<std::mutex> lock{mutex_};
         if (frame_) { frame_->publish(); }
+        else if (frame_preparing_ && frame_epoch_ == preparation_epoch_) { ++preparation_omitted_; }
     }
     void cancel() noexcept override { if (frame_) { frame_->cancel(); } }
     void disposition(const CameraSample &sample, std::uint64_t gaps, bool dropped) noexcept override {
@@ -84,7 +107,8 @@ private:
     std::mutex mutex_{};
     std::condition_variable changed_{};
     std::shared_ptr<CameraNv12Sink> current_{}, frame_{};
-    bool visiting_{};
+    bool visiting_{}, preparing_{}, frame_preparing_{};
+    std::uint64_t preparation_omitted_{}, preparation_epoch_{}, frame_epoch_{};
 };
 } // namespace rk3576::recording
 #endif // RK3576_RECORDING_SESSION_H

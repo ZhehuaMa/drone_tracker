@@ -18,6 +18,7 @@
 #include <functional>
 #include <condition_variable>
 #include <limits>
+#include "frame/startup_collector.h"
 #ifdef DRONE_TRACKER_RK3576
 #include "bag_session.h"
 #include "recording/recording_manager.h"
@@ -201,6 +202,8 @@ private:
     osd::SteadyClock::time_point osd_last_report_{};
     std::atomic<std::uint64_t> osd_submit_calls_{0}, osd_submit_ns_{0}, osd_submit_max_ns_{0};
     void worker();
+    bool admitStartupFrame(const FrameRef &frame);
+    void freezeStartup(bool cancelled) noexcept;
     void dispatchFrames() noexcept;
     void continuousWorker() noexcept;
     bool takeTrackingFrame(FrameRef &frame, std::uint64_t &sequence, std::uint64_t &version);
@@ -216,6 +219,10 @@ private:
     std::condition_variable control_changed_{};
     std::optional<TrackingTask> tracking_pending_{};
     std::uint64_t stream_id_{}, source_sequence_{}, display_version_{}, dispatched_{}, tracking_replaced_{};
+    std::shared_ptr<StartupCollector> startup_collector_{};
+    RecordingRequest startup_request_{};
+    bool startup_filter_{}, startup_fallback_{};
+    std::uint64_t startup_withheld_{}, startup_rejected_{}, startup_replaced_{};
     FrameSourceStatus round_source_start_{};
     std::optional<FrameSourceStatus> round_source_end_{};
     std::uint64_t round_dispatched_start_{}, round_replaced_start_{};

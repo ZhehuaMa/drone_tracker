@@ -10,7 +10,8 @@ namespace ros_test {
 struct Trace {
     std::array<std::atomic<int>, 5> destroyed{};
     std::atomic_bool target{false};
-    std::atomic_bool nano_ok{true};
+    std::atomic_bool nano_ok{true}, template_ok{true};
+    std::atomic<int> template_calls{};
     std::atomic_bool throw_frame{false};
     std::atomic<int> assemblies{};
     std::atomic<int> begins{};
@@ -49,17 +50,24 @@ private:
 // 不同模板实例是不同真实资源类型，无字符串标识或工厂实例令牌。
 template <int Tag> class TestFrame final : public Frame {
 public:
-    TestFrame(const cv::Mat &image, std::uint64_t timestamp) : image_{image.clone()}, timestamp_{timestamp} {}
+    TestFrame(const cv::Mat &image, std::uint64_t timestamp, RecordingReceipt receipt = {})
+        : image_{image.clone()}, timestamp_{timestamp}, receipt_{receipt} {}
     int width() const noexcept override { return image_.cols; }
     int height() const noexcept override { return image_.rows; }
     FramePixelFormat pixelFormat() const noexcept override {
         return image_.channels() == 1 ? FramePixelFormat::Gray8 : FramePixelFormat::Bgr8;
     }
     std::uint64_t timestampUs() const noexcept override { return timestamp_; }
+    RecordingReceipt recordingReceipt() const noexcept override { return receipt_; }
+    diagnostics::FrameIdentity diagnosticIdentity() const noexcept override {
+        return {receipt_.capture_id, receipt_.request.round, receipt_.driver_sequence,
+            diagnostics::CaptureKnown | diagnostics::DriverKnown};
+    }
     std::unique_ptr<FrameReadView> mapRead() const override { return std::make_unique<View>(image_); }
 private:
     cv::Mat image_;
     std::uint64_t timestamp_;
+    RecordingReceipt receipt_{};
 };
 class Builder final : public FrameBuilder {
 public:
@@ -154,7 +162,14 @@ private:
 class Nano final : public model::NanoTrackBackend {
 public:
     explicit Nano(std::shared_ptr<Trace> trace) : lifetime_{std::move(trace), 2} {}
-    model::Status setTemplate(const PreparedInputRef &) override { return {true}; }
+    model::Status setTemplate(const PreparedInputRef &) override {
+        ++lifetime_.trace->template_calls;
+        if (!lifetime_.trace->template_ok) {
+            return model::Status::failure({model::ModelError::ExecutionFailure, "test", {}, {}, {},
+                                           "injected initialization failure"});
+        }
+        return {true};
+    }
     model::Result<model::NanoPrediction> search(const PreparedInputRef &) override {
         {
             auto &trace{*lifetime_.trace};

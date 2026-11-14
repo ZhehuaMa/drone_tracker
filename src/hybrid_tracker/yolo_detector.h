@@ -2,6 +2,7 @@
 #define YOLOV8DETECTOR_H
 
 #include <string>
+#include <functional>
 #include <vector>
 #include <thread>
 #include <mutex>
@@ -65,6 +66,8 @@ public:
                    DetectionThreadLauncher launcher = launchDetectionThread);
     ~YoloV8Detector();
 
+    /** @brief Optional value-only notification at execution start, never at submission. */
+    void setSourceObserver(std::function<void(const AlgorithmSource &)> observer);
     /** @brief 校验注入模型的输入契约并启动工作线程 */
     bool init();
 
@@ -151,6 +154,7 @@ private:
     } m_next_request;
 
     void publishResult(const Request &request, bool has_target, const Detection &best, diagnostics::Reason reason);
+    std::function<void(const AlgorithmSource &)> m_source_observer{};
     std::uint64_t m_request_counter{}, m_inflight_id{};
     diagnostics::Event m_stage{};
     std::uint32_t m_stage_index{}, m_stage_kind{};

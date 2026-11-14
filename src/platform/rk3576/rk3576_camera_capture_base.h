@@ -86,6 +86,8 @@ public:
     virtual ~CameraNv12Sink() = default;
     /** @brief End the full frame visit, including disposition; default sinks need no fence. */
     virtual void finishFrame() noexcept {}
+    /** @brief Final outcome for the receiver pinned at stage; never inferred from counters. */
+    virtual RecordingReceipt recordingReceipt() const noexcept { return {}; }
     virtual void stage(const CameraNv12View &view) noexcept = 0;
     virtual void publish() noexcept = 0;
     virtual void cancel() noexcept = 0;

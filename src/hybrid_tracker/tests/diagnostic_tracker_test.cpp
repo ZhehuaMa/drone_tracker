@@ -480,6 +480,10 @@ void testInitFailureAndLowIou() {
     config.lost_max_count = 5;
     auto tracker{HybridTracker::CreateInstance(config, components(trace), launcher(trace))};
     require(tracker->init(), "tracker init");
+    std::vector<AlgorithmSource> initialized{};
+    tracker->setSourceObserver([&](bool initialization, const AlgorithmSource &source) {
+        if (initialization) { initialized.push_back(source); }
+    });
     for (unsigned frame{1}; frame <= 25; ++frame) {
         tracker->update(context(frame));
         waitIdle(*tracker);
@@ -496,6 +500,16 @@ void testInitFailureAndLowIou() {
         }
     }
     require(fifth, "第五次低 IoU 被误记无目标或未记录清框");
+    const auto events{captured(*recording.region)};
+    const auto successful{std::count_if(events.begin(), events.end(), [](const auto &e) {
+        return e.type == diagnostics::Type::InitializeEnd && (e.flags & diagnostics::Complete);
+    })};
+    require(initialized.size() == static_cast<std::size_t>(successful) && !initialized.empty(),
+        "Initialization hook reported failed initialization or lost a successful source");
+    for (const auto &source : initialized) {
+        require(source.timestamp_us == source.frame_id * 10000 && source.request_id,
+            "Initialization source lost historical image or detector request identity");
+    }
     report(*recording.region, "iou", "低IoU");
 }
 void testInitializationErrorCodes() {
@@ -729,6 +743,8 @@ void testOverwrite() {
         trace->block = true;
         auto value{components(trace)};
         YoloV8Detector detector{std::move(value.yolo), std::move(value.yolo_preprocessor), 0.5f, 0.4f, 0, 1.0f};
+        std::vector<std::uint64_t> executed{};
+        detector.setSourceObserver([&](const AlgorithmSource &source) { executed.push_back(source.frame_id); });
         require(detector.init(), "detector init");
         require(detector.request(context(1).frame, 1), "first accepted");
         waitModel(trace, 1);
@@ -748,6 +764,8 @@ void testOverwrite() {
         YoloResult result{};
         require(detector.get_result(result) && result.frame_id == 3, "replacement result identity incorrect");
         detector.stop();
+        require(executed == std::vector<std::uint64_t>{1, 3},
+                "Execution hook reported submitted or superseded input");
         require(trace->observed_source_times == std::vector<std::uint64_t>{10000, 30000},
                 "replacement changed executing pixels or picked superseded input");
         if (mode != diagnostics::Mode::Off) {

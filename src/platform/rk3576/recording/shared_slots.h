@@ -25,7 +25,7 @@ public:
         std::int64_t driver_microseconds{};
         std::uint32_t flags{};
         std::uint32_t sequence{};
-        std::uint64_t round{};
+        std::uint64_t round{}, capture_id{}, stream_id{}, tracking_round{}, request_generation{};
     };
     struct Slot {
         std::atomic<State> state{State::Empty};
@@ -138,10 +138,15 @@ public:
     RecordingSlots(const RecordingSlots &) = delete;
     RecordingSlots &operator=(const RecordingSlots &) = delete;
 
+    void setRequest(RecordingRequest request) noexcept { request_ = request; }
+    RecordingReceipt recordingReceipt() const noexcept override { return receipt_; }
     void stage(const CameraNv12View &view) noexcept override {
         cancel();
         pending_identity_ = {view.format, view.timestamp_us, view.driver_seconds, view.driver_microseconds,
-                             view.flags, view.sequence, round_};
+                             view.flags, view.sequence, round_, view.capture_id,
+                             request_.stream, request_.round, request_.generation};
+        receipt_ = {RecordingDisposition::Rejected, request_, view.capture_id,
+                    static_cast<std::uint64_t>(view.timestamp_us), view.sequence};
         pending_full_ = false;
         pending_invalid_ = false;
         pending_stopped_ = header_->stop_accepting.load(std::memory_order_acquire);
@@ -171,7 +176,8 @@ public:
         const auto now{monotonicUs()};
         std::int64_t unset{0};
         header_->first_input_mono_us.compare_exchange_strong(unset, now);
-        if (pending_ >= 0 && header_->stop_accepting.load(std::memory_order_acquire)) {
+        if (header_->stop_accepting.load(std::memory_order_acquire)) {
+            receipt_.disposition = RecordingDisposition::Cancelled;
             cancel();
             return;
         }
@@ -183,6 +189,7 @@ public:
                 header_->first_accepted_known.store(true, std::memory_order_release);
             }
             header_->slots[pending_].state.store(State::Ready, std::memory_order_release);
+            receipt_.disposition = RecordingDisposition::Accepted;
             ++statistics_.published;
             header_->accepted.fetch_add(1, std::memory_order_relaxed);
             pending_ = -1;
@@ -205,6 +212,7 @@ public:
     }
     void cancel() noexcept override {
         if (pending_ >= 0) {
+            receipt_.disposition = RecordingDisposition::Cancelled;
             header_->slots[pending_].state.store(State::Empty, std::memory_order_release);
             pending_ = -1;
             ++statistics_.cancelled;
@@ -309,6 +317,8 @@ private:
     bool pending_backpressure_{};
     Identity pending_identity_{};
     Statistics statistics_{};
+    RecordingRequest request_{};
+    RecordingReceipt receipt_{};
 };
 } // namespace rk3576
 #endif // RK3576_RECORDING_SHARED_SLOTS_H

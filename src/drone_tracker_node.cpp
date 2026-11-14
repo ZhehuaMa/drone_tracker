@@ -302,6 +302,7 @@ void DroneTrackerNode::stopWithTrigger(const std_msgs::msg::Header *trigger, std
         discarded.swap(tracking_pending_);
         display_version_ = osd_presenter_->controlTracking(osd_round_, osd::TrackingPhase::Idle);
         osd_presenter_->showTrigger(osd_round_, false);
+        freezeStartup(true);
         if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false); }
 #ifdef DRONE_TRACKER_RK3576
         notifyObservationOff();
@@ -406,6 +407,7 @@ void DroneTrackerNode::shutdown() noexcept {
             discarded.swap(tracking_pending_);
             if (osd_presenter_) { osd_presenter_->endStream(stream_id_, osd::DisplayStatus::Stopped); }
             if (mv_camera_) {
+                freezeStartup(true);
                 if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false, RecordingEndReason::ServiceExit); }
             }
             sealRecording("service_exit");
@@ -435,6 +437,38 @@ void DroneTrackerNode::shutdown() noexcept {
     osd_telemetry_.reset();
     if (osd_presenter_) { osd_presenter_->shutdown(); osd_presenter_->reportTiming(); }
 }
+bool DroneTrackerNode::admitStartupFrame(const FrameRef &frame) {
+    // Caller holds control_mutex_. A terminal request opens only future live dispatch.
+    if (!startup_filter_) { return true; }
+    if (auto control = mv_camera_->recordingControl()) {
+        const auto status{control->recordingRequestStatus()};
+        if (status.request.matches(startup_request_) && status.terminal) {
+            startup_filter_ = false;
+            startup_fallback_ = true;
+            RCLCPP_WARN(get_logger(), "Startup video coverage unavailable: %s", status.reason.c_str());
+            return true;
+        }
+    }
+    const auto receipt{frame->recordingReceipt()};
+    return receipt.acceptedFor(startup_request_) && receipt.capture_id
+        && receipt.timestamp_us == frame->timestampUs()
+        && receipt.capture_id == frame->diagnosticIdentity().capture_id;
+}
+void DroneTrackerNode::freezeStartup(bool cancelled) noexcept {
+    // Lock order: control_mutex_, then collector mutex. Hooks take only collector mutex.
+    if (!startup_collector_) { return; }
+    const auto evidence{startup_collector_->freeze(cancelled, startup_fallback_, startup_withheld_,
+                                                 startup_rejected_, startup_replaced_)};
+    if (auto control = mv_camera_->recordingControl()) { control->setStartupEvidence(evidence); }
+    RCLCPP_INFO(get_logger(), "Startup evidence round=%lu yolo=%lu initialization=%lu withheld=%lu "
+        "rejected=%lu replaced=%lu fallback=%d cancelled=%d",
+        static_cast<unsigned long>(evidence.request.round),
+        static_cast<unsigned long>(evidence.first_yolo.capture_id),
+        static_cast<unsigned long>(evidence.first_initialization.capture_id),
+        static_cast<unsigned long>(evidence.dispatch_withheld),
+        static_cast<unsigned long>(evidence.dispatch_rejected),
+        static_cast<unsigned long>(evidence.pending_replaced), evidence.fallback, evidence.cancelled);
+}
 void DroneTrackerNode::dispatchFrames() noexcept {
     // Dispatcher has its own ring; OFF notifications use the control producer concurrently.
     diagnostics::current_producer = diagnostics::Producer::Dispatcher;
@@ -454,19 +488,28 @@ void DroneTrackerNode::dispatchFrames() noexcept {
                 if (!service_running_) { break; }
                 const auto sequence{++source_sequence_};
                 ++dispatched_;
-                if (ready_request_ && desired_on_ && running) {
+                const bool admitted{desired_on_ && running && admitStartupFrame(frame)};
+                if (desired_on_ && running && !admitted) {
+                    ++startup_withheld_;
+                    if (frame->recordingReceipt().disposition == RecordingDisposition::Rejected) { ++startup_rejected_; }
+                }
+                if (admitted && startup_collector_) { startup_collector_->eligible(); }
+                if (ready_request_ && admitted) {
                     ready_request_ = false;
                     display_version_ = osd_presenter_->controlTracking(osd_round_, osd::TrackingPhase::Running,
                         sequence - 1);
                     run_state_ = RunState::Running;
                     control_changed_.notify_all();
                 }
-                if (run_state_ == RunState::Running && desired_on_ && running) {
-                    if (tracking_pending_) { ++tracking_replaced_; }
+                if (run_state_ == RunState::Running && admitted) {
+                    if (tracking_pending_) {
+                        ++tracking_replaced_;
+                        if (startup_filter_) { ++startup_replaced_; }
+                    }
                     replaced.swap(tracking_pending_);
                     tracking_pending_ = TrackingTask{frame, osd_round_, sequence, display_version_};
                     control_changed_.notify_all();
-                } else {
+                } else if (run_state_ != RunState::Running || !desired_on_ || !running) {
                     osd::PresentationPacket packet{frame, osd_round_, sequence, frame->timestampUs(), std::nullopt, {}};
                     packet.stream = stream_id_; packet.source_sequence = sequence;
                     packet.control_version = display_version_; packet.kind = osd::PacketKind::Preview;
@@ -491,6 +534,7 @@ void DroneTrackerNode::dispatchFrames() noexcept {
             service_running_ = false;
             desired_on_ = false;
             running = false;
+            freezeStartup(true);
             if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false, RecordingEndReason::CameraFailure); }
 #ifdef DRONE_TRACKER_RK3576
             if (recording_manager_) { recording_manager_->cancelPendingStart(); }
@@ -509,6 +553,8 @@ bool DroneTrackerNode::takeTrackingFrame(FrameRef &frame, std::uint64_t &sequenc
         control_changed_.wait_for(lock, 20ms, [this] { return !running || tracking_pending_; });
         if (!running || !tracking_pending_) { return false; }
         task.swap(tracking_pending_);
+        if (!desired_on_ || task->round != osd_round_ || task->version != display_version_
+            || !admitStartupFrame(task->frame)) { return false; }
     }
     frame = std::move(task->frame);
     sequence = task->sequence;
@@ -573,6 +619,24 @@ void DroneTrackerNode::continuousWorker() noexcept {
                     openRecording(stamp);
                     if (auto recording = mv_camera_->recordingControl()) {
                         recording->requestRecording(osd_round_, true);
+                        startup_request_ = recording->recordingRequestStatus().request;
+                    }
+                    startup_filter_ = camera_input_ && get_parameter("recording.enabled").as_bool()
+                        && startup_request_.generation != 0;
+                    startup_fallback_ = false;
+                    startup_withheld_ = 0; startup_rejected_ = 0; startup_replaced_ = 0;
+                    if (startup_filter_) {
+                        RecordingStartupEvidence evidence{};
+                        evidence.request = startup_request_;
+                        evidence.on_mono_us = diagnostics::monotonicNs() / 1000;
+                        startup_collector_ = std::make_shared<StartupCollector>(evidence);
+                        tracker_->setSourceObserver([collector = startup_collector_](bool initialization,
+                                                                                   const AlgorithmSource &source) {
+                            collector->observe(initialization, source);
+                        });
+                    } else {
+                        startup_collector_.reset();
+                        tracker_->setSourceObserver({});
                     }
                     ready_request_ = true;
                 }
@@ -603,6 +667,7 @@ void DroneTrackerNode::continuousWorker() noexcept {
             discarded.swap(tracking_pending_);
             display_version_ = osd_presenter_->controlTracking(osd_round_,
                 failed ? osd::TrackingPhase::Failed : osd::TrackingPhase::Idle);
+            freezeStartup(true);
             if (auto recording = mv_camera_->recordingControl()) { recording->requestRecording(osd_round_, false,
                 failed ? RecordingEndReason::TrackingFailure : RecordingEndReason::UserOff); }
             sealRecording(failed ? "tracking_failure" : "round_end");
@@ -1343,6 +1408,13 @@ void DroneTrackerNode::processFrames() {
         const auto update_begin{update_timing_observer_ ? std::chrono::steady_clock::now()
             : std::chrono::steady_clock::time_point{}};
         TrackerOutput out = tracker_->update(ctx);
+        if (continuous_preview_) {
+            std::lock_guard<std::mutex> lock{control_mutex_};
+            if (running && desired_on_ && display_version == display_version_ && startup_filter_
+                && startup_collector_ && startup_collector_->snapshot().initialization_known) {
+                startup_filter_ = false;
+            }
+        }
         if (diagnostics::measurement) {
             diagnostics::measureCall(sample_begin, diagnostics::monotonicNs() - sample_begin,
                 frame_timestamp_us, out.consumed);

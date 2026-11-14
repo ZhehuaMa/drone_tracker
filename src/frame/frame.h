@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <memory>
 #include "diagnostics/event.h"
+#include "recording_receipt.h"
 
 #include <opencv2/core/mat.hpp>
 
@@ -74,6 +75,9 @@ public:
 
   /** @brief 可选采集身份；视频和参考后端默认未知，数值不持有图像资源。 */
   virtual diagnostics::FrameIdentity diagnosticIdentity() const noexcept { return {}; }
+
+  /** @brief Optional exact recording queue receipt, returned by value; unknown for other backends. */
+  virtual RecordingReceipt recordingReceipt() const noexcept { return {}; }
 
   /**
    * @brief 创建 CPU 可读的只读借用视图。

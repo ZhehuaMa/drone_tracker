@@ -21,6 +21,8 @@ public:
         std::unique_ptr<recording::Session> session = {});
     ~Sc233hgsCameraFrameSource() override;
 
+    CameraRecordingStatus recordingRequestStatus() const override;
+    void setStartupEvidence(const RecordingStartupEvidence &evidence) noexcept override;
     CameraRecordingControl *recordingControl() noexcept override { return this; }
     void useSessionControl(std::uint64_t stream) override;
     void finishRecording() noexcept override;
@@ -40,7 +42,10 @@ private:
     void recordingLoop() noexcept;
     std::unique_ptr<recording::Session> recording_;
     recording::SessionDispatcher dispatcher_{};
-    std::mutex recording_mutex_{};
+    mutable std::mutex recording_mutex_{};
+    CameraRecordingStatus request_status_{};
+    RecordingRequest active_request_{};
+    RecordingStartupEvidence active_evidence_{}, desired_evidence_{};
     std::condition_variable recording_changed_{};
     std::thread recording_thread_{};
     bool session_control_{}, recording_exit_{}, recording_desired_{}, recording_busy_{};

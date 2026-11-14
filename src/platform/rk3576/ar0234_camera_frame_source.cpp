@@ -1,4 +1,5 @@
 #include "ar0234_camera_frame_source.h"
+#include "host_frame.h"
 #include "diagnostics/recorder.h"
 #include "platform/cpu_affinity.h"
 
@@ -193,6 +194,13 @@ struct Ar0234CameraFrameSource::Impl {
                     break;
                 }
                 deferred.commit();
+                if (recording && sample.frame) {
+                    auto receipt{recording->recordingReceipt()};
+                    receipt.capture_id = sample.capture_id;
+                    receipt.driver_sequence = sample.sequence;
+                    receipt.timestamp_us = sample.frame->timestampUs();
+                    sample.frame = withRecordingReceipt(sample.frame, receipt);
+                }
                 if (sample.result == CameraSampleResult::NoSample) {
                     const auto now{dependencies.system->clockUs(CLOCK_MONOTONIC)};
                     if (now < last_dequeue || now - last_dequeue >= 2000000) {

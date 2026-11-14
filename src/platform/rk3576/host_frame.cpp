@@ -28,12 +28,16 @@ public:
     FramePixelFormat pixelFormat() const noexcept override { return image_.channels() == 1 ? FramePixelFormat::Gray8 : FramePixelFormat::Bgr8; }
     std::uint64_t timestampUs() const noexcept override { return timestamp_; }
     diagnostics::FrameIdentity diagnosticIdentity() const noexcept override { return identity_; }
+    RecordingReceipt recordingReceipt() const noexcept override { return receipt_; }
+    HostFrame(const HostFrame &source, RecordingReceipt receipt)
+        : image_{source.image_}, timestamp_{source.timestamp_}, identity_{source.identity_}, receipt_{receipt} {}
     std::unique_ptr<FrameReadView> mapRead() const override { return std::make_unique<View>(image_); }
 
 private:
     cv::Mat image_;
     std::uint64_t timestamp_;
     diagnostics::FrameIdentity identity_{};
+    const RecordingReceipt receipt_{};
 };
 } // namespace
 FrameRef copyHostFrame(const cv::Mat &image, std::uint64_t timestamp_us, diagnostics::FrameIdentity identity) {
@@ -41,6 +45,11 @@ FrameRef copyHostFrame(const cv::Mat &image, std::uint64_t timestamp_us, diagnos
         throw std::invalid_argument("copyHostFrame requires nonempty Gray8 or BGR8");
     }
     return std::make_shared<HostFrame>(image, timestamp_us, identity);
+}
+FrameRef withRecordingReceipt(const FrameRef &frame, RecordingReceipt receipt) {
+    const auto host{std::dynamic_pointer_cast<const HostFrame>(frame)};
+    if (!host) { throw std::invalid_argument("Receipt requires concrete RK3576 host storage"); }
+    return std::make_shared<HostFrame>(*host, receipt);
 }
 bool isHostGrayFrame(const FrameRef &frame) noexcept {
     const auto host{std::dynamic_pointer_cast<const HostFrame>(frame)};

@@ -32,6 +32,10 @@ YoloV8Detector::YoloV8Detector(std::unique_ptr<model::YoloBackend> model,
 
 YoloV8Detector::~YoloV8Detector() { stop(); }
 
+void YoloV8Detector::setSourceObserver(std::function<void(const AlgorithmSource &)> observer) {
+    std::lock_guard<std::mutex> lock{m_mutex};
+    m_source_observer = std::move(observer);
+}
 bool YoloV8Detector::init() {
     if (!model_ || !preprocessor_) { return false; }
     try {
@@ -250,6 +254,7 @@ void YoloV8Detector::workerThreadLoop()
     while (true)
     {
         Request req;
+        std::function<void(const AlgorithmSource &)> observer{};
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_cv_request.wait(lock, [this] { return m_new_request || m_stop_requested; });
@@ -261,6 +266,7 @@ void YoloV8Detector::workerThreadLoop()
             m_new_request = false;
             m_executing = true;
             m_inflight_id = req.request_id;
+            observer = m_source_observer;
         } 
         
         // 此守卫先创建，确保会话和请求帧先释放，再发布空闲通知。
@@ -279,6 +285,13 @@ void YoloV8Detector::workerThreadLoop()
         started.frame = req.identity; started.source_update_id = req.source_update_id;
         started.source_tracker_frame_id = req.frame_id;
         diagnostics::emit(started);
+        if (observer && req.frame) {
+            try {
+                observer({req.frame->recordingReceipt(), req.frame->timestampUs(),
+                    req.frame->diagnosticIdentity().capture_id, req.frame_id, req.source_update_id,
+                    req.request_id, req.source.generation});
+            } catch (...) { /* Observations cannot change detector execution. */ }
+        }
         m_stage_index = 0; m_execution_reason = diagnostics::Reason::None;
         try {
             if (!req.frame) { publishResult(req, false, {}, diagnostics::Reason::InvalidInput); continue; }

@@ -313,7 +313,7 @@ Bag admission is bounded to 256 messages and 64 MiB. A bbox/LOS pair consumes tw
 
 ## Independent SC233HGS recording
 
-See [the recording guide](rk3576/recording/README.md) for hardware encoding, runtime settings, session evidence, and inspection. The production build enables recording support, while `recording.enabled` controls whether ON actually starts a session. This is independent of ROS bags, debug images, and HDMI. Original NV12 frames are copied only after capture's final accepted boundary; video has no tracking/OSD overlay.
+See [the recording guide](rk3576/recording/README.md) for hardware encoding, runtime settings, session evidence, and inspection. The production build enables recording support, while `recording.enabled` controls whether ON actually starts a session. This is independent of ROS bags, debug images, and HDMI. Original NV12 pixels are staged while the driver buffer is valid and published only after final capture checks; video has no tracking/OSD overlay.
 
 ## HDMI display stage timing
 
@@ -324,3 +324,14 @@ See [the HDMI guide](../../docs/operations/RK3576_HDMI_OSD.md#renderers-and-disp
 Portable algorithm checks can be built with `cmake -S src/hybrid_tracker -B build/platform-contracts -DDRONE_TRACKER_PREPROCESS_TESTS_ONLY=ON`, followed by build and CTest. They use the real shared tracker with injected dependencies and do not load physical devices or real models. [Factory validation](../../openspec/changes/archive/2026-09-10-introduce-platform-factory/verification.md) records that original scope.
 
 The algorithm states remain Detecting=0, TargetFound=1, Tracking=2, TargetLost=3. Interface/integration results do not prove target accuracy, physical angle accuracy, exposure synchronization, Jetson equivalence, or flight suitability. A new binary or workload requires its own relevant acceptance evidence. Preserve concrete board, model, input, software, and configuration identities with each measured result.
+
+## Optional camera recording receipts
+
+`Frame::recordingReceipt()` returns a small value describing whether the exact camera frame was
+accepted by a recording request. Other backends return unavailable by default. The receipt does not
+establish completed disk writing. RK3576 attaches it only after final capture and publication checks.
+Its new concrete `HostFrame` metadata object shares the original reference-counted pixels, timestamp
+and capture identity. Existing frames remain unchanged. No additional image copy is made, and a
+read view keeps pixels alive after the source and frame references are released. Concrete host-frame
+validation still applies to model preprocessing. See the [recording guide](rk3576/recording/README.md)
+for startup admission, failure fallback and saved-frame verification.

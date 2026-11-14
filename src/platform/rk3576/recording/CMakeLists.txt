@@ -74,3 +74,11 @@ target_link_libraries(rk3576_recording_inspect PRIVATE yaml-cpp ${OpenCV_LIBS})
 if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     install(TARGETS rk3576_recording_worker rk3576_recording_inspect DESTINATION lib/${PROJECT_NAME})
 endif()
+
+if(DRONE_TRACKER_BUILD_TESTS AND NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    include("${CMAKE_SOURCE_DIR}/cmake/target_test_program.cmake")
+    drone_target_test_program(rk3576_recording_inspect RECORDING_INSPECT_TEST_PROGRAM)
+    add_test(NAME recording_startup_inspect_tests COMMAND ${Python3_EXECUTABLE}
+        "${CMAKE_CURRENT_SOURCE_DIR}/inspect_test.py" "${RECORDING_INSPECT_TEST_PROGRAM}")
+    set_tests_properties(recording_startup_inspect_tests PROPERTIES TIMEOUT 240)
+endif()

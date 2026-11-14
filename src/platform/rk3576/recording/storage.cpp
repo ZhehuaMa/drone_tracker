@@ -280,6 +280,7 @@ void Storage::writeFrame(const EncodedFrame &frame) {
         + ",\"encoded_monotonic_us\":" + std::to_string(frame.encoded_monotonic_us)
         + ",\"first_qualified_input_monotonic_us\":" + std::to_string(s.status.first_input_mono_us.load())
         + ",\"pts_90k\":" + std::to_string(packet.pts) + ",\"segment\":" + std::to_string(s.segment)
+        + ",\"segment_frame\":" + std::to_string(s.segment_frames)
         + ",\"video_end\":" + std::to_string(s.offset) + ",\"idr\":" + (frame.idr ? "true" : "false") + "}\n");
     ++s.frame_count; ++s.segment_frames; s.last_frame_us = frame.identity.timestamp_us; s.last_pts_us = frame.pts_us;
     s.status.written.store(s.frame_count);

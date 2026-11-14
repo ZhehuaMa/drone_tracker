@@ -1,5 +1,6 @@
 #include "session.h"
 #include "metadata.h"
+#include "frame/startup_collector.h"
 #ifdef RECORDING_TEST_CAMERA_CONTROL
 #include "../sc233hgs_camera_frame_source.h"
 #include "../tests/camera_test_support.h"
@@ -83,25 +84,68 @@ void dispatcherBoundary() {
     CameraNv12View view{};
     view.pixels = pixels.data(); view.available_bytes = pixels.size();
     view.format.width = 8; view.format.height = 4; view.format.stride = 8;
-    view.timestamp_us = 123; view.sequence = 17;
+    view.timestamp_us = 123; view.sequence = 17; view.capture_id = 0x100000011ULL;
+    slots->setRequest({71, 1, 9});
     dispatcher.stage(view);
     std::weak_ptr<RecordingSlots> pinned{slots};
     dispatcher.detach();
     dispatcher.publish();
     require(slots->header().accepted == 0 && slots->header().cancelled == 1,
         "OFF between stage and publish accepted candidate");
+    require(dispatcher.recordingReceipt().disposition == RecordingDisposition::Cancelled,
+        "Staged OFF did not publish a cancelled receipt");
     slots.reset();
     require(!pinned.expired(), "Frame visit lost session ownership");
     dispatcher.finishFrame();
     dispatcher.drain();
     require(pinned.expired(), "Completed visit retained session");
     auto second{std::make_shared<RecordingSlots>(8, 4, 2)};
+    second->setRequest({71, 2, 10});
+    dispatcher.stage(view);
     dispatcher.attach(second);
-    dispatcher.stage(view); dispatcher.publish(); dispatcher.finishFrame();
+    dispatcher.publish();
+    require(dispatcher.recordingReceipt().disposition == RecordingDisposition::Unavailable,
+        "Attachment during a visit authorized an older frame");
+    dispatcher.finishFrame();
+    dispatcher.stage(view); dispatcher.publish();
+    require(dispatcher.recordingReceipt().acceptedFor({71, 2, 10})
+        && dispatcher.recordingReceipt().capture_id == view.capture_id, "Final receipt lost exact identity");
+    dispatcher.finishFrame();
     require(second->header().accepted == 1, "Next session did not accept its own frame");
     dispatcher.detach();
     dispatcher.stage(view); dispatcher.publish(); dispatcher.finishFrame();
     require(second->header().attempts == 1, "Closed dispatcher copied or submitted another frame");
+    SessionDispatcher preparing{};
+    preparing.beginRequest();
+    preparing.stage(view); preparing.publish(); preparing.finishFrame();
+    require(preparing.preparationOmitted() == 1, "Final preparation omission was not counted");
+    preparing.stage(view);
+    preparing.beginRequest(); // Replace the request before the old visit's final commit.
+    preparing.publish(); preparing.finishFrame();
+    require(preparing.preparationOmitted() == 0, "Old visit contaminated replacement omission count");
+    RecordingSlots full{8, 4, 3};
+    full.setRequest({71, 3, 11});
+    for (unsigned i{}; i < 4; ++i) { ++view.capture_id; full.stage(view); full.publish(); }
+    full.stage(view); full.publish();
+    require(full.recordingReceipt().disposition == RecordingDisposition::Rejected
+        && full.header().accepted == 4 && full.header().dropped == 1,
+        "Queue-full candidate inherited previous acceptance");
+    RecordingStartupEvidence evidence{};
+    evidence.request = {71, 3, 11};
+    StartupCollector collector{evidence};
+    AlgorithmSource source{}; source.capture_id = 100;
+    collector.observe(false, source);
+    const auto frozen{collector.freeze(true, false, 8, 2, 3)};
+    collector.observe(true, source); // Deterministic late callback boundary.
+    collector.observe(false, AlgorithmSource{});
+    const auto after{collector.snapshot()};
+    require(after.yolo_known && after.first_yolo.capture_id == 100 && !after.initialization_known,
+        "Frozen OFF collector accepted late or replacement evidence");
+    const auto startup{YAML::Load(startupSummary(frozen))};
+    require(startup["dispatch_withheld"].as<int>() == 8 && startup["dispatch_rejected"].as<int>() == 2
+        && startup["pending_replaced"].as<int>() == 3
+        && startup["initialization_outcome"].as<std::string>() == "not-applicable",
+        "Startup serialization conflated counters or fabricated initialization");
     FrameSourceStatus start{}, end{};
     start.camera.dequeued_total = 100; start.read = 92;
     end.camera.dequeued_total = 120; end.read = 112; end.state = FrameSourceState::Running;
@@ -134,6 +178,9 @@ void liveCameraControl(const std::string &directory, const std::string &executab
     await([&] { return source.status().read > 3; });
     require(source.status().recording.phase == "idle", "Preview prepared recording automatically");
     source.requestRecording(1, true);
+    const auto pending{source.recordingRequestStatus()};
+    require(pending.request.matches({71, 1, 1}) && !pending.terminal,
+        "ON did not synchronously register its own pending token");
     await([&] { return source.status().recording.phase == "preparing"; });
     const auto before{source.status().read};
     source.requestRecording(1, false);
@@ -141,8 +188,22 @@ void liveCameraControl(const std::string &directory, const std::string &executab
     require(source.isRunning() && source.status().read > before && source.status().recording.accepted == 0,
         "Cancelled preparation attached or stopped capture");
     source.requestRecording(2, true);
+    const auto replacement{source.recordingRequestStatus()};
+    require(replacement.request.round == 2 && replacement.request.generation > pending.request.generation
+        && !replacement.terminal, "New request inherited an old terminal state");
     await([&] { return source.status().recording.accepted > 0; });
     const auto first{source.status().recording};
+    const auto token{source.recordingRequestStatus().request};
+    FrameRef accepted{};
+    await([&] {
+        while (source.tryFrame(accepted)) {
+            if (accepted->recordingReceipt().acceptedFor(token)) { return true; }
+        }
+        return false;
+    });
+    require(accepted->recordingReceipt().capture_id == accepted->diagnosticIdentity().capture_id
+        && accepted->recordingReceipt().timestamp_us == accepted->timestampUs(),
+        "Capture-to-consumer receipt handoff lost exact frame identity");
     require(first.stream_id == 71 && first.tracking_round == 2, "Recording lost stream or tracking round");
     source.requestRecording(2, false);
     await([&] { return source.status().recording.phase == "finished"; });

@@ -44,7 +44,10 @@ Video copies the full accepted NV12 camera frame, containing luminance and chrom
 
 `CameraNv12Sink` stages a candidate, then publishes or cancels it at the final capture boundary. Driver return, stop, and warmup-deadline checks complete before acceptance. Four shared slots transfer pixels to the worker; full slots drop the current recording frame instead of blocking healthy capture. Slot consumers finish copying before releasing a slot. The fixed session dispatcher retains one session through each candidate's complete stage/publish/cancel/disposition sequence.
 
-For RK3576 camera input with `osd.enabled=true`, service startup opens capture and preview without preparing a recording worker or copying recording pixels. ON requests a session only when recording is enabled. A serial recording controller prepares resources while tracking and preview continue. Frames observed before readiness are not replayed into the session. OFF closes acceptance immediately and cancels candidates that have not passed final acceptance. Already accepted frames drain within the three-second parent-close budget; resource preparation has its separate three-second budget. An unreaped worker retains isolated storage and prevents another worker from being created. OFF leaves continuous capture/HDMI running.
+For RK3576 camera input with `osd.enabled=true`, service startup opens capture and preview without preparing a recording worker or copying recording pixels. ON requests a session only when recording is enabled. A serial recording controller prepares resources while fresh unannotated preview and telemetry continue.
+Initial tracking waits for a frame accepted by that exact recording request. Frames observed before
+acceptance are not replayed into the session. This delay is recorder preparation latency, bounded by
+the existing three-second preparation budget; there is no additional node readiness timer. OFF closes acceptance immediately and cancels candidates that have not passed final acceptance. Already accepted frames drain within the three-second parent-close budget; resource preparation has its separate three-second budget. An unreaped worker retains isolated storage and prevents another worker from being created. OFF leaves continuous capture/HDMI running.
 
 With OSD disabled, original ON/start and OFF/stop capture lifetime remains. SC233HGS warmup precedes eligible frames. In continuous mode warmup belongs to the stream and can precede multiple recording sessions; ON does not repeat it. Each session records stream identity, tracking round, reception-boundary count snapshots, and its own end reason. `camera_running_at_end=true` means recording stopped while preview continued.
 
@@ -95,3 +98,61 @@ To use a verified SC233HGS topology, append capture device, media device, and se
 Confirm actual wiring with `v4l2-ctl --list-devices` and `media-ctl -d /dev/media2 -p`. These node numbers are examples. Synthetic input measures maximum submission throughput without camera pacing. Probe output is raw H.264, not the production session's MPEG-TS/sidecar protocol. The probe's in-process threads do not establish production worker fault isolation. Use an external deadline and inspect frame/drop/decode/resource outcomes; resident memory excludes hardware-internal allocations.
 
 For application rollback, close the active round and exit cleanly, then disable `recording.enabled` and restart. Retain recorded sessions and the matching inspector. Do not replace system RKNN Runtime. See [production integration evidence](../../../../openspec/changes/archive/2026-09-24-add-rk3576-camera-recording/final-validation.md) and [the platform guide](../../README.md). Historical measurements apply only to their recorded software and inputs. `.docker-artifacts` and `/tmp` may be cleared; copy required evidence to separately managed storage rather than assuming those paths remain available.
+
+## Startup frame acceptance and evidence
+
+For SC233HGS continuous preview with video recording enabled, each tracking candidate carries an
+immutable recording receipt. This value records final queue acceptance, the stream, tracking round,
+request generation, 64-bit capture id, driver sequence, and original microsecond capture timestamp.
+The generation changes on each requested session. The capture id distinguishes a wrapping driver
+sequence. These values remain available with diagnostics off. Acceptance means publication to the
+bounded encoder queue; it does not mean encoding, writing, or synchronization has completed.
+
+The startup filter checks each dispatched and consumed candidate until the first successful tracker
+initialization. A negative YOLO result, a detected box whose initialization fails, or worker readiness
+does not end filtering. Accepted frames enter ordinary video immediately even when no balloon is
+present. Rejected candidates do not create tracking observations or debug images. Fresh preview
+continues before algorithm processing begins. After processing begins, HDMI retains its existing
+same-image result pairing; a withheld candidate never receives an older image's box.
+
+For example, preparation frames 8884 through 8891 are withheld. Detection can execute on accepted
+frame 8892 or a later accepted frame. A submitted detector task may be replaced before execution,
+so submitted input is not execution evidence. If detection executes on frame 100 and its result
+successfully initializes the tracker while processing frame 108, initialization evidence identifies
+frame 100. After the first successful initialization, ordinary scheduling resumes. Later target loss
+does not reactivate startup filtering. This change makes no promise that every steady-state or
+recovery input is recorded.
+
+OFF freezes the round's two source records before closing recording acceptance. Late callbacks
+retain only their collector and cannot modify frozen or newer-round evidence. Terminal failure of
+the current request releases startup filtering for the remainder of the round. Healthy tracking then
+uses the current live input boundary, with coverage explicitly unavailable. Recording disabled,
+AR0234, file inputs, OSD-disabled capture, and ROS bag policies retain their existing behavior.
+
+New frame sidecars add `capture_id`, `stream_id`, `tracking_round`, `request_generation`, and
+`segment_frame` (the zero-based ordinal within the segment). Existing identity and capture-time
+fields remain unchanged. `camera.json.startup` contains at most `first_yolo` and
+`first_initialization`, their accepted receipts, request identity, monotonic transition times, and
+an outcome. Absent initialization has `initialization_outcome: not-applicable`.
+`preparation_omitted` counts qualified capture visits before receiver attachment.
+`dispatch_withheld` and `dispatch_rejected` count dispatcher candidates, while `pending_replaced`
+counts superseded node tasks. These observation points overlap; do not sum them. Recorder drop
+counters keep their existing meaning and do not include preparation omissions.
+
+The matching inspector streams bounded sidecars and compares exact source identities, including
+session/request keys. Normal completion or zero aggregate drops alone cannot verify coverage.
+Its `startup_coverage` distinguishes `unknown`, `accepted`, `metadata-matched`, `verified-written`,
+`failed`, and `not-applicable`. Older sessions with no startup fields remain `unknown`.
+Use the optional general FFmpeg decoder readback to confirm readable frames in matched segments:
+
+```bash
+rk3576_recording_inspect /var/lib/drone_tracker/recordings \
+  /var/lib/drone_tracker/startup-readback-001.jsonl --verify-video
+```
+
+The command creates a separate exclusive report and never edits the recording. Readback requires
+installed `ffmpeg`, fails on decoding errors, and checks the decoded frame count against complete
+sidecar records in each matched segment. Each decoder process has a 180-second deadline. Without
+readback, exact membership is only `metadata-matched`. Retain originals, reports, executable/model
+hashes, commands and exit statuses together. Parent, worker and inspector must come from the same
+release because the shared-memory identity layout changed.

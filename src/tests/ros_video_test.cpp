@@ -64,6 +64,9 @@ struct SourceTrace {
     std::atomic_bool recording_failed{};
     std::atomic<int> legacy_recording_requests{}, session_starts{}, session_stops{};
     std::atomic_bool session_control{}, session_active{};
+    std::atomic_bool receipt_mode{}, recording_ready{true}, reject_receipts{}, stale_receipts{};
+    std::atomic<std::uint64_t> receipt_capture{8884}, request_generation{}, request_round{};
+    RecordingStartupEvidence evidence{};
     std::mutex mutex{};
     std::vector<std::uint64_t> timestamps{};
     std::vector<FrameRef> frames{};
@@ -73,10 +76,25 @@ public:
     explicit Source(std::shared_ptr<SourceTrace> trace) : trace_{std::move(trace)} {}
     CameraRecordingControl *recordingControl() noexcept override { return this; }
     void useSessionControl(std::uint64_t) override { trace_->session_control = true; }
-    void requestRecording(std::uint64_t, bool enabled, RecordingEndReason) override {
+    CameraRecordingStatus recordingRequestStatus() const override {
+        CameraRecordingStatus status{};
+        if (!trace_->receipt_mode) { return status; }
+        status.request = {71, trace_->request_round, trace_->request_generation};
+        status.phase = trace_->recording_failed ? "failed" : trace_->recording_ready ? "recording" : "pending";
+        status.terminal = trace_->recording_failed;
+        status.reason = trace_->recording_failed ? "injected storage failure" : "";
+        return status;
+    }
+    void setStartupEvidence(const RecordingStartupEvidence &evidence) noexcept override {
+        std::lock_guard<std::mutex> lock{trace_->mutex}; trace_->evidence = evidence;
+    }
+    void requestRecording(std::uint64_t round, bool enabled, RecordingEndReason) override {
         if (!trace_->config.camera_recording.enabled) { return; }
         if (trace_->session_active.exchange(enabled) == enabled) { return; }
-        if (enabled) { ++trace_->session_starts; } else { ++trace_->session_stops; }
+        if (enabled) {
+            trace_->request_round = round; ++trace_->request_generation;
+            ++trace_->session_starts;
+        } else { ++trace_->session_stops; }
     }
     bool start() override {
         ++trace_->starts;
@@ -105,6 +123,8 @@ public:
         if (trace_->long_gap && trace_->delivered > 0) { return false; }
         if (trace_->delivered >= trace_->limit) { trace_->eof = true; return false; }
         if (trace_->tail_race) { trace_->eof = true; return false; }
+        if (trace_->receipt_mode && trace_->session_active && !trace_->recording_ready
+            && trace_->receipt_capture >= 8892) { return false; }
         return next(frame);
     }
     bool tryFrame(FrameRef &frame) override {
@@ -124,7 +144,14 @@ private:
             std::chrono::system_clock::now().time_since_epoch()).count() - 20000};
         const auto timestamp{trace_->fixed_timestamp.load() ? trace_->fixed_timestamp.load()
             + trace_->fixed_timestamp_step.load() * trace_->delivered.load() : static_cast<std::uint64_t>(generated_timestamp)};
-        frame = std::make_shared<TestFrame<1>>(cv::Mat{80, 100, CV_8UC1, cv::Scalar{42}}, timestamp);
+        RecordingReceipt receipt{};
+        if (trace_->receipt_mode && trace_->session_active) {
+            receipt = {trace_->recording_ready ? trace_->reject_receipts ? RecordingDisposition::Rejected
+                : RecordingDisposition::Accepted : RecordingDisposition::Unavailable,
+                {71, trace_->request_round, trace_->request_generation - (trace_->stale_receipts ? 1 : 0)},
+                trace_->receipt_capture++, timestamp, 17};
+        }
+        frame = std::make_shared<TestFrame<1>>(cv::Mat{80, 100, CV_8UC1, cv::Scalar{42}}, timestamp, receipt);
         ++trace_->delivered;
         std::lock_guard<std::mutex> lock{trace_->mutex};
         trace_->timestamps.push_back(timestamp);
@@ -1320,6 +1347,91 @@ std::uint64_t displayedSequence(const std::shared_ptr<DisplayTrace> &display) {
     std::lock_guard<std::mutex> lock{display->mutex};
     return display->states.empty() ? 0 : display->states.back().sequence;
 }
+void recordingStartupAdmission() {
+    for (bool fail_recording : {false, true}) {
+        auto display{std::make_shared<DisplayTrace>()};
+        Harness h{continuousOptions(false), {}, {}, {}, std::make_unique<TestDisplay>(display)};
+        h.source->receipt_mode = true;
+        h.source->recording_ready = false;
+        h.node->run();
+        h.until([&] { return h.source->receipt_capture >= 8892; }, "Preparation fixtures did not visit eight frames");
+        require(h.trace->calls == 0 && h.detections.empty(), "Preparation image entered YOLO");
+        require(displayedSequence(display) > 0, "Startup preparation stopped preview");
+        if (fail_recording) { h.source->recording_failed = true; }
+        h.source->recording_ready = true;
+        h.until([&] { return h.trace->calls > 0; }, "Eligible/fallback input did not start YOLO");
+        if (!fail_recording) {
+            // No target: filtering persists after the first executed negative detector request.
+            h.source->reject_receipts = true;
+            h.pump(80ms);
+            const auto calls{h.trace->calls.load()};
+            h.pump(80ms);
+            require(h.trace->calls == calls, "Negative detection released startup admission");
+            h.source->reject_receipts = false;
+            h.source->stale_receipts = true;
+            h.pump(80ms);
+            require(h.trace->calls == calls, "Stale request receipt opened startup admission");
+            h.source->stale_receipts = false;
+            h.trace->template_ok = false;
+            h.trace->target = true;
+            h.until([&] { return h.trace->template_calls > 0; }, "Positive detector did not attempt initialization");
+            h.source->reject_receipts = true;
+            h.pump(80ms);
+            const auto failed_calls{h.trace->calls.load()};
+            h.pump(80ms);
+            require(h.trace->calls == failed_calls, "Failed initialization released startup admission");
+            h.trace->template_ok = true;
+            h.source->reject_receipts = false;
+            h.until([&] { return std::find(h.states.begin(), h.states.end(), 2) != h.states.end(); },
+                "Accepted historical initialization did not reach Tracking");
+            h.source->reject_receipts = true;
+            const auto detections{h.detections.size()};
+            h.until([&] { return h.detections.size() > detections + 2; },
+                "Successful initialization failed to end startup filtering");
+        }
+        h.node->stop();
+        h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "Startup OFF cleanup did not finish");
+        std::lock_guard<std::mutex> lock{h.source->mutex};
+        require(h.source->evidence.yolo_known && h.source->evidence.first_yolo.capture_id >= 8892,
+            "First executed request used a preparation image");
+        require(h.source->evidence.fallback == fail_recording, "Coverage lost terminal fallback");
+        if (!fail_recording) {
+            require(h.source->evidence.initialization_known
+                && h.source->evidence.first_initialization.receipt.acceptedFor(h.source->evidence.request),
+                "Historical initialization did not retain its accepted source");
+        }
+    }
+}
+void recordingStartupCancellation() {
+    auto display{std::make_shared<DisplayTrace>()};
+    Harness h{continuousOptions(false), {}, {}, {}, std::make_unique<TestDisplay>(display)};
+    h.source->receipt_mode = true;
+    h.source->recording_ready = false;
+    h.node->run();
+    h.until([&] { return h.source->receipt_capture >= 8892; }, "Cancelled preparation did not reach barrier");
+    const auto before{std::chrono::steady_clock::now()};
+    h.node->stop();
+    const auto sequence{displayedSequence(display)};
+    h.until([&] { return displayedSequence(display) > sequence + 2; }, "OFF during preparation stopped preview");
+    require(std::chrono::steady_clock::now() - before < 500ms,
+        "OFF during preparation exceeded display response budget");
+    h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "Cancelled startup did not finish");
+    {
+        std::lock_guard<std::mutex> lock{h.source->mutex};
+        require(h.source->evidence.cancelled && !h.source->evidence.yolo_known,
+            "Cancelled preparation invented a detector source");
+    }
+    h.source->recording_ready = true;
+    h.source->stale_receipts = true;
+    h.node->run();
+    h.until([&] { return h.source->request_generation == 2; }, "Replacement ON did not create another token");
+    h.pump(80ms);
+    require(h.trace->calls == 0, "ON/OFF/ON admitted an older generation receipt");
+    h.source->stale_receipts = false;
+    h.until([&] { return h.trace->calls > 0; }, "Replacement token could not admit its own receipt");
+    h.node->stop();
+    h.until([&] { return DroneTrackerNodeTestAccess::idle(*h.node); }, "Replacement startup cleanup failed");
+}
 void continuousDiagnosticBoundaries() {
     for (const char *mode : {"basic", "detail"}) {
         auto config{continuousOptions(false)};
@@ -1781,6 +1893,8 @@ int main(int argc, char **argv) {
         }
         const bool continuous_only{argc > 1 && std::string{argv[1]} == "--continuous-camera"};
         if (continuous_only) {
+            recordingStartupAdmission();
+            recordingStartupCancellation();
             continuousDiagnosticBoundaries();
             continuousCameraLifecycle();
             offDuringSessionOpening();
