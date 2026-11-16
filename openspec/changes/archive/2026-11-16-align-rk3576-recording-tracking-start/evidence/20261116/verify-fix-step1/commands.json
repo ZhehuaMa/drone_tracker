@@ -1,0 +1,39 @@
+[
+  {
+    "command": "openspec list --json; openspec status --change align-rk3576-recording-tracking-start --json; openspec instructions apply --change align-rk3576-recording-tracking-start --json",
+    "exit_status": 0
+  },
+  {
+    "command": "docker image inspect drone-tracker-rk3576:humble-amd64-rknn2.3.2",
+    "exit_status": 0,
+    "image_id": "sha256:025d0aa88983b0646a1b7a4d25cbc13dc96a6206e0148475bbfd5fad15057421"
+  },
+  {
+    "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -I/src/src -I/src/src/hybrid_tracker $(pkg-config --cflags opencv4) /src/src/platform/rk3576/recording/inspect.cpp -lyaml-cpp -o /out/recording-inspect-step1",
+    "exit_status": 0
+  },
+  {
+    "command": "python3 /src/src/platform/rk3576/recording/inspect_test.py /out/recording-inspect-step1",
+    "exit_status": 0
+  },
+  {
+    "command": "/out/recording-inspect-step1 /recordings /out/inspection-readback.jsonl --verify-video",
+    "exit_status": 0
+  },
+  {
+    "command": "Conda base Python SHA256/source identity and exact source membership assertions on retained evidence",
+    "exit_status": 0
+  },
+  {
+    "command": "Conda base Python fresh readback assertions",
+    "exit_status": 0
+  },
+  {
+    "command": "openspec validate align-rk3576-recording-tracking-start --strict",
+    "exit_status": 0
+  },
+  {
+    "command": "git diff --check",
+    "exit_status": 0
+  }
+]

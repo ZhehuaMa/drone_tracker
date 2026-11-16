@@ -1,0 +1,41 @@
+[
+  {
+    "command": "native g++ compilation of current inspect.cpp in pinned offline Docker image, followed by inspect_test.py",
+    "exit_status": 0
+  },
+  {
+    "command": "SHA-256 verification of prior board evidence backup (1133 regular files)",
+    "exit_status": 0
+  },
+  {
+    "command": "DRONE_RECORDING_VALIDATION_ROOT=/var/lib/drone_tracker/validation-align-start-balloon-20261116 bash run_board.sh",
+    "exit_status": 0,
+    "node_exit_status": 0
+  },
+  {
+    "command": "recording-inspect-current RECORDINGS NEW_REPORT --verify-video in pinned offline Docker image",
+    "exit_status": 0
+  },
+  {
+    "command": "summarize_board.py retained/board/balloon",
+    "exit_status": 0
+  },
+  {
+    "command": "production service/readlink/configuration/Runtime restoration checks",
+    "exit_status": 0
+  },
+  {
+    "command": "openspec instructions apply --change align-rk3576-recording-tracking-start --json",
+    "exit_status": 0,
+    "progress": "33/33",
+    "state": "all_done"
+  },
+  {
+    "command": "openspec validate align-rk3576-recording-tracking-start --strict",
+    "exit_status": 0
+  },
+  {
+    "command": "git diff --check",
+    "exit_status": 0
+  }
+]

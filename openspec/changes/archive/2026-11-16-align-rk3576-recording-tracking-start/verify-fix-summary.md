@@ -80,3 +80,44 @@ Verification remains incomplete. Make both required skills available inside the 
 - Release identity caveat: inspector source changed after the previously retained runtime release was packaged. The fresh inspector was compiled and used offline for readback. No new packaged runtime release or board deployment is claimed.
 - Installed release, system RKNN Runtime and service states were not changed by either verification step. Earlier implementation evidence records the board service restoration.
 - No commit, spec synchronization or archival performed. This run does not satisfy the skill's zero-CRITICAL/zero-WARNING completion condition.
+
+## Run: 2026-11-16 14:54 +08:00
+
+- Change: `align-rk3576-recording-tracking-start`.
+- Repository: `/home/mzh/nickluo/drone_tracker`.
+- Branch: `fix/align-rk3576-recording-tracking-start`.
+- Source HEAD: `2ebc49668af48e9db1dc01e2370d87a246f82567`, with job 1 validation artifacts and task completion uncommitted.
+- Status: **complete**.
+- Preflight: **passed**. Both required repo-local skills exist under `.agents/skills/`. OpenSpec resolves this existing repo-local change and reports 33/33 tasks complete.
+- Verify-fix steps completed: **1**.
+- Latest verification counts: **CRITICAL 0 / WARNING 0 / SUGGESTION 0**.
+- Current production evidence: [validation-20261116.md](validation-20261116.md), with 20 successful live-balloon rounds, 64.219 seconds between ON/OFF commands, and all first-YOLO and historical initialization sources verified in saved video. This evidence will be independently assessed rather than treated as a verification verdict.
+- Next step: a fresh sub-agent will verify the complete change against its planning artifacts and repair any actionable CRITICAL or WARNING findings using the repo-local Apply skill.
+
+### Step 1: verification in progress
+
+- Fresh sub-agent: `/root/verify_fix_recording_start/step1`.
+- The agent loaded all six planning context files and mapped 15 requirements and 42 scenarios. It confirmed all 33 tracked tasks are checked.
+- The November 16 per-round table contains distinct first-YOLO and historical-initialization captures in 15 rounds. Exact source coverage is therefore evaluated independently for the two observations.
+- Current verification counts remain **not verified** until the full report returns. Source identities and current-inspector readback are being checked.
+- Progress evidence: a fresh native inspector compilation with `-Wall -Wextra -Wpedantic`, complete inspector regressions, and FFmpeg readback of all 20 current production recordings exited 0. The agent independently checked 259 retained-file hashes with zero mismatches and compared 33 release source-manifest files. Only the two previously disclosed inspector files differ. Both exact source identities matched saved records in every session. Verification has not touched the board.
+
+### Step 1: completed verification report
+
+- Full report: [step1-verification-20261116.md](step1-verification-20261116.md).
+- Fresh command statuses and readback: [evidence/20261116/verify-fix-step1/commands.json](evidence/20261116/verify-fix-step1/commands.json) and neighboring evidence files.
+- Verification counts: **CRITICAL 0 / WARNING 0 / SUGGESTION 0**.
+- Completeness: all 33 tasks and all 15 requirements passed. Correctness: all 42 scenarios mapped to implementation, fixtures and retained evidence. Coherence: all seven design decisions and neighboring code patterns passed review. All six skill-defined checks ran with no skipped items.
+- Fresh native inspector compilation, complete inspector regressions, FFmpeg readback, exact source/identity assertions, OpenSpec strict validation and whitespace checks exited 0. Readback independently confirms all 20 first-YOLO and all 20 successful historical initialization sources are `verified-written`.
+- Findings fixed: none; no CRITICAL or WARNING finding required Apply. The historical real-target acceptance blocker is resolved by the November 16 production evidence.
+- Files changed by this step: the verification report and separate evidence under `evidence/20261116/verify-fix-step1/`. The loop parent also updated this summary. No implementation, task, specification, deployment or service changed during verification.
+- Blockers: none.
+
+### Final outcome of the November 16 run
+
+- Status: **complete** after **1** fresh verify-fix step.
+- Final issue counts: **CRITICAL 0 / WARNING 0 / SUGGESTION 0**. No unresolved issue or remaining suggestion.
+- The supported 73/73 integration-test run plus native resource-limit check was reviewed without repeating unchanged tests. Fresh source-manifest checks establish that the node and worker match the retained release. The current inspector was compiled separately for readback; no repackaged runtime release is claimed.
+- Verification made no board changes. Job 1 restored `drone-tracker.service`, `drone-tracker-diagnostics.service` and `drone-interceptor.service` active, and retained evidence shows installed release, configuration, CPU policy and system Runtime fingerprints unchanged.
+- Execution limits: Jetson hardware/SDK execution, flight behavior, long-duration stability, physical panel latency and actual power-loss durability were not tested. Host `clang-tidy` and `clangd` were unavailable. These do not replace or expand the completed bounded production acceptance.
+- No commit, specification synchronization, archival or persistent deployment was performed.

@@ -1,0 +1,246 @@
+{
+  "rounds": 20,
+  "elapsed_seconds": 75.467285799,
+  "combined_on_seconds": 64.21871815,
+  "node_exit_status": 0,
+  "startup_latency_us": {
+    "min": 98207,
+    "median": 107690.0,
+    "max": 115489
+  },
+  "first_yolo": {
+    "verified-written": 20
+  },
+  "first_initialization": {
+    "verified-written": 20
+  },
+  "completion_outcomes": {
+    "complete": 20
+  },
+  "total_frames": 3732,
+  "recorder_drops": 0,
+  "off_display_us": {
+    "samples": 27,
+    "min": 4652,
+    "max": 31356
+  },
+  "off_command_to_display_us": {
+    "samples": 20,
+    "min": 5137,
+    "max": 27516
+  },
+  "rates": {
+    "1": {
+      "consumed_hz": 52.22744338102774,
+      "displayed_hz": 58.220756555899776
+    },
+    "2": {
+      "consumed_hz": 53.46950233260704,
+      "displayed_hz": 58.99080963869146
+    },
+    "3": {
+      "consumed_hz": 55.36254729628369,
+      "displayed_hz": 58.63667643746175
+    },
+    "4": {
+      "consumed_hz": 55.48866420289042,
+      "displayed_hz": 58.17359956754641
+    },
+    "5": {
+      "consumed_hz": 55.19954336550721,
+      "displayed_hz": 59.376806106680725
+    },
+    "6": {
+      "consumed_hz": 54.26316616280869,
+      "displayed_hz": 57.26113114417933
+    },
+    "7": {
+      "consumed_hz": 52.94875933901631,
+      "displayed_hz": 59.245368557710144
+    },
+    "8": {
+      "consumed_hz": 54.792648122792095,
+      "displayed_hz": 58.62224180879369
+    },
+    "9": {
+      "consumed_hz": 55.02178680364761,
+      "displayed_hz": 57.453688982814356
+    },
+    "10": {
+      "consumed_hz": 55.453025741894045,
+      "displayed_hz": 59.64947093317251
+    },
+    "11": {
+      "consumed_hz": 56.37367165706425,
+      "displayed_hz": 58.51832220923517
+    },
+    "12": {
+      "consumed_hz": 53.12103297150731,
+      "displayed_hz": 58.8638473468054
+    },
+    "13": {
+      "consumed_hz": 55.42121933911401,
+      "displayed_hz": 59.33684896633402
+    },
+    "14": {
+      "consumed_hz": 54.087494269649255,
+      "displayed_hz": 58.4729667779992
+    },
+    "15": {
+      "consumed_hz": 57.36265133275144,
+      "displayed_hz": 58.91299326066364
+    },
+    "16": {
+      "consumed_hz": 56.798992969205734,
+      "displayed_hz": 58.33410088729238
+    },
+    "17": {
+      "consumed_hz": 56.96496195444947,
+      "displayed_hz": 58.802541372334936
+    },
+    "18": {
+      "consumed_hz": 55.35150298778437,
+      "displayed_hz": 58.64267343570668
+    },
+    "19": {
+      "consumed_hz": 56.09109922181938,
+      "displayed_hz": 58.51666026924941
+    },
+    "20": {
+      "consumed_hz": 50.11901233577896,
+      "displayed_hz": 58.78824690196775
+    }
+  },
+  "resources_before": {
+    "descriptors": 40,
+    "threads": 19,
+    "rss_kib": 118756
+  },
+  "resources_after": {
+    "descriptors": 54,
+    "threads": 20,
+    "rss_kib": 240184
+  },
+  "settled_round_resources": [
+    {
+      "round": 1,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 222256
+    },
+    {
+      "round": 2,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 222600
+    },
+    {
+      "round": 3,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 223848
+    },
+    {
+      "round": 4,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237752
+    },
+    {
+      "round": 5,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237752
+    },
+    {
+      "round": 6,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237880
+    },
+    {
+      "round": 7,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237892
+    },
+    {
+      "round": 8,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237892
+    },
+    {
+      "round": 9,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237896
+    },
+    {
+      "round": 10,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 235644
+    },
+    {
+      "round": 11,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237756
+    },
+    {
+      "round": 12,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237756
+    },
+    {
+      "round": 13,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237756
+    },
+    {
+      "round": 14,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237756
+    },
+    {
+      "round": 15,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237756
+    },
+    {
+      "round": 16,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 235584
+    },
+    {
+      "round": 17,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237960
+    },
+    {
+      "round": 18,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237960
+    },
+    {
+      "round": 19,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 237960
+    },
+    {
+      "round": 20,
+      "descriptors": 54,
+      "threads": 20,
+      "rss_kib": 240184
+    }
+  ]
+}

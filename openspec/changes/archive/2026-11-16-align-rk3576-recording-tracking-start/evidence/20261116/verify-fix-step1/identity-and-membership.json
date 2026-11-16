@@ -1,0 +1,16 @@
+{
+  "release_manifest_files": 33,
+  "release_source_differences": [
+    "src/platform/rk3576/recording/inspect.cpp",
+    "src/platform/rk3576/recording/inspect_test.py"
+  ],
+  "retained_files_hash_verified": 259,
+  "rounds": 20,
+  "combined_on_seconds": 64.21871815,
+  "elapsed_seconds": 75.467285799,
+  "distinct_first_sources_rounds": 15,
+  "exact_source_matches": {
+    "first_yolo": 20,
+    "first_initialization": 20
+  }
+}

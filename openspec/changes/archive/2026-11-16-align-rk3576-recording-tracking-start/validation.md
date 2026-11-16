@@ -1,5 +1,7 @@
 # Validation — 2026-11-14
 
+Update, 2026-11-16: [real-target production validation](validation-20261116.md) completed the remaining task 6.3. The results below describe the earlier no-target run and remain unchanged as historical evidence.
+
 ## Result and remaining acceptance
 
 The implementation and software checks pass. The final matching release completed 20 ON/OFF rounds on the production board. Exact sidecar matching and independent video decoding verified all 20 first executed YOLO inputs. The camera scene produced no target, so all 20 initialization sources are explicitly `not-applicable`.
