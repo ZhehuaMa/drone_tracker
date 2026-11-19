@@ -136,45 +136,47 @@ RK3576 SHALL 要求 `camera.fx/fy/cx/cy` 全部显式提供且为有限数值。
 
 ### Requirement: ROS bag 记录与关闭互斥
 
-ROS bag 是 ROS 消息记录文件。`need_save=true` 时节点 SHALL 记录本轮实际接收的 `/fpv/gimbal`、`/fpv/odom`、`/mavros/imu/data` 及实际构造用于发布的 `/fpv/target_bbox`、`/fpv/target_los`。输入消息 SHALL 保留原话题、完整载荷与 header 时间。框与 LOS SHALL 保留共同时间。所有 visualized_result 设置下，bag MUST NOT 包含 `/fpv/tracker_image` 消息或话题元数据。`visualized_result` SHALL 只控制跟踪调试图像发布。视频输入 SHALL 不生成相机图像录像。记录写盘 SHALL 与 ROS 消息回调及跟踪处理分离；提交过程 MUST NOT 等待磁盘写入。待写消息缓冲 SHALL 同时受消息数和总字节数限制。队列 SHALL 保持 256 条消息与 64 MiB 两个容量上限。每对观测 SHALL 消耗两条额度并按合计字节检查容量。容量不足时 SHALL 整对拒绝并分别计数 attempted/dropped，不能只接纳半对。队列溢出 SHALL 将该轮 bag 标记为不完整，不得悄悄宣称完整。磁盘中途故障仍可能写出半对，SHALL 明确报告失败或不完整，而非承诺文件事务。记录的创建、写入、关闭和销毁 SHALL 相互同步。OFF、EOF、普通失败和进程退出 SHALL 关闭本轮记录。关闭后到达的回调 MUST NOT 访问已释放 writer。
+A ROS bag is a recording of ROS messages. With `need_save=true`, RK3576 SHALL record active-round messages according to `rk3576-session-topic-recording`, using its frozen application catalog and explicit sampling policies. Its recording inputs SHALL include `/fpv/gimbal`, `/fpv/odom`, and `/mavros/imu/data`. It SHALL record the `/fpv/target_bbox` and `/fpv/target_los` messages actually constructed for publication as a pair. Retained input messages SHALL preserve their resolved topic names, complete payloads, and valid source timestamps. Bbox and LOS SHALL preserve their shared timestamp. Published `/fpv/tracker_image` messages SHALL be eligible for sampled recording under that capability. When no image is admitted, a bag MUST NOT contain image topic metadata. `visualized_result` SHALL remain solely the switch for publishing tracking debug images. Recording MUST NOT enable debug-image publication. Video-file input SHALL NOT create camera-video recordings.
 
-记录打开、写入或关闭失败 SHALL 明确报告该轮 bag 失败，并保留失败原因。故障 MUST NOT 阻止健康的采集、跟踪、HDMI 显示或独立相机录像继续运行。系统 MUST NOT 覆盖已有记录目录。每轮 SHALL 分别报告 bag 接受、成功写入和丢弃的消息数量，并区分正常完整关闭与失败或不完整关闭。
+Disk writes SHALL be separate from ROS callbacks and tracking processing. Admission MUST NOT wait for disk writes. Retained recording work SHALL remain bounded by both 256 message slots and 64 MiB of accounted payload, including the writer's in-flight item. Each observation pair SHALL consume two slots and its combined payload allowance. Insufficient capacity SHALL reject the whole pair and increment each member's attempted and dropped counts. It MUST NOT accept only one member. Unexpected queue overflow SHALL mark the session incomplete. Intentional policy sampling SHALL be reported separately from unexpected loss. A mid-write disk failure can still leave only one pair member in the file; the recorder SHALL report failure or incompleteness rather than promise a file transaction.
+
+Creation, admission, writing, closing, and destruction SHALL be synchronized. OFF, EOF, round-ending failures, and normal service exit SHALL close the current session. The authoritative OFF message and final invalid observation pair SHALL be offered before sealing. Callbacks after sealing MUST NOT access a destroyed writer or attach old-session work to a new session. Bag open, write, and close failures SHALL report the session's failure and original reason. Such failures MUST NOT stop otherwise healthy acquisition, tracking, HDMI, or independent camera-video recording. Existing recording directories MUST NOT be overwritten. Each session SHALL report accepted, written, intentionally omitted, unexpectedly dropped, and accepted-but-unwritten totals. Successful policy-complete close SHALL be distinguishable from incomplete, failed, and storage-limited results.
 
 #### Scenario: EOF 与姿态回调并发
-- **WHEN** 图像处理到 EOF 时同时收到姿态消息
-- **THEN** 消息要么在关闭前安全写入，要么因记录已关闭而跳过，不访问释放后的记录器
+- **WHEN** image processing reaches EOF while an attitude callback is submitting recording work
+- **THEN** the message is either accepted into the old session before sealing or rejected safely, without accessing a released writer or entering a later session
 
 #### Scenario: 目录不可写或已存在
-- **WHEN** ON 需要创建记录但目标不可写或与已有记录碰撞
-- **THEN** 报告本轮 bag 打开失败并保留已有记录；跟踪轮次仍启动，且不会把未创建的 bag 报告为完整
+- **WHEN** ON needs a bag in an unwritable directory or would collide with existing evidence
+- **THEN** the session reports an open failure, existing evidence is retained, and a healthy tracking round can still run
 
 #### Scenario: bag 写入失败
-- **WHEN** 已开始跟踪和相机录像的一轮在写入 bag 时发生磁盘错误
-- **THEN** 节点报告 bag 失败及已接受、已写入和未写入数量，继续健康的跟踪、HDMI 显示及相机录像
+- **WHEN** disk writing fails during a round with tracking and independent camera recording enabled
+- **THEN** the bag reports the original failure, accepted, written, and unwritten counts; healthy tracking, HDMI, and camera recording continue
 
 #### Scenario: 队列达到容量
-- **WHEN** bag 写入落后且待写队列达到消息数或字节数上限
-- **THEN** 消息提交不等待磁盘；节点计数丢弃并标记本轮 bag 不完整，跟踪和 HDMI 显示继续
+- **WHEN** disk writing lags and retained recording work reaches a message or byte limit
+- **THEN** submission does not wait for disk progress, unexpected drops are counted, and the session is marked incomplete while tracking and display continue
 
 #### Scenario: 禁用调试图像
-- **WHEN** 配置 `need_save=true`、`visualized_result=false`，收到 ON 并产生检测框，随后收到 OFF
-- **THEN** 关闭后的 bag 可读取，包含已记录的检测框，但不包含 `/fpv/tracker_image` 消息或该话题的元数据
+- **WHEN** `need_save=true` and `visualized_result=false` for an ON/OFF round that produces target observations
+- **THEN** the readable closed bag includes retained observations and other received catalog topics, but contains no tracker_image messages or metadata
 
 #### Scenario: bag 完整性回查
-- **WHEN** `need_save=true` 的正常轮次已收到 OFF 或视频 EOF，且没有记录丢弃或写入失败
-- **THEN** 关闭后的 bag 可重新打开并读到末尾；各话题的消息数与本轮成功接受数相符，时间戳和可识别载荷与原消息相符，报告标记完整
+- **WHEN** a session closes after OFF or EOF without detected unexpected losses or write errors
+- **THEN** a reader can reach the end of every split file, its message counts equal successful writes, retained timestamps and recognizable payloads match their inputs, and intentional sampling is explicitly reported
 
 #### Scenario: 开启图像也不写入 bag
-- **WHEN** need_save=true、visualized_result=true，ON 期间实际发布调试图像并收到 MAVROS IMU，随后 OFF
-- **THEN** bag 可包含原始 IMU、框与 LOS，但没有 tracker_image 数据或元数据；实时图像发布不受这一记录策略禁止
+- **WHEN** `need_save=true`, `visualized_result=true`, and ON processing publishes images and receives body IMU
+- **THEN** the bag can contain policy-selected original images and retained IMU, bbox, and LOS messages; recording changes neither image publication nor the shared observation reference time
 
 #### Scenario: 仅余一个消息位置
-- **WHEN** 未封存的记录队列只剩一条消息额度，尝试接纳一对 bbox/LOS
-- **THEN** 两条均拒绝并分别增加丢弃计数，轮次标为不完整，队列不越限
+- **WHEN** the available admission class has one remaining message slot and a bbox/LOS pair is offered
+- **THEN** both members are rejected, both drop counts increase, and the queue remains within its limits
 
 #### Scenario: 无记录请求
-- **WHEN** need_save=false 且收到 MAVROS IMU、生成目标框与 LOS
-- **THEN** 正常观测仍可发布，但不创建 bag；独立 recording.enabled 仍只控制原画面录像
+- **WHEN** `need_save=false`, body IMU arrives, and target observations are produced
+- **THEN** observations retain their normal behavior, no bag is created, and `recording.enabled` independently controls original-camera video recording
 
 ### Requirement: 接入验收与模型质量分别报告
 

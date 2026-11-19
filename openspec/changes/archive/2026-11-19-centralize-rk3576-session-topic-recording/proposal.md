@@ -6,7 +6,7 @@ An operating session currently saves only a small part of the messages exchanged
 
 For example, today an ON/OFF session can contain camera orientation and target observations but omit the control commands and mission state that explain the response. After this change, the same session will retain those topics, preserve their source timestamps where available, and report exactly which samples were intentionally omitted or unexpectedly lost.
 
-The expanded recorder also needs a repeatable CPU placement when installed. The CPU 2 measurements in [the production comparison](../../../docs/reports/performance/RECORDER_CORE_AFFINITY_20261113.md) support a standard installation policy that keeps topic recording away from the existing tracking, detection, and display cores. These measurements motivate the choice; they do not validate a new automatic-binding implementation or establish zero overhead.
+The expanded recorder also needs a repeatable CPU placement when installed. The CPU 2 measurements in [the production comparison](../../../../docs/reports/performance/RECORDER_CORE_AFFINITY_20261113.md) support a standard installation policy that keeps topic recording away from the existing tracking, detection, and display cores. These measurements motivate the choice; they do not validate a new automatic-binding implementation or establish zero overhead.
 
 ## What Changes
 

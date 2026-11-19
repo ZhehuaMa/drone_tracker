@@ -139,7 +139,9 @@
 
 系统 SHALL 保留输入 /fpv/gimbal（sensor_msgs/msg/Imu）、/fpv/odom（nav_msgs/msg/Odometry）、/fpv/tracker_trigger（std_msgs/msg/Header）。系统 SHALL 保留输出 /fpv/target_bbox（vision_msgs/msg/Detection2D）、/fpv/tracker_image（sensor_msgs/msg/Image）、/fpv/tracker_state（std_msgs/msg/Int8）。系统 SHALL 增加 /fpv/target_los（geometry_msgs/msg/TwistStamped）输出和仅供记录的 /mavros/imu/data（sensor_msgs/msg/Imu）输入。QoS，即消息队列与可靠性设置，SHALL 按 target-observations 更新 gimbal、tracker_image 及新增端点；其他业务端点保持不变。
 
-节点 SHALL 通过唯一帧源消费者取最新排队帧，保留其原尺寸像素与帧源时间。图像开启时 SHALL 发布独立 BGR8 图像，时间为原帧时间，绘图不修改共享灰度帧。框与 LOS SHALL 按 target-observations 采用同一参考时刻，默认采集时间。框 SHALL 保留浮点精度，检测有效时 frame_id 为 camera_frame，否则为空；无有效姿态时 SHALL 仅使 LOS 无效。未消费帧 SHALL 保持既有不发布结果行为。持续预览帧 MUST NOT 产生检测框、LOS、状态或 /fpv/tracker_image。调试图像 SHALL 仍仅在 visualized_result=true 且当前轮次实际消费图像时发布；OFF 后旧轮不得启动新的帧结果发布，唯一例外是按 target-observations 发送一次显式无效控制通知；已交给 ROS 中间件的消息允许延迟送达。姿态参考与重复抑制 SHALL 按 target-observations 执行，缺姿态时 KF 可保留单位阵回退，但不能据此生成有效 LOS。调试图像 MUST NOT 写入 bag，且与 LOS 的有效性和重复抑制独立。
+节点 SHALL 通过唯一帧源消费者取最新排队帧，保留其原尺寸像素与帧源时间。图像开启时 SHALL 发布独立 BGR8 图像，时间为原帧时间，绘图不修改共享灰度帧。框与 LOS SHALL 按 target-observations 采用同一参考时刻，默认采集时间。框 SHALL 保留浮点精度，检测有效时 frame_id 为 camera_frame，否则为空；无有效姿态时 SHALL 仅使 LOS 无效。未消费帧 SHALL 保持既有不发布结果行为。持续预览帧 MUST NOT 产生检测框、LOS、状态或 /fpv/tracker_image。调试图像 SHALL 仍仅在 visualized_result=true 且当前轮次实际消费图像时发布；OFF 后旧轮不得启动新的帧结果发布，唯一例外是按 target-observations 发送一次显式无效控制通知；已交给 ROS 中间件的消息允许延迟送达。姿态参考与重复抑制 SHALL 按 target-observations 执行，缺姿态时 KF 可保留单位阵回退，但不能据此生成有效 LOS。
+
+During an active round, published debug images SHALL be eligible for sampled bag recording under `rk3576-session-topic-recording`. Debug-image publication SHALL remain independent of LOS validity and duplicate suppression.
 
 状态 SHALL 保持 Detecting=0、TargetFound=1、Tracking=2、TargetLost=3，仅变化时发布，每轮首次状态仍可发布。OFF 和设备失败 MUST NOT 被伪装为算法 TargetLost。没有曝光证据时 MUST NOT 宣称图像时间代表曝光时刻。
 

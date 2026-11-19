@@ -6,7 +6,7 @@ The current recording omits application messages needed to explain a flight sess
 
 The inspected baseline is `drone_tracker` rk3576 revision `e17c43e`, with interface evidence from `apm_bridge` `31b00e8`, `drone_interceptor` `73c605c`, and shared `quadrotor_msgs` `bc8bf6c`. These are source-review identities, not a hardware acceptance claim.
 
-The later CPU-placement refinement selects CPU 2 for both topic-recorder threads in the standard installation. CPU affinity is the set of cores on which a thread may run; it does not reserve or isolate a core. The [2026-11-13 production measurements](../../../docs/reports/performance/RECORDER_CORE_AFFINITY_20261113.md) motivate that placement. They used temporary thread binding and are not acceptance evidence for the new automatic role or installer behavior.
+The later CPU-placement refinement selects CPU 2 for both topic-recorder threads in the standard installation. CPU affinity is the set of cores on which a thread may run; it does not reserve or isolate a core. The [2026-11-13 production measurements](../../../../docs/reports/performance/RECORDER_CORE_AFFINITY_20261113.md) motivate that placement. They used temporary thread binding and are not acceptance evidence for the new automatic role or installer behavior.
 
 At this baseline:
 
