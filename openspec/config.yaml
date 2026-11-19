@@ -7,6 +7,16 @@ context: |
   Preserve exact identifiers and normative terms when required, but explain
   their role in plain language at their first meaningful use.
 
+  When verifying an OpenSpec change, cite files outside the change directory
+  with paths relative to the repository root. Include the line number when
+  known, as in `src/search.ts:42`. If a source reference needs to be clickable,
+  use a Git hosting permalink to the exact reviewed commit once it is
+  available on the host.
+
+  In a verification report saved inside the change directory, link to files
+  that move with the change using Markdown paths relative to the report.
+  For example, use `[Tasks](./tasks.md)` to link to the adjacent tasks file.
+
 rules:
   proposal:
     - Write for a maintainer who understands the project goal but not this implementation.
